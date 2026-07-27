@@ -73,7 +73,7 @@ Geçerli kanıt: `docs/evidence/G0_report_truba_1425656.md`
 | ID | Gereksinim | Uygulama | Test |
 |----|-----------|----------|------|
 | P1-FR-01 | GPU hash-grid komşu arama; liste simetrik | `warp_core/hash_grid.py`, `neighbors.py` | `test_neighbors.py` (brute-force ile birebir, simetri, CUDA) |
-| P1-FR-02 | Yoğunluk hem toplam hem süreklilikle; çapraz kontrol | `warp_core/density.py` | `test_sod.py::test_continuity_cross_check_tracks_summation` |
+| P1-FR-02 | Yoğunluk hem toplam hem süreklilikle; çapraz kontrol | `warp_core/density.py`, `warp_core/integrator.py::continuity_rate_3d` (ADR-0015) | `test_sod.py::test_continuity_cross_check_tracks_summation`, `test_solid_cross.py::TestContinuityDensityCross` |
 | P1-FR-03 | Çiftler-arası antisimetrik ivme; momentum korunur | `warp_core/forces.py` | `test_conservation.py`, `test_sod.py` (duvar-impuls kapanışı) |
 | P1-FR-04 | Wendland C2 ve gradyanı doğru normalize | `warp_core/kernel_fn.py` | `test_kernel_fn.py` (∫W dV=1, PoU, gradyan antisimetrisi) |
 | P1-FR-05 | Monaghan AV + Balsara; kesmede aşırı sönmez | `warp_core/forces.py` | `test_conservation.py::TestShearBalsara` |
@@ -114,7 +114,7 @@ Geçerli kanıt: `docs/evidence/G0_report_truba_1425656.md`
 | ID | Eşik | Test |
 |----|------|------|
 | P2-VR-01 | Rijit dönme yapay gerilme ≈0 | `test_rigid_rotation.py` |
-| P2-VR-02 | Taylor bar son şekil benchmark'a yakın | `test_taylor_bar.py` (GPU) |
+| P2-VR-02 | Taylor bar son şekil benchmark'a yakın (L/L0=0,708; enerji %0,096 — süreklilik yoğunluğu, ADR-0015) | `test_taylor_bar.py` (GPU) |
 | P2-VR-03 | Elastik dalga √((K+4G/3)/ρ) | `test_elastic_wave.py` (yakınsama merdiveni) |
 | P2-VR-04 | Crush curve fiziksel; α≥1 | `test_crush_curve.py` |
 | P2-VR-05 | İki-cisim/küre; drift sınırlı | `test_two_body.py`, `test_uniform_sphere.py` |
