@@ -1,0 +1,32 @@
+# TRUBA G0 kanit kosusu (SLURM job 1425495, kolyoz19/H100) tarafindan uretilen
+# kosu manifestinin degistirilmemis kopyasi. Kaynak:
+#   gate_runs/g0_truba_1425495/manifest.yaml
+# Ek A alan tamligi `validate_manifest` tarafindan yazim aninda zorlanmistir.
+build:
+  compiler: cpython-3.10.15
+  cuda: (12, 9)
+  flags: numpy-1.26.4;precision=deterministic_fp64
+config_hash: dfc0fb5f07041742b0f5d7c2de44c5cf85ad013a526c8a97a27fdf1297b1d718
+data:
+  note: FAZ 0 - veri girisi yok; PDS manifesti FAZ 3'te dolar
+git_sha: 3be483a318d215081bd44f7a2a33d3f2763bb6ef
+hardware:
+  cpu: x86_64
+  driver: 580.95.05
+  gpu: NVIDIA H100 80GB HBM3
+numerics:
+  cfl: null
+  kernel: null
+  precision: deterministic_fp64
+outputs:
+  checkpoint_sha256: '0000000000000000000000000000000000000000000000000000000000000000'
+  observables_sha256: '0000000000000000000000000000000000000000000000000000000000000000'
+physics:
+  enabled: false
+  note: 'FAZ 0: fizik yok'
+random_seed: 104729
+run_id: P0_smoke_0001
+schema_version: 1
+status: accepted
+timestamp_utc: '2026-07-27T13:31:08.881515+00:00'
+wall_time: 17.95632375101559
