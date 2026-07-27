@@ -35,9 +35,12 @@ echo "== dugum: $(hostname) =="
 nvidia-smi --query-gpu=name,driver_version --format=csv,noheader
 echo "== python: $(python3 --version 2>&1) =="
 
-# Wheel'leri job-yerel diske ac (pip kullanilmaz -> /arf'a yazma yok)
-for whl in "$WHEELS"/*.whl; do
-    echo "-- aciliyor: $(basename "$whl")"
+# Wheel'leri once job-yerel diske KOPYALA, sonra oradan ac.
+# (Lustre uzerinden dogrudan zip okumak hesap dugumunde BadZipFile uretti —
+#  job 1425474; ayni dosyalar giris dugumunde testzip'ten temiz gecmisti.)
+cp "$WHEELS"/*.whl "$LOCAL/"
+for whl in "$LOCAL"/*.whl; do
+    echo "-- aciliyor: $(basename "$whl")  ($(stat -c%s "$whl") bayt, md5 $(md5sum "$whl" | cut -c1-12))"
     python3 -m zipfile -e "$whl" "$PYLIB"
 done
 
