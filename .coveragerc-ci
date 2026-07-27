@@ -1,0 +1,20 @@
+# CI (GPU'suz runner) icin kapsam yapilandirmasi.
+#
+# warp_core/ icindeki @wp.kernel gövdeleri CI'da CALISTIRILAMAZ: GitHub
+# runner'inda CUDA yoktur ve GPU isaretli testler atlanir. Bu dosyalari
+# GPU'suz kapsam olcumune dahil etmek, "test edilmemis" degil "test EDILEMEZ"
+# olan kodu eksik gibi gosterir ve esigi yapay olarak dusurur.
+#
+# GPU kernel'lerinin kapsami, KAPI KOSUSUNDA olculur: run_g0/g1/g2_gate.py
+# CUDA'li ortamda TUM paketi (GPU testleri dahil) kosar ve kendi kapsam
+# esigini uygular. Yani kapsam iki katmanda denetlenir:
+#   CI   -> CPU'da calistirilabilen kodun >= %85'i
+#   Kapi -> tum kodun (GPU dahil) >= %85'i
+[run]
+source = dartrift
+omit =
+    */dartrift/warp_core/*
+
+[report]
+precision = 1
+show_missing = True

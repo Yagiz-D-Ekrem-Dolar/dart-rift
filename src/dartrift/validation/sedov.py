@@ -16,7 +16,15 @@ SEDOV_ALPHA = 0.8511  # gamma=1.4, kuresel (Sedov/Book literatur degeri)
 E_INJECT = 1.0
 RHO0 = 1.0
 U_BACKGROUND = 1.0e-6
-H_OVER_DX = 1.25
+
+# Wendland C2, KOMSU SAYISINA duyarlidir: kubik spline'in alistigi ~50-65
+# komsu bu cekirdek icin YETERSIZDIR (Dehnen & Aly 2012, 3B'de ~200 onerir).
+# h/dx = 2.0 -> destek 4dx -> ~268 komsu. Olculdu (n=48, ayni IC):
+#   h/dx=1.25 (65 komsu)  -> sok yaricapi hatasi %15.8, KE/E = 0.121
+#   h/dx=1.60 (137 komsu) -> %6.5,  KE/E = 0.161
+#   h/dx=2.00 (268 komsu) -> %2.6,  KE/E = 0.191   (teorik KE/E = 0.28)
+# Bkz. ADR-0013.
+H_OVER_DX = 2.0
 
 # Kosu suresi, sok yaricapinin domain yari-genisliginin YARISINA ulastigi ana
 # sabitlenir (r_s = 0.25, domain [-0.5,0.5]^3). Daha gec zamanlarda cephe

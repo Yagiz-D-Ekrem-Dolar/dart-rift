@@ -28,7 +28,8 @@ def _base_ic(n: int = 350):
     R = 1.0
     x = _uniform_sphere(n, R, seed=515151)
     v = -50.0 * x  # radyal ice cokme (v ~ 50 m/s kabukta)
-    h = 1.3 * (4.0 * np.pi / 3.0 / n) ** (1.0 / 3.0) * R
+    # h/dx = 2.0 esdegeri: Wendland C2 icin ~268 komsu (ADR-0013)
+    h = 2.0 * (4.0 * np.pi / 3.0 / n) ** (1.0 / 3.0) * R
     m_solid = rho0 * (4.0 / 3.0) * np.pi * R**3 / n
     return x, v, m_solid, h
 

@@ -30,8 +30,9 @@ def build_cloud_ic(n: int, seed: int = 20260727) -> dict:
         i += 1
     m = np.full(n, 1.0 / n)
     u = np.full(n, 1.0)
-    # ortalama parcacik araligi ~ (V/n)^(1/3); h = 1.3 * aralik
-    h = 1.3 * (4.0 / 3.0 * np.pi / n) ** (1.0 / 3.0)
+    # ortalama parcacik araligi ~ (V/n)^(1/3); Wendland C2 icin h = 2.0 *
+    # aralik -> ~268 komsu (ADR-0013; 1.3 yalnizca ~74 komsu veriyordu)
+    h = 2.0 * (4.0 / 3.0 * np.pi / n) ** (1.0 / 3.0)
     return {"x": x, "v": v, "m": m, "u": u, "h": h}
 
 
@@ -84,7 +85,7 @@ def shear_av_suppression(n_side: int = 12, shear_rate: float = 1.0) -> dict:
     v[:, 0] = shear_rate * x[:, 1]
     m = np.full(n, dx**3)
     u = np.full(n, 10.0)  # yuksek ses hizi -> AV etkisi belirgin olcum
-    h = 1.3 * dx
+    h = 2.0 * dx  # Wendland C2 komsu sayisi (ADR-0013)
 
     def heating(use_balsara: bool) -> float:
         params = R.RefParams(use_balsara=use_balsara)

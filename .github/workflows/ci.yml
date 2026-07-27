@@ -33,8 +33,13 @@ jobs:
       - name: Config sema kontrolu
         run: python -m dartrift.config configs/p0_smoke.yaml
 
-      - name: Birim testleri + kapsam esigi (>= %85)
-        run: pytest tests -m "not gpu" --cov=dartrift --cov-fail-under=85 --cov-report=term-missing
+      # Kapsam esigi CPU'da CALISTIRILABILEN kod icin uygulanir; GPU
+      # kernel'leri (warp_core/) bu runner'da kosulamadigi icin haric tutulur
+      # ve onlarin kapsami CUDA'li kapi kosusunda olculur (bkz. .coveragerc-ci).
+      - name: Birim testleri + kapsam esigi (>= %85, CPU erisilebilir kod)
+        run: >
+          pytest tests -m "not gpu" --cov=dartrift --cov-config=.coveragerc-ci
+          --cov-fail-under=85 --cov-report=term-missing
 
       - name: Determinizm altin hash
         run: pytest tests/test_determinism_golden.py -q

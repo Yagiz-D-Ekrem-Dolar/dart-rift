@@ -49,7 +49,7 @@ def run_rigid_rotation(
     x0 = _ball_lattice(n_side)
     n = x0.shape[0]
     dxl = 1.0 / n_side
-    h = 1.3 * dxl
+    h = H_OVER_DX_3D * dxl
     rho0 = 2700.0
     m = np.full(n, rho0 * dxl**3)
     mat = MaterialParams(
@@ -168,6 +168,11 @@ def run_elastic_wave(resolution: int = 400) -> dict:
 
 COPPER = dict(rho0=8930.0, K=1.40e11, G=4.77e10)
 
+# Wendland C2 icin 3B komsu sayisi: h/dx = 2.0 -> ~268 komsu (ADR-0013).
+# Onceki 1.3 degeri yalnizca ~74 komsu veriyordu; Sedov'da %16 hataya yol
+# acan ayni yetersizlik burada da gecerlidir.
+H_OVER_DX_3D = 2.0
+
 
 def build_taylor_ic(v_impact: float = 200.0, nx: int = 9):
     """SIMETRIK Taylor carpmasi: iki ozdes bakir cubuk, z=0 duzleminde carpisir.
@@ -202,7 +207,7 @@ def build_taylor_ic(v_impact: float = 200.0, nx: int = 9):
     v[n_upper:, 2] = +v_impact  # alt cubuk yukari
     m = np.full(n, COPPER["rho0"] * dxl**3)
     return {
-        "x": x, "v": v, "m": m, "u": np.zeros(n), "h": 1.3 * dxl,
+        "x": x, "v": v, "m": m, "u": np.zeros(n), "h": H_OVER_DX_3D * dxl,
         "active": np.ones(n, np.uint8), "n_bar": n_upper, "L0": L0, "dx": dxl,
     }
 

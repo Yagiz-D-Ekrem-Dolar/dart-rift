@@ -130,7 +130,7 @@ def run_cold_collapse(n: int = 500, t_frac: float = 0.6) -> dict:
     t_ff = np.sqrt(3.0 * np.pi / (32.0 * G * rho_mean))
     x = _uniform_sphere(n, R)
     m = np.full(n, M / n)
-    h = 1.3 * (4.0 * np.pi / 3.0 / n) ** (1.0 / 3.0) * R
+    h = 2.0 * (4.0 * np.pi / 3.0 / n) ** (1.0 / 3.0) * R  # ADR-0013
     mat = MaterialParams(
         eos="ideal_gas", gamma=5.0 / 3.0,
         strength=StrengthParams(enabled=False),
