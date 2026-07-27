@@ -4,6 +4,12 @@
 > çıkarımı projesinin **G0 kapısı** ("zemin sağlam") uygulaması.
 > Şartname: `DR-RIFT-P0 v1.0` · Ana Plan: `DART-RIFT Ana Proje Planı v1.0`
 
+**G0 durumu: GEÇTİ** — 8/8 kriter, 185 test, kapsam %97,2.
+Kanıt koşusu: TRUBA/ARF-ACC `kolyoz19`, NVIDIA H100 80GB, SLURM job 1425495
+([kapı raporu](docs/evidence/G0_report_truba_1425495.md)).
+Bu, altyapının geçtiği anlamına gelir — **hiçbir fizik veya bilimsel sonuç
+iddia edilmemektedir**; FAZ 0'da fizik yoktur.
+
 ## Proje tek cümlede
 
 NASA'nın DART aracının Dimorphos'a çarpmasından elde edilen verilerden,
@@ -43,30 +49,48 @@ python scripts/run_g0_gate.py               # G0 kapı raporu üret
 
 ## TRUBA (ARF-ACC) üzerinde G0 kanıtı
 
-TRUBA kuralları gereği `/arf`'a pip/conda kurulumu yapılmaz; merkezî modül
-kullanılır, warp-lang wheel'i job-yerel diske açılır:
+TRUBA kuralları gereği `/arf`'a pip/conda ile **kurulum yapılmaz**; merkezî
+modül kullanılır ve ek paketler wheel arşivleri açılarak `PYTHONPATH` üzerinden
+kullanılır (639 dosya; inode kotası 500.000). Hazırlık **giriş düğümünde bir
+kez** yapılır:
 
 ```bash
-# giriş düğümünde bir kez: wheel'leri indir
-pip download warp-lang pytest-cov coverage -d /arf/scratch/<grup>/driftclaude/wheels
+cd /arf/scratch/<grup>/driftclaude
+module purge && module load apps/truba-ai/gpu-2024.0
+python3 -m pip download warp-lang pytest-cov coverage --no-deps -d wheels
+mkdir -p pylib && for w in wheels/*.whl; do python3 -m zipfile -e "$w" pylib; done
+```
 
-# GPU kuyruğuna gönder (16 çekirdek + 1 GPU zorunlu)
+Ardından kapı koşusu GPU kuyruğuna gönderilir (16 çekirdek + 1 GPU zorunlu):
+
+```bash
 sbatch slurm/faz0_g0_gate.sh
 ```
 
 Kapı kanıtları `gate_runs/<koşu>/G0_report.md` + `manifest.yaml` içinde üretilir;
 kabul edilen kanıtlar `docs/evidence/` altına kopyalanıp sürümlenir.
 
-## G0 kapı kriterleri (DR-RIFT-P0 §9)
+> **Kuyruk notu:** Kanıt koşuları `kolyoz-cuda` (`-C H100`) üzerinde yapılır.
+> `palamut-cuda`'daki `palamut5` düğümü `/arf`'a veri yazamıyordu (metadata
+> yazılıyor, 5 MB `dd` → 0 bayt); ayırt edici test ve kök neden analizi
+> [KAYIT-001](docs/defter/KAYIT-001_2026-07-27_FAZ0.md) içinde.
 
-1. Depo derleniyor; CI (commit katmanı) yeşil
-2. Config şema doğrulayıcı çalışıyor; geçersiz vakalar reddediliyor
-3. Parçacık deposu CPU↔GPU roundtrip **bit-eşit**
-4. Tohum determinizmi ve shard-değişmezliği testleri geçiyor
-5. Invariant çerçevesi enjekte edilmiş hataları yakalıyor
-6. HDF5 üç-katman yaz-oku eşitliği sağlanıyor
-7. En az 4 ADR yazılmış (`docs/adr/`)
-8. Manifest üretimi tam (Ek A alanları)
+## G0 kapı kriterleri (DR-RIFT-P0 §9) ve kanıtlanan sonuç
+
+| # | Kriter | Sonuç (job 1425495) |
+|---|--------|---------------------|
+| 1 | Depo derleniyor; CI (commit katmanı) yeşil | GEÇTİ — 185 test, kapsam %97,2 |
+| 2 | Config şema doğrulayıcı; geçersizler reddediliyor | GEÇTİ — 15 geçersiz vaka |
+| 3 | Parçacık deposu CPU↔GPU roundtrip **bit-eşit** | GEÇTİ — `cuda:0`, FP64/FP32/uç değerler |
+| 4 | Tohum determinizmi ve shard-değişmezliği | GEÇTİ — shard 1/2/3/5/7/101 aynı sonuç |
+| 5 | Invariant çerçevesi enjekte hataları yakalıyor | GEÇTİ — 13 enjeksiyon vakası |
+| 6 | HDF5 üç-katman yaz-oku eşitliği | GEÇTİ — checksum dahil |
+| 7 | En az 4 ADR yazılmış (`docs/adr/`) | GEÇTİ — 5 ADR |
+| 8 | Manifest üretimi tam (Ek A alanları) | GEÇTİ — alan tamlığı zorlanıyor |
+
+Altın hash Windows/CPython 3.12'de üretildi ve Linux/CPython 3.10 + H100
+düğümünde birebir doğrulandı; platformlar arası bit-eşit determinizm bu
+şekilde kanıtlanmıştır (P0-QR-03).
 
 ## Dürüstlük sınırı
 
