@@ -1,4 +1,4 @@
-# İzlenebilirlik Matrisi — FAZ 0 (DR-RIFT-P0)
+# İzlenebilirlik Matrisi — FAZ 0, 1, 2
 
 Şartnamenin §4 başlığı "Gereksinimler (**izlenebilir**)" der. Bu belge her
 gereksinim kimliğini uygulayan koda, onu doğrulayan teste ve kanıtına bağlar.
@@ -63,6 +63,69 @@ Geçerli kanıt: `docs/evidence/G0_report_truba_1425656.md`
 | HDF5 üç-katman G/Ç + şema | ✔ |
 | Manifest üreteci | ✔ (config gömülü) |
 | ≥4 ADR; kapsam ≥ %85; determinizm altın hash'leri | ✔ (6 ADR; %97,1; 2 işletim sistemi) |
+
+---
+
+# FAZ 1 — Hidrodinamik SPH Çekirdeği (DR-RIFT-P1)
+
+## Fonksiyonel gereksinimler (§3.1)
+
+| ID | Gereksinim | Uygulama | Test |
+|----|-----------|----------|------|
+| P1-FR-01 | GPU hash-grid komşu arama; liste simetrik | `warp_core/hash_grid.py`, `neighbors.py` | `test_neighbors.py` (brute-force ile birebir, simetri, CUDA) |
+| P1-FR-02 | Yoğunluk hem toplam hem süreklilikle; çapraz kontrol | `warp_core/density.py` | `test_sod.py::test_continuity_cross_check_tracks_summation` |
+| P1-FR-03 | Çiftler-arası antisimetrik ivme; momentum korunur | `warp_core/forces.py` | `test_conservation.py`, `test_sod.py` (duvar-impuls kapanışı) |
+| P1-FR-04 | Wendland C2 ve gradyanı doğru normalize | `warp_core/kernel_fn.py` | `test_kernel_fn.py` (∫W dV=1, PoU, gradyan antisimetrisi) |
+| P1-FR-05 | Monaghan AV + Balsara; kesmede aşırı sönmez | `warp_core/forces.py` | `test_conservation.py::TestShearBalsara` |
+| P1-FR-06 | KDK leapfrog; CFL + ivme kriterli dt | `warp_core/integrator.py`, `timestep.py` | `test_conservation.py`, ADR-0007 ölçümleri |
+| P1-FR-07 | Zaman adımı kısıtı yüzdesel kaydedilir | `warp_core/timestep.py` | `test_sod.py::test_timestep_log_present` |
+
+## Doğrulama eşikleri (§3.2)
+
+| ID | Eşik | Test |
+|----|------|------|
+| P1-VR-01 | Kütle ≈ makine hassasiyeti | `test_conservation.py`, `test_sod.py` |
+| P1-VR-02 | Momentum göreli hatası < 1e-6 | `test_conservation.py` (izole senaryolar) |
+| P1-VR-03 | Enerji hatası < %0,5 | `test_conservation.py`, `test_sod.py` |
+| P1-VR-04 | Sod post-şok %3–5 | `test_sod.py` |
+| P1-VR-05 | Sedov r(t) ~%5 | `test_sedov.py` |
+| P1-VR-06 | ≥3 çözünürlükte yakınsama | `test_convergence.py` |
+
+**CPU referansı:** `cpu_reference/sph_ref.py` — Warp'tan bağımsız NumPy FP64;
+`test_sph_cross.py` bit-yakınlığı ve tekrarda bit-eşitliği sınar.
+
+---
+
+# FAZ 2 — Katı, Porozite, Öz-Yerçekimi (DR-RIFT-P2)
+
+## Fonksiyonel gereksinimler (§3.1)
+
+| ID | Gereksinim | Uygulama | Test |
+|----|-----------|----------|------|
+| P2-FR-01 | Jaumann objektif gerilme hızı | `warp_core/solid_stress.py`, `cpu_reference/solid_ref.py` | `test_rigid_rotation.py` (+ Jaumann kapalı ablasyonu) |
+| P2-FR-02 | von Mises + Y(P) return mapping; plastik iş → u | `warp_core/strength_lundborg.py`, `materials.py` | `test_eos_tillotson.py::TestReturnMapping`, `test_taylor_bar.py` |
+| P2-FR-03 | Tillotson EOS, cs güvenli alt-sınırlı | `warp_core/eos_tillotson.py`, `materials.py` | `test_eos_tillotson.py` (kollar, süreklilik, taban) |
+| P2-FR-04 | P-α crush-curve; yükleme/boşaltma fiziksel | `warp_core/porosity_palpha.py` | `test_crush_curve.py` (nokta modeli + SPH ablasyonu) |
+| P2-FR-05 | Öz-yerçekimi N² + Barnes-Hut, yumuşatmalı | `warp_core/gravity_tree.py`, `cpu_reference/gravity_ref.py` | `test_two_body.py`, `test_uniform_sphere.py`, `test_cold_collapse.py` |
+| P2-FR-06 | Her modül config ile açılıp kapanır | `config.py::PhysicsConfig`, `MaterialParams.from_config` | `test_ablation.py`, `test_config_wiring_p2.py` |
+
+## Doğrulama eşikleri (§3.2)
+
+| ID | Eşik | Test |
+|----|------|------|
+| P2-VR-01 | Rijit dönme yapay gerilme ≈0 | `test_rigid_rotation.py` |
+| P2-VR-02 | Taylor bar son şekil benchmark'a yakın | `test_taylor_bar.py` (GPU) |
+| P2-VR-03 | Elastik dalga √((K+4G/3)/ρ) | `test_elastic_wave.py` (yakınsama merdiveni) |
+| P2-VR-04 | Crush curve fiziksel; α≥1 | `test_crush_curve.py` |
+| P2-VR-05 | İki-cisim/küre; drift sınırlı | `test_two_body.py`, `test_uniform_sphere.py` |
+| P2-VR-06 | Global korunum (yerçekimi dahil) | `test_cold_collapse.py` |
+
+**FAZ 1'e indirgeme:** Tüm modüller kapalıyken katı çözücü FAZ 1
+hidrodinamiğine bit-yakın indirgenmelidir —
+`test_solid_cross.py::TestReductionToPhase1`. Bu bekçi, geliştirme sırasında
+iki ayrı hatayı yakaladı (bkz. ADR-0009).
+
+---
 
 ## Kapsam dışı olduğu için BİLEREK yapılmayanlar (§1.3)
 
