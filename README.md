@@ -109,6 +109,13 @@ değişmezliği (1–257), 15 geçersiz config'in tamamının reddi, manifestten
 koşunun yeniden üretilmesi + kurcalama tespiti, invariant ihlalinin koşuyu
 durdurması, kapatılmış çıktı katmanının sessizce yutulmaması.
 
+## İzlenebilirlik
+
+Şartnamenin 13 gereksinim kimliğinin her biri — kodu, testi ve kanıtıyla —
+[docs/IZLENEBILIRLIK.md](docs/IZLENEBILIRLIK.md) içinde eşlenmiştir. Aynı belge,
+şartnamece **yasak** olduğu için bilerek yapılmayanları da ayrıca listeler
+(fizik, DART kurulumu, GPU optimizasyonu) ki eksik ile kapsam-dışı karışmasın.
+
 ## Dürüstlük sınırı
 
 - Fiziği motor çözecek; bu faz yalnızca zemindir. **Test geçilmediyse iddia edilmez.**
