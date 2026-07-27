@@ -10,11 +10,19 @@ from __future__ import annotations
 import warp as wp
 
 from .forces import BALSARA_EPS_C, artificial_visc
-from .kernel_fn import grad_w3d
+from .kernel_fn import grad_w3d, w3d
 
 F = wp.float64
 V3 = wp.vec3d
 M3 = wp.mat33d
+
+
+@wp.func
+def tensile_R(P: F, rho: F, eps: F) -> F:
+    """Monaghan (2000) yapay gerilme katsayisi; yalnizca cekmede (P<0) etkin."""
+    if P < F(0.0):
+        return -eps * P / (rho * rho)
+    return F(0.0)
 
 
 @wp.kernel
@@ -132,15 +140,27 @@ def forces_solid_3d(
     radius32: wp.float32,
     alpha_av: F,
     beta_av: F,
+    ast_on: int,
+    ast_eps: F,
+    ast_n: F,
+    ast_w_dp: F,
     a: wp.array(dtype=V3),
     dudt: wp.array(dtype=F),
 ):
-    """Tam-tensor antisimetrik cift kuvveti: T = (-P I + S)/rho^2 (P2 §4.1/8)."""
+    """Tam-tensor antisimetrik cift kuvveti: T = (-P I + S)/rho^2 (P2 §4.1/8).
+
+    ast_* aciksa Monaghan (2000) yapay gerilmesi eklenir: cekme bolgesinde
+    (P<0) parcacik kumelenmesini onler (ADR-0014). Yaptigi is enerji
+    defterine ayni tutarlilikla girer.
+    """
     i = wp.tid()
     xi = x[i]
     vi = v[i]
     ident = M3(F(1.0), F(0.0), F(0.0), F(0.0), F(1.0), F(0.0), F(0.0), F(0.0), F(1.0))
     t_i = (S[i] - P[i] * ident) / (rho[i] * rho[i])
+    r_i = F(0.0)
+    if ast_on != 0:
+        r_i = tensile_R(P[i], rho[i], ast_eps)
     acc = V3(F(0.0), F(0.0), F(0.0))
     du = F(0.0)
     q = wp.hash_grid_query(grid, x32[i], radius32)
@@ -161,5 +181,11 @@ def forces_solid_3d(
             tgw = (t_i + t_j) * gw
             acc += m[j] * tgw - (m[j] * pi_ij) * gw
             du += F(-0.5) * m[j] * wp.dot(vij, tgw) + F(0.5) * m[j] * pi_ij * wp.dot(vij, gw)
+            if ast_on != 0:
+                r_pair = (r_i + tensile_R(P[j], rho[j], ast_eps)) * wp.pow(
+                    w3d(qq, h) / ast_w_dp, ast_n
+                )
+                acc += (-m[j] * r_pair) * gw
+                du += F(0.5) * m[j] * r_pair * wp.dot(vij, gw)
     a[i] = acc + g_ext[i]
     dudt[i] = du

@@ -162,6 +162,15 @@ class GravityConfig(_StrictModel):
     theta: float = Field(default=0.5, gt=0, le=1.0)
 
 
+class ArtificialStressConfig(_StrictModel):
+    """Monaghan (2000) yapay gerilmesi — cekme kararsizligi (P1/P2 §9)."""
+
+    enabled: bool = False
+    eps: float = Field(default=0.3, ge=0.0, le=1.0)
+    n_exp: float = Field(default=4.0, gt=0.0, le=8.0)
+    dp_over_h: float = Field(default=0.5, gt=0.0, le=1.0)
+
+
 class PhysicsConfig(_StrictModel):
     """FAZ 2 fizik modulleri; her biri ablasyonla acilir/kapanir (P2-FR-06)."""
 
@@ -173,6 +182,9 @@ class PhysicsConfig(_StrictModel):
     strength: StrengthConfig = Field(default_factory=lambda: StrengthConfig(enabled=False))
     porosity: PorosityConfig = Field(default_factory=lambda: PorosityConfig(enabled=False))
     gravity: GravityConfig = Field(default_factory=lambda: GravityConfig(enabled=False))
+    artificial_stress: ArtificialStressConfig = Field(
+        default_factory=ArtificialStressConfig
+    )
 
 
 SCENARIOS = ("sod_shock_tube", "sedov_blast", "plate_impact", "conservation_cloud")

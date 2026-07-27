@@ -92,6 +92,27 @@ class PorosityParams:
 
 
 @dataclass(frozen=True)
+class ArtificialStressParams:
+    """Monaghan (2000) yapay gerilmesi — cekme (tensile) kararsizligi icin.
+
+    Negatif basincta SPH parcaciklari kumelenir ("tensile instability");
+    DR-RIFT-P1 §9 ve DR-RIFT-P2 §9 bu riski adiyla listeler ve azaltimi
+    "Wendland kernel + artificial stress" olarak verir. Wendland tek basina
+    yetmedi: serbest yuzeyli Taylor carpmasinda ic enerji NEGATIFE dustu
+    (ADR-0014).
+
+    R_i = -eps * P_i / rho_i^2   (yalnizca P_i < 0 iken; aksi halde 0)
+    a_i += -sum_j m_j (R_i + R_j) * f_ij^n * gradW_ij,
+    f_ij = W(r_ij) / W(dp),  dp = ortalama parcacik araligi.
+    """
+
+    enabled: bool = False
+    eps: float = 0.3
+    n_exp: float = 4.0
+    dp_over_h: float = 0.5  # dp = dp_over_h * h (h/dx=2.0 icin dx = 0.5h)
+
+
+@dataclass(frozen=True)
 class GravityParams:
     enabled: bool = False
     G: float = 6.674_30e-11
@@ -112,6 +133,9 @@ class MaterialParams:
     strength: StrengthParams = field(default_factory=StrengthParams)
     porosity: PorosityParams = field(default_factory=lambda: PorosityParams(enabled=False))
     gravity: GravityParams = field(default_factory=GravityParams)
+    artificial_stress: ArtificialStressParams = field(
+        default_factory=ArtificialStressParams
+    )
 
     @classmethod
     def from_config(cls, cfg) -> MaterialParams:
@@ -140,6 +164,12 @@ class MaterialParams:
             ),
             gravity=GravityParams(
                 enabled=g.enabled, G=g.G, eps=g.eps, mode=g.mode, theta=g.theta
+            ),
+            artificial_stress=ArtificialStressParams(
+                enabled=ph.artificial_stress.enabled,
+                eps=ph.artificial_stress.eps,
+                n_exp=ph.artificial_stress.n_exp,
+                dp_over_h=ph.artificial_stress.dp_over_h,
             ),
         )
 

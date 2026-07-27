@@ -86,6 +86,11 @@ class WarpSolid3D:
         self._sp = make_strength_wp(mat.strength)
         self._pp = make_porosity_wp(mat.porosity)
         self._gravity = GravitySolver(mat.gravity, dev) if mat.gravity.enabled else None
+        # yapay gerilme normalizasyonu W(dp): CPU referansiyla ayni deger
+        from ..cpu_reference.sph_ref import kernel_w as _kw
+
+        _dp = mat.artificial_stress.dp_over_h * self.h
+        self._ast_w_dp = max(float(_kw(np.array([_dp / self.h]), self.h, 3)[0]), 1.0e-300)
         self._evaluated = False
         self._step_count = 0
         self.plastic_u_total = 0.0
@@ -128,10 +133,12 @@ class WarpSolid3D:
         else:
             self.g.zero_()
             self.phi.zero_()
+        ast = self.mat.artificial_stress
         self._launch(
             SS.forces_solid_3d,
             [gid, self.gridman.x32, self.x, self.v, self.m, self.rho, self.P, self.S,
              self.cs, self.fbal, self.g, h, r32, F(self.num.alpha_av), F(self.num.beta_av),
+             1 if ast.enabled else 0, F(ast.eps), F(ast.n_exp), F(self._ast_w_dp),
              self.a, self.dudt],
         )
 

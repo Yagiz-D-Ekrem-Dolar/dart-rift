@@ -231,6 +231,18 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
     )
     pi_av *= 0.5 * (fbal[:, None] + fbal[None, :])
 
+    # yapay gerilme (Monaghan 2000): cekme bolgesinde kumelenmeyi onler.
+    # R_i = -eps P_i/rho_i^2 (yalnizca P_i<0), itme terimi f^n ile olceklenir.
+    ast = mat.artificial_stress
+    if ast.enabled:
+        r_i = np.where(state.P < 0.0, -ast.eps * state.P / state.rho**2, 0.0)
+        dp = ast.dp_over_h * state.h
+        w_dp = float(kernel_w(np.array([dp / state.h]), state.h, state.dim)[0])
+        f_ij = kernel_w(q, state.h, state.dim) / max(w_dp, 1.0e-300)
+        r_pair = (r_i[:, None] + r_i[None, :]) * f_ij**ast.n_exp
+    else:
+        r_pair = None
+
     m_j = state.m[None, :]
     ones = np.ones_like(r)
     # a_i = T_i.(sum_j m_j gW) + sum_j m_j T_j.gW - sum_j m_j Pi gW + g
@@ -238,7 +250,10 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
     a1 = np.einsum("nab,nb->na", T, s1)
     a2 = np.einsum("j,jab,njb->na", state.m, T, gw3)
     a_av = np.einsum("nj,njb->nb", m_j * pi_av, gw3)
-    state.a = (a1 + a2 - a_av)[:, : state.dim] + state.g
+    a_tot = a1 + a2 - a_av
+    if r_pair is not None:
+        a_tot = a_tot - np.einsum("nj,njb->nb", m_j * r_pair, gw3)
+    state.a = a_tot[:, : state.dim] + state.g
 
     # du_i = -0.5 sum m_j v_ij.((T_i+T_j).gW) + 0.5 sum m_j Pi (v_ij.gW)
     ti_gw = np.einsum("nab,njb->nja", T, gw3)
@@ -246,6 +261,12 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
     du_t = -0.5 * np.einsum("nj,nja,nja->n", m_j * ones, vij3, ti_gw + tj_gw)
     du_av = 0.5 * np.einsum("nj,nja,nja->n", m_j * pi_av, vij3, gw3)
     state.dudt = du_t + du_av
+    if r_pair is not None:
+        # yapay gerilme SANAL bir kuvvettir (sayisal duzeltme); yaptigi is de
+        # enerji defterine ayni tutarlilikla girer, yoksa E_tot korunmaz.
+        state.dudt = state.dudt + 0.5 * np.einsum(
+            "nj,nja,nja->n", m_j * r_pair, vij3, gw3
+        )
 
 
 def _apply_strength_and_porosity(state: SolidState, mat: MaterialParams) -> None:

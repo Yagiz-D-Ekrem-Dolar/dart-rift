@@ -213,8 +213,15 @@ def build_taylor_ic(v_impact: float = 200.0, nx: int = 9):
 
 
 def run_taylor_bar(device: str, v_impact: float = 200.0, Y0: float = 4.0e8,
-                   t_end: float = 6.0e-5, nx: int = 9) -> dict:
-    """Taylor carpma testi (GPU): son uzunluk orani + enerji muhasebesi."""
+                   t_end: float = 6.0e-5, nx: int = 9,
+                   artificial_stress: bool = True) -> dict:
+    """Taylor carpma testi (GPU): son uzunluk orani + enerji muhasebesi.
+
+    `artificial_stress` varsayilan olarak ACIK: serbest yuzeyli bu senaryoda
+    cekme kararsizligi olmadan enerji defteri kapanmiyor (ADR-0014).
+    Ablasyon icin kapatilabilir.
+    """
+    from ..cpu_reference.materials import ArtificialStressParams
     from ..warp_core.solver_solid import WarpSolid3D
 
     ic = build_taylor_ic(v_impact=v_impact, nx=nx)
@@ -225,6 +232,7 @@ def run_taylor_bar(device: str, v_impact: float = 200.0, Y0: float = 4.0e8,
                                 shear_G=COPPER["G"]),  # mu_f=0 -> von Mises EPP
         porosity=PorosityParams(enabled=False),
         gravity=GravityParams(enabled=False),
+        artificial_stress=ArtificialStressParams(enabled=artificial_stress),
     )
     num = RefParams(cfl=0.25)
     solver = WarpSolid3D(ic["x"], ic["v"], ic["m"], ic["u"], ic["h"], mat, num,

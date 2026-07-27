@@ -47,3 +47,19 @@ class TestTaylorBar:
 
         stiff = run_taylor_bar("cuda:0", v_impact=200.0, Y0=8.0e8)
         assert stiff["L_over_L0"] > result["L_over_L0"] + 0.02, (result, stiff)
+
+    def test_artificial_stress_improves_energy_ledger(self):
+        """ADR-0014 ablasyonu: yapay gerilme KAPALIYKEN defter kapanmamali.
+
+        Serbest yuzeyli bu senaryoda cekme kararsizligi enerji uretir; yapay
+        gerilme onu bastirir. Test, modulun GERCEKTEN ise yaradigini gosterir
+        (bir ozelligin ADI, calistigi anlamina gelmez).
+        """
+        _needs_cuda()
+        from dartrift.validation.solids import run_taylor_bar
+
+        off = run_taylor_bar("cuda:0", v_impact=200.0, Y0=4.0e8, nx=7,
+                             artificial_stress=False)
+        on = run_taylor_bar("cuda:0", v_impact=200.0, Y0=4.0e8, nx=7,
+                            artificial_stress=True)
+        assert on["energy_rel_err"] < off["energy_rel_err"], (off, on)
