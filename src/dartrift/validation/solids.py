@@ -214,12 +214,18 @@ def build_taylor_ic(v_impact: float = 200.0, nx: int = 9):
 
 def run_taylor_bar(device: str, v_impact: float = 200.0, Y0: float = 4.0e8,
                    t_end: float = 6.0e-5, nx: int = 9,
-                   artificial_stress: bool = True) -> dict:
+                   artificial_stress: bool = True,
+                   density_method: str = "continuity") -> dict:
     """Taylor carpma testi (GPU): son uzunluk orani + enerji muhasebesi.
+
+    Yogunluk SUREKLILIK denklemiyle tasinir (ADR-0015). Summation formu, bu
+    ince cubukta her parcacigi serbest yuzey parcacigi yaptigi icin t=0'da
+    bile rho'yu 0.39 rho0'a dusurur ve lineer EOS'ta -0.61K'lik yapay cekme
+    uretir; bu, cozunurlukten BAGIMSIZ bir kernel-eksikligi artefaktidir.
 
     `artificial_stress` varsayilan olarak ACIK: serbest yuzeyli bu senaryoda
     cekme kararsizligi olmadan enerji defteri kapanmiyor (ADR-0014).
-    Ablasyon icin kapatilabilir.
+    Ikisi de ablasyon icin kapatilabilir.
     """
     from ..cpu_reference.materials import ArtificialStressParams
     from ..warp_core.solver_solid import WarpSolid3D
@@ -233,6 +239,7 @@ def run_taylor_bar(device: str, v_impact: float = 200.0, Y0: float = 4.0e8,
         porosity=PorosityParams(enabled=False),
         gravity=GravityParams(enabled=False),
         artificial_stress=ArtificialStressParams(enabled=artificial_stress),
+        density_method=density_method,
     )
     num = RefParams(cfl=0.25)
     solver = WarpSolid3D(ic["x"], ic["v"], ic["m"], ic["u"], ic["h"], mat, num,
