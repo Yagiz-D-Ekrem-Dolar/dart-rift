@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Test / kalite araclari
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.json
+htmlcov/
+.ruff_cache/
+
+# Kosu ciktilari (kanitlar docs/evidence altina SECILEREK kopyalanir)
+gate_runs/
+runs/
+*.h5
+!tests/golden/*.json
+
+# TRUBA / SLURM
+wheels/
+slurm-*.out
+*_[0-9]*.out
+*_[0-9]*.err
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

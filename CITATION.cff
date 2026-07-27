@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "Bu yazilimi kullanirsaniz lutfen asagidaki bilgilerle atif yapin."
+title: "DART-RIFT: GPU-accelerated SPH shock-physics engine for Dimorphos and Bayesian interior inference (Phase 0 infrastructure)"
+type: software
+authors:
+  - name: "DART-RIFT Team"
+version: 0.1.0
+date-released: 2026-07-27
+repository-code: "https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift"
+keywords:
+  - SPH
+  - DART
+  - Dimorphos
+  - planetary-defense
+  - reproducibility
+license: MIT
