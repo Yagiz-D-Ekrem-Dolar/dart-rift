@@ -1,0 +1,5 @@
+schema_version: 1
+run_id: X_0001
+random_seed: 1
+numerics: {precision: deterministic_fp64}
+domain: {min: [0.0, 0.0, 0.0], max: [1.0, 0.0, 1.0]}

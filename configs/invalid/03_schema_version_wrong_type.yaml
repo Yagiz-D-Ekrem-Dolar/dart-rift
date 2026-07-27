@@ -1,0 +1,4 @@
+schema_version: "bir"
+run_id: X_0001
+random_seed: 1
+numerics: {precision: deterministic_fp64}

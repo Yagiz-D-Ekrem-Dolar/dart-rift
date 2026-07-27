@@ -1,0 +1,4 @@
+schema_version: 1
+run_id: X_0001
+random_seed: -5
+numerics: {precision: deterministic_fp64}

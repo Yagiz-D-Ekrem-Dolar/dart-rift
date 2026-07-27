@@ -1,0 +1,3 @@
+schema_version: 1
+random_seed: 1
+numerics: {precision: deterministic_fp64}

@@ -1,0 +1,4 @@
+schema_version: 1
+run_id: "kotu id!/"
+random_seed: 1
+numerics: {precision: deterministic_fp64}
