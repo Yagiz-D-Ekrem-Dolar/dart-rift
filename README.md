@@ -4,10 +4,12 @@
 > çıkarımı projesinin **G0 kapısı** ("zemin sağlam") uygulaması.
 > Şartname: `DR-RIFT-P0 v1.0` · Ana Plan: `DART-RIFT Ana Proje Planı v1.0`
 
-**G0 durumu: GEÇTİ** — kapı 8/8, kırmızı takım (§12) 6/6 temiz, 210 test,
-kapsam %97,4. Kanıt koşusu: TRUBA/ARF-ACC `kolyoz19`, NVIDIA H100 80GB,
-SLURM job 1425590, temiz git ağacı
-([kapı + kırmızı takım raporu](docs/evidence/G0_report_truba_1425590.md)).
+**G0 durumu: GEÇTİ** — kapı 8/8, kırmızı takım (§12) 6/6 temiz, 219 test,
+kapsam %97,1. Kanıt koşusu: TRUBA/ARF-ACC `palamut4`, NVIDIA A100-SXM4-80GB,
+SLURM job 1425656, temiz git ağacı
+([kapı + kırmızı takım raporu](docs/evidence/G0_report_truba_1425656.md)).
+CPU↔GPU bit-eşit roundtrip **üç GPU mimarisinde** doğrulandı: sm_80 (A100),
+sm_90 (H100), sm_86 (RTX 3050).
 Bu, altyapının geçtiği anlamına gelir — **hiçbir fizik veya bilimsel sonuç
 iddia edilmemektedir**; FAZ 0'da fizik yoktur.
 
@@ -45,8 +47,13 @@ python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\act
 pip install -e ".[dev,gpu]"    # gpu = warp-lang (CPU cihazıyla da çalışır)
 pytest tests -m "not gpu" --cov=dartrift    # GPU'suz ortam
 pytest tests --cov=dartrift                 # CUDA'lı ortam (roundtrip dahil)
-python scripts/run_g0_gate.py               # G0 kapı raporu üret
+python scripts/run_red_team.py              # §12 kırmızı-takım kontrol listesi
+python scripts/run_g0_gate.py               # G0 kapısı (CUDA ister)
 ```
+
+`run_g0_gate.py` CUDA bulunmayan bir makinede **kapı geçti demez**: C3
+kanıtlanamadığı için exit 2 döner. Yalnızca ön kontrol istiyorsanız
+`--allow-no-gpu` ekleyin; o mod da "G0 GEÇTİ" iddiası üretmez.
 
 ## TRUBA (ARF-ACC) üzerinde G0 kanıtı
 
@@ -78,9 +85,9 @@ kabul edilen kanıtlar `docs/evidence/` altına kopyalanıp sürümlenir.
 
 ## G0 kapı kriterleri (DR-RIFT-P0 §9) ve kanıtlanan sonuç
 
-| # | Kriter | Sonuç (job 1425590) |
+| # | Kriter | Sonuç (job 1425656) |
 |---|--------|---------------------|
-| 1 | Depo derleniyor; CI (commit katmanı) yeşil | GEÇTİ — 210 test, kapsam %97,4 |
+| 1 | Depo derleniyor; CI (commit katmanı) yeşil | GEÇTİ — 219 test, kapsam %97,1 |
 | 2 | Config şema doğrulayıcı; geçersizler reddediliyor | GEÇTİ — 15 geçersiz vaka |
 | 3 | Parçacık deposu CPU↔GPU roundtrip **bit-eşit** | GEÇTİ — `cuda:0`, FP64/FP32/uç değerler |
 | 4 | Tohum determinizmi ve shard-değişmezliği | GEÇTİ — shard 1/2/3/5/7/101 aynı sonuç |

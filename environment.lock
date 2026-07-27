@@ -35,7 +35,14 @@ typing_extensions==4.12.2
 #   numpy>=1.26
 #   pydantic>=2.5
 #   PyYAML>=6.0
-#   warp-lang>=1.0   (yerelde DLL ilkesi nedeniyle init edilemez -> GPU/warp
-#                     testleri yerelde SKIP; kanit TRUBA'dan alinir)
+#   warp-lang==1.15.0
 #
-# CI matrisi: Python 3.10 ve 3.12 (bkz. .github/workflows/ci.yml)
+# DUZELTME (KAYIT-003): warp-lang'in bu makinede "init edilemedigi" ilk kaydi
+# YANLISTI. Ilk denemede warp.dll Uygulama Denetimi ilkesince engellenmisti,
+# ancak sonraki kosularda yuklendi. Yerel makinede NVIDIA GeForce RTX 3050
+# Laptop GPU (sm_86, surucu 573.05) mevcut ve GPU roundtrip testleri BURADA DA
+# geciyor. Boylece bit-esit roundtrip iki farkli GPU mimarisinde dogrulanmis
+# oldu: sm_86 (RTX 3050) ve sm_90 (H100). Kanit kosusu yine de TRUBA'dan
+# alinir (temiz, denetlenebilir ortam).
+#
+# CI matrisi: Python 3.10 ve 3.12, GPU'suz runner (bkz. .github/workflows/ci.yml)
