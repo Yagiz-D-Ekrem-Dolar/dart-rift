@@ -18,6 +18,13 @@ RHO0 = 1.0
 U_BACKGROUND = 1.0e-6
 H_OVER_DX = 1.25
 
+# Kosu suresi, sok yaricapinin domain yari-genisliginin YARISINA ulastigi ana
+# sabitlenir (r_s = 0.25, domain [-0.5,0.5]^3). Daha gec zamanlarda cephe
+# kubun yuzune yaklasir ve olcum kenar etkileriyle bozulur; ilk denemede
+# t=0.06 (r_s=0.335, yari-genisligin %67'si) kullanilmis ve cozunurlukle
+# KOTULESEN bir hata gozlenmisti (ADR-0011).
+T_END_DEFAULT = 0.0288  # -> r_s ~ 0.2500
+
 
 def shock_radius_exact(t: float) -> float:
     return (E_INJECT * t * t / (SEDOV_ALPHA * RHO0)) ** 0.2
@@ -44,21 +51,33 @@ def build_sedov_ic(n_side: int) -> dict:
     return {"x": x, "v": np.zeros_like(x), "m": m, "u": u, "h": h, "dx": dx}
 
 
-def measure_shock_radius(x: np.ndarray, rho: np.ndarray, n_bins: int = 60) -> float:
-    """Radyal binlenmis yogunluk profilinin tepe yaricapi (parabolik incelik)."""
+def radial_profile(
+    x: np.ndarray, val: np.ndarray, n_bins: int = 80, r_max: float = 0.48, min_count: int = 8
+):
+    """Radyal binlenmis ortalama profil (bos binler NaN)."""
     r = np.sqrt(np.sum(x * x, axis=1))
-    r_max = 0.48
     edges = np.linspace(0.0, r_max, n_bins + 1)
     idx = np.digitize(r, edges) - 1
     prof = np.full(n_bins, np.nan)
     for b in range(n_bins):
         sel = idx == b
-        if np.count_nonzero(sel) >= 8:
-            prof[b] = np.mean(rho[sel])
-    centers = 0.5 * (edges[:-1] + edges[1:])
+        if np.count_nonzero(sel) >= min_count:
+            prof[b] = np.mean(val[sel])
+    return 0.5 * (edges[:-1] + edges[1:]), prof
+
+
+def measure_shock_radius(x: np.ndarray, rho: np.ndarray, n_bins: int = 80) -> float:
+    """Sok yaricapi: radyal yogunluk profilinin tepesi (parabolik incelik).
+
+    SPH'de cephe ~2-3h kalinliktadir; tepe konumu, dis-yamac gradyanina gore
+    cozunurlukten daha az etkilenen olcudur (her iki kestirimci de olculdu,
+    bkz. ADR-0011).
+    """
+    centers, prof = radial_profile(x, rho, n_bins=n_bins)
     valid = np.isfinite(prof)
+    if not np.any(valid):
+        raise ValueError("radyal profil bos: bin basina yeterli parcacik yok")
     pk = int(np.nanargmax(prof))
-    # parabolik tepe inceltme (komsu binler mevcutsa)
     if 0 < pk < n_bins - 1 and valid[pk - 1] and valid[pk + 1]:
         y0, y1, y2 = prof[pk - 1], prof[pk], prof[pk + 1]
         denom = y0 - 2.0 * y1 + y2
@@ -68,8 +87,8 @@ def measure_shock_radius(x: np.ndarray, rho: np.ndarray, n_bins: int = 60) -> fl
     return float(centers[pk])
 
 
-def run_sedov_warp(n_side: int, device: str, t_end: float = 0.06,
-                   params: RefParams | None = None) -> dict:
+def run_sedov_warp(n_side: int, device: str, t_end: float = T_END_DEFAULT,
+                   params: RefParams | None = None, max_steps: int = 500_000) -> dict:
     """Sedov'u Warp 3B hash-grid cozucusuyle kostur."""
     from ..warp_core.solver import WarpSPH3D
 
@@ -78,7 +97,15 @@ def run_sedov_warp(n_side: int, device: str, t_end: float = 0.06,
     solver = WarpSPH3D(
         ic["x"], ic["v"], ic["m"], ic["u"], ic["h"], params, device=device,
     )
-    diag = solver.run(t_end)
+    diag = solver.run(t_end, max_steps=max_steps)
+    # Kismi kosu SESSIZCE gecerli sayilmaz: t_end'e ulasilmadan olculen yaricap
+    # sistematik olarak kucuk cikar ve "cozunurlukle kotulesen hata" gibi
+    # gorunur (ADR-0011). Adim butcesi bittiyse acik hata verilir.
+    if diag["t_end"] < t_end * (1.0 - 1.0e-9):
+        raise RuntimeError(
+            f"Sedov t_end'e ULASILAMADI: {diag['t_end']:.6g} < {t_end:.6g} "
+            f"({diag['n_steps']} adim, max_steps={max_steps}). Olcum gecersiz."
+        )
     s = solver.state_numpy()
     r_meas = measure_shock_radius(s["x"], s["rho"])
     r_exact = shock_radius_exact(t_end)

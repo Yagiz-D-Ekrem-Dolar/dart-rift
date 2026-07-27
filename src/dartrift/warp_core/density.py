@@ -24,7 +24,7 @@ def density_3d(
     xi = x[i]
     acc = F(0.0)
     q = wp.hash_grid_query(grid, x32[i], radius32)
-    j = 0
+    j = int(0)
     while wp.hash_grid_query_next(q, j):
         r = wp.length(xi - x[j])
         qq = r / h
@@ -49,7 +49,7 @@ def continuity_rate_3d(
     vi = v[i]
     acc = F(0.0)
     q = wp.hash_grid_query(grid, x32[i], radius32)
-    j = 0
+    j = int(0)
     while wp.hash_grid_query_next(q, j):
         rij = xi - x[j]
         acc += m[j] * wp.dot(vi - v[j], grad_w3d(rij, h))

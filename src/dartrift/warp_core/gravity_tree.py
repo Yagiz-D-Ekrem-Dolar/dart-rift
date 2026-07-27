@@ -61,7 +61,7 @@ def gravity_bh_k(
     p = x[i]
     acc = V3(F(0.0), F(0.0), F(0.0))
     pot = F(0.0)
-    node = 0
+    node = int(0)
     while node != -1:
         d = com[node] - p
         dist2 = wp.dot(d, d) + eps2

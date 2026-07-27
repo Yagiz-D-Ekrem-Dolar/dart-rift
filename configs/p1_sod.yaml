@@ -1,0 +1,18 @@
+# FAZ 1 Sod sok tupu dogrulama kosusu (DR-RIFT-P1 Ek A).
+schema_version: 1
+run_id: P1_sod_R2
+random_seed: 104729
+numerics:
+  precision: deterministic_fp64
+  kernel: wendland_c2
+  cfl: 0.3
+  alpha_av: 1.0
+  beta_av: 2.0
+io:
+  output_layers: [scalar_budget, sparse_snapshot, event_catalog]
+  hdf5_compression: gzip
+physics:
+  eos: ideal_gas
+  gamma: 1.4
+test: sod_shock_tube
+resolution: [64, 128, 256]   # yakinsama icin 3 seviye (P1-VR-06)

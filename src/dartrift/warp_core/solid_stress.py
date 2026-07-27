@@ -33,22 +33,42 @@ def velocity_gradient_3d(
     divv: wp.array(dtype=F),
     fbal: wp.array(dtype=F),
 ):
+    """Hiz gradyani + div/curl + Balsara (cpu_reference/solid_ref ile ayni).
+
+    Iki ayri buyukluk uretilir:
+    (a) div/curl -> AV/Balsara icin, FAZ 1 ile BIREBIR ayni ayriklastirma:
+        (1/rho_i) sum_j m_j (v_j - v_i) . gradW_ij
+    (b) L -> gerilme evrimi icin, Randles-Libersky DUZELTMELI gradyan:
+        L = [sum_j V_j (v_j-v_i) x gradW] . B^-1,  B = sum_j V_j (x_j-x_i) x gradW
+        Duzeltme lineer hiz alanlarini tam yeniden urettirir (rijit donme
+        objektifligi; ADR-0009). B tekilse duzeltmesiz forma dusulur.
+    """
     i = wp.tid()
     xi = x[i]
     vi = v[i]
-    li = M3(F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0))
+    zero = M3(F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0))
+    l_raw = zero
+    b_mat = zero
+    div_acc = F(0.0)
+    curl_acc = V3(F(0.0), F(0.0), F(0.0))
     q = wp.hash_grid_query(grid, x32[i], radius32)
-    j = 0
+    j = int(0)
     while wp.hash_grid_query_next(q, j):
         gw = grad_w3d(xi - x[j], h)
-        li += (m[j] / rho[j]) * wp.outer(v[j] - vi, gw)
-    L[i] = li
-    div = li[0, 0] + li[1, 1] + li[2, 2]
+        vj_i = v[j] - vi
+        xj_i = x[j] - xi
+        vol_j = m[j] / rho[j]
+        l_raw += vol_j * wp.outer(vj_i, gw)
+        b_mat += vol_j * wp.outer(xj_i, gw)
+        div_acc += m[j] * wp.dot(vj_i, gw)
+        curl_acc += m[j] * wp.cross(vj_i, gw)
+    div = div_acc / rho[i]
+    curl_mag = wp.length(curl_acc) / rho[i]
     divv[i] = div
-    cx = li[2, 1] - li[1, 2]
-    cy = li[0, 2] - li[2, 0]
-    cz = li[1, 0] - li[0, 1]
-    curl_mag = wp.sqrt(cx * cx + cy * cy + cz * cz)
+    if wp.abs(wp.determinant(b_mat)) > F(1.0e-6):
+        L[i] = l_raw * wp.inverse(b_mat)
+    else:
+        L[i] = l_raw
     if use_balsara != 0:
         fbal[i] = wp.abs(div) / (wp.abs(div) + curl_mag + BALSARA_EPS_C * cs[i] / h)
     else:
@@ -72,6 +92,7 @@ def stress_rate_3d(
     lt = wp.transpose(li)
     eps = F(0.5) * (li + lt)
     spin = F(0.5) * (li - lt)
+    # iz DUZELTILMIS L'den (AV'nin divv'siyle karistirilmaz)
     tr3 = (eps[0, 0] + eps[1, 1] + eps[2, 2]) / F(3.0)
     ident = M3(F(1.0), F(0.0), F(0.0), F(0.0), F(1.0), F(0.0), F(0.0), F(0.0), F(1.0))
     dev = eps - tr3 * ident
@@ -123,7 +144,7 @@ def forces_solid_3d(
     acc = V3(F(0.0), F(0.0), F(0.0))
     du = F(0.0)
     q = wp.hash_grid_query(grid, x32[i], radius32)
-    j = 0
+    j = int(0)
     while wp.hash_grid_query_next(q, j):
         rij = xi - x[j]
         r = wp.length(rij)

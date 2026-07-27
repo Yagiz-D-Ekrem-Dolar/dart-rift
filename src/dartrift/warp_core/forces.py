@@ -52,7 +52,7 @@ def divcurl_3d(
     div = F(0.0)
     curl = V3(F(0.0), F(0.0), F(0.0))
     q = wp.hash_grid_query(grid, x32[i], radius32)
-    j = 0
+    j = int(0)
     while wp.hash_grid_query_next(q, j):
         gw = grad_w3d(xi - x[j], h)
         vji = v[j] - vi
@@ -92,7 +92,7 @@ def forces_3d(
     acc = V3(F(0.0), F(0.0), F(0.0))
     du = F(0.0)
     q = wp.hash_grid_query(grid, x32[i], radius32)
-    j = 0
+    j = int(0)
     while wp.hash_grid_query_next(q, j):
         rij = xi - x[j]
         r = wp.length(rij)

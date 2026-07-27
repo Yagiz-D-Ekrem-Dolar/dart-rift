@@ -45,3 +45,10 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# Warp kernel'lerinde sayac/indeks degiskenleri TIPLI tanimlanmalidir
+# (`j = int(0)`); hash_grid_query_next'in `int&` parametresi Python
+# literaliyle eslesmez ve derleme duser. UP018 bunu "gereksiz" sanip
+# siliyordu — ADR-0010.
+"src/dartrift/warp_core/*.py" = ["UP018"]

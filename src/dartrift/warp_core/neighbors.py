@@ -26,9 +26,9 @@ def gather_neighbors_grid(
 ):
     i = wp.tid()
     xi = x[i]
-    cnt = 0
+    cnt = int(0)
     q = wp.hash_grid_query(grid, x32[i], radius32)
-    j = 0
+    j = int(0)
     while wp.hash_grid_query_next(q, j):
         r = wp.length(xi - x[j])
         if r < support:  # kesin FP64 filtre
@@ -49,7 +49,7 @@ def gather_neighbors_brute(
 ):
     i = wp.tid()
     xi = x[i]
-    cnt = 0
+    cnt = int(0)
     for j in range(n):
         r = wp.length(xi - x[j])
         if r < support:
