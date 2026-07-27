@@ -69,6 +69,40 @@ class TestManifestIo:
             L.write_manifest(manifest, tmp_path / "manifest.yaml")
 
 
+class TestReproducibility:
+    """Kirmizi-takim §12: "Manifest, kosuyu sifirdan yeniden uretmeye yetiyor mu?"
+
+    Yalnizca config_hash tasimak yetmez: hash "ayni mi?" sorusunu yanitlar,
+    "neydi?" sorusunu yanitlamaz. Bu testler config'in manifestten tek basina
+    geri kurulabildigini kanitlar.
+    """
+
+    def test_config_recovered_from_manifest_alone(self, manifest, cfg, tmp_path):
+        path = L.write_manifest(manifest, tmp_path / "manifest.yaml")
+        # Orijinal YAML'a hic dokunmadan, sadece manifestten:
+        recovered = L.config_from_manifest(L.read_manifest(path))
+        assert recovered == cfg
+
+    def test_recovered_config_has_same_hash(self, manifest, cfg):
+        from dartrift.config import config_hash
+
+        assert config_hash(L.config_from_manifest(manifest)) == config_hash(cfg)
+
+    def test_recovered_config_drives_same_precision(self, manifest, cfg):
+        assert L.config_from_manifest(manifest).store_precision == cfg.store_precision
+
+    def test_manifest_without_config_rejected(self, manifest):
+        del manifest["config"]
+        with pytest.raises(ValueError, match="yeniden uretilemez"):
+            L.config_from_manifest(manifest)
+
+    def test_tampered_manifest_detected(self, manifest):
+        # Gomulu config degistirilip hash eski birakilirsa yakalanmali
+        manifest["config"]["random_seed"] = 999_999
+        with pytest.raises(ValueError, match="tutarsiz"):
+            L.config_from_manifest(manifest)
+
+
 class TestGitSha:
     def test_returns_string(self):
         assert isinstance(L.get_git_sha(strict=False), str)

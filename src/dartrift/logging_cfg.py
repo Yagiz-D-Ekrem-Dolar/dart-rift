@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from .config import RunConfig, config_hash
+from .config import RunConfig, config_canonical_dict, config_hash
 
 __all__ = [
     "setup_logging",
@@ -28,6 +28,7 @@ __all__ = [
     "validate_manifest",
     "write_manifest",
     "read_manifest",
+    "config_from_manifest",
     "REQUIRED_MANIFEST_FIELDS",
     "MANIFEST_STATUSES",
 ]
@@ -38,6 +39,8 @@ MANIFEST_STATUSES = ("accepted", "numerical_failure", "physical_reject")
 REQUIRED_MANIFEST_FIELDS = (
     "run_id",
     "git_sha",
+    "config",
+    "config_hash",
     "build.compiler",
     "build.cuda",
     "build.flags",
@@ -186,6 +189,11 @@ def build_manifest(
         "run_id": cfg.run_id,
         "git_sha": get_git_sha(strict=strict_git),
         "config_hash": config_hash(cfg),
+        # Config'in KENDISI gomulur, yalnizca hash'i degil: hash "ayni mi?"
+        # sorusunu yanitlar ama "neydi?" sorusunu yanitlamaz. Kirmizi-takim
+        # maddesi "manifest kosuyu sifirdan yeniden uretmeye yetiyor mu"
+        # ancak config gomulu oldugunda EVET olur.
+        "config": config_canonical_dict(cfg),
         "schema_version": cfg.schema_version,
         "build": {
             "compiler": f"cpython-{platform.python_version()}",
@@ -252,6 +260,25 @@ def write_manifest(manifest: dict, path: str | Path) -> Path:
 
 def read_manifest(path: str | Path) -> dict:
     return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+
+
+def config_from_manifest(manifest: dict) -> RunConfig:
+    """Manifestten kosu config'ini geri kur ve hash'ini dogrula.
+
+    Yeniden-uretilebilirligin somut testi: manifest tek basina, orijinal YAML
+    dosyasi olmadan kosuyu yeniden kurmaya yetmelidir. Gomulu config ile
+    kaydedilmis hash uyusmuyorsa manifest kurcalanmis demektir.
+    """
+    if "config" not in manifest:
+        raise ValueError("manifest gomulu config icermiyor; kosu yeniden uretilemez")
+    cfg = RunConfig.model_validate(manifest["config"])
+    recorded = manifest.get("config_hash")
+    actual = config_hash(cfg)
+    if recorded is not None and recorded != actual:
+        raise ValueError(
+            f"manifest tutarsiz: kayitli config_hash={recorded} ama gomulu config {actual} veriyor"
+        )
+    return cfg
 
 
 class Stopwatch:
