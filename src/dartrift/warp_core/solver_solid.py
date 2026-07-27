@@ -153,7 +153,7 @@ class WarpSolid3D:
         if self.mat.strength.enabled:
             self._launch(
                 return_mapping_k,
-                [self.S, self.P, self.rho, self.u, self.active, self._sp, self.plastic_du],
+                [self.S, self.P, self.rho, self.active, self._sp, self.plastic_du],
             )
             self.plastic_u_total += float(
                 np.sum(self.m.numpy() * self.plastic_du.numpy())

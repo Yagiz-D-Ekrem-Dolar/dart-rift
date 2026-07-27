@@ -41,11 +41,16 @@ def return_mapping_k(
     S: wp.array(dtype=M3),
     P: wp.array(dtype=F),
     rho: wp.array(dtype=F),
-    u: wp.array(dtype=F),
     active: wp.array(dtype=wp.uint8),
     sp: StrengthWp,
     plastic_du: wp.array(dtype=F),
 ):
+    """S'yi akma yuzeyine cek; plastik isi TANI olarak dondur.
+
+    `u` GUNCELLENMEZ (ADR-0012): deviatorik is zaten `dudt` icinde sayilir;
+    burada ayrica eklemek cifte sayimdir. CPU referansi da ayni sozlesmeyi
+    uygular (cpu_reference/solid_ref.py::_apply_strength_and_porosity).
+    """
     i = wp.tid()
     if active[i] == wp.uint8(0):
         plastic_du[i] = F(0.0)
@@ -59,5 +64,4 @@ def return_mapping_k(
         f = y / vm
         S[i] = f * si
         du = f * (F(1.0) - f) * (F(2.0) * j2) / (F(2.0) * sp.shear_G * rho[i])
-        u[i] = u[i] + du
     plastic_du[i] = du

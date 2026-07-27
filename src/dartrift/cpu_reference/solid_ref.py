@@ -249,12 +249,21 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
 
 
 def _apply_strength_and_porosity(state: SolidState, mat: MaterialParams) -> None:
-    """Return mapping + plastik isi + P-alpha guncellemesi (adim sonunda)."""
+    """Return mapping + P-alpha guncellemesi (adim sonunda).
+
+    ENERJI MUHASEBESI (ADR-0012): plastik is `u`'ya EKLENMEZ. `dudt` zaten
+    TAM gerilme tensorunun isini (-P I + S) tasir; deviatorik is orada
+    sayilmistir. Return mapping S'yi kucultunce depolanmis elastik deviatorik
+    enerji azalir ve fark isiya doner — bu, u sabit kalarak zaten gerceklesen
+    bir IC DAGILIM degisikligidir. Ayrica eklemek ayni enerjiyi ikinci kez
+    saymaktir; olculdu: Taylor barda plastik is 1001 J cikiyordu, oysa
+    baslangic kinetik enerjisi 352 J idi (fiziksel olarak imkansiz).
+    Plastik is yalnizca TANI olarak biriktirilir.
+    """
     if mat.strength.enabled:
         S_new, du_pl = return_mapping(state.S, state.P, state.rho, mat.strength)
         act = state.active
         state.S[act] = S_new[act]
-        state.u[act] += du_pl[act]
         state.plastic_u_total += float(np.sum(state.m[act] * du_pl[act]))
     if mat.porosity.enabled:
         a_new, _ = porosity_update(state.alpha, state.P, mat.porosity)

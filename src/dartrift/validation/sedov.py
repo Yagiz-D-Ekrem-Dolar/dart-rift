@@ -107,11 +107,16 @@ def measure_shock_radius(x: np.ndarray, rho: np.ndarray, n_bins: int = 80) -> fl
 
 
 def run_sedov_warp(n_side: int, device: str, t_end: float = T_END_DEFAULT,
-                   params: RefParams | None = None, max_steps: int = 500_000) -> dict:
-    """Sedov'u Warp 3B hash-grid cozucusuyle kostur."""
+                   params: RefParams | None = None, max_steps: int = 500_000,
+                   h_inject: float = H_INJECT) -> dict:
+    """Sedov'u Warp 3B hash-grid cozucusuyle kostur.
+
+    `h_inject` acikca gecirilebilir: modul duzeyindeki H_INJECT'i sonradan
+    degistirmek ETKISIZDIR (varsayilan deger fonksiyon tanimlanirken baglanir).
+    """
     from ..warp_core.solver import WarpSPH3D
 
-    ic = build_sedov_ic(n_side)
+    ic = build_sedov_ic(n_side, h_inject=h_inject)
     params = params or RefParams(gamma=GAMMA)
     solver = WarpSPH3D(
         ic["x"], ic["v"], ic["m"], ic["u"], ic["h"], params, device=device,

@@ -170,37 +170,40 @@ COPPER = dict(rho0=8930.0, K=1.40e11, G=4.77e10)
 
 
 def build_taylor_ic(v_impact: float = 200.0, nx: int = 9):
-    """EPP bakir cubuk + donmus rijit duvar (ornek: Wilkins & Guinan tipi)."""
+    """SIMETRIK Taylor carpmasi: iki ozdes bakir cubuk, z=0 duzleminde carpisir.
+
+    Klasik kurulum rijit bir duvar kullanir. Donmus parcacik katmani olarak
+    modellendiginde cubuk parcaciklari duvara "gomuluyor", asiri basinc uretip
+    enerji defterini patlatiyordu (olculdu: %576 enerji hatasi). Simetri
+    duzlemi ayni sinir kosulunu (v_z = 0, kayma serbest) YAPAY parcacik
+    olmadan saglar; tum parcaciklar aktiftir ve enerji korunumu gercekten
+    olculebilir (ADR-0012).
+
+    Ust cubugun uzunluk orani L/L0 klasik testle ayni buyuklugu olcer.
+    """
     L0 = 0.0324
     D = 0.0064
     dxl = D / nx
     r_cyl = D / 2.0
-    # cubuk: z in [0, L0)
     nz = int(round(L0 / dxl))
     ax = (np.arange(nx) + 0.5) * dxl - r_cyl
-    az = (np.arange(nz) + 0.5) * dxl
+    az = (np.arange(nz) + 0.5) * dxl  # z in (0, L0)
     xx, yy, zz = np.meshgrid(ax, ax, az, indexing="ij")
     pts = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
-    bar = pts[np.sqrt(pts[:, 0] ** 2 + pts[:, 1] ** 2) < r_cyl]
-    # duvar: z in [-3dx, 0), genis disk
-    nw = int(round(3 * r_cyl / dxl)) * 2
-    aw = (np.arange(nw) + 0.5) * dxl - nw * dxl / 2
-    az_w = -(np.arange(3) + 0.5) * dxl
-    xw, yw, zw = np.meshgrid(aw, aw, az_w, indexing="ij")
-    wall = np.column_stack([xw.ravel(), yw.ravel(), zw.ravel()])
-    wall = wall[np.sqrt(wall[:, 0] ** 2 + wall[:, 1] ** 2) < 3 * r_cyl]
+    upper = pts[np.sqrt(pts[:, 0] ** 2 + pts[:, 1] ** 2) < r_cyl]
+    lower = upper.copy()
+    lower[:, 2] *= -1.0  # z=0 duzleminde ayna
 
-    x = np.vstack([bar, wall])
+    x = np.vstack([upper, lower])
+    n_upper = upper.shape[0]
     n = x.shape[0]
-    n_bar = bar.shape[0]
     v = np.zeros_like(x)
-    v[:n_bar, 2] = -v_impact
+    v[:n_upper, 2] = -v_impact  # ust cubuk asagi
+    v[n_upper:, 2] = +v_impact  # alt cubuk yukari
     m = np.full(n, COPPER["rho0"] * dxl**3)
-    active = np.zeros(n, np.uint8)
-    active[:n_bar] = 1
     return {
         "x": x, "v": v, "m": m, "u": np.zeros(n), "h": 1.3 * dxl,
-        "active": active, "n_bar": n_bar, "L0": L0, "dx": dxl,
+        "active": np.ones(n, np.uint8), "n_bar": n_upper, "L0": L0, "dx": dxl,
     }
 
 

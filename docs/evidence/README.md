@@ -25,6 +25,19 @@ basina yeniden urete­memesi, §12 kirmizi-takim listesinin hic isletilmemis
 olmasi). Kusurlar giderilip kanit yenilendi. Iki dosyanin birlikte durmasi,
 kusurun ne zaman bulundugunu ve nasil kapatildigini izlenebilir kilar.
 
+## Kapi kosusu nasil uretilir
+
+| Kapi | Betik | GPU sarti |
+|------|-------|-----------|
+| G0 | `scripts/run_g0_gate.py` | CPU<->GPU roundtrip icin CUDA |
+| G1 | `scripts/run_g1_gate.py` | Sedov 3B icin CUDA (zorunlu) |
+| G2 | `scripts/run_g2_gate.py` | Taylor bar icin CUDA (zorunlu) |
+
+TRUBA'da ucu birden: `sbatch --exclude=kolyoz13,palamut5,palamut6 slurm/faz12_gates.sh`
+
+Uc kapi kosucusu da CUDA bulunmayan makinede **GECTI iddia etmez**: raporu
+"ON-KONTROL (KAPI DEGIL)" basligiyla uretir ve exit 2 doner.
+
 ## Kural
 
 - Kanitlar sonradan duzenlenmez. Bir kosu asilirsa yenisi eklenir, eskisi
