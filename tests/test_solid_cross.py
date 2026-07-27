@@ -1,5 +1,7 @@
 """FAZ 2 CPU<->GPU paritesi + FAZ 1'e indirgeme kaniti."""
 
+import dataclasses
+
 import numpy as np
 import pytest
 
@@ -109,3 +111,45 @@ class TestSolidCpuGpuCross:
         if not any(d.startswith("cuda") for d in warp_devices()):
             pytest.skip("CUDA yok")
         self._compare(self._run_cpu(), self._run_warp("cuda:0"))
+
+
+@pytest.mark.skipif(not warp_available(), reason="warp yok")
+class TestContinuityDensityCross(TestSolidCpuGpuCross):
+    """ADR-0015: sureklilik yogunlugu icin de CPU referansi = GPU cekirdegi.
+
+    rho artik bir DURUM degiskeni ve integratorde ilerletiliyor; ayri bir
+    ayriklastirma yolu oldugu icin capraz kontrolu ayrica yapilmali.
+    """
+
+    def _setup(self):
+        x, v, m, h, mat, num, pp = _full_physics_setup()
+        return x, v, m, h, dataclasses.replace(mat, density_method="continuity"), num, pp
+
+    def _run_cpu(self):
+        x, v, m, h, mat, num, pp = self._setup()
+        st = SolidState(x=x.copy(), v=v.copy(), m=m, u=np.zeros(len(m)), h=h,
+                        active=np.ones(len(m), bool),
+                        alpha=np.full(len(m), pp.alpha0),
+                        rho=np.full(len(m), mat.tillotson.rho0))
+        evaluate_solid(st, mat, num)
+        for _ in range(self.N_STEPS):
+            step_kdk_solid(st, mat, num, self.DT)
+        return st
+
+    def _run_warp(self, device):
+        from dartrift.warp_core.solver_solid import WarpSolid3D
+
+        x, v, m, h, mat, num, pp = self._setup()
+        sol = WarpSolid3D(x.copy(), v.copy(), m, np.zeros(len(m)), h, mat, num,
+                          alpha0=np.full(len(m), pp.alpha0), device=device)
+        for _ in range(self.N_STEPS):
+            sol.step(self.DT)
+        return sol.state_numpy()
+
+    def _compare(self, st, s):
+        super()._compare(st, s)
+        scale = np.max(np.abs(st.rho)) + 1e-300
+        assert np.max(np.abs(st.rho - s["rho"])) / scale < 1.0e-8, "rho sapmasi"
+        # rho gercekten EVRILDI mi? Sabit kalsaydi bu test bos olurdu.
+        rho0 = self._setup()[4].tillotson.rho0
+        assert np.max(np.abs(st.rho - rho0)) / rho0 > 1.0e-6, "rho hic degismemis"
