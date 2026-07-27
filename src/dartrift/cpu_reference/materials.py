@@ -129,6 +129,12 @@ class MaterialParams:
     gamma: float = 1.4
     c0: float = 1.0
     rho0_linear: float = 1.0
+    # "summation": rho = sum_j m_j W_ij  (akiskan/sok senaryolari, FAZ 1)
+    # "continuity": rho baslangicta malzeme yogunlugudur ve drho/dt ile evrilir
+    #   (SERBEST YUZEYLI kati senaryolari). Summation, yuzeyde kernel
+    #   eksikligi nedeniyle rho'yu ~%39'a dusurur ve lineer EOS'ta -0.61K'lik
+    #   YAPAY cekme uretir; bu cozunurlukle GECMEZ (ADR-0015).
+    density_method: str = "summation"
     tillotson: TillotsonParams = field(default_factory=TillotsonParams)
     strength: StrengthParams = field(default_factory=StrengthParams)
     porosity: PorosityParams = field(default_factory=lambda: PorosityParams(enabled=False))
@@ -171,6 +177,7 @@ class MaterialParams:
                 n_exp=ph.artificial_stress.n_exp,
                 dp_over_h=ph.artificial_stress.dp_over_h,
             ),
+            density_method=ph.density_method,
         )
 
 

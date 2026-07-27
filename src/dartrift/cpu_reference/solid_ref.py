@@ -54,6 +54,7 @@ class SolidState:
     L: np.ndarray = field(default=None)  # duzeltilmis hiz gradyani (N,3,3)
     grad_correction_used: np.ndarray = field(default=None)  # B tersinir mi (N,)
     divv: np.ndarray = field(default=None)  # type: ignore[assignment]
+    drhodt: np.ndarray = field(default=None)  # yalnizca continuity modunda kullanilir
     a: np.ndarray = field(default=None)  # type: ignore[assignment]
     dudt: np.ndarray = field(default=None)  # type: ignore[assignment]
     dSdt: np.ndarray = field(default=None)  # type: ignore[assignment]
@@ -144,7 +145,15 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
     """Tam alan degerlendirmesi: rho, EOS, L, dS/dt, yercekimi, a, du/dt."""
     dx, r, q, grad_w = _pair_geometry(state)
     w = kernel_w(q, state.h, state.dim)
-    state.rho = w @ state.m
+    if mat.density_method == "summation":
+        state.rho = w @ state.m
+    elif mat.density_method == "continuity":
+        # rho durumun bir parcasidir; burada YENIDEN HESAPLANMAZ, yalnizca
+        # degisim hizi uretilir ve integratör tarafindan ilerletilir.
+        if state.rho is None:
+            raise ValueError("continuity modunda baslangic rho'su verilmelidir")
+    else:
+        raise ValueError(f"bilinmeyen yogunluk yontemi: {mat.density_method!r}")
 
     compute_eos_solid(state, mat)
 
@@ -159,6 +168,9 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
     state.divv = np.einsum("j,nj->n", state.m, np.sum(vji * gw3, axis=2)) / state.rho
     curl_vec = np.einsum("j,nja->na", state.m, np.cross(vji, gw3)) / state.rho[:, None]
     curl_mag = np.sqrt(np.sum(curl_vec * curl_vec, axis=1))
+    # Sureklilik denklemi: drho/dt = -rho div v. Summation modunda da uretilir
+    # (capraz kontrol icin, P1-FR-02) ama orada rho'yu ILERLETMEZ.
+    state.drhodt = -state.rho * state.divv
 
     # (b) Gerilme evrimi icin hiz gradyani: Randles-Libersky duzeltmesi
     #     L = [sum_j V_j (v_j-v_i) x gradW] . B^-1,
@@ -294,15 +306,20 @@ def _apply_strength_and_porosity(state: SolidState, mat: MaterialParams) -> None
 def step_kdk_solid(state: SolidState, mat: MaterialParams, num: RefParams, dt: float) -> None:
     """KDK + tam-trapez u/S guncellemesi (sph_ref.step_kdk ile ayni iskelet)."""
     act = state.active
+    cont = mat.density_method == "continuity"
     state.v[act] += 0.5 * dt * state.a[act]
     state.u[act] += 0.5 * dt * state.dudt[act]
     state.S[act] += 0.5 * dt * state.dSdt[act]
+    if cont:
+        state.rho[act] += 0.5 * dt * state.drhodt[act]
     state.x[act] += dt * state.v[act]
     evaluate_solid(state, mat, num)  # (x1, v_half)
     state.v[act] += 0.5 * dt * state.a[act]
     evaluate_solid(state, mat, num)  # (x1, v1)
     state.u[act] += 0.5 * dt * state.dudt[act]
     state.S[act] += 0.5 * dt * state.dSdt[act]
+    if cont:
+        state.rho[act] += 0.5 * dt * state.drhodt[act]
     _apply_strength_and_porosity(state, mat)
 
 
@@ -364,6 +381,9 @@ def run_solid(
     max_steps: int = 200_000,
     budget_every: int = 10,
 ) -> dict:
+    if mat.density_method == "continuity" and state.rho is None:
+        rho0 = mat.rho0_linear if mat.eos == "linear" else mat.tillotson.rho0
+        state.rho = np.full(state.n, float(rho0))
     evaluate_solid(state, mat, num)
     t = 0.0
     n_steps = 0
