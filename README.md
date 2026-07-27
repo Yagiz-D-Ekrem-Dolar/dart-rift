@@ -4,9 +4,10 @@
 > çıkarımı projesinin **G0 kapısı** ("zemin sağlam") uygulaması.
 > Şartname: `DR-RIFT-P0 v1.0` · Ana Plan: `DART-RIFT Ana Proje Planı v1.0`
 
-**G0 durumu: GEÇTİ** — 8/8 kriter, 185 test, kapsam %97,2.
-Kanıt koşusu: TRUBA/ARF-ACC `kolyoz19`, NVIDIA H100 80GB, SLURM job 1425495
-([kapı raporu](docs/evidence/G0_report_truba_1425495.md)).
+**G0 durumu: GEÇTİ** — kapı 8/8, kırmızı takım (§12) 6/6 temiz, 210 test,
+kapsam %97,4. Kanıt koşusu: TRUBA/ARF-ACC `kolyoz19`, NVIDIA H100 80GB,
+SLURM job 1425590, temiz git ağacı
+([kapı + kırmızı takım raporu](docs/evidence/G0_report_truba_1425590.md)).
 Bu, altyapının geçtiği anlamına gelir — **hiçbir fizik veya bilimsel sonuç
 iddia edilmemektedir**; FAZ 0'da fizik yoktur.
 
@@ -77,9 +78,9 @@ kabul edilen kanıtlar `docs/evidence/` altına kopyalanıp sürümlenir.
 
 ## G0 kapı kriterleri (DR-RIFT-P0 §9) ve kanıtlanan sonuç
 
-| # | Kriter | Sonuç (job 1425495) |
+| # | Kriter | Sonuç (job 1425590) |
 |---|--------|---------------------|
-| 1 | Depo derleniyor; CI (commit katmanı) yeşil | GEÇTİ — 185 test, kapsam %97,2 |
+| 1 | Depo derleniyor; CI (commit katmanı) yeşil | GEÇTİ — 210 test, kapsam %97,4 |
 | 2 | Config şema doğrulayıcı; geçersizler reddediliyor | GEÇTİ — 15 geçersiz vaka |
 | 3 | Parçacık deposu CPU↔GPU roundtrip **bit-eşit** | GEÇTİ — `cuda:0`, FP64/FP32/uç değerler |
 | 4 | Tohum determinizmi ve shard-değişmezliği | GEÇTİ — shard 1/2/3/5/7/101 aynı sonuç |
@@ -91,6 +92,15 @@ kabul edilen kanıtlar `docs/evidence/` altına kopyalanıp sürümlenir.
 Altın hash Windows/CPython 3.12'de üretildi ve Linux/CPython 3.10 + H100
 düğümünde birebir doğrulandı; platformlar arası bit-eşit determinizm bu
 şekilde kanıtlanmıştır (P0-QR-03).
+
+### Kırmızı takım (DR-RIFT-P0 §12)
+
+Şartname bu listeyi teslim şartı sayar. Otomatik işletilir
+(`python scripts/run_red_team.py`) ve her TRUBA kanıt koşusunda kapıdan önce
+çalışır. Altı maddenin tamamı temiz: platformlar arası hash, shard
+değişmezliği (1–257), 15 geçersiz config'in tamamının reddi, manifestten
+koşunun yeniden üretilmesi + kurcalama tespiti, invariant ihlalinin koşuyu
+durdurması, kapatılmış çıktı katmanının sessizce yutulmaması.
 
 ## Dürüstlük sınırı
 
