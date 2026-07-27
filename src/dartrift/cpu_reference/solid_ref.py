@@ -301,13 +301,26 @@ def compute_timestep_solid(state: SolidState, mat: MaterialParams, num: RefParam
     return num.cfl * float(np.min(np.minimum(np.minimum(dt_cfl, dt_acc), dt_strain)[act]))
 
 
-def budgets_solid(state: SolidState) -> dict:
+def deviatoric_energy(state: SolidState, mat: MaterialParams) -> float:
+    """Deviatorik gerilmede DEPOLANMIS elastik enerji: S:S/(4 G rho) [J].
+
+    TANI amaclidir; `e_tot`'a EKLENMEZ. `u` zaten tam gerilme tensorunun
+    isini tasidigi icin bu enerji orada sayilidir (ADR-0012). Ayri raporlanir
+    ki return mapping'in elastik->isi donusumu izlenebilsin.
+    """
+    if not mat.strength.enabled or state.S is None:
+        return 0.0
+    ss = np.einsum("nab,nab->n", state.S, state.S)
+    return float(np.sum(state.m * ss / (4.0 * mat.strength.shear_G * state.rho)))
+
+
+def budgets_solid(state: SolidState, mat: MaterialParams | None = None) -> dict:
     """Enerji panosu: kinetik + ic + yercekimi potansiyeli + plastik kumulatif."""
     ke = 0.5 * float(np.sum(state.m * np.sum(state.v * state.v, axis=1)))
     ie = float(np.sum(state.m * state.u))
     ep = 0.5 * float(np.sum(state.m * state.phi)) if state.phi is not None else 0.0
     mom = state.v.T @ state.m
-    return {
+    row = {
         "mass": float(np.sum(state.m)),
         "momentum": [float(p) for p in mom],
         "mom_scale": float(np.sum(state.m * np.sqrt(np.sum(state.v * state.v, axis=1)))),
@@ -317,6 +330,9 @@ def budgets_solid(state: SolidState) -> dict:
         "e_tot": ke + ie + ep,
         "plastic_cum": state.plastic_u_total,
     }
+    if mat is not None:
+        row["e_dev_stored"] = deviatoric_energy(state, mat)  # tani, toplama dahil DEGIL
+    return row
 
 
 def run_solid(
@@ -330,7 +346,7 @@ def run_solid(
     evaluate_solid(state, mat, num)
     t = 0.0
     n_steps = 0
-    series = [dict(t=t, **budgets_solid(state))]
+    series = [dict(t=t, **budgets_solid(state, mat))]
     while t < t_end and n_steps < max_steps:
         dt = compute_timestep_solid(state, mat, num)
         dt = min(dt, t_end - t)
@@ -338,5 +354,5 @@ def run_solid(
         t += dt
         n_steps += 1
         if n_steps % budget_every == 0 or t >= t_end:
-            series.append(dict(t=t, **budgets_solid(state)))
+            series.append(dict(t=t, **budgets_solid(state, mat)))
     return {"t_end": t, "n_steps": n_steps, "budget_series": series}

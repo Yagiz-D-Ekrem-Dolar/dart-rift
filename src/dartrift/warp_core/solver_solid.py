@@ -192,6 +192,13 @@ class WarpSolid3D:
         row["e_pot"] = ep
         row["e_tot"] = row["e_kin"] + row["e_int"] + ep
         row["plastic_cum"] = self.plastic_u_total
+        if self.mat.strength.enabled:
+            # TANI: deviatorik depolanmis elastik enerji (e_tot'a dahil DEGIL,
+            # ADR-0012 — `u` bu isi zaten tasiyor)
+            ss = np.einsum("nab,nab->n", s["S"], s["S"])
+            row["e_dev_stored"] = float(
+                np.sum(s["m"] * ss / (4.0 * self.mat.strength.shear_G * s["rho"]))
+            )
         return row
 
     def run(self, t_end: float, max_steps: int = 500_000, budget_every: int = 10) -> dict:
