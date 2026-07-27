@@ -44,7 +44,15 @@ module load apps/truba-ai/gpu-2024.0
 
 set +x
 echo "== dugum: $(hostname) =="
-nvidia-smi --query-gpu=name,driver_version --format=csv,noheader
+# GPU saglik kontrolu: TRUBA'da arizali dugume dusmek mumkun (or. kolyoz13,
+# "No devices were found"). Bunu erken ve NET bir mesajla ayirt et ki
+# donanim arizasi bizim kodumuzun hatasi gibi gorunmesin.
+if ! nvidia-smi --query-gpu=name,driver_version --format=csv,noheader; then
+    echo "HATA: bu dugumde GPU sorgulanamiyor — DONANIM/SURUCU ARIZASI." >&2
+    echo "Kodla ilgisi yok; isi baska dugume gonderin:" >&2
+    echo "  sbatch --exclude=$(hostname) slurm/faz0_g0_gate.sh" >&2
+    exit 75   # EX_TEMPFAIL: gecici altyapi hatasi, kapi sonucu DEGIL
+fi
 echo "== python: $(python3 --version 2>&1) =="
 set -x
 
@@ -57,9 +65,19 @@ python3 -c "import warp; print('warp', warp.__version__)"
 python3 -c "import warp as wp; wp.init(); print('cihazlar:', [str(d) for d in wp.get_devices()])"
 
 cd "$REPO"
-RUN_DIR="$REPO/gate_runs/g0_truba_${SLURM_JOB_ID}"
-python3 scripts/run_g0_gate.py --require-gpu --run-dir "$RUN_DIR"
+
+# 1) Kirmizi-takim kontrol listesi (§12) — teslimden once isletilir.
+set +x
+echo "########## KIRMIZI TAKIM (DR-RIFT-P0 §12) ##########"
+set -x
+python3 scripts/run_red_team.py --run-dir "$REPO/gate_runs/redteam_truba_${SLURM_JOB_ID}"
+
+# 2) G0 kapisi (§9) — sekiz kriter, GPU roundtrip atlanamaz.
+set +x
+echo "########## G0 KAPISI (DR-RIFT-P0 §9) ##########"
+set -x
+python3 scripts/run_g0_gate.py --require-gpu --run-dir "$REPO/gate_runs/g0_truba_${SLURM_JOB_ID}"
 rc=$?
 set +x
-echo "== G0 kapi kosusu bitti; cikis kodu: $rc =="
+echo "== Kirmizi takim + G0 kapi kosusu bitti; cikis kodu: $rc =="
 exit $rc
