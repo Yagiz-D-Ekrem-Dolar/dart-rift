@@ -8,6 +8,11 @@ from dartrift.particles import warp_available
 
 needs_warp = pytest.mark.skipif(not warp_available(), reason="warp yok")
 
+# np.trapezoid NumPy 2.0'da geldi; TRUBA'daki yorumlayici daha eski ve orada
+# yalnizca np.trapz var. Yerelde gecip kumede kalan bir test, kapinin
+# guvenilirligini bozar (G1 1426017: C1 ve C6 bu yuzden KALDI).
+_trapz = getattr(np, "trapezoid", None) or np.trapz
+
 
 class TestNormalization:
     def test_3d_integral_is_one(self):
@@ -15,14 +20,14 @@ class TestNormalization:
         h = 0.7
         r = np.linspace(0.0, 2.0 * h, 200_001)
         w = kernel_w(r / h, h, 3)
-        integral = np.trapezoid(4.0 * np.pi * r * r * w, r)
+        integral = _trapz(4.0 * np.pi * r * r * w, r)
         assert integral == pytest.approx(1.0, rel=1.0e-8)
 
     def test_1d_integral_is_one(self):
         h = 0.3
         r = np.linspace(-2.0 * h, 2.0 * h, 400_001)
         w = kernel_w(np.abs(r) / h, h, 1)
-        assert np.trapezoid(w, r) == pytest.approx(1.0, rel=1.0e-8)
+        assert _trapz(w, r) == pytest.approx(1.0, rel=1.0e-8)
 
     def test_compact_support(self):
         assert kernel_w(np.array([2.0, 2.5, 10.0]), 1.0, 3).tolist() == [0.0, 0.0, 0.0]

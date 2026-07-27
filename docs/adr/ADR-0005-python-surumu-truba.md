@@ -27,5 +27,34 @@ determinizm) değiştirmez; kaynak kısıtı kaynaklıdır ve bu ADR ile kayıt 
 - (+) warp-lang wheel'i job-yerel diske (`$TMPDIR`) açılır; `/arf` kirletilmez.
 - (−) 3.11 `tomllib`/`Self` gibi kolaylıklar kullanılamaz (FAZ 0'da gerek yok).
 
+## EK KISIT (28.07.2026): kütüphane sürümü de tabana bağlıdır
+
+Bu ADR yalnızca Python **söz dizimini** 3.10'a sabitliyordu; kütüphane API'leri
+kapsam dışı kalmıştı. Bu boşluk gerçek bir kapı arızasına yol açtı.
+
+Merkezî modül `apps/truba-ai/gpu-2024.0` şunu sağlar:
+
+| | TRUBA (hedef) | yerel geliştirme |
+|---|---|---|
+| Python | 3.10.15 | 3.12 |
+| NumPy | **1.26.4** | 2.x |
+
+`np.trapz` bir kullanım dışı bırakma uyarısı verdiği için `np.trapezoid`'a
+çevrilmişti. Ancak `np.trapezoid` **NumPy 2.0** ile geldi; 1.26.4'te yoktur.
+Test yerelde geçti, TRUBA'da `AttributeError` verdi ve G1 kapısında **C1 ile
+C6'nın ikisini birden düşürdü** (koşu 1426017): her iki ölçüt de `tests_ok`
+şartına bağlıydı, dolayısıyla kütle sapması 0,00e+00 olmasına rağmen C1
+"KALDI" göründü.
+
+**Kural:** Hedef taban NumPy 1.26.4'tür. NumPy 2.0+ ile gelen API'ler
+(`trapezoid`, `concat`, `vecdot`, `bitwise_count`, `permute_dims`, …)
+kullanılamaz. Kaçınılmazsa `getattr(np, "yeni", None) or np.eski` biçiminde
+sürümden bağımsız bir köprü yazılır (`tests/test_kernel_fn.py::_trapz`).
+
+**Ders:** Yerelde yeşil olan bir paket, hedef ortamda yeşil olduğu anlamına
+gelmez. Kapı kanıtı bu yüzden TRUBA'da üretilir — bu olayda mekanizma
+amaçlandığı gibi çalıştı ve hatayı yakaladı.
+
 ## İlgili testler
-CI matrisi (`.github/workflows/ci.yml`), TRUBA G0 kapı koşusu (SLURM logu)
+CI matrisi (`.github/workflows/ci.yml`), TRUBA G0 kapı koşusu (SLURM logu),
+`tests/test_kernel_fn.py` (sürümden bağımsız yamuk integrali)
