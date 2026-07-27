@@ -82,6 +82,16 @@ class ParticleStore:
         self._fields["active"].fill(1)
         self._fields["id"][:] = np.arange(self.n, dtype=np.int64)
 
+    @classmethod
+    def from_config(cls, cfg, n: int) -> ParticleStore:
+        """Depoyu config'in hassasiyet kararina gore tahsis et.
+
+        Hassasiyet modunun config'den TEK bir yoldan gelmesi zorunludur; aksi
+        halde `numerics.precision` degistirildiginde bellek yerlesimi sessizce
+        ayni kalir (config bir sey soyler, motor baskasini yapar).
+        """
+        return cls(n, cfg.store_precision)
+
     # -- alan erisimi ------------------------------------------------------
     def __setattr__(self, name: str, value) -> None:
         # alan dizilerinin yanlislikla yeniden baglanmasini (shadowing) engelle:

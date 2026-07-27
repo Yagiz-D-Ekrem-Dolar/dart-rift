@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Sequence
 from pathlib import Path
 
 import h5py
@@ -25,6 +26,8 @@ from .particles import ParticleStore
 __all__ = [
     "LAYERS",
     "Hdf5Writer",
+    "LayerDisabledError",
+    "read_output_layers",
     "read_scalar_budget",
     "read_snapshot",
     "list_snapshots",
@@ -66,38 +69,74 @@ def _compression_kwargs(compression: str) -> dict:
     raise ValueError(f"bilinmeyen sikistirma: {compression!r} (gecerli: gzip, lzf, none)")
 
 
-class Hdf5Writer:
-    """Uc katmanli HDF5 yazici. Baglam yoneticisi olarak kullanilir."""
+class LayerDisabledError(RuntimeError):
+    """Config'de kapatilmis bir katmana yazma girisimi."""
 
-    def __init__(self, path: str | Path, compression: str = "gzip"):
+
+class Hdf5Writer:
+    """Uc katmanli HDF5 yazici. Baglam yoneticisi olarak kullanilir.
+
+    `layers` ile yalnizca istenen katmanlar olusturulur; kapatilmis bir katmana
+    yazmak sessizce yok sayilmaz, `LayerDisabledError` uretir.
+    """
+
+    def __init__(
+        self,
+        path: str | Path,
+        compression: str = "gzip",
+        layers: Sequence[str] = LAYERS,
+    ):
         self.path = Path(path)
         self._ckw = _compression_kwargs(compression)
+        unknown = [ly for ly in layers if ly not in LAYERS]
+        if unknown:
+            raise ValueError(f"bilinmeyen cikti katmani: {unknown} (gecerli: {list(LAYERS)})")
+        if not layers:
+            raise ValueError("en az bir cikti katmani gerekli")
+        self.layers: tuple[str, ...] = tuple(layers)
         self._file: h5py.File | None = None
+
+    @classmethod
+    def from_config(cls, cfg, path: str | Path) -> Hdf5Writer:
+        """Yaziciyi config'in G/C kararlarina (katmanlar + sikistirma) gore kur."""
+        return cls(path, compression=cfg.io.hdf5_compression, layers=tuple(cfg.io.output_layers))
+
+    def _require_layer(self, layer: str) -> None:
+        if layer not in self.layers:
+            raise LayerDisabledError(
+                f"'{layer}' katmani bu kosuda kapali (acik katmanlar: {list(self.layers)}); "
+                "config.io.output_layers ile acin"
+            )
 
     def __enter__(self) -> Hdf5Writer:
         self._file = h5py.File(self.path, "w", track_order=True)
-        for layer in LAYERS:
+        # Hangi katmanlarin acik oldugu dosyanin kendisinde de kayitli olsun:
+        # okuyucu, eksik bir katmanin "bos mu, kapali mi" oldugunu ayirt edebilir.
+        self._file.attrs["output_layers"] = ",".join(self.layers)
+        for layer in self.layers:
             self._file.create_group(layer, track_order=True)
-        g = self._file["scalar_budget"]
-        for col in SCALAR_BUDGET_COLUMNS:
-            dt = np.int64 if col == "step" else np.float64
-            g.create_dataset(
-                col,
+        if "scalar_budget" in self.layers:
+            g = self._file["scalar_budget"]
+            for col in SCALAR_BUDGET_COLUMNS:
+                dt = np.int64 if col == "step" else np.float64
+                g.create_dataset(
+                    col,
+                    shape=(0,),
+                    maxshape=(None,),
+                    dtype=dt,
+                    chunks=(1024,),
+                    track_times=False,
+                    **self._ckw,
+                )
+        if "event_catalog" in self.layers:
+            self._file["event_catalog"].create_dataset(
+                "events",
                 shape=(0,),
                 maxshape=(None,),
-                dtype=dt,
-                chunks=(1024,),
+                dtype=_EVENT_DTYPE,
+                chunks=(256,),
                 track_times=False,
-                **self._ckw,
             )
-        self._file["event_catalog"].create_dataset(
-            "events",
-            shape=(0,),
-            maxshape=(None,),
-            dtype=_EVENT_DTYPE,
-            chunks=(256,),
-            track_times=False,
-        )
         return self
 
     def __exit__(self, *exc) -> None:
@@ -114,6 +153,7 @@ class Hdf5Writer:
     def append_scalar_budget(self, row: dict) -> None:
         """Bir adimin korunum butcesini ekle. Eksik/fazla kolon acik hata."""
         f = self._require_open()
+        self._require_layer("scalar_budget")
         missing = set(SCALAR_BUDGET_COLUMNS) - set(row)
         extra = set(row) - set(SCALAR_BUDGET_COLUMNS)
         if missing or extra:
@@ -130,6 +170,7 @@ class Hdf5Writer:
     def write_snapshot(self, index: int, store: ParticleStore, step: int, time: float) -> None:
         """Tam parcacik durumunu snap_XXXXXX alt grubuna yaz."""
         f = self._require_open()
+        self._require_layer("sparse_snapshot")
         name = f"snap_{index:06d}"
         grp = f["sparse_snapshot"].create_group(name, track_order=True)
         grp.attrs["step"] = np.int64(step)
@@ -144,6 +185,7 @@ class Hdf5Writer:
     def append_event(self, step: int, time: float, kind: str, payload: dict | None = None) -> None:
         """Olay kaydi ekle; yuk JSON olarak saklanir."""
         f = self._require_open()
+        self._require_layer("event_catalog")
         ds = f["event_catalog"]["events"]
         ds.resize((ds.shape[0] + 1,))
         ds[-1] = (
@@ -157,6 +199,14 @@ class Hdf5Writer:
 # ---------------------------------------------------------------------------
 # Okuyucular
 # ---------------------------------------------------------------------------
+
+
+def read_output_layers(path: str | Path) -> tuple[str, ...]:
+    """Dosyanin hangi katmanlarla yazildigini dondur (kapali != bos ayrimi)."""
+    with h5py.File(path, "r") as f:
+        raw = f.attrs.get("output_layers", "")
+    text = raw.decode("utf-8") if isinstance(raw, bytes) else str(raw)
+    return tuple(p for p in text.split(",") if p)
 
 
 def read_scalar_budget(path: str | Path) -> dict[str, np.ndarray]:

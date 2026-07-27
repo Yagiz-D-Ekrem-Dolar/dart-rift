@@ -31,6 +31,16 @@ OUTPUT_LAYERS = ("scalar_budget", "sparse_snapshot", "event_catalog")
 
 PrecisionMode = Literal["deterministic_fp64", "performance_mixed"]
 
+# Config'deki hassasiyet adi ile parcacik deposunun mod adi arasindaki TEK
+# kopru. Ayri isim uzaylari olmasi bilincli: config bilimsel niyeti
+# (deterministik mi, performans mi), depo bellek yerlesimini adlandirir.
+# Koprunun tek yerde durmasi, "config bir sey soyluyor ama motor baskasini
+# yapiyor" sessiz sapmasini engeller (bkz. tests/test_config_wiring.py).
+_PRECISION_TO_STORE_MODE: dict[str, str] = {
+    "deterministic_fp64": "science",
+    "performance_mixed": "performance",
+}
+
 
 class ConfigError(ValueError):
     """Config dogrulama hatasi — okunur mesajlarla."""
@@ -99,6 +109,18 @@ class RunConfig(_StrictModel):
                 f"desteklenmeyen schema_version={v}; bu surum yalnizca {SCHEMA_VERSION} destekler"
             )
         return v
+
+    @property
+    def store_precision(self) -> str:
+        """Parcacik deposunun bekledigi hassasiyet modu ("science"/"performance")."""
+        return _PRECISION_TO_STORE_MODE[self.numerics.precision]
+
+    @property
+    def domain_bounds(self) -> tuple[tuple[float, float, float], tuple[float, float, float]] | None:
+        """Invariant denetleyicisinin bekledigi (min_xyz, max_xyz) ikilisi; yoksa None."""
+        if self.domain is None:
+            return None
+        return (tuple(self.domain.min), tuple(self.domain.max))  # type: ignore[return-value]
 
 
 def _format_validation_error(err: ValidationError, source: str) -> str:
