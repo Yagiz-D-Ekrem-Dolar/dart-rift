@@ -149,6 +149,41 @@ Bu olay kapı mekanizmasının **amaçlandığı gibi çalıştığını** göst
 yerelde yeşil olan paket hedef ortamda yeşil demek değildir; kanıt bu yüzden
 TRUBA'da üretiliyor.
 
+## BULGU 6 — Kapı koşusu kuyruğa takıldı; iki düğüm arızası doğrulandı
+
+Düzeltilmiş commit (410d5b8) ile gönderilen koşu **1426160 kolyoz13'e düştü**
+ve 35 saniyede "GPU yok" diyerek çıkış 2 verdi. Ama düğüm GPU'yu görüyordu:
+
+```
+== dugum: kolyoz13 ==
+NVIDIA H100 80GB HBM3, 580.95.05
+Warp CUDA error 999: unknown error (in function init_cuda_driver)
+   Devices: "cpu" : "x86_64"
+```
+
+`nvidia-smi` H100'ü sorunsuz raporluyor, ama Warp CUDA sürücüsünü açamıyor.
+Sağlık kontrolü yalnızca `nvidia-smi`'ye baktığı için bunu donanım arızası
+sayamadı ve **kapı arızası gibi göründü**. İki düzeltme yapıldı:
+
+1. Hariç tutma listesi betiğe gömüldü. Önceden yorumda "sbatch --exclude=...
+   ile gönder" yazıyordu; unutuldu ve iş tam da o düğüme düştü. Hatırlanması
+   gereken bayrak, bayrak değildir.
+2. Sağlık kontrolü artık Warp'ın gerçekten bir `cuda` cihazı açabildiğini
+   sınıyor; açamazsa 75 (EX_TEMPFAIL) ile çıkıyor.
+
+Alternatif bölüm arandı. `palamut6` boştaydı ve arızalı kaydı dünkünden
+kalmaydı, bu yüzden **varsayılmadı, yeniden sınandı** (yoklama işi 1426164):
+
+```
+== dugum: palamut6 ==
+NVIDIA A100-SXM4-80GB, 565.57.01
+ModuleNotFoundError: No module named 'warp._src.types'
+```
+
+Arıza aynen sürüyor — dosya `/arf`'ta duruyor ama bu düğümden okunamıyor.
+Dışlama doğru. Diğer palamut düğümlerinin (1, 2, 4) sekiz GPU'su da dolu;
+kolyoz-cuda'da 50 düğümün tamamı `alloc`. Koşu **1426162** kuyrukta bekliyor.
+
 ## YARIN
 
-- Düzeltilmiş commit ile G1 + G2 kapılarını TRUBA'da yeniden koşmak.
+- Kuyruk açılınca G1 + G2 kanıtlarını toplamak (iş 1426162).
