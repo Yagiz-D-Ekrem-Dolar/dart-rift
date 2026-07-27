@@ -48,8 +48,13 @@ def sh(cmd: list[str], log_path: Path | None = None, cwd: Path = REPO) -> tuple[
 
 def main() -> int:
     ap = argparse.ArgumentParser()
+    # GPU VARSAYILAN OLARAK ZORUNLUDUR. C3 kriteri ("CPU<->GPU roundtrip
+    # bit-esit") gercek bir CUDA cihazi olmadan KANITLANAMAZ; kanitlanmamis bir
+    # kriteri "GECTI" saymak, kapinin anlamini bosaltir.
     ap.add_argument("--require-gpu", action="store_true",
-                    help="GPU roundtrip atlanirsa kapiyi GECEMEDI say (TRUBA kaniti icin)")
+                    help="(artik varsayilan; geriye donuk uyumluluk icin korundu)")
+    ap.add_argument("--allow-no-gpu", action="store_true",
+                    help="GPU'suz ON-KONTROL modu: rapor uretilir ama kapi GECTI sayilmaz")
     ap.add_argument("--run-dir", default=None)
     args = ap.parse_args()
 
@@ -113,8 +118,13 @@ def main() -> int:
         gpu_pass = "PASSED" in gpu_line
         criteria["C3"].record(gpu_pass, f"GPU roundtrip: {gpu_line.strip() or 'bulunamadi'}")
     else:
-        msg = "GPU yok: yalnizca CPU-cihaz roundtrip kosuldu (bit-esit)"
-        criteria["C3"].record(not args.require_gpu and suite_passed("test_particles.py"), msg)
+        # CUDA yoksa C3 kanitlanamaz. CPU-cihaz roundtrip'i faydali bir on
+        # kontroldur ama GPU bellek kopyasini yerine gecmez -> KANITLANMADI.
+        criteria["C3"].record(
+            False,
+            "CUDA cihazi yok -> KANITLANAMADI. CPU-cihaz roundtrip'i gecti ancak "
+            "GPU kopyasinin yerine gecmez; kanit icin TRUBA GPU kuyrugunda kosun.",
+        )
 
     # --- C7: ADR sayimi ----------------------------------------------------
     adrs = sorted((REPO / "docs" / "adr").glob("ADR-*.md"))
@@ -151,31 +161,65 @@ def main() -> int:
 
     # --- rapor ---------------------------------------------------------------
     all_pass = all(c.passed for c in criteria.values())
+    # GPU'suz kosu bir KAPI KOSUSU DEGILDIR; C3 kanitlanamadigi icin rapor
+    # "on-kontrol" olarak etiketlenir ve hicbir kosulda "G0 GECTI" yazmaz.
+    precheck = not gpu_ok_env
+    title = (
+        "# G0 ON-KONTROL Raporu (KAPI DEGIL) — CUDA yok"
+        if precheck
+        else '# G0 Kapi Raporu — "Zemin saglam"'
+    )
     lines = [
-        "# G0 Kapi Raporu — \"Zemin saglam\"",
+        title,
         "",
         f"- Tarih (UTC): {datetime.now(timezone.utc).isoformat()}",
         f"- Makine: {platform.node()} / {platform.platform()}",
         f"- Python: {platform.python_version()}",
-        f"- GPU ortami: {'CUDA mevcut' if gpu_ok_env else 'CUDA yok (CPU kosusu)'}",
+        f"- GPU ortami: {'CUDA mevcut' if gpu_ok_env else 'CUDA YOK — kapi degerlendirilemez'}",
         f"- Kapsam: {cov_note}",
         "",
         "| # | Kriter | Sonuc | Kanit |",
         "|---|--------|-------|-------|",
     ]
     for c in criteria.values():
-        emoji = "GECTI" if c.passed else "KALDI"
-        lines.append(f"| {c.cid} | {c.title} | **{emoji}** | {c.evidence} |")
-    verdict = "GECTI — FAZ 1 baslayabilir" if all_pass else "GECEMEDI — iddia yapilamaz"
+        mark = "GECTI" if c.passed else ("KANITLANAMADI" if precheck and c.cid == "C3" else "KALDI")
+        lines.append(f"| {c.cid} | {c.title} | **{mark}** | {c.evidence} |")
+
+    if precheck:
+        others_ok = all(c.passed for c in criteria.values() if c.cid != "C3")
+        lines += [
+            "",
+            "## SONUC: G0 DEGERLENDIRILMEDI — bu bir on-kontroldur",
+            "",
+            f"C3 disindaki yedi kriter: {'tumu gecti' if others_ok else 'en az biri kaldi'}.",
+            "C3 (CPU<->GPU roundtrip) gercek bir CUDA cihazi olmadan kanitlanamaz;",
+            "bu yuzden G0 icin GECTI iddiasi YAPILAMAZ. Kanit kosusu:",
+            "`sbatch slurm/faz0_g0_gate.sh` (TRUBA GPU kuyrugu).",
+        ]
+    else:
+        verdict = "GECTI — FAZ 1 baslayabilir" if all_pass else "GECEMEDI — iddia yapilamaz"
+        lines += ["", f"## SONUC: G0 {verdict}"]
+
     lines += [
-        "",
-        f"## SONUC: G0 {verdict}",
         "",
         "> Altin kural: Her iddianin arkasinda bir test vardir. Test gecilmediyse iddia edilmez.",
     ]
     (run_dir / "G0_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     logger.info("G0 raporu: %s", run_dir / "G0_report.md")
     print("\n".join(lines))
+
+    if precheck:
+        # On-kontrol: --allow-no-gpu ile bilincli calistirildiysa diger yedi
+        # kriter temizse 0 don; aksi halde bu bir hatadir (kapi bekleniyordu).
+        others_ok = all(c.passed for c in criteria.values() if c.cid != "C3")
+        if not args.allow_no_gpu:
+            print(
+                "\nHATA: CUDA cihazi yok. Kapi kosusu GPU ister. Yerel on-kontrol icin "
+                "--allow-no-gpu kullanin (bu G0'i GECTI yapmaz).",
+                file=sys.stderr,
+            )
+            return 2
+        return 0 if others_ok else 1
     return 0 if all_pass else 1
 
 

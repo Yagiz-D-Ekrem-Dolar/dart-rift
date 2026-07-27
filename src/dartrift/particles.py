@@ -104,7 +104,13 @@ class ParticleStore:
         object.__setattr__(self, name, value)
 
     def __getattr__(self, name: str) -> np.ndarray:
-        fields = object.__getattribute__(self, "_fields")
+        # `_fields` henuz kurulmamisken (kopyalama/pickle sirasinda nesne bos
+        # olarak yeniden olusturulur) sonsuz ozyinelemeye girmemek icin once
+        # dogrudan __dict__'e bak.
+        try:
+            fields = object.__getattribute__(self, "_fields")
+        except AttributeError:
+            raise AttributeError(name) from None
         if name in fields:
             return fields[name]
         raise AttributeError(f"ParticleStore alani degil: {name!r}")

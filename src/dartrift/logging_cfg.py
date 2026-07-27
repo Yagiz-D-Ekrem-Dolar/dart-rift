@@ -159,17 +159,20 @@ def detect_hardware() -> dict:
 
 
 def _cuda_runtime_version() -> str:
+    """CUDA Toolkit surumu, "12.9" bicimimde (manifest insan-okur olmali)."""
     try:
-        import warp as wp  # noqa: F401
+        import warp as wp
 
         ver = getattr(wp.config, "cuda_toolkit_version", None) or getattr(
             wp, "get_cuda_toolkit_version", lambda: None
         )()
-        if ver:
-            return str(ver)
+        if not ver:
+            return "none"
+        if isinstance(ver, (tuple, list)):
+            return ".".join(str(p) for p in ver)
+        return str(ver)
     except Exception:
-        pass
-    return "none"
+        return "none"
 
 
 def build_manifest(

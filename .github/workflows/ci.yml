@@ -38,3 +38,25 @@ jobs:
 
       - name: Determinizm altin hash
         run: pytest tests/test_determinism_golden.py -q
+
+      # GitHub runner'i GERCEKTEN GPU'suzdur; bu adim, kapi kosucusunun
+      # kanitlanamayan C3 kriterini "GECTI" saymadigini gercek bir ortamda
+      # dogrular (gelistirme makinesinde GPU oldugu icin orada sinanamiyor).
+      - name: Kapi, GPU'suz ortamda GECTI iddia etmemeli
+        run: |
+          set +e
+          python scripts/run_g0_gate.py --run-dir /tmp/g0_no_flag
+          rc=$?
+          set -e
+          if [ "$rc" -ne 2 ]; then
+            echo "HATA: GPU'suz kapi kosusu exit 2 dondurmeliydi, $rc dondu"; exit 1
+          fi
+          python scripts/run_g0_gate.py --allow-no-gpu --run-dir /tmp/g0_precheck
+          grep -q "ON-KONTROL" /tmp/g0_precheck/G0_report.md
+          grep -q "KANITLANAMADI" /tmp/g0_precheck/G0_report.md
+          if grep -q "G0 GECTI" /tmp/g0_precheck/G0_report.md; then
+            echo "HATA: GPU'suz rapor 'G0 GECTI' iddia ediyor"; exit 1
+          fi
+
+      - name: Kirmizi takim kontrol listesi (§12)
+        run: python scripts/run_red_team.py --run-dir /tmp/redteam
