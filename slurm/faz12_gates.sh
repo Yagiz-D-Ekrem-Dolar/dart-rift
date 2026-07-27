@@ -9,14 +9,19 @@
 #SBATCH --time=03:00:00
 #SBATCH --output=g12_%j.out
 #SBATCH --error=g12_%j.out
+#SBATCH --exclude=kolyoz13,palamut5,palamut6
 # DART-RIFT FAZ 1 + FAZ 2 kapi kanitlari (TRUBA / ARF-ACC)
 #
-# Kuyruk notu: arizali dugumler hariç tutulur. Bilinen arizalar:
+# Bilinen arizali dugumler (yukaridaki --exclude ile haric tutulur):
 #   palamut5 -> /arf'a VERI yazamiyor (dd 5MB -> 0 bayt)
 #   palamut6 -> /arf'tan buyuk dosya OKUYAMIYOR (warp/_src/types.py ImportError)
-#   kolyoz13 -> GPU surucu arizasi ("No devices were found")
-# Saglam oldugu dogrulanan dugumler: kolyoz19, palamut4.
-# Gonderim: sbatch --exclude=kolyoz13,palamut5,palamut6 slurm/faz12_gates.sh
+#   kolyoz13 -> CUDA surucu arizasi: nvidia-smi H100'u GORUYOR ama warp
+#               "CUDA error 999: unknown error" ile init edemiyor (kosu 1426160)
+# Saglam oldugu dogrulanan dugumler: kolyoz14, kolyoz19, palamut4.
+#
+# Haric tutma listesi BETIGE gomuludur, yoruma degil: onceden "sbatch
+# --exclude=... ile gonder" diye yazan bir yorum vardi ve unutuldugu icin is
+# kolyoz13'e dustu (1426160). Hatirlanmasi gereken bayrak, bayrak degildir.
 #
 # stderr STDOUT'a birlestirilir: arizali dugumlerde ayri stderr dosyasi
 # sessizce kaybolabiliyor ve hata mesajsiz "basarili" gibi gorunuyordu.
@@ -51,7 +56,23 @@ if ! python3 -u -c "import warp; print('warp', warp.__version__)"; then
     echo "  Bu bir DEPOLAMA arizasidir, kapi sonucu DEGIL." >&2
     exit 75
 fi
-python3 -u -c "import warp as wp; wp.init(); print('cihazlar:', [str(d) for d in wp.get_devices()])"
+# CUDA saglik kontrolu: nvidia-smi YETMEZ. kolyoz13'te nvidia-smi H100'u
+# duzgun raporluyordu ama warp "CUDA error 999" ile init edemedi; is o zaman
+# "GPU yok" diye cikis 2 verdi ve KAPI ARIZASI gibi gorundu. Asil sorulmasi
+# gereken soru, warp'in CUDA cihazini gercekten kullanabilip kullanamadigidir.
+if ! python3 -u -c "
+import sys
+import warp as wp
+wp.init()
+devs = [str(d) for d in wp.get_devices()]
+print('cihazlar:', devs)
+sys.exit(0 if any(d.startswith('cuda') for d in devs) else 1)
+"; then
+    echo "HATA: nvidia-smi GPU goruyor ama warp CUDA cihazi acamiyor." >&2
+    echo "  Bu bir DUGUM/SURUCU arizasidir, kapi sonucu DEGIL." >&2
+    echo "  sbatch --exclude=$(hostname),kolyoz13,palamut5,palamut6 ..." >&2
+    exit 75   # EX_TEMPFAIL
+fi
 
 cd "$REPO"
 
