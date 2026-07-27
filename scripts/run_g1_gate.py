@@ -186,7 +186,14 @@ def main() -> int:
     mom_max = max(c["momentum_rel"] for c in isolated)
     e_max = max(c["energy_rel"] for c in isolated + [sod_hi["conservation"]])
     sod_closure = max(m["momentum_budget"]["closure_rel_err"] for m in sod_ladder.values())
-    crit["C1"].record(tests_ok and mass_max < 1.0e-12, f"maks kutle sapmasi {mass_max:.2e}")
+    # Kanit metni HANGI sartin dustugunu soylemeli: "KALDI / maks kutle sapmasi
+    # 0.00e+00" okuyucuyu yaniltir (G1 1426017'de tam bu oldu; asil neden
+    # pytest'in kalmasiydi).
+    crit["C1"].record(
+        tests_ok and mass_max < 1.0e-12,
+        f"maks kutle sapmasi {mass_max:.2e}"
+        + ("" if tests_ok else "; ANCAK pytest paketi KALDI (bkz. pytest_full.log)"),
+    )
     crit["C2"].record(
         mom_max < 1.0e-6 and sod_closure < 0.02,
         f"izole maks {mom_max:.2e}; Sod duvar-impuls kapanisi {sod_closure:.2%}",

@@ -126,7 +126,9 @@ def main() -> int:
         f"{wave['c_long_theory']:.0f} ({wave['rel_err']:.2%}, hata 300->600 "
         f"{'azaliyor' if wave_converges else 'AZALMIYOR'}); Taylor L/L0="
         f"{taylor.get('L_over_L0', float('nan')):.3f} (bant 0.60-0.80), "
-        f"Y0 2x -> {taylor.get('stiff_L_over_L0', float('nan')):.3f}",
+        f"Y0 2x -> {taylor.get('stiff_L_over_L0', float('nan')):.3f}, "
+        f"enerji {taylor.get('energy_rel_err', float('nan')):.3%} "
+        f"(yogunluk: sureklilik, ADR-0015)",
     )
 
     cycle = run_crush_cycle()
