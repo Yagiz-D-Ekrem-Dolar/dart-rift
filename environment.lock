@@ -1,0 +1,41 @@
+# DART-RIFT FAZ 0 — kilitli ortamlar (DR-RIFT-P0 §5.1)
+#
+# Bu dosya iki hedef ortami belgeler. Kanit ureten (G0 kapisi) kosu TRUBA
+# ortaminda yapilir; yerel ortam gelistirme ve CI ile ayni matriste tutulur.
+#
+# ---------------------------------------------------------------------------
+# 1) TRUBA / ARF-ACC (cuda-ui) — KANIT ORTAMI
+# ---------------------------------------------------------------------------
+# modul   : apps/truba-ai/gpu-2024.0   (merkezi modul; /arf'a pip/conda YASAK)
+# python  : 3.10.15
+# kayit   : 2026-07-27T13:12:21Z
+# ek paketler job-yerel diske ($TMPDIR) acilir, /arf kirletilmez:
+#   warp-lang, pytest-cov, coverage  (bkz. slurm/faz0_g0_gate.sh)
+#
+annotated-types==0.7.0
+exceptiongroup==1.2.2
+h5py==3.12.1
+iniconfig==2.0.0
+numpy==1.26.4
+packaging==24.1
+pluggy==1.5.0
+pydantic==2.9.2
+pydantic_core==2.23.4
+pytest==8.3.5
+PyYAML==6.0.2
+tomli==2.0.2
+typing_extensions==4.12.2
+#
+# ---------------------------------------------------------------------------
+# 2) Yerel gelistirme (Windows 11, CPython 3.12.10) — referans
+# ---------------------------------------------------------------------------
+# h5py 3.12.x bu makinede Uygulama Denetimi ilkesince engellendigi icin
+# 3.11.0'a sabitlendi; kanit ortami etkilenmez (bkz. docs/defter).
+#   h5py==3.11.0
+#   numpy>=1.26
+#   pydantic>=2.5
+#   PyYAML>=6.0
+#   warp-lang>=1.0   (yerelde DLL ilkesi nedeniyle init edilemez -> GPU/warp
+#                     testleri yerelde SKIP; kanit TRUBA'dan alinir)
+#
+# CI matrisi: Python 3.10 ve 3.12 (bkz. .github/workflows/ci.yml)
