@@ -100,7 +100,12 @@ def main() -> int:
         f"{rot_on['vm_drift_rel']:.2%}; Jaumann kapaliyken {rot_off['rel_err_vs_rotated']:.0%}",
     )
 
-    wave = run_elastic_wave()
+    # elastik dalga: yakinsama merdiveni (tek sayi "yakinsadi" demez)
+    wave_ladder = {r: run_elastic_wave(resolution=r) for r in (300, 400, 600)}
+    wave = wave_ladder[600]
+    wave_converges = (
+        wave_ladder[300]["rel_err"] > wave_ladder[400]["rel_err"] > wave_ladder[600]["rel_err"]
+    )
     taylor = {}
     taylor_ok = False
     if gpu_ok:
@@ -116,9 +121,10 @@ def main() -> int:
             and taylor_stiff["L_over_L0"] > taylor["L_over_L0"]
         )
     crit["C2"].record(
-        wave["rel_err"] < 0.03 and wave["distinguishes_bulk"] and taylor_ok,
-        f"elastik dalga {wave['speed_measured']:.0f} m/s vs teorik "
-        f"{wave['c_long_theory']:.0f} ({wave['rel_err']:.2%}); Taylor L/L0="
+        wave["rel_err"] < 0.03 and wave["distinguishes_bulk"] and wave_converges and taylor_ok,
+        f"elastik dalga (res=600) {wave['speed_measured']:.0f} m/s vs teorik "
+        f"{wave['c_long_theory']:.0f} ({wave['rel_err']:.2%}, hata 300->600 "
+        f"{'azaliyor' if wave_converges else 'AZALMIYOR'}); Taylor L/L0="
         f"{taylor.get('L_over_L0', float('nan')):.3f} (bant 0.60-0.80), "
         f"Y0 2x -> {taylor.get('stiff_L_over_L0', float('nan')):.3f}",
     )
@@ -174,7 +180,8 @@ def main() -> int:
         "device": args.device,
         "quick": args.quick,
         "rigid_rotation": {"jaumann_on": rot_on, "jaumann_off": rot_off},
-        "elastic_wave": wave,
+        "elastic_wave": {str(r): m for r, m in wave_ladder.items()},
+        "elastic_wave_converges": wave_converges,
         "taylor_bar": taylor,
         "crush_cycle": {k: v for k, v in cycle.items() if k != "alpha_load"},
         "porous_plate": {"porous": pl_por, "solid": pl_sol},
