@@ -98,6 +98,26 @@ def accumulate_1d(
 
 
 @wp.kernel
+def continuity_rate_3d(
+    rho: wp.array(dtype=F),
+    divv: wp.array(dtype=F),
+    drhodt: wp.array(dtype=F),
+):
+    """drho/dt = -rho div v (ADR-0015). Yalnizca HIZI yazar, rho'yu ILERLETMEZ.
+
+    Hiz, alan degerlendirmesi sirasinda DONDURULUR ve tekmelerde
+    `accumulate_scalar_3d` ile uygulanir; boylece rho tam olarak u ve S ile
+    ayni trapez yolundan gecer (ADR-0007). Bu ayrim onemli: hizi tekme aninda
+    `rho*divv` diye yeniden hesaplamak, ikinci yarim tekmede GUNCELLENMIS
+    rho'yu kullanir ve CPU referansindan dt*divv (~1e-5) mertebesinde
+    SISTEMATIK olarak ayrilir. Capraz kontrol bunu 200 adimda 3.6e-8'lik
+    sapma olarak yakaladi (sirf toplama sirasi etkisi 1.6e-13 iken).
+    """
+    i = wp.tid()
+    drhodt[i] = -rho[i] * divv[i]
+
+
+@wp.kernel
 def accumulate_scalar_3d(
     target: wp.array(dtype=F),
     rate: wp.array(dtype=F),

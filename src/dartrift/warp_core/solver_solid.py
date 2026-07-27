@@ -74,8 +74,15 @@ class WarpSolid3D:
         )
         self.alpha = wp.array(a0, dtype=F, device=dev)
         for name in ("rho", "P", "cs", "divv", "fbal", "dudt", "phi",
-                     "plastic_du", "dt_cfl", "dt_acc"):
+                     "drhodt", "plastic_du", "dt_cfl", "dt_acc"):
             setattr(self, name, wp.zeros(n, dtype=F, device=dev))
+        self._continuity = mat.density_method == "continuity"
+        if self._continuity:
+            # rho artik bir DURUM degiskeni: malzeme yogunlugundan baslar.
+            rho0 = mat.rho0_linear if mat.eos == "linear" else mat.tillotson.rho0
+            self.rho = wp.array(np.full(n, float(rho0)), dtype=F, device=dev)
+        elif mat.density_method != "summation":
+            raise ValueError(f"bilinmeyen yogunluk yontemi: {mat.density_method!r}")
         self.a = wp.zeros(n, dtype=V3, device=dev)
         self.g = wp.zeros(n, dtype=V3, device=dev)
         self.L = wp.zeros(n, dtype=M3, device=dev)
@@ -103,7 +110,8 @@ class WarpSolid3D:
         gid = self.gridman.id
         r32 = wp.float32(self._radius32)
         h = F(self.h)
-        self._launch(D.density_3d, [gid, self.gridman.x32, self.x, self.m, h, r32, self.rho])
+        if not self._continuity:
+            self._launch(D.density_3d, [gid, self.gridman.x32, self.x, self.m, h, r32, self.rho])
         if self.mat.eos == "tillotson":
             self._launch(eos_solid, [self.rho, self.u, self.alpha, self._tp, self.P, self.cs])
         elif self.mat.eos == "ideal_gas":
@@ -119,6 +127,8 @@ class WarpSolid3D:
             [gid, self.gridman.x32, self.x, self.v, self.m, self.rho, self.cs, h, r32,
              1 if self.num.use_balsara else 0, self.L, self.divv, self.fbal],
         )
+        if self._continuity:
+            self._launch(I.continuity_rate_3d, [self.rho, self.divv, self.drhodt])
         if self.mat.strength.enabled:
             self._launch(
                 SS.stress_rate_3d,
@@ -151,12 +161,16 @@ class WarpSolid3D:
         self._launch(I.kick_v_3d, [self.v, self.a, self.active, half])
         self._launch(I.kick_u_3d, [self.u, self.dudt, self.active, half])
         self._launch(SS.kick_S_3d, [self.S, self.dSdt, self.active, half])
+        if self._continuity:
+            self._launch(I.accumulate_scalar_3d, [self.rho, self.drhodt, self.active, half])
         self._launch(I.drift_3d, [self.x, self.v, self.active, F(dt)])
         self._eval()  # (x1, v_half)
         self._launch(I.kick_v_3d, [self.v, self.a, self.active, half])
         self._eval()  # (x1, v1)
         self._launch(I.kick_u_3d, [self.u, self.dudt, self.active, half])
         self._launch(SS.kick_S_3d, [self.S, self.dSdt, self.active, half])
+        if self._continuity:
+            self._launch(I.accumulate_scalar_3d, [self.rho, self.drhodt, self.active, half])
         if self.mat.strength.enabled:
             self._launch(
                 return_mapping_k,
