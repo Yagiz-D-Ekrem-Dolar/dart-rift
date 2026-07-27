@@ -51,11 +51,19 @@ class _StrictModel(BaseModel):
 
 
 class NumericsConfig(_StrictModel):
-    """Sayisal cekirdek secenekleri. `kernel` ve `cfl` FAZ 1'de dolar."""
+    """Sayisal cekirdek secenekleri.
+
+    FAZ 1 (DR-RIFT-P1) alanlari: `kernel` yalnizca wendland_c2 olabilir (kilitli
+    karar; kubik spline yalnizca karsilastirma icindir ve config'ten secilemez),
+    `alpha_av`/`beta_av` Monaghan yapay viskozite katsayilaridir (§2.5, tipik
+    1.0/2.0; benchmark ile ayarlanir ve RAPORLANIR).
+    """
 
     precision: PrecisionMode
-    kernel: str | None = None
+    kernel: Literal["wendland_c2"] | None = None
     cfl: float | None = Field(default=None, gt=0.0, le=1.0)
+    alpha_av: float = Field(default=1.0, ge=0.0, le=5.0)
+    beta_av: float = Field(default=2.0, ge=0.0, le=10.0)
 
 
 class DomainConfig(_StrictModel):
@@ -91,8 +99,87 @@ class IoConfig(_StrictModel):
         return v
 
 
+class TillotsonConfig(_StrictModel):
+    """Tillotson EOS parametreleri (varsayilan: bazalt, Benz & Asphaug 1999)."""
+
+    rho0: float = Field(default=2700.0, gt=0)
+    A: float = Field(default=2.67e10, gt=0)
+    B: float = Field(default=2.67e10, ge=0)
+    a: float = Field(default=0.5, gt=0)
+    b: float = Field(default=1.5, ge=0)
+    u0: float = Field(default=4.87e8, gt=0)
+    u_iv: float = Field(default=4.72e6, gt=0)
+    u_cv: float = Field(default=1.82e7, gt=0)
+    alpha_t: float = Field(default=5.0, gt=0)
+    beta_t: float = Field(default=5.0, gt=0)
+    cs_floor_frac: float = Field(default=0.05, gt=0, le=1.0)
+
+    @field_validator("u_cv")
+    @classmethod
+    def _ucv_gt_uiv(cls, v: float, info) -> float:
+        uiv = info.data.get("u_iv")
+        if uiv is not None and v <= uiv:
+            raise ValueError(f"u_cv > u_iv olmali: u_cv={v}, u_iv={uiv}")
+        return v
+
+
+class StrengthConfig(_StrictModel):
+    """Lundborg/Collins dayanim (P2 §2.2). enabled=false -> ablasyon."""
+
+    enabled: bool = True
+    Y0: float = Field(default=1.0e5, ge=0)
+    mu_f: float = Field(default=0.8, ge=0, le=2.0)
+    YM: float = Field(default=1.5e9, gt=0)
+    shear_G: float = Field(default=2.27e10, gt=0)
+    jaumann: bool = True  # yalnizca objektiflik ablasyonu icin kapatilir
+
+
+class PorosityConfig(_StrictModel):
+    """P-alpha crush-curve (P2 §2.4)."""
+
+    enabled: bool = True
+    alpha0: float = Field(default=1.5, ge=1.0, le=5.0)
+    Pe: float = Field(default=1.0e6, gt=0)
+    Ps: float = Field(default=1.0e8, gt=0)
+    n_exp: float = Field(default=2.0, gt=0)
+
+    @field_validator("Ps")
+    @classmethod
+    def _ps_gt_pe(cls, v: float, info) -> float:
+        pe = info.data.get("Pe")
+        if pe is not None and v <= pe:
+            raise ValueError(f"Ps > Pe olmali: Ps={v}, Pe={pe}")
+        return v
+
+
+class GravityConfig(_StrictModel):
+    """Oz-yercekimi (P2 §2.5)."""
+
+    enabled: bool = True
+    G: float = Field(default=6.674_30e-11, gt=0)
+    eps: float = Field(default=0.0, ge=0)
+    mode: Literal["direct", "barnes_hut"] = "direct"
+    theta: float = Field(default=0.5, gt=0, le=1.0)
+
+
+class PhysicsConfig(_StrictModel):
+    """FAZ 2 fizik modulleri; her biri ablasyonla acilir/kapanir (P2-FR-06)."""
+
+    eos: Literal["ideal_gas", "linear", "tillotson"] = "ideal_gas"
+    gamma: float = Field(default=1.4, gt=1.0)
+    c0: float = Field(default=1.0, gt=0)
+    rho0_linear: float = Field(default=1.0, gt=0)
+    tillotson: TillotsonConfig = Field(default_factory=TillotsonConfig)
+    strength: StrengthConfig = Field(default_factory=lambda: StrengthConfig(enabled=False))
+    porosity: PorosityConfig = Field(default_factory=lambda: PorosityConfig(enabled=False))
+    gravity: GravityConfig = Field(default_factory=lambda: GravityConfig(enabled=False))
+
+
+SCENARIOS = ("sod_shock_tube", "sedov_blast", "plate_impact", "conservation_cloud")
+
+
 class RunConfig(_StrictModel):
-    """Bir kosunun tam tanimi. Ek B ornek iskeletiyle uyumlu."""
+    """Bir kosunun tam tanimi. FAZ 0 Ek B + FAZ 1 Ek A iskeletleriyle uyumlu."""
 
     schema_version: int
     run_id: str = Field(pattern=r"^[A-Za-z0-9_\-]{1,64}$")
@@ -100,6 +187,19 @@ class RunConfig(_StrictModel):
     numerics: NumericsConfig
     io: IoConfig = Field(default_factory=IoConfig)
     domain: DomainConfig | None = None
+    physics: PhysicsConfig = Field(default_factory=PhysicsConfig)
+    # FAZ 1 Ek A: dogrulama senaryosu ve cozunurluk merdiveni
+    test: Literal["sod_shock_tube", "sedov_blast", "plate_impact", "conservation_cloud"] | None = (
+        None
+    )
+    resolution: list[int] | None = Field(default=None, min_length=1)
+
+    @field_validator("resolution")
+    @classmethod
+    def _positive_resolutions(cls, v: list[int] | None) -> list[int] | None:
+        if v is not None and any(r < 8 for r in v):
+            raise ValueError(f"cozunurluk >= 8 olmali: {v}")
+        return v
 
     @field_validator("schema_version")
     @classmethod
