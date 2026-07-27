@@ -60,6 +60,23 @@ sözleşmedir: *bir kuvvet terimi eklendiğinde işi de aynı anda eklenir.*
 - (−) Çekme dayanımının gerçek fiziği (hasar/kırılma) bu fazda yoktur;
   D = 0 sabittir (DR-RIFT-P2 §1.3, STRETCH).
 
+## SONRAKİ DÜZELTME NOTU (28.07.2026, ADR-0015)
+
+Bu ADR yazıldığında Taylor bar enerji defterindeki asıl düzeltmenin yapay
+gerilme olduğu varsayılmıştı. **Bu varsayım yanlış çıktı** ve kayda geçirilmesi
+gerekiyor (RULES.txt: yanlış çıkan bir iddia silinmez, düzeltilir).
+
+Yapay gerilme hatayı %15,71'den yalnızca %13,95'e indirdi; eşik %1,5 idi. Kök
+neden sonradan bulundu: yoğunluğun toplama (summation) formu, serbest yüzeyde
+kernel eksikliği nedeniyle t=0'da bile −0,62 K'lik yapay çekme üretiyordu.
+Süreklilik formuna geçilince hata %0,096'ya düştü ve yapay gerilmenin katkısı
+%0,096 → %0,094'e, yani gürültü düzeyine indi. Ayrıntı: [ADR-0015](ADR-0015-sureklilik-yogunlugu.md).
+
+Karar geri alınmadı — modül gerçek çekme kararsızlığına karşı koruma olarak
+açık kalıyor. Ancak **yükü taşıyan düzeltme bu değildir** ve `test_taylor_bar.py`
+içindeki ablasyon testi, yapay gerilmeyi değil yoğunluk formunu sınayacak
+şekilde değiştirildi. Semptomu kısmen bastıran bir modülün, kök nedeni giderdiği
+sanılmamalı.
+
 ## İlgili testler
-`tests/test_taylor_bar.py` (artificial stress ablasyonu dahil),
-`scripts/run_g2_gate.py` (C2)
+`tests/test_taylor_bar.py`, `scripts/run_g2_gate.py` (C2)
