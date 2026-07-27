@@ -92,3 +92,45 @@ class TestConsumption:
         cfg = _cfg({"porosity": {"enabled": True, "alpha0": 2.1, "Pe": 1e6, "Ps": 1e8}})
         mat = MaterialParams.from_config(cfg)
         assert mat.porosity.crush_alpha(np.array([0.0]))[0] == 2.1
+
+    def test_density_method_is_read_from_config(self):
+        assert MaterialParams.from_config(_cfg({})).density_method == "summation"
+        cfg = _cfg({"density_method": "continuity"})
+        assert MaterialParams.from_config(cfg).density_method == "continuity"
+
+    def test_density_method_changes_behavior(self):
+        """ADR-0015: alan yalnizca tasinmiyor, ayriklastirmayi GERCEKTEN degistiriyor.
+
+        Summation rho'yu komsu toplamindan yeniden hesaplar; continuity ona
+        dokunmaz (integrator ilerletir). Ayni duruma iki yontem uygulaninca
+        rho farkli olmali — yoksa alan sessizce tuketilmiyor demektir.
+        """
+        from dartrift.cpu_reference.solid_ref import evaluate_solid
+        from dartrift.cpu_reference.sph_ref import RefParams
+
+        n, rho_seed = 40, 2700.0
+        x = np.random.default_rng(7).uniform(-1.0, 1.0, (n, 3))
+
+        def _rho(method):
+            st = SolidState(x=x.copy(), v=np.zeros((n, 3)), m=np.ones(n),
+                            u=np.full(n, 1e5), h=0.6, active=np.ones(n, bool))
+            st.rho = np.full(n, rho_seed)
+            mat = MaterialParams.from_config(
+                _cfg({"eos": "tillotson", "density_method": method})
+            )
+            evaluate_solid(st, mat, RefParams())
+            return st.rho
+
+        assert np.allclose(_rho("continuity"), rho_seed)
+        assert not np.allclose(_rho("summation"), rho_seed)
+
+    def test_unknown_density_method_rejected(self, tmp_path):
+        p = tmp_path / "bad.yaml"
+        p.write_text(
+            "schema_version: 1\nrun_id: X\nrandom_seed: 1\n"
+            "numerics: {precision: deterministic_fp64}\n"
+            "physics: {density_method: summasyon}\n",
+            encoding="utf-8",
+        )
+        with pytest.raises(ConfigError, match="density_method"):
+            load_config(p)

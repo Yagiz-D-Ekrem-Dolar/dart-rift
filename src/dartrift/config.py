@@ -185,6 +185,9 @@ class PhysicsConfig(_StrictModel):
     artificial_stress: ArtificialStressConfig = Field(
         default_factory=ArtificialStressConfig
     )
+    # ADR-0015: serbest yuzeyli kati senaryolarinda "continuity" gerekir;
+    # summation, yuzeyde rho'yu ~0.39 rho0'a dusurup yapay cekme uretir.
+    density_method: Literal["summation", "continuity"] = "summation"
 
 
 SCENARIOS = ("sod_shock_tube", "sedov_blast", "plate_impact", "conservation_cloud")
