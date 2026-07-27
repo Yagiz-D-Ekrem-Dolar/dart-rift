@@ -1,6 +1,7 @@
 #!/bin/bash
 #SBATCH -J drift_g0
-#SBATCH -p palamut-cuda
+#SBATCH -p kolyoz-cuda
+#SBATCH -C H100
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH -c 16
@@ -8,6 +9,11 @@
 #SBATCH --time=00:45:00
 #SBATCH --output=g0_%j.out
 #SBATCH --error=g0_%j.err
+#
+# Kuyruk notu: palamut-cuda'daki palamut5 dugumu /arf'a VERI yazamiyor
+# (metadata yazilir, dd 5MB -> 0 bayt; job 1425490 exit 10). Ayni test
+# kolyoz19/H100'de 587 MB/s ile temiz gecti (job 1425491). Kanit kosulari
+# bu yuzden kolyoz-cuda/H100'de yapilir.
 # DART-RIFT FAZ 0 — G0 kapi kaniti (TRUBA / ARF-ACC)
 #
 # TRUBA kurali: /arf'a pip/conda ile paket KURULMAZ. Ek paketler (warp-lang,
