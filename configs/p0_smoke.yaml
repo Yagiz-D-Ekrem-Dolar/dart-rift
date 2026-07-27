@@ -1,0 +1,13 @@
+# FAZ 0 duman testi kosusu (Ek B iskeletiyle uyumlu).
+schema_version: 1
+run_id: P0_smoke_0001
+random_seed: 104729
+numerics:
+  precision: deterministic_fp64
+  kernel: null   # FAZ 1'de doldurulur
+io:
+  output_layers: [scalar_budget, sparse_snapshot, event_catalog]
+  hdf5_compression: gzip
+domain:
+  min: [-1000.0, -1000.0, -1000.0]
+  max: [1000.0, 1000.0, 1000.0]
