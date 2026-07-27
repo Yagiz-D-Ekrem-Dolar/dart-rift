@@ -40,3 +40,19 @@ def test_golden_hash_matches():
         "ALTIN HASH SAPMASI: determinizm kaybi veya bilincli-ama-belgesiz degisiklik. "
         f"beklenen={golden['sha256']} bulunan={current}"
     )
+
+
+def test_golden_verified_on_multiple_platforms():
+    """Kirmizi-takim RT1: hash en az iki farkli platformda dogrulanmis olmali.
+
+    Tek platformda uretilmis bir hash, determinizmi degil yalnizca o makinedeki
+    tekrarlanabilirligi kanitlar.
+    """
+    golden = json.loads(GOLDEN_FILE.read_text(encoding="utf-8"))
+    platforms = golden.get("verified_on", [])
+    assert len(set(platforms)) >= 2, (
+        f"altin hash yalnizca {platforms} uzerinde dogrulanmis; "
+        "platformlar-arasi determinizm iddiasi icin en az iki platform gerekir"
+    )
+    systems = {p.split("/")[0] for p in platforms}
+    assert len(systems) >= 2, f"dogrulamalar tek isletim sisteminden: {systems}"

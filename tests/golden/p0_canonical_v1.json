@@ -2,5 +2,10 @@
   "scenario": "p0_canonical_v1",
   "seed": 104729,
   "n": 1000,
-  "sha256": "1a55d88780f25317f8e2f92a1db7c3e3c575a2ba908c8443e847d829cbb4c5ee"
+  "sha256": "1a55d88780f25317f8e2f92a1db7c3e3c575a2ba908c8443e847d829cbb4c5ee",
+  "verified_on": [
+    "Linux/CPython 3.10.15",
+    "Windows/CPython 3.12.10"
+  ],
+  "note": "Kirmizi-takim RT1: ayni config + tohum farkli makinelerde ayni hash'i vermeli. Linux dogrulamasi TRUBA kolyoz19/H100 uzerinde SLURM job 1425495 ile yapildi."
 }
