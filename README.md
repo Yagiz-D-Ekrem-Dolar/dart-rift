@@ -51,6 +51,38 @@ Motorun analitik/deneysel referanslara karşı ölçülen hataları:
 | İki-cisim (20 yörünge) | Kepler | E hatası 2,4e-07, yarıçap drifti 1,3e-08 | — |
 | Soğuk çöküş | — | enerji %0,36; momentum 1,2e-17 | %1; 1e-6 |
 
+### Marj analizi — kapılar yeşil, ama bazıları kılpayı
+
+Bir ölçütün geçmesi, sağlam geçtiği anlamına gelmez. Altı ölçüt eşiğine
+%20'den yakın:
+
+| Ölçüt | Ölçülen | Eşik | Marj |
+|---|---|---|---|
+| Elastik dalga hızı | %2,96 | %3 | **1,01×** |
+| Yerçekimi: kabuk hatası | %4,65 | %5 | 1,08× |
+| Sedov şok yarıçapı | %4,46 | %5 | 1,12× |
+| Enerji korunumu | %0,432 | %0,5 | 1,16× |
+| Yerçekimi: BH↔doğrudan medyan | %0,43 | %0,5 | 1,16× |
+| von Mises drifti | %1,66 | %2 | 1,20× |
+
+Bunların hiçbiri gizlenmiyor; ölçülen değerler yukarıdaki tabloda ve kapı
+raporlarındadır. İkisinin davranışı ayrıca incelendi:
+
+- **Elastik dalga** hatası çözünürlükle sıfıra yakınsıyor (%9,24 → %5,49 →
+  %4,32 → %2,96, yaklaşık birinci mertebe). Sistematik bir taban yok; daha
+  ince kafes marjı büyütür.
+- **Sedov** hatası ise ~%3,9'luk bir **tabana** iniyor (n=112'ye kadar
+  ölçüldü). Bu ayrıklaştırma değil, sonlu enjeksiyon yarıçapının model-form
+  hatası — [ADR-0011](docs/adr/ADR-0011-sedov-yakinsama-kurulumu.md).
+
+### Bilinen sınırlama
+
+Sedov'da **enerji hatası çözünürlükle büyüyor** ve n≥96'da %0,5 bütçesini
+aşıyor (%0,510 → %0,534). Kapı merdiveni n=64'te bittiği için bu ölçütte
+görünmez. Mevcut KDK+trapez şemasıyla (ADR-0007) enerji bütçesi ~300 adımı
+aşan koşularda tutmuyor; FAZ 3 daha uzun koşular gerektireceği için orada
+çözülmesi gereken açık bir maddedir. Kapı ölçütü **gevşetilmedi**.
+
 ## Mimari
 
 Her GPU çekirdeğinin **Warp'tan bağımsız bir NumPy FP64 referansı** vardır ve
