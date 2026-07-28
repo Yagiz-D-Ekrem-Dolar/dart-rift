@@ -199,11 +199,20 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
     # olculmustur (ADR-0018); "tutarlilik olsun" diye hepsine eklemeyin.
     l_raw = np.einsum("j,nja,njb->nab", vol_j, vji, gw3, optimize=True)
     b_mat = np.einsum("j,nja,njb->nab", vol_j, xji, gw3, optimize=True)
-    det = np.linalg.det(b_mat)
+    # Tekillik kontrolu ve ters alma, YALNIZCA anlamli dim x dim alt-bloguna
+    # uygulanir. Tam 3x3 uzerinde calisilirsa dim<3 senaryolarinda gomulmus
+    # y/z satirlari ozdes sifir oldugu icin det(B) HER ZAMAN 0 cikar ve
+    # duzeltme sessizce HIC uygulanmaz. Olculdu: 3B kurede %100, 1B cubukta
+    # %0 — oysa 1B'de anlamli olan B[0,0] bileseni 0.9951, yani gayet iyi
+    # kosulluydu. Boyut gommesi tekillik testini bosa cikariyordu (ADR-0019).
+    d = state.dim
+    b_sub = b_mat[:, :d, :d]
+    det = np.linalg.det(b_sub)
     ok = np.abs(det) > 1.0e-6
     state.L = l_raw.copy()
     if np.any(ok):
-        state.L[ok] = l_raw[ok] @ np.linalg.inv(b_mat[ok])
+        # L = l_raw . B^-1, yalnizca ilk d sutunu anlamli (gerisi zaten sifir)
+        state.L[ok, :, :d] = l_raw[ok][:, :, :d] @ np.linalg.inv(b_sub[ok])
     state.grad_correction_used = ok
 
     # gerilme evrimi icin spin, DUZELTILMIS L'den (Balsara icin degil)
