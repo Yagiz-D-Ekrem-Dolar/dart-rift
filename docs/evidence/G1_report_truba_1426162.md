@@ -45,3 +45,10 @@ G2 kriterlerinin FIZIGI kostu, ancak metrik dosyasi yazilirken
 hatasidir; `dartrift.reporting.write_metrics` ile duzeltildi ve
 `tests/test_reporting.py` ile sabitlendi. G2 kanitli sonucu ayri bir kosuda
 uretilir — bu rapor G2 hakkinda hicbir iddia icermez.
+
+### Sonraki kosu
+
+Duzeltilmis commit `a3ecd2e` ile **1426596** kosuldu ve hem G1 hem G2 gecti
+(bkz. [G2_report_truba_1426596.md](G2_report_truba_1426596.md)). G1, FARKLI
+bir dugumde (kolyoz23) tekrarlandi ve sekiz kriterin kanit sayilari birebir
+ayni cikti — bagimsiz bir yeniden uretim.
