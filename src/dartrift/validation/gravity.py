@@ -92,15 +92,30 @@ def run_uniform_sphere(n: int = 4000, theta: float = 0.5) -> dict:
     r = np.sqrt(np.sum(x * x, axis=1))
     g_rad = -np.einsum("id,id->i", g_dir, x) / np.maximum(r, 1e-12)  # ice dogru +
     edges = np.linspace(0.3 * R, 0.9 * R, 9)
+    # Kabuk basina MINIMUM parcacik sayisi (ADR-0017). Onceki deger 50 idi ve
+    # metrigi ALAN DOGRULUGU degil ORNEKLEME GURULTUSU olcer hale getiriyordu:
+    # parcacik basina gurultu ~%10 oldugundan kabuk ortalamasinin gurultusu
+    # ~%10/sqrt(N)'dir; N=64 icin bu tek basina ~%1.25 ve kuyrukta cok daha
+    # fazla. Olculen sonuc, `shell_mean_rel_err_max`in n ile MONOTON OLMAMASIYDI
+    # (n=2000'de %8.97 -> esigin (%5) neredeyse iki kati, n=4000'de %4.65).
+    # N>=200 ile kabuk-ortalama gurultusu ~%0.7'ye iner ve %5'lik esik gercekten
+    # alan hatasini sinar; olcum n boyunca kararli hale gelir.
+    SHELL_MIN_COUNT = 200
     shell_err = []
     for k in range(len(edges) - 1):
         sel = (r >= edges[k]) & (r < edges[k + 1])
-        if np.count_nonzero(sel) < 50:
+        if np.count_nonzero(sel) < SHELL_MIN_COUNT:
             continue
         r_mid = float(np.mean(r[sel]))
         g_shell = float(np.mean(g_rad[sel]))
         g_exact = G * M * r_mid / R**3
         shell_err.append(abs(g_shell - g_exact) / g_exact)
+    if len(shell_err) < 3:
+        # Sessizce bos/tek kabuk uzerinden "gecen" bir olcut uretme.
+        raise ValueError(
+            f"n={n} bu test icin yetersiz: >={SHELL_MIN_COUNT} parcacikli yalnizca "
+            f"{len(shell_err)} kabuk var (en az 3 gerekir). n>=4000 kullanin."
+        )
     # tani: tek-parcacik gurultu duzeyi (esik konmaz, raporlanir)
     g_exact_all = G * M * r / R**3
     sel_band = (r > 0.3 * R) & (r < 0.9 * R)
@@ -112,6 +127,8 @@ def run_uniform_sphere(n: int = 4000, theta: float = 0.5) -> dict:
         "bh_vs_direct_median_rel": bh_rel_med,
         "shell_mean_rel_err_max": float(np.max(shell_err)),
         "shell_mean_rel_err_avg": float(np.mean(shell_err)),
+        "n_shells_used": len(shell_err),
+        "shell_min_count": SHELL_MIN_COUNT,
         "particle_noise_mean_rel": float(np.mean(noise)),
         "n_nodes": tree.n_nodes,
     }

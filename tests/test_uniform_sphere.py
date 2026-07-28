@@ -47,3 +47,55 @@ class TestUniformSphereField:
         # (yalnizca raporlanir) — dogru karsilastirma kabuk ortalamasidir.
         assert result["shell_mean_rel_err_max"] < 0.05, result
         assert result["shell_mean_rel_err_avg"] < 0.03, result
+
+
+class TestErrorScaling:
+    """Esigi gecmek yetmez: hatalar TEORININ soyledigi gibi mi olcekleniyor?
+
+    Kapida iki olcut de kilpayi geciyor (BH medyan %0.435 vs %0.5; kabuk
+    %4.65 vs %5). Tek bir sayi, esigin altinda kalmasinin dogru NEDENDEN mi
+    yoksa tesadufen mi oldugunu soylemez. Asagidaki iki test, iki ayri hata
+    kaynagini birbirinden ayirir:
+        BH hatasi  -> yalnizca acilma acisi theta'ya bagli (agac yaklasimi)
+        kabuk hatasi -> yalnizca n'e bagli (Poisson ornekleme gurultusu)
+    Bu ayrim olculdu: theta degistirilince kabuk hatasi HIC degismiyor,
+    n degistirilince BH medyani neredeyse sabit kaliyor.
+    """
+
+    def test_bh_error_grows_with_opening_angle(self):
+        """Acilma kriteri dogrulugu GERCEKTEN kontrol ediyor mu?
+
+        Bozuk bir agac da tek bir esigi tesadufen gecebilir; ama hatanin
+        theta ile duzgun buyumesi, monopol yaklasiminin dogru yerde devreye
+        girdigini gosterir. Olculen: %0.054 / %0.435 / %1.060 (n=4000).
+        """
+        errs = [
+            run_uniform_sphere(n=4000, theta=t)["bh_vs_direct_median_rel"]
+            for t in (0.3, 0.5, 0.7)
+        ]
+        assert errs[0] < errs[1] < errs[2], errs
+        # theta=0.3 belirgin sekilde daha dogru olmali (olculen: ~8 kat)
+        assert errs[0] < 0.3 * errs[1], errs
+
+    def test_shell_metric_is_stable_across_n(self):
+        """ADR-0017: kabuk metrigi ORNEKLEME GURULTUSUNU degil ALANI olcmeli.
+
+        Eski taban (kabuk basina >=50 parcacik) metrigi n'de MONOTON OLMAYAN
+        hale getiriyordu — n=2000'de %8.97, yani esigin (%5) neredeyse iki
+        kati; n=4000'de %4.65. Sebep, 64 parcacikli bir kabugun ortalamasinin
+        gurultusuydu. Taban 200'e cikarilinca olcum kararlilastu.
+
+        Bu test tek bir esigi degil, metrigin cozunurlukten BAGIMSIZ davrandigini
+        sabitler: eski hatayi geri getiren bir degisiklik burada yakalanir.
+        """
+        errs = {n: run_uniform_sphere(n=n)["shell_mean_rel_err_max"]
+                for n in (4000, 8000, 16000)}
+        for n, e in errs.items():
+            assert e < 0.05, (n, errs)
+        # hicbir n digerinden 3 kattan fazla sapmamali (eski hal: 5.5 kat)
+        assert max(errs.values()) / min(errs.values()) < 3.0, errs
+
+    def test_undersampled_n_raises_instead_of_passing_silently(self):
+        """Yetersiz n'de olcut SESSIZCE gecmemeli, acik hata vermeli."""
+        with pytest.raises(ValueError, match="yetersiz"):
+            run_uniform_sphere(n=800)
