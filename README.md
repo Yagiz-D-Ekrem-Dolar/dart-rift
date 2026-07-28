@@ -18,16 +18,23 @@ gözeneklilik, öz-yerçekimi (FAZ 2).
 Her faz, şartnamedeki kabul ölçütlerini **kanıtla** geçmeden bir sonrakine
 geçilmez. Kanıtlar TRUBA/ARF-ACC üzerinde, temiz git ağacıyla üretilir.
 
-| Kapı | Kapsam | Sonuç | Kanıt |
+| Kapı | Kapsam | Sonuç | Karar |
 |---|---|---|---|
-| **G0** | Zemin sağlam (altyapı) | **GEÇTİ** 8/8 | [rapor](docs/evidence/G0_report_truba_1425656.md) — `palamut4` A100, iş 1425656 |
-| **G1** | Şok motoru çalışıyor | **GEÇTİ** 8/8 | [rapor](docs/evidence/G1_report_truba_1426162.md) — `kolyoz9` H100, iş 1426162 |
-| **G2** | Gerçek malzeme fiziği | **GEÇTİ** 7/7 | [rapor](docs/evidence/G2_report_truba_1426596.md) — `kolyoz23` H100, iş 1426596 |
+| **G0** | Zemin sağlam (altyapı) | **GEÇTİ** 8/8 | FAZ 1 başlayabilir |
+| **G1** | Şok motoru çalışıyor | **GEÇTİ** 8/8 | FAZ 2 başlayabilir |
+| **G2** | Gerçek malzeme fiziği | **GEÇTİ** 7/7 | **FAZ 3 başlayabilir** |
 
-Son kanıt koşusunda **360 test geçti / 0 kaldı**. G0 ayrıca kırmızı takım
-(§12) 6/6 temiz. CPU↔GPU bit-eşit roundtrip üç GPU mimarisinde doğrulandı:
-sm_80 (A100), sm_90 (H100), sm_86 (RTX 3050). G1, iki farklı düğümde (kolyoz9
-ve kolyoz23) koşuldu ve sekiz ölçütün kanıt sayıları birebir aynı çıktı.
+Üçü de **aynı commit üzerinde** (`9ffe342`, temiz ağaç) arka arkaya koşuldu:
+[kapanış kanıtı](docs/evidence/GATES_HEAD_9ffe342.md) — `kolyoz23` H100,
+işler 1427564 / 1427565, **376 test geçti / 0 kaldı**, kapsam **%97,6**,
+kırmızı takım (§12) 6/6 temiz, üç çıkış kodu da 0.
+
+Koşu bazlı raporlar: [G0](docs/evidence/G0_report_truba_1425656.md) ·
+[G1](docs/evidence/G1_report_truba_1426162.md) ·
+[G2](docs/evidence/G2_report_truba_1426596.md). CPU↔GPU bit-eşit roundtrip
+üç GPU mimarisinde doğrulandı: sm_80 (A100), sm_90 (H100), sm_86 (RTX 3050).
+G1 ayrıca iki farklı düğümde koşulup sekiz ölçütün kanıt sayıları birebir
+aynı çıktı.
 
 > **Kapsam sınırı:** Kapılar motorun **doğrulama senaryolarını** geçtiği
 > anlamına gelir. Dimorphos hakkında **henüz hiçbir bilimsel sonuç iddia
