@@ -1,17 +1,26 @@
-# DART-RIFT — FAZ 0: Temel Altyapı ve Test İskeleti
+# DART-RIFT — FAZ 0–2: Altyapı, SPH Şok Motoru ve Malzeme Fiziği
 
 > Dimorphos için GPU hızlandırmalı SPH şok-fiziği motoru ve Bayesçi iç-yapı
-> çıkarımı projesinin **G0 kapısı** ("zemin sağlam") uygulaması.
-> Şartname: `DR-RIFT-P0 v1.0` · Ana Plan: `DART-RIFT Ana Proje Planı v1.0`
+> çıkarımı projesi.
+> Şartname: `DR-RIFT-P0/P1/P2 v1.0` · Ana Plan: `DART-RIFT Ana Proje Planı v1.0`
 
-**G0 durumu: GEÇTİ** — kapı 8/8, kırmızı takım (§12) 6/6 temiz, 219 test,
-kapsam %97,1. Kanıt koşusu: TRUBA/ARF-ACC `palamut4`, NVIDIA A100-SXM4-80GB,
-SLURM job 1425656, temiz git ağacı
-([kapı + kırmızı takım raporu](docs/evidence/G0_report_truba_1425656.md)).
-CPU↔GPU bit-eşit roundtrip **üç GPU mimarisinde** doğrulandı: sm_80 (A100),
-sm_90 (H100), sm_86 (RTX 3050).
-Bu, altyapının geçtiği anlamına gelir — **hiçbir fizik veya bilimsel sonuç
-iddia edilmemektedir**; FAZ 0'da fizik yoktur.
+## Kapı durumu
+
+| Kapı | Kapsam | Sonuç | Kanıt |
+|---|---|---|---|
+| **G0** | Zemin sağlam (altyapı) | **GEÇTİ** 8/8 | [rapor](docs/evidence/G0_report_truba_1425656.md) — `palamut4` A100, iş 1425656 |
+| **G1** | Şok motoru çalışıyor | **GEÇTİ** 8/8 | [rapor](docs/evidence/G1_report_truba_1426162.md) — `kolyoz9` H100, iş 1426162 |
+| **G2** | Gerçek malzeme fiziği | **GEÇTİ** 7/7 | [rapor](docs/evidence/G2_report_truba_1426596.md) — `kolyoz23` H100, iş 1426596 |
+
+Tüm kapı kanıtları TRUBA/ARF-ACC üzerinde, temiz git ağacıyla ve koşu künyesi
+(iş kimliği, düğüm, commit, ortam sürümleri) kayıtlı olarak üretilmiştir.
+Son koşuda **360 test geçti / 0 kaldı**. G0 ayrıca kırmızı takım (§12) 6/6
+temiz; CPU↔GPU bit-eşit roundtrip üç GPU mimarisinde doğrulandı: sm_80
+(A100), sm_90 (H100), sm_86 (RTX 3050).
+
+Kapılar motorun **doğrulama senaryolarını** (Sod, Sedov, Taylor bar, elastik
+dalga, crush curve, yerçekimi) geçtiği anlamına gelir. **Dimorphos hakkında
+henüz hiçbir bilimsel sonuç iddia edilmemektedir**; çarpma koşuları FAZ 3'tedir.
 
 ## Proje tek cümlede
 
