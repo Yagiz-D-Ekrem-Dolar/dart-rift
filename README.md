@@ -59,11 +59,17 @@ Bir ölçütün geçmesi, sağlam geçtiği anlamına gelmez. Altı ölçüt eş
 | Ölçüt | Ölçülen | Eşik | Marj |
 |---|---|---|---|
 | Elastik dalga hızı | %2,96 | %3 | **1,01×** |
-| Yerçekimi: kabuk hatası | %4,65 | %5 | 1,08× |
 | Sedov şok yarıçapı | %4,46 | %5 | 1,12× |
 | Enerji korunumu | %0,432 | %0,5 | 1,16× |
 | Yerçekimi: BH↔doğrudan medyan | %0,43 | %0,5 | 1,16× |
 | von Mises drifti | %1,66 | %2 | 1,20× |
+| Yerçekimi: kabuk hatası | %1,90 | %5 | 2,6× |
+
+Kabuk hatası bu listede daha önce %4,65 (1,08×) ile yer alıyordu. İncelenince
+metriğin alan doğruluğunu değil **örnekleme gürültüsünü** ölçtüğü ve n ile
+monoton olmadığı görüldü (n=2000'de %8,97 — eşiğin neredeyse iki katı). Eşik
+değiştirilmedi; düzeltilen şey ölçünün neyi ölçtüğü —
+[ADR-0017](docs/adr/ADR-0017-kabuk-metrigi-minimum-ornekleme.md).
 
 Bunların hiçbiri gizlenmiyor; ölçülen değerler yukarıdaki tabloda ve kapı
 raporlarındadır. İkisinin davranışı ayrıca incelendi:
