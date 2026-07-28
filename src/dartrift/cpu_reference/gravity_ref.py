@@ -12,6 +12,7 @@ Yumusatma: Plummer, (r^2 + eps^2)^(1/2).
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import sqrt
 
 import numpy as np
 
@@ -142,30 +143,79 @@ def bh_accel(
     g = np.zeros((nt, 3))
     phi = np.zeros(nt)
     eps2 = eps * eps
+
+    # Gezinme SKALER Python float'lariyla yapilir, NumPy dizileriyle degil.
+    #
+    # Gerekce (olculdu): agac gezinmesi 3 elemanlik NumPy dizileri uzerinde
+    # calisinca her dugum ziyareti ~4 us NumPy dispatch/ayirma yuku odetiyordu;
+    # oysa is yalnizca birkac kayan nokta islemi. n=4000'de ~4M ziyaret ->
+    # 15.0 s. Ayni alani DOGRUDAN N^2 toplamla hesaplamak 0.57 s suruyordu:
+    # yani hizlandirma yapisi, hizlandirmasi gereken yontemden 27 KAT YAVASTI.
+    # Sabit carpan o kadar buyuktu ki Barnes-Hut ancak ~290 000 parcacik
+    # uzerinde dogrudan toplami geciyordu.
+    #
+    # Gezinme sirasi ve toplama sirasi AYNEN korunur; degisen tek sey skaler
+    # aritmetigin NumPy yerine Python float'la yapilmasidir (ikisi de IEEE-754
+    # double). Olculen sapma 5.0e-16 (~1 ULP) — bit-esit DEGIL, cunku NumPy'nin
+    # `d @ d` nokta carpimi ile acik `dx*dx+dy*dy+dz*dz` ifadesinin
+    # iliskilendirmesi farkli olabiliyor. Sapma tum toleranslarin (capraz
+    # kontrol 1e-8, theta=0 ozdeslik testi 1e-10) cok altinda ve KOSUDAN
+    # KOSUYA DETERMINISTIK (ADR-0018).
+    com = tree.com.tolist()
+    size = tree.size.tolist()
+    mass = tree.mass.tolist()
+    first_child = tree.first_child.tolist()
+    next_skip = tree.next_skip.tolist()
+    leaf_start = tree.leaf_start.tolist()
+    leaf_count = tree.leaf_count.tolist()
+    perm = tree.perm.tolist()
+    xl = np.asarray(x, dtype=np.float64).tolist()
+    ml = np.asarray(m, dtype=np.float64).tolist()
+    tl = targets.tolist()
+    idx = None if target_idx is None else np.asarray(target_idx).tolist()
+
     for t in range(nt):
-        p = targets[t]
-        self_i = -1 if target_idx is None else int(target_idx[t])
+        px, py, pz = tl[t]
+        self_i = -1 if idx is None else idx[t]
+        gx = gy = gz = 0.0
+        ph = 0.0
         node = 0
         while node != -1:
-            d = tree.com[node] - p
-            dist2 = d @ d + eps2
-            dist = np.sqrt(dist2)
-            if tree.first_child[node] < 0:  # yaprak: parcaciklari dogrudan topla
-                s0 = tree.leaf_start[node]
-                for k in range(tree.leaf_count[node]):
-                    j = int(tree.perm[s0 + k])
+            cx, cy, cz = com[node]
+            dx = cx - px
+            dy = cy - py
+            dz = cz - pz
+            dist2 = dx * dx + dy * dy + dz * dz + eps2
+            dist = sqrt(dist2)
+            if first_child[node] < 0:  # yaprak: parcaciklari dogrudan topla
+                s0 = leaf_start[node]
+                for k in range(leaf_count[node]):
+                    j = perm[s0 + k]
                     if j == self_i:
                         continue
-                    dj = x[j] - p
-                    r2 = dj @ dj + eps2
-                    inv = 1.0 / np.sqrt(r2)
-                    g[t] += G * m[j] * dj * inv / r2
-                    phi[t] -= G * m[j] * inv
-                node = tree.next_skip[node]
-            elif tree.size[node] / dist < theta:  # yeterince uzak: monopol
-                g[t] += G * tree.mass[node] * d / (dist2 * dist)
-                phi[t] -= G * tree.mass[node] / dist
-                node = tree.next_skip[node]
+                    jx, jy, jz = xl[j]
+                    ex = jx - px
+                    ey = jy - py
+                    ez = jz - pz
+                    r2 = ex * ex + ey * ey + ez * ez + eps2
+                    inv = 1.0 / sqrt(r2)
+                    w = G * ml[j] * inv / r2
+                    gx += ex * w
+                    gy += ey * w
+                    gz += ez * w
+                    ph -= G * ml[j] * inv
+                node = next_skip[node]
+            elif size[node] / dist < theta:  # yeterince uzak: monopol
+                w = G * mass[node] / (dist2 * dist)
+                gx += dx * w
+                gy += dy * w
+                gz += dz * w
+                ph -= G * mass[node] / dist
+                node = next_skip[node]
             else:  # ac
-                node = tree.first_child[node]
+                node = first_child[node]
+        g[t, 0] = gx
+        g[t, 1] = gy
+        g[t, 2] = gz
+        phi[t] = ph
     return g, phi
