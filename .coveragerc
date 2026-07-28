@@ -1,0 +1,40 @@
+# Kapsam olcumu — TEK kaynak (ADR-0016).
+#
+# Dosya adi bilerek `.coveragerc`: coverage.py'nin VARSAYILAN yapilandirma
+# adidir, dolayisiyla CI, kapi kosuculari ve yerel `pytest` cagrilari icin
+# otomatik uygulanir. Onceki `.coveragerc-ci` yalnizca `--cov-config` bayragi
+# ELLE verildiginde devreye giriyordu ve kapi kosucusunda verilmedigi icin
+# CI kirmizi kalmisti. Hatirlanmasi gereken bayrak, bayrak degildir.
+#
+# NEDEN @wp.kernel / @wp.func GOVDELERI HARIC?
+# ------------------------------------------------------------------
+# coverage.py bu govdeleri OLCEMEZ. Warp, dekoratorlu fonksiyonu CUDA'ya
+# (veya CPU'da yerel koda) derler; Python'un satir izleyicisi govde
+# satirlarini hicbir zaman gormez. Olcum bunlari "eksik" sayarsa:
+#
+#   - Oran anlamsizlasir. Ornek: `density_3d` projedeki EN COK calisan
+#     cekirdektir (her SPH adiminda cagrilir) ama olcumde govdesinin
+#     TAMAMI eksik gorunuyordu.
+#   - Esik tesadufe baglanir. Bu yuzden "tum kod dahil" oran %85,1 gibi
+#     esigin (%85) kilpayi ustunde bir yerde salinip duruyordu.
+#
+# Onceki `.coveragerc-ci` bunu warp_core/ dizinini TAMAMEN hariç tutarak
+# cozuyordu; ama o zaman da dizindeki GERCEK Python (GridManager, cozucu
+# orkestrasyonu, dt hesabi — 657 satir, %96,8 kapsamli) gorunmez oluyordu.
+# Yalnizca dekoratorlu govdeleri haric tutmak 657 satir daha OLCER.
+#
+# GPU cekirdekleri satir kapsamiyla degil, CPU<->GPU CAPRAZ KONTROLLERIYLE
+# dogrulanir: her cekirdegin Warp'tan bagimsiz bir NumPy FP64 referansi
+# vardir ve ikisi < 1e-8 sapmayla eslesir (tests/test_sph_cross.py,
+# tests/test_solid_cross.py). Yanlis bir cekirdegi yakalayan sey budur;
+# satir kapsami zaten yakalayamazdi.
+
+[run]
+source = dartrift
+
+[report]
+precision = 1
+show_missing = True
+exclude_also =
+    @wp\.kernel
+    @wp\.func

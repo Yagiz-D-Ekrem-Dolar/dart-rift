@@ -36,12 +36,14 @@ jobs:
           python -m dartrift.config configs/p1_sod.yaml
           python -m dartrift.config configs/p2_basalt.yaml
 
-      # Kapsam esigi CPU'da CALISTIRILABILEN kod icin uygulanir; GPU
-      # kernel'leri (warp_core/) bu runner'da kosulamadigi icin haric tutulur
-      # ve onlarin kapsami CUDA'li kapi kosusunda olculur (bkz. .coveragerc-ci).
-      - name: Birim testleri + kapsam esigi (>= %85, CPU erisilebilir kod)
+      # Kapsam yapilandirmasi `.coveragerc`'dedir ve coverage.py'nin VARSAYILAN
+      # dosya adi oldugu icin bayrak gerektirmez (ADR-0016). @wp.kernel/@wp.func
+      # govdeleri haric tutulur: coverage.py onlari olcemez, cunku Warp o
+      # fonksiyonlari derler ve Python satir izleyicisi govdeyi hic gormez.
+      # GPU cekirdekleri CPU<->GPU capraz kontrolleriyle dogrulanir.
+      - name: Birim testleri + kapsam esigi (>= %85)
         run: >
-          pytest tests -m "not gpu" --cov=dartrift --cov-config=.coveragerc-ci
+          pytest tests -m "not gpu" --cov=dartrift
           --cov-fail-under=85 --cov-report=term-missing
 
       - name: Determinizm altin hash
