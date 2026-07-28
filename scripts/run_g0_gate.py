@@ -90,7 +90,15 @@ def main() -> int:
         f"--cov-report=json:{run_dir / 'coverage.json'}",
     ]
     if not gpu_ok_env:
-        pytest_cmd += ["-m", "not gpu"]
+        # ON-KONTROL modu: GPU yoksa gpu-isaretli testler atlanir, dolayisiyla
+        # warp_core/ kernel govdeleri CALISTIRILAMAZ. Tam-paket kapsam esigini
+        # boyle bir ortamda uygulamak, "test edilmemis" degil "test EDILEMEZ"
+        # olan kodu eksik gibi gosterir: FAZ 1/2 GPU cekirdekleri eklendikten
+        # sonra oran %81.6'ya dustu ve CI kirmizi oldu (kod dogru oldugu halde).
+        # .coveragerc-ci'deki iki katmanli tasarim zaten bunu ongoruyor:
+        #   CI/on-kontrol -> CPU'da calistirilabilen kodun >= %85'i
+        #   KANIT kosusu  -> tum kodun (GPU dahil) >= %85'i
+        pytest_cmd += ["-m", "not gpu", f"--cov-config={REPO / '.coveragerc-ci'}"]
     rc_all, out_all = sh(pytest_cmd, run_dir / "pytest_full.log")
     criteria["C1"].record(rc_all == 0, f"pytest cikis kodu={rc_all} (pytest_full.log)")
 
@@ -153,7 +161,11 @@ def main() -> int:
     if cov_file.is_file():
         cov = json.loads(cov_file.read_text(encoding="utf-8"))
         cov_pct = cov["totals"]["percent_covered"]
-        cov_note = f"kapsam={cov_pct:.1f}% (esik {COVERAGE_MIN}%)"
+        # Hangi katmanin olculdugu YAZILMALI: "%85" tek basina belirsizdir.
+        kapsam_katmani = (
+            "tum paket, GPU dahil" if gpu_ok_env else "CPU'da calistirilabilen kod"
+        )
+        cov_note = f"kapsam={cov_pct:.1f}% (esik {COVERAGE_MIN}%, {kapsam_katmani})"
         if cov_pct < COVERAGE_MIN:
             criteria["C1"].record(False, criteria["C1"].evidence + f"; KAPSAM YETERSIZ: {cov_note}")
         else:
