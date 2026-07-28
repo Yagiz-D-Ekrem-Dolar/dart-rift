@@ -232,10 +232,10 @@ kopyalanıp sürümlenir.
   kimliğinin (13 P0 + 13 P1 + 12 P2) her biri kodu, testi ve kanıtıyla
   eşlenmiştir. Aynı belge, şartnamece **yasak** olduğu için bilerek
   yapılmayanları da listeler ki eksik ile kapsam-dışı karışmasın.
-- **[docs/adr/](docs/adr/)** — 15 mimari karar kaydı. Her büyük teknik karar
+- **[docs/adr/](docs/adr/)** — 20 mimari karar kaydı. Her büyük teknik karar
   gerekçesi, değerlendirilen alternatifleri ve doğrulama testiyle kayıtlıdır;
   sessiz değişiklik yasaktır.
-- **[docs/defter/](docs/defter/)** — 7 mühendislik defteri kaydı. Başarısız
+- **[docs/defter/](docs/defter/)** — 11 mühendislik defteri kaydı. Başarısız
   denemeler ve negatif sonuçlar **silinmez**, işlenir; yanlış çıkan bir iddia
   da silinmez, düzeltme notuyla kayda geçer.
 - **[docs/evidence/](docs/evidence/)** — kapı raporları, koşu künyeleriyle.
