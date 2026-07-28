@@ -144,9 +144,19 @@ def compute_gravity_direct(
 def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> None:
     """Tam alan degerlendirmesi: rho, EOS, L, dS/dt, yercekimi, a, du/dt."""
     dx, r, q, grad_w = _pair_geometry(state)
-    w = kernel_w(q, state.h, state.dim)
+    # W(q) TEMBEL hesaplanir ve paylasilir: (N,N) boyutunda pahali bir dizidir,
+    # ama yalnizca iki yerde gerekir — summation yogunlugu ve yapay gerilme.
+    # Onceki halde her cagrida kosulsuz hesaplaniyordu (continuity modunda
+    # TAMAMEN bosa) ve yapay gerilme icin AYNI ifade ikinci kez uretiliyordu.
+    w_cache: list[np.ndarray] = []
+
+    def _w() -> np.ndarray:
+        if not w_cache:
+            w_cache.append(kernel_w(q, state.h, state.dim))
+        return w_cache[0]
+
     if mat.density_method == "summation":
-        state.rho = w @ state.m
+        state.rho = _w() @ state.m
     elif mat.density_method == "continuity":
         # rho durumun bir parcasidir; burada YENIDEN HESAPLANMAZ, yalnizca
         # degisim hizi uretilir ve integratör tarafindan ilerletilir.
@@ -256,7 +266,7 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
         r_i = np.where(state.P < 0.0, -ast.eps * state.P / state.rho**2, 0.0)
         dp = ast.dp_over_h * state.h
         w_dp = float(kernel_w(np.array([dp / state.h]), state.h, state.dim)[0])
-        f_ij = kernel_w(q, state.h, state.dim) / max(w_dp, 1.0e-300)
+        f_ij = _w() / max(w_dp, 1.0e-300)   # summation modunda yeniden kullanilir
         r_pair = (r_i[:, None] + r_i[None, :]) * f_ij**ast.n_exp
     else:
         r_pair = None
