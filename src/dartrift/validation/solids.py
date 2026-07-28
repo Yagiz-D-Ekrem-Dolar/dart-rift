@@ -141,10 +141,19 @@ def run_elastic_wave(resolution: int = 400) -> dict:
     t_end = 0.4 / c_long  # darbe ~0.4 birim yol alsin
     run_solid(state, mat, num, t_end, budget_every=10**9)
 
-    # tepe konumu: kutle-agirlikli hiz profili tepesi (parabolik incelik)
+    # Tepe konumu: SAGA giden dalganin tepesi (parabolik incelik).
+    #
+    # Arama x > x_c0 ile SINIRLANMALIDIR. Gerinimsiz bir hiz darbesi
+    # d'Alembert'e gore esit genlikli iki dalgaya ayrilir:
+    #   v(x,t) = 0.5 f(x - c t) + 0.5 f(x + c t)
+    # Ikisinin de tepesi POZITIF ve buyuklukleri ESIT; dolayisiyla tum dizi
+    # uzerinde argmax hangisini sececegi yazi-turadir. res=150'de sola gideni
+    # secti ve olculen hiz -1854 m/s (hata %140) cikti. Yanlis tepe secimi
+    # olcumu sessizce anlamsizlastirir.
     vx = state.v[:, 0]
-    pk = int(np.argmax(vx))
     xs = state.x[:, 0]
+    right = np.flatnonzero(xs > x_c0)
+    pk = int(right[np.argmax(vx[right])])
     if 0 < pk < n - 1:
         y0, y1, y2 = vx[pk - 1], vx[pk], vx[pk + 1]
         den = y0 - 2 * y1 + y2
@@ -159,6 +168,9 @@ def run_elastic_wave(resolution: int = 400) -> dict:
         "speed_measured": float(speed),
         "rel_err": abs(speed - c_long) / c_long,
         "distinguishes_bulk": abs(speed - c_long) < abs(speed - c0),
+        # Tani: izlenen (saga giden) tepenin konumu. Sol dalga serbest uctan
+        # yansidigi icin simetrik bir referans DEGILDIR, o yuzden raporlanmaz.
+        "x_peak_right": float(x_pk),
     }
 
 
