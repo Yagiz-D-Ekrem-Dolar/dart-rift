@@ -55,6 +55,18 @@ kapatıyordu.
    ≈0,28): enerjinin gerçekten şoka gidip gitmediğinin, şok yarıçapından
    bağımsız ikinci göstergesi.
 
+   > **Düzeltme (29.07.2026):** Bu madde iki faz boyunca **uygulanmadı** —
+   > `kinetic_fraction` hesaplanıyordu ama kapı raporuna hiç girmiyordu, yani
+   > "raporlanır" iddiası doğru değildi. Denetimde yakalandı ve G1 C5 kanıt
+   > metnine eklendi.
+   >
+   > Ayrıca beklenen değer düzeltildi: bu kurulumda hedef **0,28 değil ~0,19**.
+   > Ölçülen (n = 32…112): 0,224 / 0,191 / 0,182 / 0,200 / 0,189 / 0,187.
+   > Sebep aynı model-form seçimi: enerji noktasal değil, şok yarıçapının
+   > ~%32'si kadar bir bölgeye ısı olarak konuyor; iç bölge sıcak kalıyor ve o
+   > pay kinetiğe dönüşmüyor. 0,28 hedefi **nokta** patlaması içindir ve bu
+   > kuruluma uygulanamaz. Eşik konmaz, sayı raporlanır.
+
 ## Sonuçlar
 - (+) Yakınsama merdiveni artık anlamlı: aynı problem, farklı çözünürlük.
 - (+) Erken biten koşu artık sessiz bir yanlış sonuç üretemez.

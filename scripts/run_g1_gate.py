@@ -206,10 +206,18 @@ def main() -> int:
     )
     if sedov_ladder:
         sed_hi = sedov_ladder[max(sedov_ladder)]
+        # Kinetik enerji orani ADR-0011 §4'te "ikinci bagimsiz gosterge" olarak
+        # RAPORLANACAGI yazildigi halde hicbir yerde okunmuyordu. Artik kanit
+        # metnine giriyor. Beklenen deger, sonlu enjeksiyon yaricapi (r_inj =
+        # sok yaricapinin ~%32'si) nedeniyle NOKTA patlamasi benzerlik cozumunun
+        # 0.28'i DEGIL, ~0.19'dur: ic bolge sicak kalir ve o enerji kinetige
+        # donusmez. Esik konmaz — sayi raporlanir ve sapmasi gorulur.
         crit["C5"].record(
             sed_hi["shock_radius_rel_err"] < 0.05,
             f"n={max(sedov_ladder)}^3: r={sed_hi['shock_radius_measured']:.4f} vs "
-            f"{sed_hi['shock_radius_exact']:.4f} ({sed_hi['shock_radius_rel_err']:.2%})",
+            f"{sed_hi['shock_radius_exact']:.4f} ({sed_hi['shock_radius_rel_err']:.2%}); "
+            f"KE/E={sed_hi['kinetic_fraction']:.3f} "
+            f"(sonlu enjeksiyonda ~0.19 beklenir; nokta patlamasi 0.28)",
         )
     else:
         crit["C5"].record(False, "CUDA yok: Sedov kosulamadi -> KANITLANAMADI")
