@@ -132,3 +132,12 @@ Hiçbiri testleri kırmızıya çevirmemişti. Bulunmalarının tek yolu, geçen
 
 - Enerji bütçesinin uzun koşularda tutmaması (FAZ 3 önkoşulu).
 - FAZ 3'e geçiş kararı.
+
+> **KAPANIŞ NOTU (29.07.2026):** Yukarıdaki "enerji bütçesi tutmuyor" maddesi
+> **çözüldü ve bir kusur olmadığı anlaşıldı**. Sabit çözünürlükte yalnızca CFL
+> değiştirilerek ölçüldü: dt yarılanınca hata tam yarıya iniyor (2,06 ve
+> 2,07). Yani `O(dt¹)` **kesme hatası**, yapısal sızıntı değil. Aynı taramada
+> şok yarıçapı hatası sabit kaldığı için iki hata kaynağı da birbirinden
+> ayrıldı. Ayrıntı: [ADR-0020](../adr/ADR-0020-enerji-hatasi-kesme-hatasidir.md).
+> Bu kayıttaki BULGU 3(b) o zamanki bilgiyle doğruydu; kök neden sonradan
+> bulundu ve burada düzeltiliyor.

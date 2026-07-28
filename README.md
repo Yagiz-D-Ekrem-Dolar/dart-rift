@@ -46,7 +46,7 @@ Motorun analitik/deneysel referanslara karşı ölçülen hataları:
 | Momentum korunumu | — | **8,39e-16** | 1e-6 |
 | Enerji korunumu | — | %0,432 | %0,5 |
 | Rijit dönme (objektiflik) | Jaumann | %1,66 (Jaumann kapalıyken %200) | — |
-| Elastik dalga hızı | 4593 m/s teorik | 4458 m/s → %2,96 | %3 |
+| Elastik dalga hızı | 4593 m/s teorik | 4463 m/s → **%2,83** | %3 |
 | Taylor bar (bakır) | Deney bandı 0,60–0,80 | **L/L0 = 0,731**, enerji %0,083 | %1,5 |
 | İki-cisim (20 yörünge) | Kepler | E hatası 2,4e-07, yarıçap drifti 1,3e-08 | — |
 | Soğuk çöküş | — | enerji %0,36; momentum 1,2e-17 | %1; 1e-6 |
@@ -58,7 +58,7 @@ Bir ölçütün geçmesi, sağlam geçtiği anlamına gelmez. Altı ölçüt eş
 
 | Ölçüt | Ölçülen | Eşik | Marj |
 |---|---|---|---|
-| Elastik dalga hızı | %2,96 | %3 | **1,01×** |
+| Elastik dalga hızı | %2,83 | %3 | **1,06×** |
 | Sedov şok yarıçapı | %4,46 | %5 | 1,12× |
 | Enerji korunumu | %0,432 | %0,5 | 1,16× |
 | Yerçekimi: BH↔doğrudan medyan | %0,43 | %0,5 | 1,16× |
@@ -74,8 +74,8 @@ değiştirilmedi; düzeltilen şey ölçünün neyi ölçtüğü —
 Bunların hiçbiri gizlenmiyor; ölçülen değerler yukarıdaki tabloda ve kapı
 raporlarındadır. İkisinin davranışı ayrıca incelendi:
 
-- **Elastik dalga** hatası çözünürlükle sıfıra yakınsıyor (%9,24 → %5,49 →
-  %4,32 → %2,96, yaklaşık birinci mertebe). Sistematik bir taban yok; daha
+- **Elastik dalga** hatası çözünürlükle sıfıra yakınsıyor (%9,13 → %5,36 →
+  %4,19 → %2,83, yaklaşık birinci mertebe). Sistematik bir taban yok; daha
   ince kafes marjı büyütür.
 - **Sedov** hatası ise ~%3,9'luk bir **tabana** iniyor (n=112'ye kadar
   ölçüldü). Bu ayrıklaştırma değil, sonlu enjeksiyon yarıçapının model-form
