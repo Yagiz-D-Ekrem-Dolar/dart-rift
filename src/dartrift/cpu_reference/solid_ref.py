@@ -181,8 +181,14 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
     #     Serbest yuzeyde B tekillesirse duzeltmesiz forma dusulur.
     xji = _embed3(-dx, state.dim)  # dx = x_i - x_j
     vol_j = state.m / state.rho
-    l_raw = np.einsum("j,nja,njb->nab", vol_j, vji, gw3)
-    b_mat = np.einsum("j,nja,njb->nab", vol_j, xji, gw3)
+    # optimize=True SECICI kullanilir — hepsine eklemek YAVASLATIR.
+    # Olculdu (N=700): uc-operandli kasilmalar ve (n,3,3)x(n,n,3) carpimlari
+    # BLAS yoluna dusunce 1.9-6.5x hizlaniyor; buna karsilik "j,nja->na",
+    # "nja,nja->nj" ve "nj,nja,nja->n" gibi imzalar optimize=True ile
+    # 0.4-0.7x, yani 1.5-2.5 KAT YAVASLIYOR. Karar her imza icin ayri
+    # olculmustur (ADR-0018); "tutarlilik olsun" diye hepsine eklemeyin.
+    l_raw = np.einsum("j,nja,njb->nab", vol_j, vji, gw3, optimize=True)
+    b_mat = np.einsum("j,nja,njb->nab", vol_j, xji, gw3, optimize=True)
     det = np.linalg.det(b_mat)
     ok = np.abs(det) > 1.0e-6
     state.L = l_raw.copy()
@@ -258,18 +264,18 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
     m_j = state.m[None, :]
     ones = np.ones_like(r)
     # a_i = T_i.(sum_j m_j gW) + sum_j m_j T_j.gW - sum_j m_j Pi gW + g
-    s1 = np.einsum("nj,njb->nb", m_j * ones, gw3)
+    s1 = np.einsum("nj,njb->nb", m_j * ones, gw3, optimize=True)
     a1 = np.einsum("nab,nb->na", T, s1)
-    a2 = np.einsum("j,jab,njb->na", state.m, T, gw3)
-    a_av = np.einsum("nj,njb->nb", m_j * pi_av, gw3)
+    a2 = np.einsum("j,jab,njb->na", state.m, T, gw3, optimize=True)
+    a_av = np.einsum("nj,njb->nb", m_j * pi_av, gw3, optimize=True)
     a_tot = a1 + a2 - a_av
     if r_pair is not None:
-        a_tot = a_tot - np.einsum("nj,njb->nb", m_j * r_pair, gw3)
+        a_tot = a_tot - np.einsum("nj,njb->nb", m_j * r_pair, gw3, optimize=True)
     state.a = a_tot[:, : state.dim] + state.g
 
     # du_i = -0.5 sum m_j v_ij.((T_i+T_j).gW) + 0.5 sum m_j Pi (v_ij.gW)
-    ti_gw = np.einsum("nab,njb->nja", T, gw3)
-    tj_gw = np.einsum("jab,njb->nja", T, gw3)
+    ti_gw = np.einsum("nab,njb->nja", T, gw3, optimize=True)
+    tj_gw = np.einsum("jab,njb->nja", T, gw3, optimize=True)
     du_t = -0.5 * np.einsum("nj,nja,nja->n", m_j * ones, vij3, ti_gw + tj_gw)
     du_av = 0.5 * np.einsum("nj,nja,nja->n", m_j * pi_av, vij3, gw3)
     state.dudt = du_t + du_av
