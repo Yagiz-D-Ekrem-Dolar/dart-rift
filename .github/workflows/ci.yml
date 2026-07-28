@@ -30,8 +30,11 @@ jobs:
       - name: Statik analiz (ruff)
         run: ruff check src tests scripts
 
-      - name: Config sema kontrolu
-        run: python -m dartrift.config configs/p0_smoke.yaml
+      - name: Config sema kontrolu (her fazin ornek config'i)
+        run: |
+          python -m dartrift.config configs/p0_smoke.yaml
+          python -m dartrift.config configs/p1_sod.yaml
+          python -m dartrift.config configs/p2_basalt.yaml
 
       # Kapsam esigi CPU'da CALISTIRILABILEN kod icin uygulanir; GPU
       # kernel'leri (warp_core/) bu runner'da kosulamadigi icin haric tutulur
@@ -62,6 +65,23 @@ jobs:
           if grep -q "G0 GECTI" /tmp/g0_precheck/G0_report.md; then
             echo "HATA: GPU'suz rapor 'G0 GECTI' iddia ediyor"; exit 1
           fi
+
+      # Ayni koruma G1 ve G2 icin de gecerli olmali. Bu adim olmadan, kapi
+      # kosucularindan birinin GPU'suz ortamda "GECTI" demeye baslamasi
+      # sessizce fark edilmezdi — oysa o koruma, kanitin tamaminin dayandigi
+      # kuraldir ("test gecilmediyse iddia edilmez").
+      - name: G1/G2 kapilari da GPU'suz ortamda GECTI iddia etmemeli
+        run: |
+          set +e
+          python scripts/run_g1_gate.py --run-dir /tmp/g1_no_gpu; rc1=$?
+          python scripts/run_g2_gate.py --run-dir /tmp/g2_no_gpu; rc2=$?
+          set -e
+          for g in "G1:$rc1" "G2:$rc2"; do
+            name="${g%%:*}"; rc="${g##*:}"
+            if [ "$rc" -ne 2 ]; then
+              echo "HATA: $name GPU'suz kosuda exit 2 dondurmeliydi, $rc dondu"; exit 1
+            fi
+          done
 
       - name: Kirmizi takim kontrol listesi (§12)
         run: python scripts/run_red_team.py --run-dir /tmp/redteam
