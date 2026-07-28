@@ -1,9 +1,15 @@
-# FAZ 2 tam malzeme fizigi kosusu: Tillotson bazalt + dayanim + porozite +
+﻿# FAZ 2 tam malzeme fizigi kosusu: Tillotson bazalt + dayanim + porozite +
 # oz-yercekimi (DR-RIFT-P2). Her modul `enabled` ile ablasyona acilir.
 #
 # NOT: "bazalt" bir CALISMA VARSAYIMIDIR; "Dimorphos bazalttir" demek degildir
-# (Ana Plan §4.3). Y0/alpha0 gibi parametreler FAZ 5'te posterior olarak
+# (Ana Plan Â§4.3). Y0/alpha0 gibi parametreler FAZ 5'te posterior olarak
 # SINANIR, burada varsayilmaz.
+#
+# US GOSTERIMINDEKI "+" ZORUNLUDUR â€” SILMEYIN. PyYAML (YAML 1.1) yalnizca
+# isaretli usu sayi olarak ayristirir: "2.67e10" -> STRING, 2.67e+10 -> float.
+# Sema strict=True oldugu icin string kabul edilmez ve config REDDEDILIR.
+# Bu dosya tam bu yuzden uzun sure gecersiz kaldi (CI yalnizca p0_smoke'u
+# dogruluyordu); artik tests/test_configs_valid.py hepsini sinar.
 schema_version: 1
 run_id: P2_basalt_full
 random_seed: 104729
@@ -20,28 +26,28 @@ physics:
   eos: tillotson
   tillotson:            # Benz & Asphaug (1999) bazalt, SI'ya cevrilmis
     rho0: 2700.0
-    A: 2.67e10
-    B: 2.67e10
+    A: 2.67e+10
+    B: 2.67e+10
     a: 0.5
     b: 1.5
-    u0: 4.87e8
-    u_iv: 4.72e6
-    u_cv: 1.82e7
+    u0: 4.87e+8
+    u_iv: 4.72e+6
+    u_cv: 1.82e+7
     alpha_t: 5.0
     beta_t: 5.0
     cs_floor_frac: 0.05
   strength:
     enabled: true
-    Y0: 1.0e5           # kohezyon [Pa] — FAZ 5'te 1e-1..1e3 log-olcekli taranir
+    Y0: 1.0e+5           # kohezyon [Pa] â€” FAZ 5'te 1e-1..1e3 log-olcekli taranir
     mu_f: 0.8
-    YM: 1.5e9
-    shear_G: 2.27e10
+    YM: 1.5e+9
+    shear_G: 2.27e+10
     jaumann: true
   porosity:
     enabled: true
     alpha0: 1.5
-    Pe: 1.0e6
-    Ps: 1.0e8
+    Pe: 1.0e+6
+    Ps: 1.0e+8
     n_exp: 2.0
   gravity:
     enabled: true
