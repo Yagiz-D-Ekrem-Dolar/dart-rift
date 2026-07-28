@@ -62,6 +62,48 @@ kapatıyordu.
   çözünürlükler bu testte kullanılamaz (`build_sedov_ic` boş enjeksiyon
   bölgesinde açık hata verir).
 
+## SONRAKİ ÖLÇÜM (28.07.2026, TRUBA kolyoz19, iş 1427240)
+
+Merdiven n=112'ye kadar uzatıldı. İki bulgu, bu ADR'nin kapsamını netleştiriyor.
+
+| n_side | r_ölçülen | şok yarıçapı hatası | enerji hatası | adım |
+|---|---|---|---|---|
+| 32 | 0,2528 | %1,15 | %0,351 | 135 |
+| 48 | 0,2434 | %2,62 | %0,418 | 221 |
+| 64 | 0,2387 | **%4,46** | %0,432 | 287 |
+| 80 | 0,2398 | %4,03 | %0,480 | 345 |
+| 96 | 0,2400 | %3,95 | **%0,510** | 407 |
+| 112 | 0,2401 | %3,91 | **%0,534** | 464 |
+
+**1. Şok yarıçapı yakınsıyor, ama sıfıra değil.** Ölçülen yarıçap
+0,2400–0,2401'e oturuyor; hata **~%3,9'luk bir tabana** iniyor. Bu bir
+ayrıklaştırma hatası değil, bu ADR'nin bilinçli olarak seçtiği kurulumun
+**model-form hatasıdır**: enerji noktasal değil, sonlu bir yarıçapa
+(`r_inj = 0,08`, şok yarıçapının %32'si) enjekte ediliyor; analitik çözüm ise
+nokta patlaması varsayar. Yani %3,9 beklenen ve anlaşılmış bir sapmadır.
+
+Düşük çözünürlükteki "iyi" değerler (n=32'de %1,15) yine bu ADR'nin
+başında tarif edilen rastlantıdır — sayısal yayınım sapmayı tesadüfen
+kapatıyor.
+
+Not: G1 kapısı C5'i **n=64**'te ölçüyor ve bu merdivenin **en kötü**
+noktasıdır (%4,46; eşiğe 0,54 puan). n≥96'da hata %3,9'a oturduğu için marj
+aslında iki katına çıkıyor. Kapı çözünürlüğü bu ADR'de değiştirilmedi
+(maliyet/kanıt dengesi ayrı bir karardır), ancak seçimin merdivenin en kötü
+noktası olduğu artık kayıtlıdır.
+
+**2. Enerji hatası çözünürlükle BÜYÜYOR ve n≥96'da C3 eşiğini aşıyor.**
+%0,351 → %0,534; eşik %0,5. Adım sayısı 135'ten 464'e çıkıyor (3,44×) ve
+hata 1,52× artıyor — yani adım başına değil, **birikimli** bir integrasyon
+hatası ve adım sayısından daha yavaş büyüyor.
+
+G1 kapısı merdiveni n=64'te bitirdiği için bu eşik aşımı kapıda görünmüyor.
+Bu bir **bilinen sınırlamadır** ve şöyle kayda geçirilir: mevcut KDK+trapez
+şeması (ADR-0007) ile %0,5'lik enerji bütçesi, ~300 adımı aşan Sedov
+koşularında tutmuyor. FAZ 3'te daha uzun koşular gerekeceği için bu, orada
+çözülmesi gereken açık bir maddedir. Kapı ölçütü **gevşetilmedi**; kapsam
+(n≤64) olduğu gibi bırakıldı ve sınırlama burada açıkça yazıldı.
+
 ## Ders (yöntemsel)
 "Çözünürlük artınca hata büyüyor" bulgusunun ilk yorumu *motor bozuk* oldu.
 Korunum tanıları ise motorun sağlam olduğunu söylüyordu. Çelişkiyi çözen soru
