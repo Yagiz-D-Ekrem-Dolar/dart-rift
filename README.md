@@ -40,6 +40,21 @@ aynı çıktı.
 > anlamına gelir. Dimorphos hakkında **henüz hiçbir bilimsel sonuç iddia
 > edilmemektedir**; çarpma koşuları FAZ 3'tedir.
 
+## Motor hedefe yetiyor mu? (ölçüldü)
+
+Doğrulama senaryolarını geçmek, hedef problemi çözebilmek anlamına gelmez.
+Ölçek ve maliyet ayrıca ölçüldü — [docs/FIZIBILITE.md](docs/FIZIBILITE.md):
+
+- **11,2 milyon parçacık** TRUBA H200'de koştu, 150 GB'ın yalnızca 6'sını
+  kullanarak. Maliyet 175 kat aralıkta **N ile doğrusal** (123–150 µs/1000
+  parçacık) — gizli bir `O(N²)` yok, bellek darboğaz değil.
+- DART ölçeğinde (2 M parçacık) bir koşu ~**2,4 saat** (1 s simüle süre).
+  FAZ 5'in öngördüğü "yüzlerce koşu" bu ölçekte ~30 GPU-günü — **fizibil**.
+- Fizik seti (Tillotson + P-α + basınca bağlı dayanım + öz-yerçekimi) zayıf
+  ve gözenekli hedefler için literatürdeki standart settir. **Hasar/kırılma
+  modeli yoktur** (`D = 0`, P2 §1.3 STRETCH); bu rejimde savunulabilir ama
+  bir model sınırlamasıdır ve her posteriorla birlikte belirtilmelidir.
+
 ## Doğrulama sonuçları
 
 Motorun analitik/deneysel referanslara karşı ölçülen hataları:
