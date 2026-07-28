@@ -1,10 +1,22 @@
-# DART-RIFT — FAZ 0–2: Altyapı, SPH Şok Motoru ve Malzeme Fiziği
+# DART-RIFT
 
 > Dimorphos için GPU hızlandırmalı SPH şok-fiziği motoru ve Bayesçi iç-yapı
 > çıkarımı projesi.
 > Şartname: `DR-RIFT-P0/P1/P2 v1.0` · Ana Plan: `DART-RIFT Ana Proje Planı v1.0`
 
+NASA'nın DART aracının Dimorphos'a çarpmasından elde edilen verilerden,
+asteroidin **içinin neye benzediğini olasılıksal olarak** geri hesaplamayı ve
+bu tahmini ESA'nın Hera aracı oraya varıp ölçmeden **önce** kilitlemeyi
+hedefliyoruz.
+
+Bu depo, o çıkarımın dayanacağı **motoru** içerir: deterministik altyapı
+(FAZ 0), SPH şok-fiziği çekirdeği (FAZ 1) ve gerçek malzeme fiziği — dayanım,
+gözeneklilik, öz-yerçekimi (FAZ 2).
+
 ## Kapı durumu
+
+Her faz, şartnamedeki kabul ölçütlerini **kanıtla** geçmeden bir sonrakine
+geçilmez. Kanıtlar TRUBA/ARF-ACC üzerinde, temiz git ağacıyla üretilir.
 
 | Kapı | Kapsam | Sonuç | Kanıt |
 |---|---|---|---|
@@ -12,59 +24,124 @@
 | **G1** | Şok motoru çalışıyor | **GEÇTİ** 8/8 | [rapor](docs/evidence/G1_report_truba_1426162.md) — `kolyoz9` H100, iş 1426162 |
 | **G2** | Gerçek malzeme fiziği | **GEÇTİ** 7/7 | [rapor](docs/evidence/G2_report_truba_1426596.md) — `kolyoz23` H100, iş 1426596 |
 
-Tüm kapı kanıtları TRUBA/ARF-ACC üzerinde, temiz git ağacıyla ve koşu künyesi
-(iş kimliği, düğüm, commit, ortam sürümleri) kayıtlı olarak üretilmiştir.
-Son koşuda **360 test geçti / 0 kaldı**. G0 ayrıca kırmızı takım (§12) 6/6
-temiz; CPU↔GPU bit-eşit roundtrip üç GPU mimarisinde doğrulandı: sm_80
-(A100), sm_90 (H100), sm_86 (RTX 3050).
+Son kanıt koşusunda **360 test geçti / 0 kaldı**. G0 ayrıca kırmızı takım
+(§12) 6/6 temiz. CPU↔GPU bit-eşit roundtrip üç GPU mimarisinde doğrulandı:
+sm_80 (A100), sm_90 (H100), sm_86 (RTX 3050). G1, iki farklı düğümde (kolyoz9
+ve kolyoz23) koşuldu ve sekiz ölçütün kanıt sayıları birebir aynı çıktı.
 
-Kapılar motorun **doğrulama senaryolarını** (Sod, Sedov, Taylor bar, elastik
-dalga, crush curve, yerçekimi) geçtiği anlamına gelir. **Dimorphos hakkında
-henüz hiçbir bilimsel sonuç iddia edilmemektedir**; çarpma koşuları FAZ 3'tedir.
+> **Kapsam sınırı:** Kapılar motorun **doğrulama senaryolarını** geçtiği
+> anlamına gelir. Dimorphos hakkında **henüz hiçbir bilimsel sonuç iddia
+> edilmemektedir**; çarpma koşuları FAZ 3'tedir.
 
-## Proje tek cümlede
+## Doğrulama sonuçları
 
-NASA'nın DART aracının Dimorphos'a çarpmasından elde edilen verilerden,
-asteroidin **içinin neye benzediğini olasılıksal olarak** geri hesaplıyoruz ve bu
-tahmini ESA'nın Hera aracı oraya varıp ölçmeden **önce** kilitliyoruz.
+Motorun analitik/deneysel referanslara karşı ölçülen hataları:
 
-Bu depo o motorun **FAZ 0** katmanıdır: hiçbir fizik içermez; fiziğin üzerine
-güvenle inşa edileceği deterministik, sürümlenmiş, test edilebilir ve
-denetlenebilir zemini kurar. **G0 kapısı geçilmeden hiçbir DART/fizik koşusu
-çalıştırılamaz.**
+| Senaryo | Referans | Ölçülen | Eşik |
+|---|---|---|---|
+| Sod şok tüpü | Kesin Riemann (Toro) | şok hızı %0,08; post-şok en kötü %0,80 | %3–5 |
+| Sedov-Taylor patlaması | Benzerlik çözümü | şok yarıçapı **%4,46** | %5 |
+| Yakınsama | L1(ρ), 64→256 | 0,0200 → 0,0134 → 0,0111 (monoton) | azalmalı |
+| Kütle korunumu | — | **0,00e+00** | ~makine hassasiyeti |
+| Momentum korunumu | — | **8,39e-16** | 1e-6 |
+| Enerji korunumu | — | %0,432 | %0,5 |
+| Rijit dönme (objektiflik) | Jaumann | %1,66 (Jaumann kapalıyken %200) | — |
+| Elastik dalga hızı | 4593 m/s teorik | 4458 m/s → %2,96 | %3 |
+| Taylor bar (bakır) | Deney bandı 0,60–0,80 | **L/L0 = 0,731**, enerji %0,083 | %1,5 |
+| İki-cisim (20 yörünge) | Kepler | E hatası 2,4e-07, yarıçap drifti 1,3e-08 | — |
+| Soğuk çöküş | — | enerji %0,36; momentum 1,2e-17 | %1; 1e-6 |
 
-## FAZ 0 kapsamı (DR-RIFT-P0)
+## Mimari
+
+Her GPU çekirdeğinin **Warp'tan bağımsız bir NumPy FP64 referansı** vardır ve
+ikisi çapraz kontrol edilir (tipik sapma < 1e-8). Bu, tek başına yeşil görünen
+bir GPU çekirdeğinin yanlış ayrıklaştırma yapmasını engeller — nitekim
+[ADR-0015](docs/adr/ADR-0015-sureklilik-yogunlugu.md) bu kontrolün yakaladığı
+gerçek bir çekirdek hatasını kaydeder.
+
+### FAZ 0 — Altyapı (DR-RIFT-P0)
 
 | Modül | Gereksinim | İçerik |
-|-------|------------|--------|
-| `dartrift.units` | P0-FR-01 | SI birim sistemi, sabitler, boyut analizi (`UnitError`) |
-| `dartrift.config` | P0-FR-02, P0-DR-01 | Sürümlü YAML şeması (pydantic), 15 geçersiz vaka kataloğu |
-| `dartrift.particles` | P0-FR-03 | SoA parçacık deposu + Warp CPU↔GPU köprüsü (bit-eşit roundtrip) |
-| `dartrift.rng` | P0-FR-04 | Tek kök tohum, adlandırılmış akışlar, **shard-değişmez** örnekleme |
-| `dartrift.invariants` | P0-FR-05 | NaN/Inf, kütle/yoğunluk, hasar, distansiyon, sınır denetimi |
-| `dartrift.logging_cfg` | P0-FR-06, P0-DR-02 | JSONL log + Ek A manifest üreteci/doğrulayıcı |
-| `dartrift.io_hdf5` | P0-FR-07 | 3 katman: `scalar_budget` / `sparse_snapshot` / `event_catalog` |
-| `dartrift.cpu_math` | — | NumPy referans vektör matematiği, sabit-sıralı Kahan indirgeme |
+|---|---|---|
+| `units` | P0-FR-01 | SI birim sistemi, sabitler, boyut analizi (`UnitError`) |
+| `config` | P0-FR-02, P0-DR-01 | Sürümlü YAML şeması (pydantic), 15 geçersiz vaka kataloğu |
+| `particles` | P0-FR-03 | SoA parçacık deposu + Warp CPU↔GPU köprüsü (bit-eşit roundtrip) |
+| `rng` | P0-FR-04 | Tek kök tohum, adlandırılmış akışlar, **shard-değişmez** örnekleme |
+| `invariants` | P0-FR-05 | NaN/Inf, kütle/yoğunluk, hasar, distansiyon, sınır denetimi |
+| `logging_cfg` | P0-FR-06, P0-DR-02 | JSONL log + Ek A manifest üreteci/doğrulayıcı |
+| `io_hdf5` | P0-FR-07 | 3 katman: `scalar_budget` / `sparse_snapshot` / `event_catalog` |
+| `cpu_math` | — | NumPy referans vektör matematiği, sabit-sıralı Kahan indirgeme |
 
-Kapsam dışı (bu fazda **yasak**): SPH/DEM fiziği, EOS, kuvvet hesabı, DART
-simülasyonu, GPU performans optimizasyonu.
+### FAZ 1 — SPH şok motoru (DR-RIFT-P1)
+
+| Modül | Gereksinim | İçerik |
+|---|---|---|
+| `warp_core/kernel_fn` | P1-FR-04 | Wendland C2 çekirdeği (FP64 tipli sabitlerle) |
+| `warp_core/hash_grid`, `neighbors` | P1-FR-01 | GPU hash-grid komşu arama + parite testleri |
+| `warp_core/density` | P1-FR-02 | Toplama **ve** süreklilik yoğunluğu, çapraz kontrol |
+| `warp_core/forces` | P1-FR-03/05 | Çift-antisimetrik kuvvet, tutarlı enerji, Monaghan AV + Balsara |
+| `warp_core/integrator` | P1-FR-06 | KDK leapfrog + tam-trapez u/S güncellemesi |
+| `warp_core/timestep` | P1-FR-06/07 | CFL + ivme kriterleri, kısıt sınıfı tanısı |
+| `warp_core/solver` | P1 §4.1 | 1B/3B çözücü orkestrasyonu (kernel sırası sözleşmesi) |
+| `cpu_reference/sph_ref` | — | Warp'tan bağımsız NumPy FP64 referansı |
+| `validation/riemann`, `sod`, `sedov`, `plate`, `conservation` | P1-VR-01..06 | Kesin Riemann, Sod, Sedov, plate impact, korunum |
+
+### FAZ 2 — Malzeme fiziği (DR-RIFT-P2)
+
+| Modül | Gereksinim | İçerik |
+|---|---|---|
+| `warp_core/eos_tillotson` | P2-FR-03 | Tillotson EOS (bazalt; Benz & Asphaug 1999) |
+| `warp_core/solid_stress` | P2-FR-01 | Jaumann objektif gerilme hızı, Randles-Libersky gradyan düzeltmesi |
+| `warp_core/strength_lundborg` | P2-FR-02 | Basınca bağlı dayanım Y(P) + von Mises return mapping |
+| `warp_core/porosity_palpha` | P2-FR-04 | P-α crush curve (geri genleşme yok) |
+| `warp_core/gravity_tree` | P2-FR-05 | Barnes-Hut halat-ağacı (deterministik DFS) + doğrudan N² referansı |
+| `warp_core/solver_solid` | P2 §4.1 | Katı SPH çözücüsü |
+| `cpu_reference/materials`, `solid_ref`, `gravity_ref` | — | NumPy referansları |
+| `validation/solids`, `porous`, `gravity`, `ablation` | P2-VR-01..06, P2-FR-06 | Rijit dönme, elastik dalga, Taylor bar, crush, yerçekimi, ablasyon matrisi |
 
 ## Kurulum ve test
 
 ```bash
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev,gpu]"    # gpu = warp-lang (CPU cihazıyla da çalışır)
-pytest tests -m "not gpu" --cov=dartrift    # GPU'suz ortam
-pytest tests --cov=dartrift                 # CUDA'lı ortam (roundtrip dahil)
-python scripts/run_red_team.py              # §12 kırmızı-takım kontrol listesi
-python scripts/run_g0_gate.py               # G0 kapısı (CUDA ister)
 ```
 
-`run_g0_gate.py` CUDA bulunmayan bir makinede **kapı geçti demez**: C3
-kanıtlanamadığı için exit 2 döner. Yalnızca ön kontrol istiyorsanız
-`--allow-no-gpu` ekleyin; o mod da "G0 GEÇTİ" iddiası üretmez.
+```bash
+pytest tests -m "not gpu" --cov=dartrift    # GPU'suz ortam
+```
 
-## TRUBA (ARF-ACC) üzerinde G0 kanıtı
+```bash
+pytest tests --cov=dartrift                 # CUDA'lı ortam (tam paket)
+```
+
+Kapı koşucuları (her biri CUDA ister):
+
+```bash
+python scripts/run_g0_gate.py
+```
+
+```bash
+python scripts/run_g1_gate.py
+```
+
+```bash
+python scripts/run_g2_gate.py
+```
+
+```bash
+python scripts/run_red_team.py
+```
+
+Kapı koşucuları CUDA bulunmayan bir makinede **"geçti" demez**: ilgili ölçüt
+kanıtlanamadığı için `KANITLANAMADI` yazıp exit 2 döner. `--allow-no-gpu`
+yalnızca ön kontrol içindir ve o mod da geçti iddiası üretmez.
+
+> **Kütüphane tabanı:** Hedef ortam NumPy **1.26.4** kullanır. NumPy 2.0+ ile
+> gelen API'ler (`np.trapezoid`, `np.concat`, …) kullanılamaz; gerekiyorsa
+> sürümden bağımsız köprü yazılır. Gerekçe ve olay kaydı:
+> [ADR-0005](docs/adr/ADR-0005-python-surumu-truba.md).
+
+## TRUBA (ARF-ACC) üzerinde kanıt üretimi
 
 TRUBA kuralları gereği `/arf`'a pip/conda ile **kurulum yapılmaz**; merkezî
 modül kullanılır ve ek paketler wheel arşivleri açılarak `PYTHONPATH` üzerinden
@@ -72,65 +149,53 @@ kullanılır (639 dosya; inode kotası 500.000). Hazırlık **giriş düğümün
 kez** yapılır:
 
 ```bash
-cd /arf/scratch/<grup>/driftclaude
-module purge && module load apps/truba-ai/gpu-2024.0
-python3 -m pip download warp-lang pytest-cov coverage --no-deps -d wheels
-mkdir -p pylib && for w in wheels/*.whl; do python3 -m zipfile -e "$w" pylib; done
+cd /arf/scratch/<grup>/driftclaude && module purge && module load apps/truba-ai/gpu-2024.0 && python3 -m pip download warp-lang pytest-cov coverage --no-deps -d wheels && mkdir -p pylib && for w in wheels/*.whl; do python3 -m zipfile -e "$w" pylib; done
 ```
 
-Ardından kapı koşusu GPU kuyruğuna gönderilir (16 çekirdek + 1 GPU zorunlu):
+Ardından kapı koşuları GPU kuyruğuna gönderilir:
 
 ```bash
 sbatch slurm/faz0_g0_gate.sh
 ```
 
-Kapı kanıtları `gate_runs/<koşu>/G0_report.md` + `manifest.yaml` içinde üretilir;
-kabul edilen kanıtlar `docs/evidence/` altına kopyalanıp sürümlenir.
+```bash
+sbatch slurm/faz12_gates.sh
+```
 
-> **Kuyruk notu:** Kanıt koşuları `kolyoz-cuda` (`-C H100`) üzerinde yapılır.
-> `palamut-cuda`'daki `palamut5` düğümü `/arf`'a veri yazamıyordu (metadata
-> yazılıyor, 5 MB `dd` → 0 bayt); ayırt edici test ve kök neden analizi
-> [KAYIT-001](docs/defter/KAYIT-001_2026-07-27_FAZ0.md) içinde.
+Kanıtlar `gate_runs/<koşu>/` içinde üretilir; kabul edilenler koşu künyesiyle
+(iş kimliği, düğüm, commit, ortam sürümleri) `docs/evidence/` altına
+kopyalanıp sürümlenir.
 
-## G0 kapı kriterleri (DR-RIFT-P0 §9) ve kanıtlanan sonuç
+> **Donanım arızaları kapı sonucu değildir.** Betikler bilinen arızalı
+> düğümleri `#SBATCH --exclude` ile dışlar ve arıza saptarsa 75 (`EX_TEMPFAIL`)
+> ile çıkar — böylece bir düğüm sorunu "kapı kaldı" gibi görünmez. Saptanan
+> arızalar: `palamut5` (`/arf`'a veri yazamıyor), `palamut6` (büyük dosya
+> okuyamıyor), `kolyoz13` (`nvidia-smi` GPU'yu görüyor ama CUDA sürücüsü
+> açılmıyor). Ayırt edici testler mühendislik defterindedir.
 
-| # | Kriter | Sonuç (job 1425656) |
-|---|--------|---------------------|
-| 1 | Depo derleniyor; CI (commit katmanı) yeşil | GEÇTİ — 219 test, kapsam %97,1 |
-| 2 | Config şema doğrulayıcı; geçersizler reddediliyor | GEÇTİ — 15 geçersiz vaka |
-| 3 | Parçacık deposu CPU↔GPU roundtrip **bit-eşit** | GEÇTİ — `cuda:0`, FP64/FP32/uç değerler |
-| 4 | Tohum determinizmi ve shard-değişmezliği | GEÇTİ — shard 1/2/3/5/7/101 aynı sonuç |
-| 5 | Invariant çerçevesi enjekte hataları yakalıyor | GEÇTİ — 13 enjeksiyon vakası |
-| 6 | HDF5 üç-katman yaz-oku eşitliği | GEÇTİ — checksum dahil |
-| 7 | En az 4 ADR yazılmış (`docs/adr/`) | GEÇTİ — 5 ADR |
-| 8 | Manifest üretimi tam (Ek A alanları) | GEÇTİ — alan tamlığı zorlanıyor |
+## İzlenebilirlik ve mühendislik disiplini
 
-Altın hash Windows/CPython 3.12'de üretildi ve Linux/CPython 3.10 + H100
-düğümünde birebir doğrulandı; platformlar arası bit-eşit determinizm bu
-şekilde kanıtlanmıştır (P0-QR-03).
+- **[docs/IZLENEBILIRLIK.md](docs/IZLENEBILIRLIK.md)** — 38 gereksinim
+  kimliğinin (13 P0 + 13 P1 + 12 P2) her biri kodu, testi ve kanıtıyla
+  eşlenmiştir. Aynı belge, şartnamece **yasak** olduğu için bilerek
+  yapılmayanları da listeler ki eksik ile kapsam-dışı karışmasın.
+- **[docs/adr/](docs/adr/)** — 15 mimari karar kaydı. Her büyük teknik karar
+  gerekçesi, değerlendirilen alternatifleri ve doğrulama testiyle kayıtlıdır;
+  sessiz değişiklik yasaktır.
+- **[docs/defter/](docs/defter/)** — 7 mühendislik defteri kaydı. Başarısız
+  denemeler ve negatif sonuçlar **silinmez**, işlenir; yanlış çıkan bir iddia
+  da silinmez, düzeltme notuyla kayda geçer.
+- **[docs/evidence/](docs/evidence/)** — kapı raporları, koşu künyeleriyle.
 
-### Kırmızı takım (DR-RIFT-P0 §12)
+### Dürüstlük sınırı
 
-Şartname bu listeyi teslim şartı sayar. Otomatik işletilir
-(`python scripts/run_red_team.py`) ve her TRUBA kanıt koşusunda kapıdan önce
-çalışır. Altı maddenin tamamı temiz: platformlar arası hash, shard
-değişmezliği (1–257), 15 geçersiz config'in tamamının reddi, manifestten
-koşunun yeniden üretilmesi + kurcalama tespiti, invariant ihlalinin koşuyu
-durdurması, kapatılmış çıktı katmanının sessizce yutulmaması.
-
-## İzlenebilirlik
-
-Şartnamenin 13 gereksinim kimliğinin her biri — kodu, testi ve kanıtıyla —
-[docs/IZLENEBILIRLIK.md](docs/IZLENEBILIRLIK.md) içinde eşlenmiştir. Aynı belge,
-şartnamece **yasak** olduğu için bilerek yapılmayanları da ayrıca listeler
-(fizik, DART kurulumu, GPU optimizasyonu) ki eksik ile kapsam-dışı karışmasın.
-
-## Dürüstlük sınırı
-
-- Fiziği motor çözecek; bu faz yalnızca zemindir. **Test geçilmediyse iddia edilmez.**
-- Her büyük teknik karar bir ADR ile kayıtlıdır; sessiz değişiklik yasaktır.
-- Başarısız denemeler ve negatif sonuçlar saklanmaz; mühendislik defterine işlenir
-  (`docs/defter/`).
+- Test geçilmediyse iddia edilmez. Benchmark geçmeyen modülün iddiası
+  yapılmaz; iddia daraltılır ama bilim bükülmez.
+- Görsel olarak makul bir sonuç **kanıt değildir**; kanıt test ve sayıdır.
+- Kanıt hedef ortamda üretilir. Yerelde yeşil olan bir paketin kümede de
+  yeşil olduğu varsayılmaz — nitekim kapı mekanizması üç kez, yerelde
+  görünmeyen bir kusuru yakaladı (NumPy sürüm farkı, düğüm sürücü arızası,
+  metrik serileştirme hatası).
 
 ## Lisans
 

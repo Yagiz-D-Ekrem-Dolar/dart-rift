@@ -4,13 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dartrift"
-version = "0.1.0"
-description = "DART-RIFT FAZ 0: deterministik altyapi ve test iskeleti (SPH sok-fizigi motoru zemini)"
+version = "0.3.0"
+description = "DART-RIFT: GPU hizlandirmali SPH sok-fizigi motoru (FAZ 0-2: altyapi, sok cekirdegi, malzeme fizigi)"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "DART-RIFT Team" }]
 dependencies = [
+    # Hedef ortam (TRUBA merkezi modulu) NumPy 1.26.4 saglar. Kod her iki ana
+    # surumde de calisir; NumPy 2.0+ ile gelen API'ler kullanilamaz (ADR-0005).
     "numpy>=1.26",
     "h5py>=3.10",
     "pydantic>=2.5",

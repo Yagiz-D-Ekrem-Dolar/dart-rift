@@ -4,8 +4,16 @@
 gereksinim kimliğini uygulayan koda, onu doğrulayan teste ve kanıtına bağlar.
 Bir satırın "Test" sütunu boşsa o gereksinim için **başarı iddia edilemez**.
 
-Geçerli kanıt: `docs/evidence/G0_report_truba_1425656.md`
-(TRUBA palamut4 / A100, job 1425656, 219 test, kapsam %97,1).
+Geçerli kanıtlar (üçü de TRUBA/ARF-ACC, temiz git ağacı):
+
+| Kapı | Rapor | Koşu |
+|---|---|---|
+| G0 | `docs/evidence/G0_report_truba_1425656.md` | `palamut4` A100, iş 1425656 — 219 test, kapsam %97,1 |
+| G1 | `docs/evidence/G1_report_truba_1426162.md` | `kolyoz9` H100, iş 1426162 — 354 test |
+| G2 | `docs/evidence/G2_report_truba_1426596.md` | `kolyoz23` H100, iş 1426596 — 360 test |
+
+Test sayıları koşuldukları andaki paketi yansıtır; her rapor kendi koşu
+künyesini (iş kimliği, düğüm, commit, ortam sürümleri) taşır.
 
 ## Fonksiyonel gereksinimler (§4.1)
 
