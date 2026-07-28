@@ -89,6 +89,40 @@ bu, testleri yavaşlatan ama hiçbir uyarı üretmeyen bir değişiklik olurdu.
 %4,3185 — dört ondalık basamağa kadar aynı) ve CPU↔GPU çapraz kontrolleri
 1e-8 toleransıyla geçmeye devam ediyor.
 
+## Bulgu 3 — `W(q)` hiç kullanılmadan hesaplanıyor, bir kez de tekrar ediliyordu
+
+`evaluate_solid` içinde `w = kernel_w(q, h, dim)` **koşulsuz** hesaplanıyordu,
+oysa yalnızca iki yerde gerekir: summation yoğunluğu ve yapay gerilme. Yani
+`density_method="continuity"` modunda (N,N) boyutunda pahalı bir dizi tamamen
+boşa üretiliyordu. Ayrıca yapay gerilme bloğu **aynı ifadeyi ikinci kez**
+hesaplıyordu.
+
+`W(q)` artık tembel hesaplanıp paylaşılıyor. Rijit dönme profilinde `kernel_w`
+toplam sürenin %6'sıydı; süreklilik modunda bu tamamen kazanç, summation +
+yapay gerilme durumunda tekrar ortadan kalkıyor.
+
+## Ölçülüp vazgeçilen: GPU hash-grid yeniden kurulumu
+
+`step()` içinde `_eval()` iki kez çağrılır ve ikincisinde **konumlar
+değişmemiştir** (aradaki tek işlem bir hız tekmesidir), yine de
+`gridman.build()` çalışır. Mantıken gereksiz bir iş.
+
+Ölçüldü:
+
+| nx | N | grid kurulumu | tam eval | oran |
+|---|---|---|---|---|
+| 7 | 2 590 | 0,08 ms | 12,64 ms | %0,6 |
+| 9 | 6 348 | 0,15 ms | 31,15 ms | %0,5 |
+
+Yeniden kurulum eval maliyetinin **binde beşi**. Bunu atlamak için "x değişti
+mi" durumu taşımak, %0,5 için kalıcı bir karmaşıklık ve yeni bir hata yüzeyi
+demekti. **Değişiklik yapılmadı.** Kayda geçiriliyor ki aynı hipotez tekrar
+araştırılmasın.
+
+Taylor koşusunun yerel yavaşlığı algoritmik değildir: RTX 3050'de FP64 hızı
+FP32'nin 1/32'sidir. Aynı koşu TRUBA H100'de kat kat hızlıdır ve kapı
+kanıtları zaten orada üretilir.
+
 ## Sonuç
 
 | Senaryo | önce | sonra |
@@ -96,6 +130,7 @@ bu, testleri yavaşlatan ama hiçbir uyarı üretmeyen bir değişiklik olurdu.
 | Elastik dalga res=300 | 26,1 s | 14,0 s |
 | Elastik dalga res=400 | 66,5 s | 38,2 s |
 | Yerçekimi test grubu (14 test) | 297 s | 97 s |
+| **Tam test paketi (374 test)** | **27:28** | **19:25** |
 
 - (+) Kapı koşuları ve test paketi belirgin biçimde hızlandı.
 - (+) Barnes-Hut artık gerçekten bir hızlandırma yapısı.
