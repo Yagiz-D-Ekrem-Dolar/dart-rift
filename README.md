@@ -81,13 +81,28 @@ raporlarındadır. İkisinin davranışı ayrıca incelendi:
   ölçüldü). Bu ayrıklaştırma değil, sonlu enjeksiyon yarıçapının model-form
   hatası — [ADR-0011](docs/adr/ADR-0011-sedov-yakinsama-kurulumu.md).
 
-### Bilinen sınırlama
+### Enerji hatasının mertebesi (ADR-0020)
 
-Sedov'da **enerji hatası çözünürlükle büyüyor** ve n≥96'da %0,5 bütçesini
-aşıyor (%0,510 → %0,534). Kapı merdiveni n=64'te bittiği için bu ölçütte
-görünmez. Mevcut KDK+trapez şemasıyla (ADR-0007) enerji bütçesi ~300 adımı
-aşan koşularda tutmuyor; FAZ 3 daha uzun koşular gerektireceği için orada
-çözülmesi gereken açık bir maddedir. Kapı ölçütü **gevşetilmedi**.
+Sedov'da enerji hatası çözünürlükle büyüyor ve n≥96'da %0,5 bütçesini aşıyor
+(%0,510 → %0,534). Bu bir **sızıntı değil**: sabit çözünürlükte yalnızca CFL
+değiştirilerek ölçüldü —
+
+| CFL | adım | enerji hatası | önceki/bu |
+|---|---|---|---|
+| 0,2500 | 162 | %0,29502 | — |
+| 0,1250 | 324 | %0,14303 | **2,06** |
+| 0,0625 | 647 | %0,06904 | **2,07** |
+
+dt yarılandığında hata tam yarıya iniyor, yani hata `O(dt¹)` **kesme
+hatasıdır ve kontrol edilebilir**. Sızıntı olsaydı oran 1'e yakın olurdu.
+Aynı taramada şok yarıçapı hatası %1,14 → %1,12 ile sabit; bu da onun
+zaman ayrıklaştırmasından değil sonlu enjeksiyon yarıçapından geldiğini
+bağımsız olarak doğruluyor.
+
+G1 kapısı bu oranı **her koşuda ölçüp raporlar**
+(`energy_error_dt_halving_ratio`). Böylece ölçüt "hata < %0,5"ten daha
+keskindir: gerçek bir sızıntı girerse oran 2'den 1'e düşer ve eşik hâlâ
+geçiliyor olsa bile kanıt metninde görünür.
 
 ## Mimari
 

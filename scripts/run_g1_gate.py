@@ -158,9 +158,22 @@ def main() -> int:
     sod_hi = sod_ladder[max(SOD_RESOLUTIONS)]
     sides = SEDOV_SIDES_QUICK if args.quick else SEDOV_SIDES
     sedov_ladder = {}
+    # Enerji hatasinin YAPISAL BIR SIZINTI mi yoksa KESME HATASI mi oldugunu
+    # ayirt eden olcum (ADR-0020): CFL yariya inince hata yariya inmeli.
+    # Sizinti olsaydi sabit kalir ya da adim sayisiyla buyurdu. "Hata < %0.5"
+    # demek, hatanin KONTROL EDILEBILIR oldugunu soylemez; bu oran soyler.
+    energy_dt_ratio = None
     if gpu_ok:
+        from dartrift.cpu_reference.sph_ref import RefParams as _RP
+        from dartrift.validation.sedov import GAMMA as _G
+
         for s in sides:
             sedov_ladder[s] = run_sedov_warp(s, device)
+        n_lo = min(sides)
+        half = run_sedov_warp(n_lo, device, params=_RP(gamma=_G, cfl=0.125))
+        e_full = sedov_ladder[n_lo]["conservation"]["energy_rel"]
+        e_half = half["conservation"]["energy_rel"]
+        energy_dt_ratio = e_full / max(e_half, 1.0e-300)
     plate = run_plate_warp(256, device)
     cons_n = 1000 if args.quick else 3000
     cons = run_conservation_warp(cons_n, device, t_end=0.3)
@@ -199,7 +212,12 @@ def main() -> int:
         mom_max < 1.0e-6 and sod_closure < 0.02,
         f"izole maks {mom_max:.2e}; Sod duvar-impuls kapanisi {sod_closure:.2%}",
     )
-    crit["C3"].record(e_max < 0.005, f"maks enerji goreli hatasi {e_max:.3%}")
+    _dt_ev = (
+        f"; dt yarilaninca hata/{energy_dt_ratio:.2f} "
+        f"(~2 = birinci mertebe KESME hatasi, sizinti DEGIL)"
+        if energy_dt_ratio is not None else ""
+    )
+    crit["C3"].record(e_max < 0.005, f"maks enerji goreli hatasi {e_max:.3%}{_dt_ev}")
     crit["C4"].record(
         sod_hi["max_rel_err"] < 0.05,
         f"res=256: {'; '.join(f'{k}={v:.2%}' for k, v in sod_hi['rel_err'].items())}",
@@ -245,6 +263,7 @@ def main() -> int:
             zip([str(r) for r in SOD_RESOLUTIONS], l1, strict=True)
         ),
         "convergence_monotonic": conv_ok,
+        "energy_error_dt_halving_ratio": energy_dt_ratio,
         "pytest_exit": proc.returncode,
         "wall_time_s": time.perf_counter() - t0,
     }
