@@ -16,7 +16,6 @@ Kriterler:
 from __future__ import annotations
 
 import argparse
-import json
 import platform
 import subprocess
 import sys
@@ -27,6 +26,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(REPO / "tests"))
+
+from dartrift.reporting import write_metrics  # noqa: E402  (sys.path yukarida kuruluyor)
 
 
 class Crit:
@@ -194,9 +195,7 @@ def main() -> int:
         "pytest_exit": proc.returncode,
         "wall_time_s": time.perf_counter() - t0,
     }
-    (run_dir / "g2_metrics.json").write_text(
-        json.dumps(metrics, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    write_metrics(run_dir / "g2_metrics.json", metrics)
 
     title = '# G2 Kapi Raporu — "Gercek malzeme fizigi"'
     if not gpu_ok:
