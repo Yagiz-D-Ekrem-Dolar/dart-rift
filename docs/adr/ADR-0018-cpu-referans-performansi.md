@@ -141,6 +141,36 @@ kanıtları zaten orada üretilir.
 - (−) Sonuçlar önceki sürüme göre ~1 ULP kaydı; kanıt raporlarındaki eski
   sayılarla birebir karşılaştırma yapılırken bu akılda tutulmalı.
 
+## GPU yolu: yapısal olarak asgari (ölçüldü)
+
+İkinci turda GPU çekirdek dağılımı ölçüldü (Taylor nx=9, N=6348, ~268 komşu):
+
+| Çekirdek | süre | eval payı |
+|---|---|---|
+| `velocity_gradient_3d` | 12,16 ms | %39,0 |
+| `forces_solid_3d` | 19,74 ms | %63,3 |
+| tam `_eval()` | 31,19 ms | %100 |
+
+İki komşu-gezinme çekirdeği eval'in tamamını oluşturuyor. Akla gelen
+optimizasyon, ikisini **tek gezinmede** birleştirmekti — bu, komşu döngüsünü
+yarıya indirirdi.
+
+**Mümkün değil.** `forces_solid_3d`, `velocity_gradient_3d`'nin ürettiği
+Balsara faktörünü `fbal` hem `i` hem `j` için okur (`0.5*(fbal_i + fbal_j)`).
+Yani *herhangi bir* kuvvet hesaplanmadan önce *tüm* parçacıkların `fbal`'ı
+hazır olmalıdır. Bu küresel bağımlılık iki ayrı geçişi zorunlu kılar.
+
+Aynı şekilde `forces_solid_3d`, EOS'tan gelen `P`/`cs` ve `stress_rate`'ten
+gelen `dSdt`'ye bağlıdır. Çekirdek zinciri (yoğunluk → EOS → hız gradyanı →
+gerilme hızı → kuvvetler) veri bağımlılıklarının izin verdiği en kısa
+sıradır.
+
+Komşu sayısı da düşürülemez: `h/dx = 2,0` (~268 komşu) Wendland C2'nin Sedov
+doğruluğu için gereklidir (ADR-0013). FP64 ise ADR-0002 ile kilitlidir.
+
+Sonuç: **GPU tarafında algoritmik bir kazanç kalmamıştır.** Yerel yavaşlık
+donanımsaldır (RTX 3050'de FP64 = FP32/32); kanıt koşuları H100'de yapılır.
+
 ## Değerlendirilen alternatifler
 
 - **`bh_accel`'i hedefler üzerinde vektörleştirmek** — muhtemelen bir 10×
