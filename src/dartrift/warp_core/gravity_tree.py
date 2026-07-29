@@ -95,8 +95,18 @@ class GravitySolver:
     def __init__(self, params, device: str):
         self.params = params
         self.device = device
+        # Agac onbellegi: (konum_surumu -> GPU dizileri). Agac CPU'da Python'da
+        # kuruluyor ve maliyeti ~O(N^1.2) (olculdu: 22.6 ms @ 4k, 187.3 ms @
+        # 30k). `step()` icinde `_eval()` IKI kez cagrilir ve ikincisinde
+        # KONUMLAR DEGISMEMISTIR (aradaki tek islem bir hiz tekmesidir), yani
+        # ikinci agac birebir ayni cikar. Onbellek o kurulumu ve ona eslik
+        # eden 9 GPU dizisi tahsisini tamamen ortadan kaldirir; sonuc bit
+        # duzeyinde aynidir (ADR-0021).
+        self._cache_version: int | None = None
+        self._cache_arrays: tuple | None = None
 
-    def compute(self, x_wp, m_wp, g_wp, phi_wp, x_np: np.ndarray, m_np: np.ndarray) -> None:
+    def compute(self, x_wp, m_wp, g_wp, phi_wp, x_np: np.ndarray, m_np: np.ndarray,
+                x_version: int | None = None) -> None:
         n = len(m_wp)
         gp = self.params
         if gp.mode == "direct":
@@ -108,14 +118,14 @@ class GravitySolver:
             return
         if gp.mode != "barnes_hut":
             raise ValueError(f"bilinmeyen yercekimi modu: {gp.mode!r}")
-        from ..cpu_reference.gravity_ref import build_octree
-
-        tree = build_octree(x_np, m_np)
         dev = self.device
-        wp.launch(
-            gravity_bh_k, dim=n,
-            inputs=[
-                x_wp, m_wp,
+        if x_version is not None and x_version == self._cache_version:
+            arrays = self._cache_arrays          # konumlar degismedi: agac ayni
+        else:
+            from ..cpu_reference.gravity_ref import build_octree
+
+            tree = build_octree(x_np, m_np)
+            arrays = (
                 wp.array(tree.com, dtype=V3, device=dev),
                 wp.array(tree.mass, dtype=F, device=dev),
                 wp.array(tree.size, dtype=F, device=dev),
@@ -124,7 +134,12 @@ class GravitySolver:
                 wp.array(tree.leaf_start, dtype=wp.int32, device=dev),
                 wp.array(tree.leaf_count, dtype=wp.int32, device=dev),
                 wp.array(tree.perm, dtype=wp.int32, device=dev),
-                F(gp.G), F(gp.eps * gp.eps), F(gp.theta),
-            ],
+            )
+            self._cache_version = x_version
+            self._cache_arrays = arrays
+        wp.launch(
+            gravity_bh_k, dim=n,
+            inputs=[x_wp, m_wp, *arrays,
+                    F(gp.G), F(gp.eps * gp.eps), F(gp.theta)],
             outputs=[g_wp, phi_wp], device=dev,
         )

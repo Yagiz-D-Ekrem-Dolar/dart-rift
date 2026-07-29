@@ -100,6 +100,7 @@ class WarpSolid3D:
         self._ast_w_dp = max(float(_kw(np.array([_dp / self.h]), self.h, 3)[0]), 1.0e-300)
         self._evaluated = False
         self._step_count = 0
+        self._x_version = 0
         self.plastic_u_total = 0.0
 
     def _launch(self, kernel, inputs):
@@ -138,8 +139,17 @@ class WarpSolid3D:
         else:
             self.dSdt.zero_()
         if self._gravity is not None:
-            x_np = self.x.numpy().astype(np.float64)
-            self._gravity.compute(self.x, self.m, self.g, self.phi, x_np, self.m.numpy())
+            # x_version: agac onbellegi icin. Konumlar yalnizca drift'te
+            # degisir; step() icindeki ikinci _eval() ayni konumlari gorur ve
+            # agac yeniden KURULMAZ (ADR-0021). Onbellek isabetinde GPU->CPU
+            # kopyasi da atlanir.
+            hit = (self._gravity._cache_version == self._x_version
+                   and self._gravity._cache_arrays is not None
+                   and self.mat.gravity.mode == "barnes_hut")
+            x_np = None if hit else self.x.numpy().astype(np.float64)
+            m_np = None if hit else self.m.numpy()
+            self._gravity.compute(self.x, self.m, self.g, self.phi, x_np, m_np,
+                                  x_version=self._x_version)
         else:
             self.g.zero_()
             self.phi.zero_()
@@ -164,6 +174,7 @@ class WarpSolid3D:
         if self._continuity:
             self._launch(I.accumulate_scalar_3d, [self.rho, self.drhodt, self.active, half])
         self._launch(I.drift_3d, [self.x, self.v, self.active, F(dt)])
+        self._x_version += 1          # konumlar degisti -> agac gecersiz
         self._eval()  # (x1, v_half)
         self._launch(I.kick_v_3d, [self.v, self.a, self.active, half])
         self._eval()  # (x1, v1)
