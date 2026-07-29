@@ -130,7 +130,11 @@ class TestContinuityDensityCross(TestSolidCpuGpuCross):
         st = SolidState(x=x.copy(), v=v.copy(), m=m, u=np.zeros(len(m)), h=h,
                         active=np.ones(len(m), bool),
                         alpha=np.full(len(m), pp.alpha0),
-                        rho=np.full(len(m), mat.tillotson.rho0))
+                        # ADR-0022: gozenekli malzemede gerilmesiz baslangic
+                        # rho*alpha = rho0_kati gerektirir. Burada rho0 yazmak
+                        # (eski hali) malzemeyi t=0'da sikismis baslatiyordu ve
+                        # GPU cozucusunun kurdugu baslangictan farkliydi.
+                        rho=np.full(len(m), mat.tillotson.rho0 / pp.alpha0))
         evaluate_solid(st, mat, num)
         for _ in range(self.N_STEPS):
             step_kdk_solid(st, mat, num, self.DT)
