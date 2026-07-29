@@ -88,7 +88,12 @@ def main() -> int:
 
     # --- 2) senaryolar -----------------------------------------------------
     from dartrift.validation.ablation import run_ablation_matrix
-    from dartrift.validation.gravity import run_cold_collapse, run_two_body, run_uniform_sphere
+    from dartrift.validation.gravity import (
+        gpu_gravity_cross_check,
+        run_cold_collapse,
+        run_two_body,
+        run_uniform_sphere,
+    )
     from dartrift.validation.porous import run_crush_cycle, run_porous_plate
     from dartrift.validation.solids import run_elastic_wave, run_rigid_rotation, run_taylor_bar
 
@@ -149,17 +154,33 @@ def main() -> int:
 
     two = run_two_body()
     sphere = run_uniform_sphere()
+    # GPU yercekimi cekirdegi CPU referansiyla karsilastirilir. Bu satir
+    # olmadan kapi "yercekimi dogrulandi" derken YALNIZCA CPU referansini
+    # kastediyordu: run_two_body/run_uniform_sphere GPU'ya hic dokunmuyor ve
+    # mode="barnes_hut" hicbir yerde cozucuye verilmiyordu. Oysa FAZ 3'te
+    # milyonlarca parcacikta dogrudan N^2 imkansizdir; Barnes-Hut TEK
+    # uygulanabilir yoldur.
+    gpu_grav = {}
+    if gpu_ok:
+        gpu_grav = gpu_gravity_cross_check(args.device)
     grav_ok = (
         two["energy_max_rel_err"] < 5e-4 and two["radius_drift_rel"] < 1e-3
         and sphere["bh_vs_direct_median_rel"] < 0.005
         and sphere["shell_mean_rel_err_max"] < 0.05
+        and (not gpu_ok or (
+            gpu_grav["direct_rel"] < 1e-8
+            and gpu_grav["bh_rel"] < 1e-8
+            and gpu_grav["bh_is_approximate"]
+        ))
     )
     crit["C4"].record(
         grav_ok,
         f"iki-cisim 20 yorunge: E hatasi {two['energy_max_rel_err']:.1e}, yaricap "
         f"drifti {two['radius_drift_rel']:.1e}; kure: BH-direct medyan "
         f"{sphere['bh_vs_direct_median_rel']:.2%}, kabuk hata maks "
-        f"{sphere['shell_mean_rel_err_max']:.2%}",
+        f"{sphere['shell_mean_rel_err_max']:.2%}"
+        + (f"; GPU<->CPU dogrudan {gpu_grav['direct_rel']:.1e}, "
+           f"Barnes-Hut {gpu_grav['bh_rel']:.1e}" if gpu_grav else ""),
     )
 
     collapse = run_cold_collapse()

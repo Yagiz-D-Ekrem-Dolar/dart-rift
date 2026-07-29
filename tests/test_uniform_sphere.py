@@ -99,3 +99,91 @@ class TestErrorScaling:
         """Yetersiz n'de olcut SESSIZCE gecmemeli, acik hata vermeli."""
         with pytest.raises(ValueError, match="yetersiz"):
             run_uniform_sphere(n=800)
+
+
+class TestGpuGravityCrossCheck:
+    """P2-FR-05: GPU yercekimi cekirdegi CPU referansiyla ayni sonucu vermeli.
+
+    BOSLUK KAYDI: `mode="barnes_hut"` bu test yazilana kadar HICBIR testte ya
+    da kapida cozucuye verilmemisti — yalnizca config alani tasiniyor mu diye
+    sinaniyordu (`test_config_wiring_p2.py`). Katı capraz testi de yercekimini
+    `mode="direct"` ile aciyordu. Yani GPU halat-agaci gezinmesi hic
+    calistirilmamisti.
+
+    Kod dogru cikti (sapma ~3e-16), ama sinanmayan yol bozuldugunda kimse
+    gormezdi. FAZ 3'te milyonlarca parcacikta dogrudan N^2 imkansizdir;
+    Barnes-Hut TEK uygulanabilir yoldur, dolayisiyla bu kapsama zorunludur.
+    """
+
+    N = 1500
+    G, EPS, THETA = 1.0, 0.02, 0.5
+
+    @pytest.fixture(scope="class")
+    def alanlar(self):
+        from dartrift.particles import warp_available, warp_devices
+
+        if not warp_available() or not any(d.startswith("cuda") for d in warp_devices()):
+            pytest.skip("CUDA yok")
+        from dartrift.cpu_reference.materials import (
+            GravityParams,
+            MaterialParams,
+            PorosityParams,
+            StrengthParams,
+        )
+        from dartrift.cpu_reference.sph_ref import RefParams
+        from dartrift.warp_core.solver_solid import WarpSolid3D
+
+        x = _uniform_sphere(self.N, 1.0)
+        m = np.full(self.N, 1.0 / self.N)
+        g_dir, _ = compute_gravity_direct(x, m, self.G, self.EPS)
+        tree = build_octree(x, m)
+        g_bh, _ = bh_accel(x, np.arange(self.N), tree, x, m, self.G, self.EPS, self.THETA)
+
+        def gpu(mode):
+            mat = MaterialParams(
+                eos="linear", c0=1.0, rho0_linear=1.0,
+                strength=StrengthParams(enabled=False),
+                porosity=PorosityParams(enabled=False),
+                gravity=GravityParams(enabled=True, G=self.G, eps=self.EPS,
+                                      mode=mode, theta=self.THETA),
+            )
+            s = WarpSolid3D(x.copy(), np.zeros_like(x), m, np.zeros(self.N), 0.15,
+                            mat, RefParams(), device="cuda:0")
+            s._eval()
+            return s.g.numpy().astype(np.float64)
+
+        return {"cpu_direct": g_dir, "cpu_bh": g_bh,
+                "gpu_direct": gpu("direct"), "gpu_bh": gpu("barnes_hut"),
+                "olcek": float(np.max(np.linalg.norm(g_dir, axis=1)))}
+
+    @staticmethod
+    def _sapma(a, b, olcek):
+        return float(np.max(np.linalg.norm(a - b, axis=1)) / olcek)
+
+    @pytest.mark.gpu
+    def test_gpu_direct_matches_cpu_direct(self, alanlar):
+        assert self._sapma(alanlar["gpu_direct"], alanlar["cpu_direct"],
+                           alanlar["olcek"]) < 1.0e-8
+
+    @pytest.mark.gpu
+    def test_gpu_barnes_hut_matches_cpu_barnes_hut(self, alanlar):
+        """Asil bosluk buydu: GPU halat-agaci gezinmesi."""
+        assert self._sapma(alanlar["gpu_bh"], alanlar["cpu_bh"],
+                           alanlar["olcek"]) < 1.0e-8
+
+    @pytest.mark.gpu
+    def test_gpu_barnes_hut_approximates_direct(self, alanlar):
+        """theta=0.5 acilma kriteri: BH, dogrudan alana yakin ama ESIT DEGIL."""
+        d = self._sapma(alanlar["gpu_bh"], alanlar["gpu_direct"], alanlar["olcek"])
+        assert d < 0.05, d
+
+    @pytest.mark.gpu
+    def test_barnes_hut_is_not_secretly_direct(self, alanlar):
+        """Bosluk kontrolu: BH gercekten YAKLASIKLIK yapiyor mu?
+
+        Eger mod bayragi yok sayilip her iki durumda da dogrudan toplam
+        kosulsaydi ustteki testlerin hepsi gecerdi ve agac hic sinanmamis
+        olurdu.
+        """
+        d = self._sapma(alanlar["gpu_bh"], alanlar["gpu_direct"], alanlar["olcek"])
+        assert d > 1.0e-6, d

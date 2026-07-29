@@ -176,3 +176,62 @@ def run_cold_collapse(n: int = 500, t_frac: float = 0.6) -> dict:
         "collapse_happened": bool(ke_grew and pe_dropped),
         "n_steps": diag["n_steps"],
     }
+
+
+def gpu_gravity_cross_check(device: str, n: int = 1500, theta: float = 0.5) -> dict:
+    """GPU yercekimi cekirdegi CPU referansiyla ayni sonucu veriyor mu?
+
+    Bu fonksiyon bir BOSLUGU kapatir: `mode="barnes_hut"` uzun sure hicbir
+    testte ya da kapida cozucuye verilmemisti (yalnizca config alani tasiniyor
+    mu diye sinaniyordu), ve bu moduldeki diger senaryolar GPU'ya hic
+    dokunmuyor. Yani "yercekimi dogrulandi" ifadesi yalnizca CPU referansini
+    kapsiyordu.
+
+    FAZ 3'te milyonlarca parcacikta dogrudan N^2 imkansizdir; Barnes-Hut TEK
+    uygulanabilir yoldur, dolayisiyla GPU agac gezinmesinin kanit altina
+    alinmasi zorunludur.
+    """
+    from ..cpu_reference.materials import (
+        GravityParams,
+        MaterialParams,
+        PorosityParams,
+        StrengthParams,
+    )
+    from ..cpu_reference.sph_ref import RefParams
+    from ..warp_core.solver_solid import WarpSolid3D
+
+    G, eps = 1.0, 0.02
+    x = _uniform_sphere(n, 1.0)
+    m = np.full(n, 1.0 / n)
+    g_dir, _ = compute_gravity_direct(x, m, G, eps)
+    tree = build_octree(x, m)
+    g_bh, _ = bh_accel(x, np.arange(n), tree, x, m, G, eps, theta)
+    scale = float(np.max(np.linalg.norm(g_dir, axis=1)))
+
+    def _gpu(mode: str) -> np.ndarray:
+        mat = MaterialParams(
+            eos="linear", c0=1.0, rho0_linear=1.0,
+            strength=StrengthParams(enabled=False),
+            porosity=PorosityParams(enabled=False),
+            gravity=GravityParams(enabled=True, G=G, eps=eps, mode=mode, theta=theta),
+        )
+        s = WarpSolid3D(x.copy(), np.zeros_like(x), m, np.zeros(n), 0.15, mat,
+                        RefParams(), device=device)
+        s._eval()
+        return s.g.numpy().astype(np.float64)
+
+    def _rel(a: np.ndarray, b: np.ndarray) -> float:
+        return float(np.max(np.linalg.norm(a - b, axis=1)) / scale)
+
+    gpu_dir, gpu_bh = _gpu("direct"), _gpu("barnes_hut")
+    bh_vs_dir = _rel(gpu_bh, gpu_dir)
+    return {
+        "n": n,
+        "theta": theta,
+        "direct_rel": _rel(gpu_dir, g_dir),
+        "bh_rel": _rel(gpu_bh, g_bh),
+        "bh_vs_direct_rel": bh_vs_dir,
+        # Bosluk kontrolu: mod bayragi yok sayilsaydi bu 0 olurdu ve agac
+        # hic sinanmamis olurdu.
+        "bh_is_approximate": bool(bh_vs_dir > 1.0e-6),
+    }
