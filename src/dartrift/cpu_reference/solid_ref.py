@@ -407,8 +407,10 @@ def run_solid(
     budget_every: int = 10,
 ) -> dict:
     if mat.density_method == "continuity" and state.rho is None:
+        # Baslangic yogunlugu GOZENEKLILIGE bagli: P = P_kati(rho*alpha, u)/alpha
+        # oldugundan gerilmesiz durum rho*alpha = rho0_kati gerektirir (ADR-0022).
         rho0 = mat.rho0_linear if mat.eos == "linear" else mat.tillotson.rho0
-        state.rho = np.full(state.n, float(rho0))
+        state.rho = float(rho0) / np.asarray(state.alpha, dtype=np.float64)
     evaluate_solid(state, mat, num)
     t = 0.0
     n_steps = 0

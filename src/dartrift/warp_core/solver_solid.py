@@ -78,9 +78,19 @@ class WarpSolid3D:
             setattr(self, name, wp.zeros(n, dtype=F, device=dev))
         self._continuity = mat.density_method == "continuity"
         if self._continuity:
-            # rho artik bir DURUM degiskeni: malzeme yogunlugundan baslar.
+            # rho artik bir DURUM degiskeni ve baslangici GOZENEKLILIGE
+            # BAGLIDIR. P-alpha modelinde basinc P = P_kati(rho*alpha, u)/alpha
+            # ile hesaplanir; gerilmesiz baslangic icin rho*alpha = rho0_kati,
+            # yani rho = rho0_kati / alpha0 olmalidir.
+            #
+            # alpha0'a bolmeden (eski hali) malzeme daha t=0'da sikismis
+            # sayiliyordu: alpha0=1.5 icin rho*alpha = 4050 ve P = 1.335e10 Pa
+            # — durgun bir cisimde 13 GPa'lik hayali basinc. Bu, carpma
+            # senaryosunda enerji defterini %92.9 hatayla bozuyordu (porozite
+            # kapatilinca %0.56). Kombinasyon (sureklilik + porozite) hicbir
+            # testte kosulmadigi icin gorulmemisti (ADR-0022).
             rho0 = mat.rho0_linear if mat.eos == "linear" else mat.tillotson.rho0
-            self.rho = wp.array(np.full(n, float(rho0)), dtype=F, device=dev)
+            self.rho = wp.array(np.asarray(rho0 / a0, np.float64), dtype=F, device=dev)
         elif mat.density_method != "summation":
             raise ValueError(f"bilinmeyen yogunluk yontemi: {mat.density_method!r}")
         self.a = wp.zeros(n, dtype=V3, device=dev)
