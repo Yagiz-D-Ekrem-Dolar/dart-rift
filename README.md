@@ -24,10 +24,10 @@ geçilmez. Kanıtlar TRUBA/ARF-ACC üzerinde, temiz git ağacıyla üretilir.
 | **G1** | Şok motoru çalışıyor | **GEÇTİ** 8/8 | FAZ 2 başlayabilir |
 | **G2** | Gerçek malzeme fiziği | **GEÇTİ** 7/7 | **FAZ 3 başlayabilir** |
 
-Üçü de **aynı commit üzerinde** (`9ffe342`, temiz ağaç) arka arkaya koşuldu:
-[kapanış kanıtı](docs/evidence/GATES_HEAD_9ffe342.md) — `kolyoz23` H100,
-işler 1427564 / 1427565, **376 test geçti / 0 kaldı**, kapsam **%97,6**,
-kırmızı takım (§12) 6/6 temiz, üç çıkış kodu da 0.
+Üçü de **aynı commit üzerinde** (`b29c03a`, temiz ağaç) arka arkaya koşuldu:
+[kapanış kanıtı](docs/evidence/GATES_HEAD_b29c03a.md) — H100, işler
+1434417 / 1434418, **396 test geçti / 0 kaldı** (`xfail` yok), kapsam
+**%97,6**, kırmızı takım (§12) 6/6 temiz, üç çıkış kodu da 0.
 
 Koşu bazlı raporlar: [G0](docs/evidence/G0_report_truba_1425656.md) ·
 [G1](docs/evidence/G1_report_truba_1426162.md) ·
@@ -273,10 +273,10 @@ kopyalanıp sürümlenir.
   kimliğinin (13 P0 + 13 P1 + 12 P2) her biri kodu, testi ve kanıtıyla
   eşlenmiştir. Aynı belge, şartnamece **yasak** olduğu için bilerek
   yapılmayanları da listeler ki eksik ile kapsam-dışı karışmasın.
-- **[docs/adr/](docs/adr/)** — 20 mimari karar kaydı. Her büyük teknik karar
+- **[docs/adr/](docs/adr/)** — 23 mimari karar kaydı. Her büyük teknik karar
   gerekçesi, değerlendirilen alternatifleri ve doğrulama testiyle kayıtlıdır;
   sessiz değişiklik yasaktır.
-- **[docs/defter/](docs/defter/)** — 11 mühendislik defteri kaydı. Başarısız
+- **[docs/defter/](docs/defter/)** — 14 mühendislik defteri kaydı. Başarısız
   denemeler ve negatif sonuçlar **silinmez**, işlenir; yanlış çıkan bir iddia
   da silinmez, düzeltme notuyla kayda geçer.
 - **[docs/evidence/](docs/evidence/)** — kapı raporları, koşu künyeleriyle.
@@ -290,6 +290,16 @@ kopyalanıp sürümlenir.
   yeşil olduğu varsayılmaz — nitekim kapı mekanizması üç kez, yerelde
   görünmeyen bir kusuru yakaladı (NumPy sürüm farkı, düğüm sürücü arızası,
   metrik serileştirme hatası).
+
+## Devam etmek isteyenler için
+
+Projeyi kaldığı yerden sürdürmek (veya ilk kez ele almak) için:
+**[DEVAM.md](DEVAM.md)** — ortam ayrıntıları, mimarinin değişmez kuralları,
+öğrenilmiş tuzaklar, ölçülmüş performans sınırları ve FAZ 3'e başlama adımları.
+
+Üç günlük çalışmanın sentezi:
+**[KAYIT-014](docs/defter/KAYIT-014_2026-07-29_faz012_sentez.md)** — ne
+yapıldı, hangi sorunlar çıktı, ne öğrenildi.
 
 ## Lisans
 
