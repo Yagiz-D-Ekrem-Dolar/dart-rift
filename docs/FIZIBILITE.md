@@ -59,6 +59,71 @@ kullanılır, ya da daha fazla GPU-saat gerekir. Bu, FAZ 3'te *ölçülerek*
 karara bağlanmalıdır; şu an tahmin edilebilir ama bilinemez, çünkü gereken
 simüle süre momentum aktarımının ne zaman durulduğuna bağlıdır.
 
+## 2b. ÖNEMLİ DÜZELTME — yukarıdaki ölçüm yerçekimi KAPALI yapıldı
+
+§1'deki tablo `porozite` ve `öz-yerçekimi` kapalı ölçülmüştür. Tam fizikle
+(ikisi de açık) yeniden ölçüldü (TRUBA H100, iş 1429628):
+
+| N | adım | µs / 1000 parçacık | bellek |
+|---|---|---|---|
+| 19 416 | 301 ms | 15 520 | 0,63 GB |
+| 65 840 | 570 ms | 8 658 | 0,63 GB |
+| 180 136 | 2 909 ms | 16 146 | 0,69 GB |
+| 403 176 | 4 005 ms | 9 934 | 0,79 GB |
+| 831 932 | 4 837 ms | 5 814 | 1,03 GB |
+
+Karşılaştırma: yerçekimi kapalı 1 M parçacıkta adım **287 ms**; tam fizikle
+832 K parçacıkta **4 837 ms** — yaklaşık **17 kat** yavaş. Parçacık başına
+maliyet de artık sabit değil (5 814–16 146 µs), çünkü baskın kalem **CPU'da
+Python'da kurulan Barnes-Hut ağacı**dır ve maliyeti ağaç yapısına bağlıdır.
+
+**Sonuç:** §2'deki "bir DART koşusu ~2,4 saat" tahmini **yalnızca
+öz-yerçekimi kapalıyken** geçerlidir. Açıkken mevcut uygulamayla ~17 kat,
+yani ~40 saat olur ve "yüzlerce koşu" fizibil değildir.
+
+Bu, FAZ 3 için somut bir gereksinim doğurur: **ya çarpma fazı yerçekimsiz
+koşulur** (160 m'lik bir cisimde ilk saniyelerde yerçekimi dayanımın yanında
+ihmal edilebilir — literatürdeki standart yaklaşım), **ya ağaç GPU'da
+kurulur**, ya da ağaç K adımda bir yenilenir. Ağaç kurulumu ~O(N^1,2)
+ölçekleniyor (22,6 ms @ 4 K → 187,3 ms @ 30 K); 2 M parçacıkta tek kurulum
+~29 s eder.
+
+## 2c. Uzun koşu kararlılığı — ÖLÇÜLDÜ, sonuç iyi
+
+FAZ 3'ün en büyük bilinmeyeni buydu: tüm kapı senaryoları birkaç yüz adım,
+gerçek bir koşu ~10⁵ adım. Tam fizikli bir çarpma **30 000 adım** koşuldu
+(TRUBA H100, iş 1429628):
+
+| adım | enerji hatası | momentum | kütle |
+|---|---|---|---|
+| 2 000 | %44,81548 | 7,3e-12 | 0,00e+00 |
+| 10 000 | %44,80285 | 2,9e-10 | 0,00e+00 |
+| 20 000 | %44,80285 | 1,0e-09 | 0,00e+00 |
+| **30 000** | **%44,80285** | 1,7e-09 | **0,00e+00** |
+
+**Drift oranı 15 kat daha fazla adımda 1,00×** — yani enerji hatası
+**hiç birikmiyor**. Kütle bit düzeyinde korunuyor, momentum 1e-9
+mertebesinde kalıyor, tüm alanlar sonlu, `rho_min` pozitif.
+
+Buradaki %44,8'in kendisi ayrı bir kusurdur (P-α sıkışma enerjisi,
+[ADR-0022](adr/ADR-0022-porozite-baslangic-ve-acik-enerji-kusuru.md)); bu koşu
+o düzeltmeden önceki kodla yapıldı. Önemli olan **eğimin sıfır olması**:
+zaman integrasyonu uzun koşuda kararlıdır.
+
+## 2d. Determinizm ölçekte — ÖLÇÜLDÜ
+
+G0'ın bit-eşit determinizm iddiası yalnızca küçük N'de sınanmıştı. Tam
+fizikle (Tillotson + dayanım + gözeneklilik + Barnes-Hut yerçekimi) aynı koşu
+iki kez yapıldı:
+
+| N | hash A | hash B | sonuç |
+|---|---|---|---|
+| 19 416 | `a6eabe4c53fef84b` | `a6eabe4c53fef84b` | **BİT-EŞİT** |
+| 65 840 | `49b9cd70c51abcef` | `49b9cd70c51abcef` | **BİT-EŞİT** |
+
+Bu, ensemble çıkarımının ön koşuludur: iki koşu arasındaki fark yalnızca
+parametre değişikliğinden gelebilir, sayısal gürültüden gelemez.
+
 ## 3. Fizik kapsamı — hedefe uygun mu?
 
 DART/Dimorphos gibi **zayıf ve gözenekli** bir hedef için literatürde
