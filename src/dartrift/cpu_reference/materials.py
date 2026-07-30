@@ -285,3 +285,51 @@ def porosity_update(
     a_new = np.minimum(alpha, np.maximum(1.0, a_curve))
     w_norm = np.asarray(P, dtype=np.float64) * (alpha - a_new) / alpha
     return a_new, np.maximum(w_norm, 0.0)
+
+
+def solve_alpha_implicit(
+    alpha_old: np.ndarray, rho: np.ndarray, u: np.ndarray, mat, n_iter: int = 40
+) -> np.ndarray:
+    """P-alpha distansiyonunu ORTUK coz: alpha = crush_alpha(P_kati(alpha*rho,u)/alpha).
+
+    NEDEN ORTUK (ADR-0023): `porosity_update` bu denklemi ACIK cozuyordu —
+    bir onceki adimin P'sinden alpha'yi okuyup dogrudan yaziyordu. Tillotson
+    gibi sert bir EOS ile crush egrisi cok dar bir basinc araliginda asiliyor
+    ve acik guncelleme ASIRI ATIYOR: olcumde alpha, sikistirma hizindan
+    BAGIMSIZ olarak 1.5'ten 1.0'a TEK ADIMDA cokuyordu (maks |dalpha| ~ 0.5).
+
+    Sonucu: alpha bir anda 1 olunca rho_s = alpha*rho aniden dusuyor, kati
+    sahte bir cekmeye giriyor, ic enerji NEGATIFE dusuyor ve enerji defteri
+    patliyordu (v=5 m/s'lik yavas sikistirmada %8127 hata).
+
+    Ortuk cozumle (bisection, [1, alpha_eski] araliginda; kalinti monoton):
+        hata %8127 -> %0.46,  u_min -1.8e5 -> +1.6,  maks|dalpha| 0.47 -> 0.0006
+    ve alpha artik sikistirmayi IZLIYOR (v=5'te 1.494, v=500'de 1.051) —
+    eskiden her durumda 1.000'e cokuyordu.
+
+    Geri genlesme yasak: sonuc her zaman <= alpha_old.
+    """
+    alpha_old = np.asarray(alpha_old, dtype=np.float64)
+    rho = np.asarray(rho, dtype=np.float64)
+    u = np.asarray(u, dtype=np.float64)
+    pp = mat.porosity
+    if mat.eos != "tillotson":
+        # Diger EOS'larda basinc alpha'ya baglanmiyor (compute_eos_solid),
+        # dolayisiyla ortuk denklem yok; acik form dogrudur.
+        p_now = np.zeros_like(alpha_old)
+        return porosity_update(alpha_old, p_now, pp)[0]
+
+    lo = np.ones_like(alpha_old)
+    hi = alpha_old.copy()
+
+    def _residual(a: np.ndarray) -> np.ndarray:
+        p = tillotson_pressure(a * rho, u, mat.tillotson) / a
+        target = np.maximum(1.0, np.minimum(alpha_old, pp.crush_alpha(p)))
+        return a - target
+
+    for _ in range(n_iter):
+        mid = 0.5 * (lo + hi)
+        neg = _residual(mid) < 0.0
+        lo = np.where(neg, mid, lo)
+        hi = np.where(neg, hi, mid)
+    return np.minimum(alpha_old, 0.5 * (lo + hi))

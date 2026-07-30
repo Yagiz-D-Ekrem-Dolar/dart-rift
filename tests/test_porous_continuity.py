@@ -153,20 +153,57 @@ class TestPorousImpactEnergyLedger:
         assert a < 0.01 and b < 0.01, (a, b)
         assert abs(b - a) < 0.005, (a, b)
 
-    @pytest.mark.xfail(strict=True, reason="ADR-0022 acik kusuru: P-alpha sikisma "
-                                           "enerjisi defterde yok; hata cozunurlukle "
-                                           "BUYUYOR (%6.7 -> %15.8). FAZ 3 engelleyicisi.")
     def test_porous_ledger_matches_solid_ledger(self):
-        """HEDEF davranis: gozeneklilik acmak defteri bozmamali.
+        """Gozeneklilik acmak enerji defterini BOZMAMALI (ADR-0023).
 
-        Olculen (nside=32 / 44):
-            gozenekli      %6.74  /  %15.81   <- cozunurlukle BUYUYOR
-            gozenekliksiz  %0.24  /   %0.26   <- sabit
-        Buyuyen hata KESME hatasi olamaz (ADR-0020'deki ayirt edici mantigin
-        tersi); sistematik bir muhasebe boslugudur. Ic enerji ezilme sirasinda
-        NEGATIFE dusuyor (u_top = -5.97e11 J), ki bu fiziksel degildir.
+        Bu test uzun sure `xfail` idi. Kusurun kaynagi P-alpha guncellemesinin
+        ACIK yapilmasiydi: alpha, bir onceki adimin P'sinden okunuyordu ve sert
+        Tillotson EOS'unda ASIRI ATIYORDU — sikistirma hizindan bagimsiz olarak
+        tek adimda 1.5'ten 1.0'a cokuyordu. Ortuk (bisection) cozumle
+        duzeltildi.
         """
         _needs_cuda()
         por = self._impact_error(True)
         sol = self._impact_error(False)
         assert por < sol + 0.01, (por, sol)
+
+    def test_porous_ledger_does_not_grow_with_resolution(self):
+        """Kusurun IMZASI cozunurlukle buyuyen hataydi; artik buyumemeli.
+
+        Eskiden: nside 32 -> 44'te %6.74 -> %15.81 (buyuyor -> kesme hatasi
+        DEGIL, sistematik bosluk). ADR-0020'deki ayirt edici mantigin tersi.
+        """
+        _needs_cuda()
+        a = self._impact_error(True, nside=32)
+        b = self._impact_error(True, nside=44)
+        assert a < 0.02 and b < 0.02, (a, b)
+        assert b < a + 0.01, (a, b)
+
+    def test_internal_energy_stays_physical_during_crush(self):
+        """Gozenek cokmesi malzemeyi ISITMALI; u NEGATIFE dusmemeli.
+
+        Eskiden toplam ic enerji -5.97e11 J'ye iniyordu (fiziksel degil).
+        """
+        _needs_cuda()
+        from dartrift.warp_core.solver_solid import WarpSolid3D
+
+        H, R, nside = 120.0, 42.0, 32
+        dxl = 2.0 * H / nside
+        g = (np.arange(nside) + 0.5) / nside - 0.5
+        x = np.stack(np.meshgrid(g, g, g, indexing="ij"), -1).reshape(-1, 3) * (2.0 * H)
+        hedef = np.linalg.norm(x, axis=1) < R
+        z_c = R + 3.0 * dxl
+        mermi = np.linalg.norm(x - np.array([0.0, 0.0, z_c]), axis=1) < 2.0 * dxl
+        keep = hedef | mermi
+        xs = x[keep]
+        v = np.zeros_like(xs)
+        v[mermi[keep], 2] = -1000.0
+        s = WarpSolid3D(xs, v, np.full(len(xs), 2700.0 * dxl**3), np.zeros(len(xs)),
+                        2.0 * dxl, _mat(True), RefParams(cfl=0.25),
+                        device="cuda:0", check_every=10**9)
+        for _ in range(150):
+            s.step(s.compute_dt())
+        st = s.state_numpy()
+        u_top = float(np.sum(st["m"] * st["u"]))
+        assert u_top > 0.0, u_top
+        assert np.all(st["alpha"] >= 1.0), float(st["alpha"].min())

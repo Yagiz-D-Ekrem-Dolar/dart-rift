@@ -201,7 +201,13 @@ class WarpSolid3D:
                 np.sum(self.m.numpy() * self.plastic_du.numpy())
             )
         if self.mat.porosity.enabled:
-            self._launch(porosity_update_k, [self.alpha, self.P, self.active, self._pp])
+            # ORTUK cozum (ADR-0023): alpha, P'den ACIK okunamaz — cekirdek
+            # rho ve u alir ve alpha = crush(P_kati(alpha*rho,u)/alpha)
+            # denklemini bisection ile cozer.
+            self._launch(
+                porosity_update_k,
+                [self.alpha, self.rho, self.u, self.active, self._pp, self._tp],
+            )
         self._step_count += 1
 
     def compute_dt(self, cfl: float | None = None) -> float:

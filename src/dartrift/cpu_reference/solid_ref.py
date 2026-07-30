@@ -25,8 +25,8 @@ import numpy as np
 
 from .materials import (
     MaterialParams,
-    porosity_update,
     return_mapping,
+    solve_alpha_implicit,
     tillotson_pressure,
     tillotson_sound_speed,
 )
@@ -324,7 +324,7 @@ def _apply_strength_and_porosity(state: SolidState, mat: MaterialParams) -> None
         state.S[act] = S_new[act]
         state.plastic_u_total += float(np.sum(state.m[act] * du_pl[act]))
     if mat.porosity.enabled:
-        a_new, _ = porosity_update(state.alpha, state.P, mat.porosity)
+        a_new = solve_alpha_implicit(state.alpha, state.rho, state.u, mat)
         state.alpha[state.active] = a_new[state.active]
 
 
