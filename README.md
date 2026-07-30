@@ -40,14 +40,11 @@ aynı çıktı.
 > anlamına gelir. Dimorphos hakkında **henüz hiçbir bilimsel sonuç iddia
 > edilmemektedir**; çarpma koşuları FAZ 3'tedir.
 
-> **⚠ AÇIK KUSUR — FAZ 3 engelleyicisi:** P-α gözeneklilik modelinde sıkışma
-> enerjisi enerji defterinde yok. Gözeneklilik açıkken çarpma senaryosunda
-> hata **çözünürlükle büyüyor** (%6,7 → %15,8), gözenekliksiz ise sabit
-> (%0,24). İç enerji ezilme sırasında negatife düşüyor. Eşik gevşetilmedi,
-> kusur `xfail(strict=True)` ile izleniyor —
-> [ADR-0022](docs/adr/ADR-0022-porozite-baslangic-ve-acik-enerji-kusuru.md).
-> **Gözenekli hedefle FAZ 3'e geçilmez**; Dimorphos bir moloz yığınıdır ve
-> gözeneklilik çıkarımın asıl parametresidir.
+> **Gözeneklilik kusuru — ÇÖZÜLDÜ:** P-α distansiyonu açık güncelleniyordu ve
+> sert Tillotson EOS'unda aşırı atıyordu (α tek adımda 1,5→1,0). Örtük
+> (bisection) çözümle çarpma senaryosunda enerji hatası **%15,81 → %0,3955**
+> ve artık çözünürlükle büyümüyor —
+> [ADR-0023](docs/adr/ADR-0023-porozite-ortuk-cozum.md).
 
 ### Uzun koşu ve determinizm — ölçüldü (TRUBA H100, iş 1429628)
 

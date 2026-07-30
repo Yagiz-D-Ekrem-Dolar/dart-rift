@@ -1,6 +1,6 @@
 # ADR-0022: Gözenekli başlangıç durumu düzeltildi; P-α sıkışma enerjisi **açık kusur**
 
-- **Durum:** Kısmen çözüldü — kalan kusur **FAZ 3 ENGELLEYİCİSİ**
+- **Durum:** **TAMAMEN ÇÖZÜLDÜ** — kalan kusur [ADR-0023](ADR-0023-porozite-ortuk-cozum.md) ile kapandı
 - **Tarih:** 2026-07-29
 - **Bağlam:** P2-FR-04, P2-VR-06; gerçek çarpma senaryosu
 - **İlgili:** [ADR-0008](ADR-0008-porozite-enerji-muhasebesi.md), [ADR-0015](ADR-0015-sureklilik-yogunlugu.md), [ADR-0020](ADR-0020-enerji-hatasi-kesme-hatasidir.md)
@@ -50,7 +50,7 @@ kullanıldıklarında bozuluyorlardı.
 `rho0/alpha` olarak kuruluyor. Çarpma senaryosunda enerji hatası
 **%92,85 → %6,74**.
 
-## Bulgu 2 (AÇIK KUSUR) — sıkışma enerjisi defterde yok
+## Bulgu 2 (ÇÖZÜLDÜ — ADR-0023) — sıkışma enerjisi defterde yok
 
 Düzeltmeden sonra kalan hata **çözünürlükle büyüyor**:
 
@@ -123,3 +123,21 @@ olabilir ve birlikte bozuk olabilir.** Kapsama, modül başına değil
 - `...::test_nonporous_ledger_is_tight_and_resolution_stable`
 - `...::test_porous_ledger_matches_solid_ledger` — **xfail(strict)**, hedef
   davranışı tarif eder
+
+
+---
+
+## KAPANIŞ NOTU (29.07.2026)
+
+Bulgu 2'deki açık kusur **çözüldü**. Kök neden bu belgede tahmin edilenden
+farklı çıktı: muhasebede bir boşluk yoktu; **α güncellemesi açık (explicit)
+yapıldığı için aşırı atıyordu.** Sert Tillotson EOS'unda crush eğrisi %0,4'lük
+bir gerinimle tümüyle aşılıyor ve α tek adımda 1,5'ten 1,0'a çöküyordu — bu da
+katıyı sahte bir çekmeye sokuyordu.
+
+Örtük (bisection) çözümle çarpma senaryosunda hata **%15,81 → %0,3955**
+(nside=44) ve artık çözünürlükle büyümüyor. Ayrıntı ve ölçümler:
+[ADR-0023](ADR-0023-porozite-ortuk-cozum.md).
+
+Bu belgedeki Bulgu 1 (başlangıç durumu, `rho = rho0/alpha0`) geçerliliğini
+korur; iki kusur birbirinden bağımsızdı ve ikisi de gerekliydi.
