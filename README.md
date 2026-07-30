@@ -66,8 +66,12 @@ Doğrulama senaryolarını geçmek, hedef problemi çözebilmek anlamına gelmez
 - **11,2 milyon parçacık** TRUBA H200'de koştu, 150 GB'ın yalnızca 6'sını
   kullanarak. Maliyet 175 kat aralıkta **N ile doğrusal** (123–150 µs/1000
   parçacık) — gizli bir `O(N²)` yok, bellek darboğaz değil.
-- DART ölçeğinde (2 M parçacık) bir koşu ~**2,4 saat** (1 s simüle süre).
-  FAZ 5'in öngördüğü "yüzlerce koşu" bu ölçekte ~30 GPU-günü — **fizibil**.
+- DART ölçeğinde (2 M parçacık) bir koşu ~**2,4 saat** (1 s simüle süre) —
+  ama bu **öz-yerçekimi kapalıyken**. Açıkken mevcut uygulama ~17 kat yavaş
+  (832 K parçacıkta adım 4 837 ms ↔ yerçekimsiz 1 M'de 287 ms), çünkü baskın
+  kalem CPU'da Python'da kurulan Barnes-Hut ağacıdır. FAZ 5'in öngördüğü
+  "yüzlerce koşu" yerçekimsiz ~30 GPU-günü ile **fizibil**; yerçekimli
+  koşular için ağacın GPU'ya taşınması ya da K adımda bir yenilenmesi gerekir.
 - Fizik seti (Tillotson + P-α + basınca bağlı dayanım + öz-yerçekimi) zayıf
   ve gözenekli hedefler için literatürdeki standart settir. **Hasar/kırılma
   modeli yoktur** (`D = 0`, P2 §1.3 STRETCH); bu rejimde savunulabilir ama
