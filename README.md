@@ -193,6 +193,26 @@ gerçek bir çekirdek hatasını kaydeder.
 | `cpu_reference/materials`, `solid_ref`, `gravity_ref` | — | NumPy referansları |
 | `validation/solids`, `porous`, `gravity`, `ablation` | P2-VR-01..06, P2-FR-06 | Rijit dönme, elastik dalga, Taylor bar, crush, yerçekimi, ablasyon matrisi |
 
+### FAZ 3 — Sahne kurulumu (DR-RIFT-P3)
+
+| Modül | Gereksinim | İçerik |
+|---|---|---|
+| `setup/shape_mesh` | P3-FR-01 | Mesh yükleme/temizleme/dışa yönlendirme, ışın-atma iç testi (sol-üst kenar kuralı) |
+| `setup/rubble_generator` | P3-FR-02/03/04 | FCC doldurma, power-law iri-bloklar (hacim oranı geri ölçülür), parçacık başına malzeme |
+| `setup/settling` | P3-FR-05, P3-VR-01 | Öz-yerçekimi altında **denge sınaması** (ADR-0024) |
+| `setup/impactor` | P3-FR-06/07, P3-VR-02 | DART mermisi — sonlu boyutlu, nokta parçacık yasak; yüzey normaline göre çarpma geometrisi |
+| `setup/scene` | P3 §4 | Sahne birleştirici: config → yeniden üretilebilir tam durum (`Scene.digest`) |
+| `observables/momentum_transfer` | P3-FR-08, P3-VR-03 | β + kontrol yüzeyi duyarlılığı, momentum defteri kapanması |
+| `observables/ejecta_catalog` | P3-FR-08 | Kütle-hız dağılımı (kutulama yok), fırlatma açıları, üslü yasa üssü + R² |
+| `observables/crater_shape` | P3-FR-08 | **Yerel** krateri **küresel** biçim değişiminden ayırır (eşit katı açılı kutular) |
+| `observables/period_interface` | P3-FR-08 | β ↔ yörünge periyodu değişimi (sınırları açık yazılı) |
+| `validation/scene_checks` | G3 | Şekil hattı, yığın kalitesi, mermi yakınsaması, gözlenebilir öz-sınavı, sahne determinizmi |
+
+> **Adlandırma:** FAZ 3 sahnesi bir "DART senaryosu" **değil**, "DART benzeri
+> senaryo"dur. Hedef şekli analitik bir ikosferdir; gerçek PDS ürünleri depoda
+> yok (G3 kriter C7 **KANITLANAMADI**, bkz. `data_manifest/README.md`). Şekil
+> modeli geldiğinde `shape: obj` yeter — değişecek olan sayılardır, kod değil.
+
 ## Kurulum ve test
 
 ```bash
