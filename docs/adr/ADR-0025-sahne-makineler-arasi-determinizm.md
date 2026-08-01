@@ -86,6 +86,27 @@ noktası centroid'den türediği için merminin x,y'si ~1e-14 m kayıyor ve
 > hesaplanan** indirgemeler için uygundur. Nerede kullanılacağı ölçümle
 > belirlenir, alışkanlıkla değil.
 
+### Bilinen latent risk — kapatılmadı, izleniyor
+
+`TriMesh.volume` ve `TriMesh.area` de `np.sum` kullanır ve **aynı sınıftandır**:
+mesh başına bir kez hesaplanır, sonuç aşağı akışta karara girer (`volume`,
+`place_boulders`'daki hedef blok hacmini ve `pile.mesh_volume` tanısını
+belirler).
+
+Ölçüldü: iki makinede **birebir aynı** çıktılar
+(`hacim = 2304564.6670879088`). Yani şu an bir sorun **yok**.
+
+Yine de fsum'a çevirmedim, gerekçesi:
+
+- Değişiklik `v_target`'ı son bitlerde oynatabilir; bu, kabul edilen blok
+  sayısını değiştirip **altın karmayı geçersizleştirir**. Ölçülmemiş bir
+  riski kapatmak için ölçülmüş bir referansı bozmak doğru takas değil.
+- Risk artık **sessiz değil**: `tests/test_scene_golden.py` bütün sahne
+  karmasını iki platformda sınıyor. `volume` bir gün ayrışırsa test kırılır
+  ve düzeltme tek satırdır.
+
+Kayda geçiriliyor ki "unutuldu" ile "bilinçli bırakıldı" karışmasın.
+
 ## Sonuç — ölçüldü
 
 Düzeltmelerden sonra iki makinede **birebir aynı**:
