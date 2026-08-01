@@ -5,8 +5,10 @@ kez gören birinin (veya sıfırdan başlayan bir oturumun) bilmesi gereken her
 şey burada: nerede duruyoruz, neyin kanıtı var, neyin yok, hangi tuzaklar
 zaten öğrenildi.
 
-**Son güncelleme:** 2026-07-29 · **Commit:** `2c76e42` · **Durum:** FAZ 0–2
-kanıtla tamamlandı, FAZ 3 başlayabilir.
+**Son güncelleme:** 2026-08-01 · **Kanıt commit'i:** `5d92f54` · **Durum:**
+FAZ 0–2 kanıtla tamamlandı; **FAZ 3 tamamlandı, G3 KISMİ geçti** (kanıtlanabilir
+kriterlerin hepsi geçti, C7/PDS **KANITLANAMADI** — veri yok). FAZ 4
+başlayabilir, bu eksiği açıkça taşıyarak.
 
 ---
 
@@ -27,14 +29,23 @@ doğruluğu, diğer her şeyden önce gelir.
 
 | Kapı | Sonuç | Kanıt |
 |---|---|---|
-| G0 | **GEÇTİ** 8/8 | iş 1434417 |
-| G1 | **GEÇTİ** 8/8 | iş 1434418 |
-| G2 | **GEÇTİ** 7/7 | iş 1434418 |
+| G0 | **GEÇTİ** | iş 1445668 (`5d92f54`) |
+| G1 | **GEÇTİ** | iş 1445668 (`5d92f54`) |
+| G2 | **GEÇTİ** | iş 1445668 (`5d92f54`) |
+| **G3** | **KISMİ** — C1–C6 GEÇTİ, **C7 KANITLANAMADI** | iş 1445668 (`5d92f54`) |
 
-Üçü de aynı commit üzerinde, TRUBA/ARF-ACC H100'de, temiz git ağacıyla.
-**396 test geçiyor** (yerel ve TRUBA), kapsam %97,6, kırmızı takım 6/6.
+Dördü de aynı commit üzerinde, TRUBA kolyoz1 / H100'de, temiz git ağacıyla.
+**533 test geçiyor / 0 kaldı**, kapsam **%94,4**, kırmızı takım **12/12 temiz**.
+
+Ayrıntı: [G3 kanıt özeti](docs/evidence/G3_GATE_5d92f54.md).
 
 Açık kusur **yok**. `xfail` **yok**.
+
+**Tek kanıtlanamayan:** G3 C7 — gerçek PDS veri ürünleri bu ortamda yok, bu
+yüzden ürün kimlikleri + SHA-256 manifesti üretilemedi. Kapı bunu
+KANITLANAMADI işaretler, **geçmiş saymaz**. Sonuç olarak FAZ 4 çıktıları,
+gerçek Dimorphos geometrisiyle tekrarlanana kadar "DART senaryosu" değil
+**"DART benzeri senaryo"** olarak adlandırılmalıdır.
 
 ---
 
