@@ -1,11 +1,11 @@
-# DEVAM — projeyi kaldığı yerden sürdürme kılavuzu
+﻿# DEVAM — projeyi kaldığı yerden sürdürme kılavuzu
 
 Bu belge, bağlam kaybolsa bile **hatasız devam edebilmek** içindir. Depoyu ilk
 kez gören birinin (veya sıfırdan başlayan bir oturumun) bilmesi gereken her
 şey burada: nerede duruyoruz, neyin kanıtı var, neyin yok, hangi tuzaklar
 zaten öğrenildi.
 
-**Son güncelleme:** 2026-08-01 · **Kanıt commit'i:** `8916f42` · **Durum:**
+**Son güncelleme:** 2026-08-01 · **Kanıt commit'i:** `932af74` · **Durum:**
 FAZ 0–2 kanıtla tamamlandı; **FAZ 3 tamamlandı, G3 KISMİ geçti** (kanıtlanabilir
 kriterlerin hepsi geçti, C7/PDS **KANITLANAMADI** — veri yok). FAZ 4
 başlayabilir, bu eksiği açıkça taşıyarak.
@@ -29,19 +29,31 @@ doğruluğu, diğer her şeyden önce gelir.
 
 | Kapı | Sonuç | Kanıt |
 |---|---|---|
-| G0 | **GEÇTİ** | iş 1445853 (`8916f42`) |
-| G1 | **GEÇTİ** | iş 1445853 (`8916f42`) |
-| G2 | **GEÇTİ** | iş 1445853 (`8916f42`) |
-| **G3** | **KISMİ** — C1–C6 GEÇTİ, **C7 KANITLANAMADI** | iş 1445853 (`8916f42`) |
+| G0 | **GEÇTİ** | iş 1445937 (`932af74`) |
+| G1 | **GEÇTİ** | iş 1445937 (`932af74`) |
+| G2 | **GEÇTİ** | iş 1445937 (`932af74`) |
+| **G3** | **KISMİ** — C1–C6 GEÇTİ, **C7 KANITLANAMADI** | iş 1445937 (`932af74`) |
 
 Dördü de aynı commit üzerinde, TRUBA kolyoz3 / H100'de, temiz git ağacıyla.
-**571 test geçiyor / 0 kaldı**, kapsam **%97,0**, kırmızı takım **14/14 temiz**.
+**605 test geçiyor / 0 kaldı**, kapsam **%97,0**, kırmızı takım **14/14 temiz**.
 
-Sahne karması iki bağımsız ortamda birebir aynı: `1c6f2a100ae4a866…`
+Sahne karması iki bağımsız ortamda birebir aynı: `6d6f1d10eaff64e2…`
 (Linux/numpy 1.26.4 ve Windows/numpy 2.5.1). Bu eşitlik önce tutmuyordu —
 bkz. [ADR-0025](docs/adr/ADR-0025-sahne-makineler-arasi-determinizm.md).
 
-Ayrıntı: [G3 nihai kanıt](docs/evidence/G3_GATE_8916f42.md).
+Ayrıntı: [G3 kanıtı](docs/evidence/G3_GATE_932af74.md) ·
+**eksikler kaydı:** [docs/EKSIKLER.md](docs/EKSIKLER.md).
+
+### FAZ 3 sonrası kapatılan eksikler
+
+| eksik | sonuç | kayıt |
+|---|---|---|
+| Hasar/kırılma modeli (`D = 0`) | Grady-Kipp + Weibull, 32 test | ADR-0027 |
+| Makineler arası determinizm | 2 kusur bulundu ve düzeltildi | ADR-0025 |
+| Blok kesri hedefe ulaşmıyordu | 0,267 → **0,303** | EKSIKLER §4 |
+| Uzun koşu kararlılığı | **30 000 adım**, hata birebir sabit | ADR-0028 |
+| Çarpma enerji kayması | `O(dt)` kesme hatası, CFL ile ayarlanır | ADR-0028 |
+| Mermi çözünürlüğü | **1,72e9 parçacık** gerekiyor → FAZ 4 yerel incelme | ADR-0026 |
 
 Açık kusur **yok**. `xfail` **yok**.
 
