@@ -169,12 +169,18 @@ edilemez, ve çıkarım anlamsızlaşır.
 
 Bu belgedeki hiçbir sayı FAZ 3'ün yerini tutmaz. Üç madde vardı:
 
-1. **Uzun koşu kararlılığı** — hâlâ ölçülmedi. Tüm kapı senaryoları
-   ≤ 262 144 parçacık ve birkaç yüz adımdır; bir DART koşusu ~10⁴–10⁵
-   adımdır. ADR-0020 enerji hatasının `O(dt)` olduğunu gösterdi, ama bu 10⁵
-   adımda ne birikir bilinmiyor. **FAZ 4'e taşınıyor.**
-2. **Gereken simüle süre** — hâlâ ölçülmedi. β'nın ne zaman durulduğu
-   koşunun maliyetini 10 kat değiştirir. **FAZ 4'e taşınıyor.**
+1. **Uzun koşu kararlılığı** — **ÖLÇÜLDÜ, KAPANDI** (ADR-0028).
+   TRUBA/H100, N = 379 207, çözünmüş mermi: enerji hatası **1,4558e-02'de
+   birebir sabit** (adım 250 → 4750, log-log eğim ≈ 0), momentum 1e-14.
+   **Hata birikmiyor.** Çarpma anındaki tek seferlik kayma ise ayırt edici
+   taramayla `O(dt)` zaman kesme hatası çıktı: CFL dörtte bire inince hata
+   0,2201'e, aralık yarıya inince yalnızca 0,8596'ya iniyor. Yani 10⁵ adımlık
+   koşu güvenlidir ve kayma CFL ile istenen düzeye çekilebilir.
+2. **Gereken simüle süre** — **ÖLÇÜLEMEDİ**, nedeni kayıtlı (ADR-0028).
+   Kararlılık koşusunda sayılan "ejekta" merminin kendisi çıktı (tam 1009 =
+   mermi parçacık sayısı); hedeften hiçbir parçacık kontrol yüzeyini geçmedi.
+   Sebep, mermiyi çözünür kılmak için yoğunluğunun 135 kat düşürülmüş olması
+   (ADR-0026). Bu soru **FAZ 4'ün yerel incelme tasarımına bağlıdır.**
 3. **Çözünürlük yakınsaması** — *mermi* tarafı ölçüldü (P3-VR-02: 3
    çözünürlükte hacim hatası %3,5 → %0,5, kütle hatası < 6e-16). *Krater çapı
    ve β'nın* çözünürlüğe duyarlılığı çarpma koşusu gerektirir; **FAZ 4'e
@@ -202,12 +208,13 @@ sayısı ve zaman ölçeği farklıdır. FAZ 4 bu ayrımı kullanacak.
 | Soru | Cevap |
 |---|---|
 | Motor DART ölçeğine çıkabiliyor mu? | **Parçacık sayısı olarak evet** (11,2 M ölçüldü) — **ama tekdüze ağda mermiyi çözmez**, bkz. §6 ve ADR-0026 |
-| Fizik hedefe uygun mu? | **Evet**, zayıf/gözenekli hedef için standart set — hasar hariç |
+| Fizik hedefe uygun mu? | **Evet** — zayıf/gözenekli hedef için standart set; **hasar modeli de eklendi** (ADR-0027) |
 | Ensemble maliyeti karşılanabilir mi? | **1 s koşularla evet** (~30 GPU-günü); 10 s'de sınırda |
 | Yapılan doğrulama işi anlamlı mı? | **Evet** — hata posteriora taşınır; kalibrasyon zorunlu |
 | Yerçekimi maliyeti engel mi? | **Hayır** (ADR-0024) — şok fazında ihmal edilebilir; ağaç seyrek yenilenebilir |
 | Sahne kurulabiliyor mu? | **Evet** — G3 KISMİ geçti; şekil, yığın, mermi, gözlenebilirler hazır |
-| Eksik ne var? | Hasar modeli; **mermi çözünürlüğü (ADR-0026, FAZ 4 yerel incelme gerektirir)**; gereken simüle süre; **gerçek PDS şekil modeli** (G3 C7 KANITLANAMADI) |
+| Uzun koşu güvenli mi? | **Evet** (ADR-0028) — hata birikmiyor; çarpma kayması `O(dt)`, CFL ile ayarlanır |
+| Eksik ne var? | **Mermi çözünürlüğü** (ADR-0026, FAZ 4 yerel incelme gerektirir); gereken simüle süre (ona bağlı); **gerçek PDS şekil modeli** (G3 C7 KANITLANAMADI). *Hasar modeli artık var — ADR-0027.* |
 
 ---
 

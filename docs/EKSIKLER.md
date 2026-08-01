@@ -59,7 +59,26 @@ dışı, 4565'i çakışma nedeniyle reddediliyordu.
 f 0,2672 → **0,3034** (hedef 0,30) ve deneme 20000 → 2048 (**~10× hızlı**).
 Altın karma yenilendi, eski değer `history` alanında saklandı.
 
-### 5. RNG akış kilidinin fazla geniş olması — KAPANDI
+### 5. Uzun koşu kararlılığı — KAPANDI
+
+**Durum:** Tüm kapı senaryoları birkaç yüz adımdı; bir DART koşusu 10⁴–10⁵
+adım. 10⁵ adımda ne birikeceği ölçülmemişti.
+
+**Kapanış (ADR-0028).** TRUBA/H100, N = 379 207, çözünmüş mermi:
+
+- Enerji hatası **1,4558e-02'de birebir sabit** (adım 250 → 4750), log-log
+  eğim ≈ 0. Momentum 1e-14 mertebesinde. **Hata birikmiyor** — çarpma anında
+  oluşan tek seferlik bir kayma.
+- O kaymanın kaynağı ayırt edici taramayla belirlendi: CFL dörtte bire
+  inince hata **0,2201**'e iniyor (birinci mertebe, `O(dt)`), aralık yarıya
+  inince yalnızca 0,8596'ya. Yani **zaman kesme hatası** — sızıntı değil,
+  çözünürlük yapayı değil.
+
+**Sonucu:** 10⁵ adımlık koşu güvenlidir ve kayma kontrol edilebilir bir
+düğmeye (CFL) bağlıdır. CFL = 0,0625'te kayma %0,376'ya iniyor — G1/G2'nin
+enerji eşiklerinin (%0,5–1) içinde.
+
+### 6. RNG akış kilidinin fazla geniş olması — KAPANDI
 
 `test_stream_ids_are_locked` tam eşitlik arıyordu ve **sona ekleme**yi de
 yasaklıyordu. ADR-0004'ün yasakladığı şey var olan bir akışın kimliğini
@@ -98,25 +117,22 @@ Karar ve sayılar: **ADR-0026**. Yerel incelmenin *nasıl* yapılacağı FAZ 4't
 > Bu, `docs/FIZIBILITE.md`'nin "11,2 M parçacık yeter" iddiasını daralttı.
 > İddia silinmedi, §6'da notla düzeltildi.
 
-### C. Uzun koşu kararlılığı · **ÖLÇÜM SÜRÜYOR**
+### D. Gereken simüle süre · **AÇIK — FAZ 4'e bağlı**
 
-Yerel ön ölçüm (çözünmüş mermi, 400 adım): enerji hatası **%1,49'da sabit**,
-log-log eğim **0,001** — yani hata **birikmiyor**, çarpma anında oluşan tek
-seferlik bir kaymadır. Momentum 6,6e-15'te korunuyor.
+β'nın ne zaman durulduğu koşu maliyetini 10 kat değiştirir. Ölçmeye çalıştım
+ve **ölçemedim**; nedeni dürüstçe kayıtlı (**ADR-0028**):
 
-TRUBA'da 30 000 adımlık koşu sürüyor (iş 1445921). Sonuç geldiğinde bu bölüm
-kesinleşecek ve `FIZIBILITE.md` §5'teki madde kapanacak.
+Kararlılık koşusunda β adım 750'de 1,55701'de sabitlendi ama ejekta sayısı
+**tam 1009**'da dondu — bu merminin kendi parçacık sayısıdır. Yani kontrol
+yüzeyini geçen malzeme hedeften kopan ejekta değil, **merminin geri
+sıçramasıydı**; hedeften hiçbir parçacık 2R'yi geçmedi.
 
-### D. Gereken simüle süre · **ÖLÇÜM SÜRÜYOR**
+Sebep ADR-0026: mermiyi çözünür kılmak için yoğunluğunu 135 kat düşürdüm ve
+20 kg/m³'lük bir mermi gömülmek yerine köpük top gibi sıçrıyor. Momentum ve
+enerji korunuyor ama temas basıncı gerçek DART'ınki değil.
 
-β'nın ne zaman durulduğu koşu maliyetini 10 kat değiştirir. Yerel ön ölçümde
-β yükselmeye başladı (adım 400'de 1,196, 208 ejekta parçacığı) ama plato
-görülmedi. Aynı TRUBA koşusu bunu ölçüyor.
-
-**Ölçüm yöntemi notu:** plato, **bağlı kütle** momentumundan türetilen β ile
-aranır, ejektadan türetilenle değil. Ejekta betası parçacıkların kontrol
-yüzeyini geçmesini bekler; m/s mertebesindeki ejekta için bu 100+ saniye eder
-ve kraterlenme çoktan bitmiş olsa bile plato görünmez.
+**Bu soru FAZ 4'ün yerel incelme tasarımına bağlıdır** ve orada ölçülecektir.
+1,557 sayısı bir DART β'sı olarak sunulmaz.
 
 ---
 
