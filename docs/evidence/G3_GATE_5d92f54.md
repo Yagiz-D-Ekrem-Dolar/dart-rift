@@ -1,5 +1,26 @@
 # G3 kapısı — FAZ 3 kanıt özeti
 
+> ## ⚠ BU BELGE AŞILDI — `5d92f54` ARTIK NİHAİ KANIT DEĞİL
+>
+> Bu koşudan sonra kapı **ikinci bir makinede** de koşuldu ve sahne karması
+> **tutmadı**. Ayrıştırınca iki gerçek kusur çıktı (ADR-0025):
+>
+> 1. **Işın-yüzey kesişimi mesh köşesinde dejenereydi** — yüzey normali
+>    makineye göre **2,5°** oynuyordu. P3-FR-07 çarpma açısını normale göre
+>    tanımladığı için bu **fiziksel olarak önemliydi**.
+> 2. `TriMesh.centroid` `np.sum` kullanıyordu; toplama sırası numpy sürümüne
+>    göre değişip çarpma noktasını ~1e-14 m kaydırıyordu.
+>
+> İkisi de düzeltildi; karma artık iki platformda birebir aynı
+> (`1c6f2a10…`). Aşağıdaki C1–C5 ve C7 sayıları **geçerlidir** (o kriterler
+> etkilenmedi), ama **C6'nın sahne karması ve mermi konumları değişmiştir**.
+>
+> **Nihai kanıt:** `8916f42` üzerindeki koşu — bkz.
+> [`G3_GATE_8916f42.md`](G3_GATE_8916f42.md).
+>
+> Bu belge RULES.txt gereği **silinmedi**: yanlış çıkan bir iddia notla
+> düzeltilir, ortadan kaldırılmaz.
+
 **Kanıt commit'i:** `5d92f54`
 **Makine:** TRUBA / kolyoz1 — NVIDIA H100 80GB HBM3, sürücü 580.95.05
 **İş:** SLURM 1445668 · **Tarih (UTC):** 2026-08-01T15:29:13Z
