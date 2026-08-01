@@ -17,10 +17,17 @@
   "n_total": 6758,
   "n_target": 6359,
   "n_impactor": 399,
-  "sha256": "1c6f2a100ae4a8668556c9798d9bf4436a57ce2bb792cde4811554002347827d",
+  "sha256": "6d6f1d10eaff64e2b3987df1119e4391a08fe8d48eb1874728d1e4984b2c28fa",
   "verified_on": [
     "Linux/CPython 3.10.15/numpy 1.26.4",
     "Windows/CPython 3.12.10/numpy 2.5.1"
   ],
-  "note": "FAZ 3 sahne karmasi. Bu altin dosya iki ayri kusur yuzunden eklendi: (1) isin-yuzey kesisimi mesh kosesinde dejenereydi ve yuzey normali makineye gore ~2.5 derece degisiyordu; (2) TriMesh.centroid np.sum kullaniyordu, toplama sirasi numpy surumune gore oynuyordu. Ikisi de duzeltildi (ADR-0025) ve karma artik iki platformda birebir ayni. Guncelleme yalnizca BILINCLI degisiklik + ADR sonrasi yapilir."
+  "note": "FAZ 3 sahne karmasi. Bu altin dosya iki ayri kusur yuzunden eklendi: (1) isin-yuzey kesisimi mesh kosesinde dejenereydi ve yuzey normali makineye gore ~2.5 derece degisiyordu; (2) TriMesh.centroid np.sum kullaniyordu, toplama sirasi numpy surumune gore oynuyordu. Ikisi de duzeltildi (ADR-0025) ve karma iki platformda birebir ayni.",
+  "history": [
+    {
+      "sha256": "1c6f2a100ae4a8668556c9798d9bf4436a57ce2bb792cde4811554002347827d",
+      "superseded": "2026-08-01",
+      "reason": "Bloklar artik BUYUKTEN KUCUGE yerlestiriliyor. Rasgele sirada buyuk bloklar sona kalip sigacak yer bulamiyor ve hedef kesre ULASILAMIYORDU (olculen: f=0.2672 vs hedef 0.30, 20000 deneme, DOYDU). Siralamayla f=0.3034 ve 2048 deneme. Bilincli bir kalite duzeltmesi; ADR-0025 mekanizmasi geregi altin dosya yenilendi."
+    }
+  ]
 }

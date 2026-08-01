@@ -18,8 +18,39 @@ SEED = 104729
 
 class TestStreams:
     def test_stream_ids_are_locked(self):
-        # ADR-0004: bu esleme kilitli; degisirse altin hash'ler kirilir
-        assert STREAMS == {"particles": 0, "material": 1, "realization": 2}
+        """ADR-0004: VAR OLAN akislarin kimlikleri kilitli.
+
+        Kilitlenen sey mevcut esleme; listenin uzunlugu degil. Bir akisin
+        kimligini ya da sirasini oynatmak butun altin hash'leri kirar —
+        SONA yeni bir ad eklemek hicbirini etkilemez.
+
+        Bu test once `STREAMS == {...}` diye tam esitlik ariyordu ve hasar
+        modeli icin eklenen `damage_flaws` akisinda kirildi. Kirilma dogruydu
+        (bekci calisti) ama iddia fazla genisti: eklemeyi de yasakliyordu.
+        Simdi kilitlenen sey acikca "mevcut girdiler degismesin"dir.
+        """
+        kilitli = {"particles": 0, "material": 1, "realization": 2}
+        for ad, kimlik in kilitli.items():
+            assert STREAMS[ad] == kimlik, f"KILITLI AKIS DEGISTI: {ad}"
+        # yeni akislar yalnizca SONA, cakismayan kimliklerle eklenebilir
+        assert len(set(STREAMS.values())) == len(STREAMS), "kimlik cakismasi"
+        assert min(STREAMS.values()) == 0
+        assert set(STREAMS.values()) == set(range(len(STREAMS))), "kimlikler bosluksuz olmali"
+
+    def test_new_streams_are_appended_not_inserted(self):
+        """Yeni akislarin kimligi, kilitli olanlarin USTUNDE olmali."""
+        for ad, kimlik in STREAMS.items():
+            if ad not in ("particles", "material", "realization"):
+                assert kimlik >= 3, f"{ad} kilitli araliga sokulmus: {kimlik}"
+
+    def test_damage_flaws_stream_independent(self):
+        """Hasar kusurlari, blok yerlestirmeyle AYNI diziyi kullanmamali.
+
+        Ikisi de 'material' akisini kullansaydi ayni sayilari cekerler ve
+        istatistiksel olarak korele olurlardi."""
+        a = stream_generator(SEED, "material").random(64)
+        b = stream_generator(SEED, "damage_flaws").random(64)
+        assert not np.array_equal(a, b)
 
     def test_unknown_stream_raises(self):
         with pytest.raises(KeyError, match="bilinmeyen RNG akisi"):
