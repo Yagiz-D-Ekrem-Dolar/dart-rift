@@ -17,9 +17,87 @@ from dartrift.setup.shape_mesh import (
     ellipsoid,
     icosphere,
     inside_points,
+    load_obj,
     orient_outward,
     signed_distance,
 )
+
+
+class TestLoadObj:
+    """OBJ okuma — PDS sekil modelleri bu bicimde gelir.
+
+    Bu yol FAZ 3 boyunca HIC test edilmemisti (kapsam %0 gosterdi) ve tam da
+    gercek veri geldiginde kullanilacak olan yol. Sentetik OBJ'lerle sinaniyor.
+    """
+
+    @staticmethod
+    def _yaz(tmp_path, metin):
+        p = tmp_path / "m.obj"
+        p.write_text(metin, encoding="utf-8")
+        return p
+
+    def test_ucgen_tetrahedron(self, tmp_path):
+        """Birim tetrahedron: 4 kose, 4 yuz, hacim 1/6."""
+        p = self._yaz(tmp_path, (
+            "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\n"
+            "f 1 3 2\nf 1 2 4\nf 1 4 3\nf 2 3 4\n"))
+        m = load_obj(p)
+        assert len(m.v) == 4 and len(m.f) == 4
+        assert abs(m.volume) == pytest.approx(1.0 / 6.0, rel=1e-12)
+
+    def test_yorum_ve_bilinmeyen_satirlar_atlanir(self, tmp_path):
+        p = self._yaz(tmp_path, (
+            "# yorum\nmtllib a.mtl\nvn 0 0 1\nvt 0 0\n"
+            "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\n"
+            "usemtl x\nf 1 3 2\nf 1 2 4\nf 1 4 3\nf 2 3 4\n"))
+        m = load_obj(p)
+        assert len(m.v) == 4 and len(m.f) == 4
+
+    def test_kose_dokusu_normal_indeksleri(self, tmp_path):
+        """`f 1/2/3` ve `f 1//3` bicimlerinde ilk alan kose indeksidir."""
+        p = self._yaz(tmp_path, (
+            "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\n"
+            "f 1/1/1 3/3/3 2/2/2\nf 1//1 2//2 4//4\n"
+            "f 1/1 4/4 3/3\nf 2 3 4\n"))
+        m = load_obj(p)
+        assert len(m.f) == 4
+        assert abs(m.volume) == pytest.approx(1.0 / 6.0, rel=1e-12)
+
+    def test_poligon_yuz_ucgen_yelpazeye_bolunur(self, tmp_path):
+        """Dortgen yuz 2 ucgene bolunmeli (kup: 6 dortgen -> 12 ucgen)."""
+        v = "\n".join(f"v {x} {y} {z}"
+                      for x in (0, 1) for y in (0, 1) for z in (0, 1))
+        # kose sirasi: (x,y,z) = 000,001,010,011,100,101,110,111 -> 1..8
+        f = ("f 1 3 4 2\nf 5 6 8 7\nf 1 2 6 5\n"
+             "f 3 7 8 4\nf 1 5 7 3\nf 2 4 8 6\n")
+        m = load_obj(self._yaz(tmp_path, v + "\n" + f))
+        assert len(m.v) == 8
+        assert len(m.f) == 12          # 6 dortgen x 2
+        assert abs(m.volume) == pytest.approx(1.0, rel=1e-12)
+
+    def test_negatif_indeks_sondan_sayar(self, tmp_path):
+        """OBJ negatif indeksi 'sondan' anlaminda kullanir."""
+        p = self._yaz(tmp_path, (
+            "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\n"
+            "f -4 -2 -3\nf -4 -3 -1\nf -4 -1 -2\nf -3 -2 -1\n"))
+        m = load_obj(p)
+        assert len(m.f) == 4
+        assert abs(m.volume) == pytest.approx(1.0 / 6.0, rel=1e-12)
+
+    def test_okunan_mesh_islenebilir(self, tmp_path):
+        """Okunan mesh, hattin geri kalanina (yonlendirme, ic testi) girebilmeli."""
+        from dartrift.setup.shape_mesh import inside_points, orient_outward
+
+        p = self._yaz(tmp_path, (
+            "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\n"
+            "f 1 3 2\nf 1 2 4\nf 1 4 3\nf 2 3 4\n"))
+        m = orient_outward(load_obj(p))
+        assert m.volume > 0.0
+        assert m.is_edge_manifold()
+        icte = np.array([[0.2, 0.2, 0.2]])
+        disarida = np.array([[5.0, 5.0, 5.0]])
+        assert bool(inside_points(m, icte)[0]) is True
+        assert bool(inside_points(m, disarida)[0]) is False
 
 
 def _lattice(lo, hi, n):
