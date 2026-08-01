@@ -219,20 +219,51 @@ sınırlamasıdır** ve üretilecek her posteriorla birlikte belirtilmelidir.
 
 ---
 
-## 8. FAZ 3'e başlarken
+## 8. Faz yol haritası (belge setinden)
 
-Sırayla:
+Şartname seti `D-RIFT_Tum_Belgeler_2026-07-27.zip` içinde. Fazların tamamı:
+
+| Faz | Belge | Durum |
+|---|---|---|
+| 0 | Altyapı ve Test İskeleti | ✅ G0 geçti |
+| 1 | Hidrodinamik SPH Çekirdeği | ✅ G1 geçti |
+| 2 | Katı, Porozite, Yerçekimi | ✅ G2 geçti |
+| **3** | **Dimorphos, DART, Gözlenebilirler** | **sıradaki** |
+| 4 | Doğrulama V4, Sentetik Kurtarma | |
+| 5 | **Ensemble, Vekil Model, Bayes** | |
+| 6 | Kilitli Hera Tahmini, Ön kayıt | |
+| 7 | TÜBİTAK/ISEF, Açık Bilim, Derinleştirme | |
+
+> **DÜZELTME (29.07.2026):** Bu belgenin önceki sürümünde "vekil (surrogate)
+> model planı **belgelerde yok**" yazıyordu. **Yanlıştı.** İddia yalnızca bu
+> deponun `docs/` içeriğine bakılarak kuruldu; şartname setinde bir fazın
+> tamamı buna ayrılmış (`FAZ5_Ensemble_Vekil_Model_Bayes.pdf`). Ders: depo
+> dokümanı, şartname setinin yerine geçmez.
+
+### FAZ 3'e başlarken
 
 1. **Yerçekimi kararını verin** (§6). Ölçüm var, seçim yok.
 2. **Gereken simüle süreyi ölçün.** Momentum aktarımının (β) ne zaman
    durulduğu koşu maliyetini 10 kat değiştirir.
 3. **DART kurulumunda çözünürlük yakınsaması** gösterin — krater çapı ve β'nın
    parçacık sayısına duyarlılığı.
-4. Kapı ölçütlerini şartnameden (`DR-RIFT-P3`) alın, **gevşetmeyin**.
+4. Kapı ölçütlerini şartnameden alın, **gevşetmeyin**.
 
-Ensemble (FAZ 5) için ADR-0004 "yüzlerce koşu" öngörüyor; yerçekimsiz
-~30 GPU-günü ile fizibil. Vekil (surrogate) model planı **belgelerde yok** —
-FAZ 4-5 tasarlanırken karara bağlanmalı.
+### FAZ 3'ün sonraki fazlara borcu
+
+Sıralama tesadüf değil: FAZ 3'ün adı **"Gözlenebilirler"**, FAZ 4'ün adı
+**"Sentetik Kurtarma"**, FAZ 5'in adı **"Ensemble, Vekil Model, Bayes"**.
+
+- FAZ 3'te **hangi gözlenebilirlerin kaydedileceğine** karar verilir (krater
+  çapı, β momentum aktarım katsayısı, ejekta konisi…). Vekil model tam olarak
+  bunları öğrenecek — FAZ 3'te yanlış şey kaydedilirse FAZ 5'te düzeltilemez.
+- FAZ 4'teki sentetik kurtarma ("bilinen parametrelerle üret, çıkarım onları
+  geri bulabiliyor mu?") vekil modelin ve çıkarımın doğruluk kanıtıdır.
+- FAZ 5'in ensemble'ı **uzay dolduran tasarımla** örneklenmelidir (Latin
+  hypercube vb.), rastgele değil — birkaç yüz koşu doğrudan MCMC için az ama
+  vekil model eğitmek için yeterlidir; vekil modelin varlık sebebi budur.
+
+Maliyet (§6): yerçekimsiz 1 s'lik koşularla 300 koşu ≈ 30 GPU-günü — fizibil.
 
 ---
 
