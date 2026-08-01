@@ -1,0 +1,94 @@
+# FAZ 3 sahne kurulumu — DART benzeri senaryo.
+#
+# ADLANDIRMA UYARISI: bu "DART senaryosu" DEGIL, "DART benzeri senaryo"dur.
+# Hedef sekli gercek Dimorphos sekil modeli degil analitik bir ikosferdir;
+# gercek PDS urunleri depoda yok (bkz. data_manifest/README.md, G3 kriter C7
+# KANITLANAMADI). Sekil modeli geldiginde `shape: obj` + `obj_path` yeter;
+# degisecek olan sayilardir, kod degil.
+#
+# UYARI (ADR-0005): PyYAML (YAML 1.1) isaretsiz uslu sayilari STRING olarak
+# ayristirir ve sema strict=True'dur. Ustel yazarken "+" ZORUNLUDUR:
+# 2.67e+10 dogru, 2.67e10 sessizce string olur ve config gecersizlesir.
+# Bu tuzak configs/p2_basalt.yaml'in aylarca hic gecerli olmadigini gizledi.
+
+schema_version: 1
+run_id: p3_scene
+random_seed: 20260801
+
+numerics:
+  precision: deterministic_fp64
+  kernel: wendland_c2
+  cfl: 0.25
+  alpha_av: 1.0
+  beta_av: 2.0
+
+io:
+  output_layers: [scalar_budget, sparse_snapshot, event_catalog]
+  hdf5_compression: gzip
+
+physics:
+  eos: tillotson
+  density_method: continuity      # ADR-0015: serbest yuzeyde toplama yogunlugu bozuk
+  tillotson:                      # Benz & Asphaug (1999) bazalt, SI
+    rho0: 2700.0
+    A: 2.67e+10
+    B: 2.67e+10
+    a: 0.5
+    b: 1.5
+    u0: 4.87e+8
+    u_iv: 4.72e+6
+    u_cv: 1.82e+7
+    alpha_t: 5.0
+    beta_t: 5.0
+    cs_floor_frac: 0.05
+  strength:
+    enabled: true
+    Y0: 1.0e+4                    # Ek A taramasi 0.1-1e+3 Pa'ya inecek (FAZ 5)
+    mu_f: 0.6
+    YM: 1.5e+9
+    shear_G: 2.27e+10
+    jaumann: true
+  porosity:
+    enabled: true
+    alpha0: 1.6
+    Pe: 1.0e+6
+    Ps: 1.0e+8
+    n_exp: 2.0
+  gravity:
+    enabled: true
+    G: 6.6743e-11
+    eps: 0.0
+    mode: barnes_hut
+    theta: 0.5
+
+scene:
+  target:
+    shape: icosphere
+    radius: 82.0                  # Dimorphos esdeger yaricapi (Daly ve dig. 2023)
+    subdiv: 4
+    spacing: 4.0
+    bulk_density: 1800.0          # ~%33 gozeneklilik, moloz yigini
+    model_class: M1
+    matrix_alpha0: 1.6
+    matrix_Y0: 1.0e+4
+    boulder_alpha0: 1.05
+    boulder_Y0: 1.0e+7
+    f_boulder: 0.25
+    q: 3.0
+    r_min: 8.0
+    r_max: 24.0
+  impactor:
+    n_particles: 2000             # >=8 sema sarti: nokta parcacik YASAK
+    mass: 579.4                   # kg, carpma anindaki DART kutlesi
+    speed: 6144.9                 # m/s
+    density: 2700.0
+    aim: [0.0, 0.0, 1.0]
+    angle_deg: 0.0                # dik carpma; egiklik YUZEY NORMALINE gore
+    azimuth_deg: 0.0
+  settling:
+    enabled: true
+    damping: 0.02
+    max_steps: 400
+    ke_frac: 1.0e-3               # esik = ke_frac * (3/5)GM^2/R
+    gravity_rebuild_every: 1      # ADR-0024: K=1 tam dogruluk, yaklasiklik yok
+    gravity_drift_tol: 0.25

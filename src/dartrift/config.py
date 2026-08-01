@@ -12,7 +12,14 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from . import SCHEMA_VERSION
 
@@ -193,6 +200,78 @@ class PhysicsConfig(_StrictModel):
 SCENARIOS = ("sod_shock_tube", "sedov_blast", "plate_impact", "conservation_cloud")
 
 
+class TargetConfig(_StrictModel):
+    """Hedef cisim: sekil + moloz yigini (FAZ 3, P3-FR-01..04)."""
+
+    shape: Literal["icosphere", "ellipsoid", "obj"] = "icosphere"
+    obj_path: str | None = None            # shape="obj" ise zorunlu
+    radius: float | None = Field(default=None, gt=0.0)          # icosphere
+    semi_axes: list[float] | None = Field(default=None, min_length=3, max_length=3)
+    subdiv: int = Field(default=4, ge=0, le=7)
+    spacing: float = Field(gt=0.0)
+    bulk_density: float = Field(gt=0.0)
+    model_class: Literal["M0", "M1"] = "M0"
+    matrix_alpha0: float = Field(default=1.6, ge=1.0)
+    matrix_Y0: float = Field(default=1.0e4, gt=0.0)
+    boulder_alpha0: float = Field(default=1.05, ge=1.0)
+    boulder_Y0: float = Field(default=1.0e7, gt=0.0)
+    f_boulder: float = Field(default=0.0, ge=0.0, lt=1.0)
+    q: float = Field(default=3.0, gt=0.0)
+    r_min: float | None = Field(default=None, gt=0.0)
+    r_max: float | None = Field(default=None, gt=0.0)
+
+    @model_validator(mode="after")
+    def _shape_args_present(self) -> TargetConfig:
+        if self.shape == "icosphere" and self.radius is None:
+            raise ValueError("shape=icosphere icin radius zorunlu")
+        if self.shape == "ellipsoid" and self.semi_axes is None:
+            raise ValueError("shape=ellipsoid icin semi_axes zorunlu")
+        if self.shape == "obj" and not self.obj_path:
+            raise ValueError("shape=obj icin obj_path zorunlu")
+        if self.model_class == "M1" and self.f_boulder <= 0.0:
+            raise ValueError("model_class=M1 icin f_boulder > 0 olmali")
+        if self.r_min is not None and self.r_max is not None and self.r_min >= self.r_max:
+            raise ValueError(f"r_min < r_max olmali ({self.r_min} >= {self.r_max})")
+        return self
+
+
+class ImpactorConfig(_StrictModel):
+    """Mermi ve carpma geometrisi (FAZ 3, P3-FR-06/07).
+
+    `n_particles` >= 8: nokta parcacik P3-FR-06 ile YASAKTIR ve sema bunu
+    kabul etmez — yasagi yalnizca kodda birakmak, bir config ile atlanabilir
+    olmasi demekti.
+    """
+
+    n_particles: int = Field(ge=8)
+    mass: float = Field(default=579.4, gt=0.0)
+    speed: float = Field(default=6144.9, gt=0.0)
+    density: float = Field(default=2700.0, gt=0.0)
+    aim: list[float] = Field(default=[0.0, 0.0, 1.0], min_length=3, max_length=3)
+    angle_deg: float = Field(default=0.0, ge=0.0, lt=90.0)
+    azimuth_deg: float = Field(default=0.0, ge=0.0, lt=360.0)
+    standoff: float | None = Field(default=None, gt=0.0)
+
+
+class SettlingConfig(_StrictModel):
+    """Denge sinamasi penceresi (FAZ 3, P3-FR-05; kapsam icin ADR-0024)."""
+
+    enabled: bool = True
+    damping: float = Field(default=0.02, ge=0.0, lt=1.0)
+    max_steps: int = Field(default=400, ge=1)
+    ke_frac: float = Field(default=1.0e-3, gt=0.0)
+    gravity_rebuild_every: int = Field(default=1, ge=1)
+    gravity_drift_tol: float = Field(default=0.25, gt=0.0)
+
+
+class SceneConfig(_StrictModel):
+    """FAZ 3 sahnesi: hedef + settling + mermi."""
+
+    target: TargetConfig
+    impactor: ImpactorConfig
+    settling: SettlingConfig = Field(default_factory=SettlingConfig)
+
+
 class RunConfig(_StrictModel):
     """Bir kosunun tam tanimi. FAZ 0 Ek B + FAZ 1 Ek A iskeletleriyle uyumlu."""
 
@@ -208,6 +287,8 @@ class RunConfig(_StrictModel):
         None
     )
     resolution: list[int] | None = Field(default=None, min_length=1)
+    # FAZ 3 Ek A: sahne kurulumu (hedef + settling + mermi)
+    scene: SceneConfig | None = None
 
     @field_validator("resolution")
     @classmethod
