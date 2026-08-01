@@ -1,10 +1,19 @@
-"""Kirmizi-takim kontrol listesi kosucusu — DR-RIFT-P0 §12.
+"""Kirmizi-takim kontrol listesi kosucusu — DR-RIFT-P0 §12 + DR-RIFT-P3 §10.
 
 Yol Haritasi §7.5: "Her fazin kirmizi-takim kontrol listesi teslimden once
-isletilir." Bu betik §12'deki bes maddeyi otomatik olarak sinar ve kanit
-uretir. Kapi kosucusundan (run_g0_gate.py) ayridir: kapi "gereksinimler
+isletilir." Kapi kosucusundan (run_g0_gate.py) ayridir: kapi "gereksinimler
 karsilandi mi" diye sorar, kirmizi takim "bu sistemi nasil kandirabilirim"
 diye sorar.
+
+RT1-RT6 FAZ 0 maddeleridir (determinizm, config, manifest, sessiz yutma).
+RT7-RT12 FAZ 3 maddeleridir ve hepsi GERCEKTEN OLCULMUS bir kusurdan
+turemistir — varsayimsal senaryo degil:
+  RT7  blok doyma bayragi      <- olculen: hedef 0.30, gerceklesen 0.263
+  RT8  nokta mermi yasagi      <- P3-FR-06 acik yasak
+  RT9  kuresel/yerel ayrimi    <- olculen: cukursuz kurede 41 m hayali krater
+  RT10 beta tanim duyarliligi  <- tek sayi, kesin olmayani kesin gostermek
+  RT11 settling iddiasi        <- KE zaten sifirdi; settling dusurmedi
+  RT12 PDS manifesto eksigi    <- FAZ 0'da verilen soz tutulamadi
 
 Kullanim:
     python scripts/run_red_team.py [--run-dir DIZIN]
@@ -180,6 +189,128 @@ def rt6_disabled_layer_not_silent(run_dir: Path) -> Check:
     return c
 
 
+# ---------------------------------------------------------------------------
+# FAZ 3 maddeleri (DR-RIFT-P3 §10) — sahne kurulumu nasil kandirilabilir?
+# ---------------------------------------------------------------------------
+
+
+def rt7_boulder_saturation_not_silent() -> Check:
+    """Istenen blok kesrine ULASILAMAZSA sessizce dusuk kesir mi doner?"""
+    c = Check("RT7", "Ulasilamayan blok kesri sessizce dusuk mu donuyor?")
+    from dartrift.setup.rubble_generator import build_rubble_pile
+    from dartrift.setup.shape_mesh import icosphere
+
+    mesh = icosphere(3, 40.0)
+    # fiziksel olarak sigmayacak bir kesir iste: doyma kacinilmaz
+    pile = build_rubble_pile(mesh, spacing=6.0, bulk_density=1800.0, root_seed=5,
+                             model_class="M1", f_boulder=0.9, q=3.0,
+                             r_min=12.0, r_max=30.0)
+    olculen = float(np.sum(pile.m[pile.is_boulder]) / np.sum(pile.m))
+    bayrak = bool(pile.diagnostics.get("boulder_saturated", False))
+    sessiz = (olculen < 0.85) and not bayrak
+    c.record(
+        not sessiz,
+        f"istenen 0.90, olculen {olculen:.3f}, doyma bayragi "
+        f"{'ACIK' if bayrak else 'KAPALI'} -> "
+        f"{'SESSIZCE YUTULDU' if sessiz else 'raporlandi'}",
+    )
+    return c
+
+
+def rt8_point_impactor_rejected() -> Check:
+    """P3-FR-06 nokta parcacigi yasakliyor — kod gercekten reddediyor mu?"""
+    c = Check("RT8", "Nokta mermi (N=1) sessizce kabul ediliyor mu?")
+    from dartrift.setup.impactor import build_impactor
+
+    kacan = []
+    for n in (1, 2, 7):
+        try:
+            build_impactor(n)
+            kacan.append(n)
+        except ValueError:
+            pass
+    c.record(not kacan, f"denenen N=1,2,7; reddedilmeyen={kacan or 'yok'}")
+    return c
+
+
+def rt9_global_deformation_not_crater() -> Check:
+    """Cisim TUMUYLE buzusurse krater cikarici bunu krater diye mi sayar?
+
+    Bu, olculmus bir kusurdur: yon kutulari yetersiz orneklendiginde hicbir
+    cukuru olmayan bir kurede 41 m'lik hayali krater raporlanmisti.
+    """
+    c = Check("RT9", "Kuresel buzusme krater olarak mi sayiliyor?")
+    from dartrift.observables.crater_shape import crater_profile
+
+    rng = np.random.default_rng(4)
+    p = rng.normal(size=(30000, 3))
+    p /= np.linalg.norm(p, axis=1)[:, None]
+    x = 0.9 * p * (100.0 * rng.uniform(0.0, 1.0, 30000) ** (1.0 / 3.0))[:, None]
+    cs = crater_profile(x, center=np.zeros(3),
+                        impact_direction=np.array([0.0, 0.0, -1.0]),
+                        reference_radius=100.0, outer_angle_deg=60.0)
+    hayali = abs(cs.depth) > 5.0
+    c.record(
+        not hayali,
+        f"cukursuz %10 buzusmus kurede derinlik {cs.depth:.2f} m, "
+        f"kuresel degisim {cs.global_radius_change:.2f} m",
+    )
+    return c
+
+
+def rt10_beta_definition_sensitivity_reported() -> Check:
+    """beta tek sayi olarak mi sunuluyor, yoksa tanim duyarliligiyla mi?"""
+    c = Check("RT10", "beta, kontrol yuzeyi secimine duyarliligi olmadan mi veriliyor?")
+    from dartrift.validation.scene import run_observable_selftest
+
+    r = run_observable_selftest()
+    yayilim = r["beta_relative_spread"]
+    c.record(
+        bool(r["sensitivity_reported"]) and yayilim > 0.0,
+        f"tarama yayilimi %{100 * yayilim:.2f} "
+        f"[{r['beta_min']:.3f}, {r['beta_max']:.3f}] — tek sayi degil",
+    )
+    return c
+
+
+def rt11_settling_claims_only_what_it_measured() -> Check:
+    """Settling 'KE'yi dusurdum' diye mi sunuluyor, yoksa olculen gercek mi?
+
+    Olculen gercek: baslangic durumu ZATEN denge (a_SPH = 0 tam olarak).
+    Modulun kendi belgesi bunu soylemek zorunda; soylemiyorsa iddia sisirilmis
+    demektir.
+    """
+    c = Check("RT11", "Settling, olcmedigi bir basariyi iddia ediyor mu?")
+    from dartrift.setup import settling as S
+
+    doc = (S.__doc__ or "") + (S.settle_pile.__doc__ or "")
+    anahtar = ["denge", "ZATEN", "KAPSAM DISI" if "KAPSAM DISI" in doc else "hesaplanabilir"]
+    eksik = [k for k in anahtar if k not in doc]
+    c.record(
+        not eksik,
+        f"modul belgesi denge/kapsam sinirini {'yaziyor' if not eksik else 'YAZMIYOR'}"
+        + (f"; eksik={eksik}" if eksik else ""),
+    )
+    return c
+
+
+def rt12_data_manifest_gap_not_hidden() -> Check:
+    """Bos veri manifestosu 'gecti' diye mi sayiliyor?"""
+    c = Check("RT12", "Kanitlanamayan PDS manifestosu gecmis sayiliyor mu?")
+    gate = (REPO / "scripts" / "run_g3_gate.py").read_text(encoding="utf-8")
+    readme = (REPO / "data_manifest" / "README.md")
+    okur = readme.read_text(encoding="utf-8") if readme.exists() else ""
+    ok = ("unprovable" in gate and "KANITLANAMADI" in gate
+          and "KANITLANAMADI" in okur)
+    c.record(
+        ok,
+        "G3 kosucusu C7'yi unprovable() ile isaretliyor ve README eksigi "
+        "acikca yaziyor" if ok else
+        "kapi ya da README eksigi gizliyor — KUSUR",
+    )
+    return c
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", default=None)
@@ -196,11 +327,17 @@ def main() -> int:
         rt4_manifest_reproduces_run(run_dir),
         rt5_violation_halts_run(),
         rt6_disabled_layer_not_silent(run_dir),
+        rt7_boulder_saturation_not_silent(),
+        rt8_point_impactor_rejected(),
+        rt9_global_deformation_not_crater(),
+        rt10_beta_definition_sensitivity_reported(),
+        rt11_settling_claims_only_what_it_measured(),
+        rt12_data_manifest_gap_not_hidden(),
     ]
     all_clean = all(c.clean for c in checks)
 
     lines = [
-        "# Kirmizi-Takim Kontrol Listesi — FAZ 0 (DR-RIFT-P0 §12)",
+        "# Kirmizi-Takim Kontrol Listesi — FAZ 0 §12 + FAZ 3 §10",
         "",
         f"- Tarih (UTC): {datetime.now(timezone.utc).isoformat()}",
         f"- Makine: {platform.node()} / {platform.platform()}",
