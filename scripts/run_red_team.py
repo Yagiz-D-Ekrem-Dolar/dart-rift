@@ -14,6 +14,9 @@ turemistir — varsayimsal senaryo degil:
   RT10 beta tanim duyarliligi  <- tek sayi, kesin olmayani kesin gostermek
   RT11 settling iddiasi        <- KE zaten sifirdi; settling dusurmedi
   RT12 PDS manifesto eksigi    <- FAZ 0'da verilen soz tutulamadi
+  RT13 sahne karmasi referansi <- olculen: karma iki makinede TUTMUYORDU
+  RT14 kosede normal kararli mi<- olculen: normal makineye gore 2.5 derece
+                                  oynuyordu (ADR-0025)
 
 Kullanim:
     python scripts/run_red_team.py [--run-dir DIZIN]
@@ -311,6 +314,62 @@ def rt12_data_manifest_gap_not_hidden() -> Check:
     return c
 
 
+def rt13_scene_determinism_is_cross_machine() -> Check:
+    """Sahne karmasi TEK makinede mi dogrulaniyor, yoksa makineler arasi mi?
+
+    Bu madde bir kusurdan dogdu (ADR-0025): `Scene.digest` G3'te "determinizm
+    kaniti" diye sunuluyordu ama referansi yoktu; "ayni makinede iki kez ayni"
+    sinaniyordu. O bosluk iki gercek kusuru tasidi — isin-yuzey dejenereligi
+    (normal 2.5 derece kayiyordu) ve centroid toplama sirasi.
+    """
+    c = Check("RT13", "Sahne determinizmi yalnizca tek makinede mi dogrulanmis?")
+    golden = REPO / "tests" / "golden" / "p3_scene_v1.json"
+    if not golden.is_file():
+        c.record(False, f"altin sahne dosyasi yok: {golden}")
+        return c
+    g = json.loads(golden.read_text(encoding="utf-8"))
+    plats = g.get("verified_on", [])
+    isletim = {p.split("/")[0] for p in plats}
+    numpylar = {p.split("numpy ")[-1] for p in plats if "numpy " in p}
+
+    from dartrift.setup.scene import build_scene
+
+    p = g["params"]
+    s = build_scene(
+        shape=p["shape"], radius=p["radius"], subdiv=p["subdiv"],
+        spacing=p["spacing"], bulk_density=p["bulk_density"],
+        n_impactor=p["n_impactor"], model_class=p["model_class"],
+        f_boulder=p["f_boulder"], q=p["q"], r_min=p["r_min"], r_max=p["r_max"],
+        root_seed=g["seed"])
+    esles = s.digest == g["sha256"]
+    c.record(
+        esles and len(isletim) >= 2 and len(numpylar) >= 2,
+        f"karma {'ESLESTI' if esles else 'SAPTI'}; kayitli platformlar="
+        f"{plats or 'yok'} (isletim sistemi={len(isletim)}, numpy={len(numpylar)})",
+    )
+    return c
+
+
+def rt14_ray_degeneracy_normal_is_stable() -> Check:
+    """Mesh kosesinden gecen isin, faset secimine bagli bir normal mi veriyor?"""
+    c = Check("RT14", "Kosede yuzey normali faset secimine gore oynuyor mu?")
+    from dartrift.setup.impactor import impact_geometry
+    from dartrift.setup.shape_mesh import icosphere
+
+    kotu = []
+    for subdiv in (2, 3, 4, 5):
+        g = impact_geometry(icosphere(subdiv, 82.0), np.array([0.0, 0.0, 1.0]))
+        sapma = float(np.hypot(g.normal[0], g.normal[1]))
+        if sapma > 1.0e-15:
+            kotu.append((subdiv, sapma))
+    c.record(
+        not kotu,
+        "kure kutbunda normal tam +z (tum bolunmelerde tegetsel bilesen < 1e-15)"
+        if not kotu else f"tegetsel bilesen sifirdan buyuk: {kotu}",
+    )
+    return c
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", default=None)
@@ -333,6 +392,8 @@ def main() -> int:
         rt10_beta_definition_sensitivity_reported(),
         rt11_settling_claims_only_what_it_measured(),
         rt12_data_manifest_gap_not_hidden(),
+        rt13_scene_determinism_is_cross_machine(),
+        rt14_ray_degeneracy_normal_is_stable(),
     ]
     all_clean = all(c.clean for c in checks)
 
