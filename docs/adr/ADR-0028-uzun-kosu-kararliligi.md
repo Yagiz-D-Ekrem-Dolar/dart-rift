@@ -104,6 +104,24 @@ derinliği gerçek DART'ınki değil.
 bağlıdır (ADR-0026) ve orada ölçülecektir.** Buradaki 1,557 sayısı bir DART
 β'sı olarak sunulmaz.
 
+## Yan bulgu — yerçekimi kararlılığı etkilemiyor, maliyeti etkiliyor
+
+Aynı kurulum yerçekimi **açık** koşuldu:
+
+| | s/adım | E_hata |
+|---|---|---|
+| yerçekimsiz | 0,150 | 1,4558e-02 |
+| yerçekimli | 2,36 | 1,4558e-02 |
+
+Enerji hatası **birebir aynı** — yerçekimi kararlılığı bozmuyor. Ama koşu
+**15,7 kat** yavaşlıyor; bu, ADR-0024'ün "ağaç kurulumu yerçekimli
+değerlendirmenin %99,8'i" ölçümünün 379 207 parçacık ölçeğindeki
+doğrulamasıdır.
+
+(Yerçekimli koşu 8000 adıma ayarlanmıştı ama bu hızda 5,25 saat sürerdi ve
+işin 3 saatlik sınırına takıldı. Kararlılık sorusu için gereken kanıt
+alınmıştır; tam koşu gerekmedi.)
+
 ## Ölçüm yöntemi notu
 
 Plato araması **bağlı kütle** momentumundan türetilen β ile yapılır,

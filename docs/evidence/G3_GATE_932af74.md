@@ -16,6 +16,11 @@
 | kapı | sonuç | çıkış kodu |
 |---|---|---|
 | **G3** | **KISMİ** — kanıtlanabilir kriterlerin **hepsi geçti**, C7 **KANITLANAMADI** | 3 |
+| G0 | GEÇTİ | 0 |
+| G1 | GEÇTİ | 0 |
+| G2 | GEÇTİ | 0 |
+
+Dördü de aynı işte, aynı commit'te, temiz git ağacıyla arka arkaya koşuldu.
 
 **605 test geçti / 0 kaldı** (önceki 571'den +34), kapsam **%97,0**
 (4066 ifade, 122 kapsanmayan).
@@ -59,7 +64,7 @@ Diğer kriterlerin ölçülen sayıları değişmedi.
 | Sahne makineler arası determinizmi | Işın dejenereliği (**2,5°** normal sapması) + centroid toplama sırası | **ADR-0025** |
 | `volume`/`area` latent riski | fsum'a çevrildi; karma **değişmedi**, yani bedava kapandı | ADR-0025 |
 | Blok kesri hedefe ulaşmıyordu | Büyükten küçüğe yerleştirme: 0,2672 → **0,3034**, deneme 20000 → **2048** | EKSIKLER §4 |
-| Uzun koşu kararlılığı | Hata **birikmiyor**; çarpma kayması `O(dt)` | **ADR-0028** |
+| Uzun koşu kararlılığı | **30 000 adım**, hata birebir sabit (log-log eğim **0,000**); çarpma kayması `O(dt)` | **ADR-0028** |
 | RNG kilidinin fazla geniş olması | "Ekleme" ile "değiştirme" ayrıldı | EKSIKLER §6 |
 
 ## Açık kalan iki madde
