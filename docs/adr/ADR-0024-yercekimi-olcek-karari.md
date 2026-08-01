@@ -52,6 +52,14 @@ zaman ölçeğiyle değil. **Yerçekimsel oturmayı açık integrasyonla çözme
 hesaplanabilir değildir** — DART çözünürlüğünde tek bir serbest düşme süresi 13
 milyon adım eder.
 
+> **Bu tablo bir ALT SINIRDIR.** Yukarıdaki dt yalnızca CFL'den
+> (`0.25·h/c_uzunlamasına`) hesaplandı. Gerçek zaman adımı ayrıca ivme ve
+> gerinim limitlerine de tabidir ve daha küçüktür: G3 kapısı aynı test
+> yapılandırmasında **5.19e+06 adım/t_ff** ölçtü — analitik kestirimin ~2.8
+> katı. Yani hesaplanamazlık sonucu, tablodakinden daha güçlüdür. Kapı
+> `steps_per_free_fall` alanında **ölçüleni** raporlar, buradaki kestirimi
+> değil.
+
 ### (3) Zaten oturacak bir şey var mı?
 
 Merkez litostatik basınç P = (2π/3)Gρ²R²:
