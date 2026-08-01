@@ -201,10 +201,36 @@ sayısı ve zaman ölçeği farklıdır. FAZ 4 bu ayrımı kullanacak.
 
 | Soru | Cevap |
 |---|---|
-| Motor DART ölçeğine çıkabiliyor mu? | **Evet** — 11,2 M parçacık ölçüldü, doğrusal, bellek bol |
+| Motor DART ölçeğine çıkabiliyor mu? | **Parçacık sayısı olarak evet** (11,2 M ölçüldü) — **ama tekdüze ağda mermiyi çözmez**, bkz. §6 ve ADR-0026 |
 | Fizik hedefe uygun mu? | **Evet**, zayıf/gözenekli hedef için standart set — hasar hariç |
 | Ensemble maliyeti karşılanabilir mi? | **1 s koşularla evet** (~30 GPU-günü); 10 s'de sınırda |
 | Yapılan doğrulama işi anlamlı mı? | **Evet** — hata posteriora taşınır; kalibrasyon zorunlu |
 | Yerçekimi maliyeti engel mi? | **Hayır** (ADR-0024) — şok fazında ihmal edilebilir; ağaç seyrek yenilenebilir |
 | Sahne kurulabiliyor mu? | **Evet** — G3 KISMİ geçti; şekil, yığın, mermi, gözlenebilirler hazır |
-| Eksik ne var? | Hasar modeli; uzun koşu kararlılığı; gereken simüle süre; **gerçek PDS şekil modeli** (G3 C7 KANITLANAMADI) |
+| Eksik ne var? | Hasar modeli; **mermi çözünürlüğü (ADR-0026, FAZ 4 yerel incelme gerektirir)**; gereken simüle süre; **gerçek PDS şekil modeli** (G3 C7 KANITLANAMADI) |
+
+---
+
+## 6. DÜZELTME — §1'in "DART ölçeğine çıkıyor" iddiası eksikti
+
+§1 ve §2'deki ölçümler **parçacık sayısı ve bellek** için doğrudur ve
+geçerlidir. Ama o parçacık sayısının **DART mermisini çözmeye yetip
+yetmediğini** hiç kontrol etmemiştim. Yetmiyor.
+
+**Ölçüldü** (2026-08-01): DART mermisinin küre eşdeğer çapı **0,743 m**.
+Dimorphos'u (hacim 2,3046e+06 m³) tekdüze ayrıklaştırınca:
+
+| aralık [m] | N | merminin çapı boyunca parçacık |
+|---|---|---|
+| 1,00 | 3,26e+06 | 0,74 |
+| **0,663** (fizibil üst sınır 1,12e7) | **1,12e+07** | **1,12** |
+| 0,124 (çap boyunca 6 parçacık) | **1,72e+09** | 6,00 |
+
+Yani fizibil üst sınırda mermi **tek bir parçacık** kadardır; şoku kaynağında
+çözmek için gereken 1,72e9, ölçülen sınırın **153 katıdır**.
+
+**Sonucu:** FAZ 4 tekdüze küresel ağla yapılamaz; çarpma bölgesinde yerel
+yüksek çözünürlük gerekir. Ayrıntı ve karar: **ADR-0026**.
+
+Bu, §1–§2'yi geçersiz kılmaz — onları **daraltır**. Ölçekleme ve bellek
+sayıları aynen geçerlidir; eksik olan, o ölçeğin fizik için yeterliliğiydi.
