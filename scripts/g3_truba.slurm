@@ -70,4 +70,20 @@ echo "== G2 rc=$? =="
 # G3 cikis kodlari: 0 = tam gecti, 1 = kaldi, 2 = degerlendirilmedi (CUDA yok),
 # 3 = kanitlanabilir kriterler gecti ama en az biri KANITLANAMADI (C7/PDS).
 echo "== TUM KAPILAR BITTI, G3 rc=$G3RC =="
+
+# SLURM YANILTMASI — OKUMADAN GECMEYIN:
+# `sacct` yalnizca "COMPLETED / FAILED" ayrimi yapar. rc=3 sifir olmadigi icin
+# is FAILED gorunur, oysa kanitlanabilir kriterlerin HEPSI gecmistir.
+# Cikis kodu bilerek sifir DEGILDIR: "temiz gecis" olmadigi dogrudur ve bunu
+# 0 yapip gizlemek, kanitlanamayan bir kriteri gecmis saymak olurdu.
+# Dogru okuma yeri: gate_runs/g3_*/G3_report.md icindeki verdikt.
+case "$G3RC" in
+  0) echo "SLURM NOTU: G3 TAM GECTI (rc=0)." ;;
+  3) echo "SLURM NOTU: G3 KISMI (rc=3) — kanitlanabilir kriterler GECTI, en az"
+     echo "            biri KANITLANAMADI (C7/PDS verisi yok). sacct bunu FAILED"
+     echo "            gosterir; kapi BASARISIZ DEGILDIR. Raporu okuyun." ;;
+  1) echo "SLURM NOTU: G3 GERCEKTEN KALDI (rc=1) — kriter basarisiz." ;;
+  2) echo "SLURM NOTU: G3 DEGERLENDIRILMEDI (rc=2) — CUDA yok." ;;
+  *) echo "SLURM NOTU: beklenmeyen G3 cikis kodu $G3RC." ;;
+esac
 exit $G3RC
