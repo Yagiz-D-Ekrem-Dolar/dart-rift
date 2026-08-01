@@ -12,12 +12,16 @@
 #SBATCH -C H100
 #SBATCH -N 1
 #SBATCH -n 1
-# 8 cekirdek / 3 saat: olculen kosu suresi ~45 dk ve is TEK IS PARCACIKLI
-# (agirlik GPU'da). Daha buyuk istemek kuyrukta AssocGrpCpuLimit ile
-# beklemeye yol aciyor ve paylasimli kumede karsiligi olmayan bir maliyet.
-#SBATCH -c 8
+# KUME KURALI: kolyoz-cuda kuyrugu cekirdek sayisinin 16'NIN KATI olmasini
+# sart kosar. `-c 8` denendi ve reddedildi:
+#   "kolyoz-cuda kuyruguna gonderilen islerin cekirdek sayisi 16 ve katlari
+#    olmalidir / CPU count specification invalid"
+# Yani cekirdek sayisi kucultulemez; kuyrukta beklerken kisilabilecek tek
+# kalem SURE'dir. Olculen kosu ~45 dk oldugu icin 2 saat fazlasiyla yeter
+# (6 saat istemek bos yere cekirdek x sure butcesi tuketiyordu).
+#SBATCH -c 16
 #SBATCH --gres=gpu:1
-#SBATCH --time=03:00:00
+#SBATCH --time=02:00:00
 #SBATCH --output=g3_%j.out
 #SBATCH --error=g3_%j.out
 #SBATCH --exclude=kolyoz13,palamut5,palamut6
