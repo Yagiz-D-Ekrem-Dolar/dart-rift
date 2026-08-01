@@ -28,7 +28,53 @@ __all__ = [
     "run_rubble_quality",
     "run_impactor_convergence",
     "run_observable_selftest",
+    "run_scene_determinism",
 ]
+
+
+def run_scene_determinism() -> dict:
+    """FAZ 3 teslimi: config'den kurulan sahne yeniden uretilebilir mi?
+
+    Uc sey ayri ayri sinanir:
+      1. Ayni tohum -> ayni karma (yeniden uretilebilirlik).
+      2. Farkli tohum -> farkli karma (tohum GERCEKTEN baglanmis mi; aksi
+         halde 1. madde bos bir dogru olurdu).
+      3. Fiziksel butunluk: kutle/momentum korunumu, mermi hedefe degmiyor,
+         mermi malzemesi hedefinkinden ayri.
+    """
+    from ..setup.scene import build_scene
+
+    kw = dict(radius=82.0, spacing=8.0, n_impactor=400, model_class="M1",
+              f_boulder=0.25, q=3.0, r_min=16.0, r_max=48.0)
+    a = build_scene(root_seed=11, **kw)
+    b = build_scene(root_seed=11, **kw)
+    c = build_scene(root_seed=12, **kw)
+    d = a.diagnostics
+    imp_dist = float(np.linalg.norm(a.x[a.is_impactor], axis=1).min())
+    tgt = ~a.is_impactor
+    return {
+        "digest": a.digest,
+        "reproducible": bool(a.digest == b.digest),
+        "seed_sensitive": bool(a.digest != c.digest),
+        "n_total": int(a.n),
+        "n_target": int(a.n_target),
+        "n_impactor": int(d["n_impactor"]),
+        "impactor_mass_rel_err": abs(
+            float(np.sum(a.m[a.is_impactor])) - DART_MASS) / DART_MASS,
+        "impactor_momentum_rel_err": abs(
+            float(np.linalg.norm(a.impactor_momentum)) - DART_MOMENTUM) / DART_MOMENTUM,
+        "mass_ratio": d["mass_ratio_target_over_impactor"],
+        "impactor_min_distance": imp_dist,
+        "target_radius": a.target_radius,
+        "impactor_outside_target": bool(imp_dist > a.target_radius),
+        "target_at_rest": bool(np.all(a.v[tgt] == 0.0)),
+        "impactor_nonporous": bool(np.all(a.alpha0[a.is_impactor] == 1.0)),
+        "target_porous": bool(np.any(a.alpha0[tgt] > 1.0)),
+        "material_heterogeneous": bool(len(np.unique(a.alpha0[tgt])) > 1
+                                       and len(np.unique(a.Y0[tgt])) > 1),
+        "particles_across_impactor": d["particles_across_impactor"],
+        "bulk_density_measured": d["bulk_density_measured"],
+    }
 
 
 def run_shape_pipeline() -> dict:

@@ -1,4 +1,4 @@
-"""Kirmizi-takim kontrol listesi kosucusu — DR-RIFT-P0 §12 + DR-RIFT-P3 §10.
+﻿"""Kirmizi-takim kontrol listesi kosucusu — DR-RIFT-P0 §12 + DR-RIFT-P3 §10.
 
 Yol Haritasi §7.5: "Her fazin kirmizi-takim kontrol listesi teslimden once
 isletilir." Kapi kosucusundan (run_g0_gate.py) ayridir: kapi "gereksinimler
@@ -261,7 +261,7 @@ def rt9_global_deformation_not_crater() -> Check:
 def rt10_beta_definition_sensitivity_reported() -> Check:
     """beta tek sayi olarak mi sunuluyor, yoksa tanim duyarliligiyla mi?"""
     c = Check("RT10", "beta, kontrol yuzeyi secimine duyarliligi olmadan mi veriliyor?")
-    from dartrift.validation.scene import run_observable_selftest
+    from dartrift.validation.scene_checks import run_observable_selftest
 
     r = run_observable_selftest()
     yayilim = r["beta_relative_spread"]

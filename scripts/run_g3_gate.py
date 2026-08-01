@@ -1,4 +1,4 @@
-"""G3 kapisi kosucusu — DR-RIFT-P3 §7'deki 7 kriteri kanitlariyla isletir.
+﻿"""G3 kapisi kosucusu — DR-RIFT-P3 §7'deki 7 kriteri kanitlariyla isletir.
 
 Kullanim:
     python scripts/run_g3_gate.py [--device cuda:0] [--quick] [--run-dir DIZIN]
@@ -11,7 +11,8 @@ Kriterler:
  4. Mermi: nokta parcacik degil, >=3 cozunurlukte yakinsak (P3-FR-06/07, P3-VR-02).
  5. Gozlenebilirler: beta bilinen sahnede geri kazaniliyor, duyarlilik
     raporlaniyor, krater yerel/kuresel ayrimi calisiyor (P3-FR-08, P3-VR-03).
- 6. Determinizm + regresyon: ayni tohum ayni sahne; tum test paketi geciyor.
+ 6. Determinizm + regresyon: config'den kurulan sahne yeniden uretilebilir
+    (ayni tohum ayni karma, FARKLI tohum FARKLI karma) ve tum paket geciyor.
  7. Veri manifestosu: PDS urun kimlikleri + saglama toplamlari.
 
 C7 UYARISI: gercek PDS veri urunleri depoda yoktur. Kanit uretilemedigi icin
@@ -120,10 +121,11 @@ def main() -> int:
     tests_ok = proc.returncode == 0
 
     # --- 2) senaryolar -----------------------------------------------------
-    from dartrift.validation.scene import (
+    from dartrift.validation.scene_checks import (
         run_impactor_convergence,
         run_observable_selftest,
         run_rubble_quality,
+        run_scene_determinism,
         run_shape_pipeline,
     )
 
@@ -234,9 +236,24 @@ def main() -> int:
         f"{obs['crater_global_change']:.2f} m (ayrisiyor)",
     )
 
+    scn = run_scene_determinism()
     crit["C6"].record(
-        tests_ok and rub["deterministic"] and "FAILED" not in out,
-        f"pytest cikis={proc.returncode}; sahne determinizmi {rub['deterministic']}",
+        tests_ok and "FAILED" not in out
+        and rub["deterministic"] and scn["reproducible"] and scn["seed_sensitive"]
+        and scn["impactor_outside_target"] and scn["target_at_rest"]
+        and scn["impactor_nonporous"] and scn["target_porous"]
+        and scn["material_heterogeneous"]
+        and scn["impactor_mass_rel_err"] < 1e-12
+        and scn["impactor_momentum_rel_err"] < 1e-12,
+        f"pytest cikis={proc.returncode}; sahne N={scn['n_total']} "
+        f"({scn['n_target']} hedef + {scn['n_impactor']} mermi), karma "
+        f"{scn['digest'][:16]}, ayni tohum ayni sahne {scn['reproducible']}, "
+        f"farkli tohum farkli sahne {scn['seed_sensitive']}, mermi hedefin "
+        f"disinda {scn['impactor_outside_target']}, hedef durgun "
+        f"{scn['target_at_rest']}, mermi gozeneksiz/hedef gozenekli "
+        f"{scn['impactor_nonporous'] and scn['target_porous']}, "
+        f"kutle/momentum hatasi {scn['impactor_mass_rel_err']:.1e}/"
+        f"{scn['impactor_momentum_rel_err']:.1e}",
     )
 
     man_ok, man_ev = _data_manifest_status(run_dir)
@@ -258,6 +275,7 @@ def main() -> int:
         "settling": settle_m,
         "impactor_convergence": imp,
         "observables_selftest": obs,
+        "scene_determinism": scn,
         "pytest_exit": proc.returncode,
         "wall_time_s": time.perf_counter() - t0,
     }
