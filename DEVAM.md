@@ -184,6 +184,18 @@ Bir alan üretiyorsanız, onu **denetleyen bir test** de yazın.
   satır hiç ayrıştırılamadı ve `git add` de yapılmadı. Sahnelemeyi
   `git diff --cached --name-only` ile **her seferinde** doğrulayın.
 
+### TRUBA kuyruk kuralları — ölçülerek öğrenildi
+
+- **`kolyoz-cuda` çekirdek sayısı 16'nın katı olmak zorunda.** `-c 8` denendi:
+  `CPU count specification invalid`. Yani çekirdek küçültülemez.
+- **Fazla `--time` istemek işi kuyrukta bekletir.** 16 çekirdek × 6 saat
+  isteyen iş `AssocGrpCpuLimit` ile bloke oldu (grup 0 CPU kullanırken!);
+  aynı iş `--time=02:00:00` ile hemen `Priority` durumuna geçti. Ölçülen koşu
+  ~45 dk — istenen süreyi gerçeğe yakın tutun.
+- **`sacct` bir kapının sonucunu okumak için YANLIŞ YERDİR.** `run_g3_gate.py`
+  rc=3 döndürür (kanıtlanabilirler geçti, biri kanıtlanamadı) ve SLURM bunu
+  `FAILED` gösterir. Doğru yer: `gate_runs/g3_*/G3_report.md`.
+
 ### Koşan bir işin ağacını değiştirmeyin
 
 Kapı koşarken depoyu `git pull` etmek ya da yerelde dosya düzenlemek, kanıtı
