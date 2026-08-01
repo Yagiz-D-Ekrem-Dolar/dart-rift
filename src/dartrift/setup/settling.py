@@ -86,6 +86,7 @@ def settle_pile(
     report_every: int = 50,
     cfl: float = 0.25,
     gravity_rebuild_every: int = 1,
+    gravity_drift_tol: float = 0.25,
     h_over_spacing: float = 2.0,
 ):
     """Yigini oz-yercekimi altinda oturt; KE esigin altina inince dur.
@@ -124,9 +125,15 @@ def settle_pile(
 
     solver = WarpSolid3D(
         x0, np.zeros_like(x0), m, np.zeros(n), h, material, RefParams(cfl=cfl),
+        # alpha0 VE Y0 birlikte gecirilir: yigin ureticisi ikisini de parcacik
+        # basina uretiyor (P3-FR-03/04). Yalnizca alpha0'i gecirmek, bloklari
+        # gozeneksiz ama matris kadar zayif yapardi — yarim baglanmis bir
+        # heterojenlik, hic olmamasindan daha yaniltici olurdu.
         alpha0=np.ascontiguousarray(pile.alpha0, dtype=np.float64),
+        Y0=np.ascontiguousarray(pile.Y0, dtype=np.float64),
         device=device, check_every=10**9,
         gravity_rebuild_every=gravity_rebuild_every,
+        gravity_drift_tol=gravity_drift_tol,
     )
     factor = wp.float64(1.0 - damping)
 

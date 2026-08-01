@@ -162,6 +162,7 @@ def build_scene(
             max_steps=int(settle.get("max_steps", 400)),
             ke_frac=float(settle.get("ke_frac", 1.0e-3)),
             gravity_rebuild_every=int(settle.get("gravity_rebuild_every", 1)),
+            gravity_drift_tol=float(settle.get("gravity_drift_tol", 0.25)),
             h_over_spacing=float(settle.get("h_over_spacing", 2.0)),
         )
         x_t, v_t = res.x, res.v
@@ -244,7 +245,8 @@ def scene_from_config(cfg, material=None, device: str = "cuda:0") -> Scene:
         azimuth_deg=i.azimuth_deg, standoff=i.standoff,
         settle=({"damping": s.damping, "max_steps": s.max_steps,
                  "ke_frac": s.ke_frac,
-                 "gravity_rebuild_every": s.gravity_rebuild_every}
+                 "gravity_rebuild_every": s.gravity_rebuild_every,
+                 "gravity_drift_tol": s.gravity_drift_tol}
                 if s.enabled else None),
         material=material, device=device,
     )
