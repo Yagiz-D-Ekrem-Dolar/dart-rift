@@ -165,18 +165,37 @@ Son madde özellikle önemlidir: determinizm olmadan iki koşu arasındaki fark�
 parametre değişikliğinden mi yoksa sayısal gürültüden mi geldiği ayırt
 edilemez, ve çıkarım anlamsızlaşır.
 
-## 5. FAZ 3'ün ölçmesi gerekenler
+## 5. FAZ 3'ün ölçmesi gerekenler — DURUM (2026-08-01, FAZ 3 bitti)
 
-Bu belgedeki hiçbir sayı FAZ 3'ün yerini tutmaz. Ölçülmemiş üç şey:
+Bu belgedeki hiçbir sayı FAZ 3'ün yerini tutmaz. Üç madde vardı:
 
-1. **Uzun koşu kararlılığı.** Tüm kapı senaryoları ≤ 262 144 parçacık ve
-   birkaç yüz adımdır. Bir DART koşusu ~10⁴–10⁵ adımdır. ADR-0020 enerji
-   hatasının `O(dt)` olduğunu gösterdi, ama bu 10⁵ adımda ne birikir —
-   ölçülmedi.
-2. **Gereken simüle süre.** Momentum aktarımının (β) ne zaman durulduğu
-   koşunun maliyetini 10 kat değiştirir.
-3. **Çözünürlük yakınsaması DART kurulumunda.** Krater çapı ve β'nın
-   parçacık sayısına duyarlılığı ayrıca gösterilmelidir.
+1. **Uzun koşu kararlılığı** — hâlâ ölçülmedi. Tüm kapı senaryoları
+   ≤ 262 144 parçacık ve birkaç yüz adımdır; bir DART koşusu ~10⁴–10⁵
+   adımdır. ADR-0020 enerji hatasının `O(dt)` olduğunu gösterdi, ama bu 10⁵
+   adımda ne birikir bilinmiyor. **FAZ 4'e taşınıyor.**
+2. **Gereken simüle süre** — hâlâ ölçülmedi. β'nın ne zaman durulduğu
+   koşunun maliyetini 10 kat değiştirir. **FAZ 4'e taşınıyor.**
+3. **Çözünürlük yakınsaması** — *mermi* tarafı ölçüldü (P3-VR-02: 3
+   çözünürlükte hacim hatası %3,5 → %0,5, kütle hatası < 6e-16). *Krater çapı
+   ve β'nın* çözünürlüğe duyarlılığı çarpma koşusu gerektirir; **FAZ 4'e
+   taşınıyor.**
+
+### FAZ 3'te ek olarak ölçülen ve fizibiliteyi etkileyen şey
+
+**Yerçekimi maliyeti, sanıldığı gibi bir engel değil** (ADR-0024). Ölçüldü:
+
+- Barnes-Hut ağacının kurulumu yerçekimli değerlendirmenin **%99,8'i**.
+- Ama şok/krater fazında (~1–10 s) yerçekiminin ürettiği yer değiştirme,
+  DART çözünürlüğünde parçacık aralığının **2e-05 – 2e-03 katı** — ihmal
+  edilebilir.
+- Ağaç yenileme aralığı K 1'den 1000'e çıkarken hata %0,92 → %0,96 (K=1'deki
+  %0,92 zaten θ=0,5 Barnes-Hut'ın kendi tabanı). Denetim değişkeni **aralığa
+  göre sürüklenme**, adım sayısı değil.
+
+Sonuç: §2b'deki "yerçekimiyle ~17 kat yavaş" tablosu **kötümser bir üst
+sınırdır**. Şok fazında ağaç seyrek yenilenebilir; ejekta/geç fazda ise
+yerçekimi belirleyicidir (kaçış hızı 8,37 cm/s) ama orada uçan parçacık
+sayısı ve zaman ölçeği farklıdır. FAZ 4 bu ayrımı kullanacak.
 
 ## Özet
 
@@ -186,4 +205,6 @@ Bu belgedeki hiçbir sayı FAZ 3'ün yerini tutmaz. Ölçülmemiş üç şey:
 | Fizik hedefe uygun mu? | **Evet**, zayıf/gözenekli hedef için standart set — hasar hariç |
 | Ensemble maliyeti karşılanabilir mi? | **1 s koşularla evet** (~30 GPU-günü); 10 s'de sınırda |
 | Yapılan doğrulama işi anlamlı mı? | **Evet** — hata posteriora taşınır; kalibrasyon zorunlu |
-| Eksik ne var? | Hasar modeli; uzun koşu kararlılığı; gereken simüle sürenin ölçümü |
+| Yerçekimi maliyeti engel mi? | **Hayır** (ADR-0024) — şok fazında ihmal edilebilir; ağaç seyrek yenilenebilir |
+| Sahne kurulabiliyor mu? | **Evet** — G3 KISMİ geçti; şekil, yığın, mermi, gözlenebilirler hazır |
+| Eksik ne var? | Hasar modeli; uzun koşu kararlılığı; gereken simüle süre; **gerçek PDS şekil modeli** (G3 C7 KANITLANAMADI) |
