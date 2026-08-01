@@ -114,6 +114,32 @@ def test_elipsoit_sahne():
     assert s.n > 0 and s.n_target > 0
 
 
+def test_obj_yolundan_sahne_kurulur(tmp_path):
+    """Gercek PDS sekil modeli bu yoldan girecek; basarili yol da sinanmali.
+
+    `shape="obj"` icin yalnizca HATA durumu test ediliyordu; basarili yol hic
+    kosulmamisti. Gercek veri geldiginde ilk kez orada calisacak bir kod
+    yolunu test edilmemis birakmak, en kotu zamanda surpriz demektir."""
+    from dartrift.setup.shape_mesh import icosphere
+
+    mesh = icosphere(2, 82.0)
+    # .17g: float64'u tam gerideleyen en kisa gosterim. `!r` kullanmak numpy
+    # skalerlerini "np.float64(-43.1)" diye yazar ve OBJ ayristirilamaz olur.
+    satirlar = [f"v {float(p[0]):.17g} {float(p[1]):.17g} {float(p[2]):.17g}"
+                for p in mesh.v]
+    satirlar += [f"f {a + 1} {b + 1} {c + 1}" for a, b, c in mesh.f]
+    obj = tmp_path / "hedef.obj"
+    obj.write_text("\n".join(satirlar) + "\n", encoding="utf-8")
+
+    s = build_scene(shape="obj", obj_path=str(obj), radius=None,
+                    spacing=12.0, n_impactor=100, root_seed=7)
+    assert s.n_target > 0
+    assert s.diagnostics["shape"] == "obj"
+    # OBJ'den okunan mesh, analitik ikosferle ayni hacmi vermeli
+    assert s.mesh_volume == pytest.approx(mesh.volume, rel=1e-9)
+    assert float(np.sum(s.m[s.is_impactor])) == pytest.approx(DART_MASS, rel=1e-12)
+
+
 def test_gecersiz_sekil_reddedilir():
     with pytest.raises(ValueError, match="bilinmeyen sekil"):
         build_scene(shape="kup", spacing=8.0, n_impactor=100)
