@@ -188,10 +188,16 @@ Bir alan üretiyorsanız, onu **denetleyen bir test** de yazın.
 
 - **`kolyoz-cuda` çekirdek sayısı 16'nın katı olmak zorunda.** `-c 8` denendi:
   `CPU count specification invalid`. Yani çekirdek küçültülemez.
-- **Fazla `--time` istemek işi kuyrukta bekletir.** 16 çekirdek × 6 saat
-  isteyen iş `AssocGrpCpuLimit` ile bloke oldu (grup 0 CPU kullanırken!);
-  aynı iş `--time=02:00:00` ile hemen `Priority` durumuna geçti. Ölçülen koşu
-  ~45 dk — istenen süreyi gerçeğe yakın tutun.
+- **`AssocGrpCpuLimit` ile beklemek, grup 0 CPU kullanırken bile olabiliyor.**
+  Ölçülen: `sacctmgr` hesap için `cpu=512` gösteriyor, `squeue` grubun çalışan
+  toplam CPU'sunu 0 veriyor, iş yine de 16 CPU için bekliyor. Nedeni
+  çözülemedi — muhtemelen eğitim hesapları için görünmeyen bir havuz sınırı.
+
+  > **Düzeltme:** Önce "`--time` kısaltmak çözdü" diye yazmıştım. Yanlıştı:
+  > `--time=02:00:00` ile sebep bir an `Priority` göründü, sonra yine
+  > `AssocGrpCpuLimit`'e döndü. Süre kısaltmanın kotayı çözdüğü **kanıtlanmadı**;
+  > süreyi gerçeğe yakın tutmak yine de doğru davranış ama bu sorunun çaresi
+  > değil. Yapılacak tek şey beklemek.
 - **`sacct` bir kapının sonucunu okumak için YANLIŞ YERDİR.** `run_g3_gate.py`
   rc=3 döndürür (kanıtlanabilirler geçti, biri kanıtlanamadı) ve SLURM bunu
   `FAILED` gösterir. Doğru yer: `gate_runs/g3_*/G3_report.md`.
