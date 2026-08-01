@@ -30,16 +30,20 @@ kararlılığıdır**.
 
 ## Sonuç 1 — hata BİRİKMİYOR
 
+Koşu **30 000 adım** tamamlandı (t = 0,442 s, duvar 4507 s, 150 ms/adım).
+
 | adım | E_hata | p_hata |
 |---|---|---|
 | 250 | 1,4556e-02 | 6,5e-14 |
 | 750 | 1,4558e-02 | 4,3e-14 |
-| 1750 | 1,4558e-02 | 7,2e-15 |
-| 3000 | 1,4558e-02 | 3,0e-15 |
-| 4750 | 1,4558e-02 | 3,7e-14 |
+| 3 000 | 1,4558e-02 | 3,0e-15 |
+| 9 500 | 1,4558e-02 | 4,1e-14 |
+| 18 750 | 1,4558e-02 | 3,0e-14 |
+| 26 000 | 1,4558e-02 | 2,9e-15 |
+| **30 000** | **1,4558e-02** | **5,2e-14** |
 
-Enerji hatası **birebir sabit** (1,4558e-02), log-log eğim ≈ 0. Momentum
-1e-14 mertebesinde korunuyor.
+Enerji hatası **30 000 adım boyunca birebir sabit** (1,4558e-02);
+ölçülen log-log eğim **0,000**. Momentum 1e-14 mertebesinde korunuyor.
 
 **Yani hata bir SÜRÜKLENME değil, çarpma anında oluşan TEK SEFERLİK bir
 kaymadır.** 10⁵ adımlık bir koşuda birikeceği miktar sıfırdır.
