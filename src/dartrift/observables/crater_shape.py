@@ -132,6 +132,11 @@ def crater_profile(
         raise ValueError(f"outer_angle_deg (0,180) olmali, {outer_angle_deg} geldi")
     if n_bins < 4:
         raise ValueError("n_bins >= 4 olmali")
+    if min_per_bin < 1:
+        # min_per_bin=0 olsaydi bos kutuda np.median([]) sessizce NaN dondurur,
+        # o NaN dev'e gecer ve gecerli kutu gibi sayilirdi. Sessiz NaN, yanlis
+        # sayidan daha kotudur: nereden geldigi gorunmez.
+        raise ValueError(f"min_per_bin >= 1 olmali, {min_per_bin} geldi")
 
     si = surface_particles(x, c)
     rs = x[si] - c[None, :]

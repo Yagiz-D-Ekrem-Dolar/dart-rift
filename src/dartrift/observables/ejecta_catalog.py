@@ -140,6 +140,11 @@ def catalog_ejecta(
     vs, ms = v[sel], m[sel]
     sp = np.linalg.norm(vs, axis=1)
     m_ej = float(np.sum(ms))
+    if m_ej <= 0.0:
+        # Kutle agirlikli her buyukluk 0/0 olurdu; sessiz NaN yerine acik hata.
+        raise ValueError(
+            f"kontrol yuzeyi disinda {int(np.count_nonzero(sel))} parcacik var "
+            "ama toplam kutleleri sifir — kutle dizisi bozuk")
 
     # firlatma acisi: hiz ile yuzey normali arasindaki aci
     with np.errstate(invalid="ignore", divide="ignore"):

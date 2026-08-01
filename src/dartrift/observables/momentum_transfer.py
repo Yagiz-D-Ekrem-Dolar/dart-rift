@@ -94,6 +94,9 @@ def momentum_transfer(
     ehat = p_imp / p_imp_mag
 
     m_tot = float(np.sum(m))
+    if m_tot <= 0.0:
+        # Kutle merkezi ve butun kesirler 0/0 olurdu; sessiz NaN yerine acik hata.
+        raise ValueError(f"toplam kutle pozitif olmali, {m_tot} geldi")
     c = (np.sum(m[:, None] * x, axis=0) / m_tot) if center is None else \
         np.asarray(center, dtype=np.float64).reshape(3)
 

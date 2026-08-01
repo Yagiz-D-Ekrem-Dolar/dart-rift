@@ -326,6 +326,27 @@ def test_kuresel_buzusme_kratere_karismaz():
     assert cs.global_radius_change == pytest.approx(-10.0, abs=2.0), cs.global_radius_change
 
 
+def test_sessiz_nan_yerine_acik_hata():
+    """Sifir kutle / gecersiz kutu sayisi sessiz NaN uretmemeli.
+
+    Sessiz NaN yanlis sayidan daha kotudur: nereden geldigi gorunmez ve
+    zincirin ilerisinde 'olculdu' diye rapor edilir."""
+    x = np.zeros((3, 3))
+    v = np.zeros((3, 3))
+    with pytest.raises(ValueError, match="toplam kutle pozitif"):
+        momentum_transfer(x, v, np.zeros(3),
+                          impactor_momentum=np.array([0.0, 0.0, -1.0]))
+    xf = np.tile(np.array([0.0, 0.0, 300.0]), (3, 1))
+    with pytest.raises(ValueError, match="kutleleri sifir"):
+        catalog_ejecta(xf, v, np.zeros(3), center=np.zeros(3),
+                       surface_normal=np.array([0.0, 0.0, 1.0]),
+                       control_radius=100.0, escape_speed=0.1, target_mass=1.0)
+    with pytest.raises(ValueError, match="min_per_bin"):
+        crater_profile(_kure_parcaciklari(n=2000), center=np.zeros(3),
+                       impact_direction=np.array([0.0, 0.0, -1.0]),
+                       reference_radius=100.0, min_per_bin=0)
+
+
 def test_krater_gecersiz_girdi():
     x = _kure_parcaciklari(n=2000)
     with pytest.raises(ValueError, match="sifir uzunlukta"):
