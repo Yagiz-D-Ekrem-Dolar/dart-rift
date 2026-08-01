@@ -62,14 +62,20 @@ class StrengthParams:
     shear_G: float = 2.27e10  # kesme modulu [Pa] (bazalt ~22.7 GPa)
     jaumann: bool = True
 
-    def yield_stress(self, P: np.ndarray) -> np.ndarray:
+    def yield_stress(self, P: np.ndarray, Y0: np.ndarray | None = None) -> np.ndarray:
         """Y(P) = Y0 + mu*P/(1 + mu*P/(YM-Y0)); cekmede (P<0) Y0'a sabitlenir.
 
         Cekme zayiflamasi hasar modeliyle (STRETCH, D=0 bu fazda) gelir;
         burada negatif P icin pozitif kalan guvenli deger kullanilir.
+
+        `Y0` verilirse PARCACIK BASINA kohezyon kullanilir (moloz yiginlarinda
+        bloklar matristen daha dayanikli, P3-FR-03/04); verilmezse skaler alan
+        degeri. GPU tarafi (strength_lundborg.yield_stress) ayni sozlesmeyi
+        uygular, boylece heterojen durum da capraz kontrol edilebilir.
         """
         Pp = np.maximum(np.asarray(P, dtype=np.float64), 0.0)
-        return self.Y0 + self.mu_f * Pp / (1.0 + self.mu_f * Pp / (self.YM - self.Y0))
+        y0 = self.Y0 if Y0 is None else np.asarray(Y0, dtype=np.float64)
+        return y0 + self.mu_f * Pp / (1.0 + self.mu_f * Pp / (self.YM - y0))
 
 
 @dataclass(frozen=True)
@@ -240,7 +246,11 @@ def tillotson_sound_speed(rho: np.ndarray, u: np.ndarray, p: TillotsonParams) ->
 
 
 def return_mapping(
-    S: np.ndarray, P: np.ndarray, rho: np.ndarray, sp: StrengthParams
+    S: np.ndarray,
+    P: np.ndarray,
+    rho: np.ndarray,
+    sp: StrengthParams,
+    Y0: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """S_trial'i Y(P) akma yuzeyine cek; plastik isi yogunlugunu dondur.
 
@@ -250,7 +260,7 @@ def return_mapping(
     S = np.asarray(S, dtype=np.float64)
     j2 = 0.5 * np.einsum("nij,nij->n", S, S)
     vm = np.sqrt(3.0 * j2)
-    Y = sp.yield_stress(P)
+    Y = np.broadcast_to(sp.yield_stress(P, Y0), vm.shape)
     # f yalnizca akan parcaciklarda hesaplanir; np.where her iki dali da
     # degerlendirdigi icin bolme akmayanlarda tasma uretiyordu (Y=1e12,
     # vm=0 -> inf). Maske ile yalnizca gecerli girdilerde bol.

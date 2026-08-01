@@ -30,10 +30,16 @@ def make_strength_wp(p) -> StrengthWp:
 
 
 @wp.func
-def yield_stress(P: F, sp: StrengthWp) -> F:
-    """Lundborg/Collins Y(P); cekmede Y0'a sabit (hasar D=0 bu fazda)."""
+def yield_stress(P: F, Y0: F, sp: StrengthWp) -> F:
+    """Lundborg/Collins Y(P); cekmede Y0'a sabit (hasar D=0 bu fazda).
+
+    Y0 PARCACIK BASINA gelir (struct'tan degil): moloz yiginlarinda bloklar
+    matristen daha kohezyonludur (P3-FR-03/04) ve tek skaler bu ayrimi
+    tasiyamaz. Homojen durumda dizi sabit doldurulur — tek kod yolu, dallanma
+    yok, determinizm degismez.
+    """
     Pp = wp.max(P, F(0.0))
-    return sp.Y0 + sp.mu_f * Pp / (F(1.0) + sp.mu_f * Pp / (sp.YM - sp.Y0))
+    return Y0 + sp.mu_f * Pp / (F(1.0) + sp.mu_f * Pp / (sp.YM - Y0))
 
 
 @wp.kernel
@@ -42,6 +48,7 @@ def return_mapping_k(
     P: wp.array(dtype=F),
     rho: wp.array(dtype=F),
     active: wp.array(dtype=wp.uint8),
+    Y0: wp.array(dtype=F),
     sp: StrengthWp,
     plastic_du: wp.array(dtype=F),
 ):
@@ -58,7 +65,7 @@ def return_mapping_k(
     si = S[i]
     j2 = F(0.5) * wp.ddot(si, si)
     vm = wp.sqrt(F(3.0) * j2)
-    y = yield_stress(P[i], sp)
+    y = yield_stress(P[i], Y0[i], sp)
     du = F(0.0)
     if vm > y and vm > F(0.0):
         f = y / vm

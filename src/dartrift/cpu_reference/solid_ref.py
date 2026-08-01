@@ -47,6 +47,7 @@ class SolidState:
     active: np.ndarray
     S: np.ndarray = field(default=None)  # type: ignore[assignment]
     alpha: np.ndarray = field(default=None)  # type: ignore[assignment]
+    Y0: np.ndarray = field(default=None)  # parcacik basina kohezyon [Pa]; None=skaler
     # evaluate_solid doldurur:
     rho: np.ndarray = field(default=None)  # type: ignore[assignment]
     P: np.ndarray = field(default=None)  # type: ignore[assignment]
@@ -319,7 +320,9 @@ def _apply_strength_and_porosity(state: SolidState, mat: MaterialParams) -> None
     Plastik is yalnizca TANI olarak biriktirilir.
     """
     if mat.strength.enabled:
-        S_new, du_pl = return_mapping(state.S, state.P, state.rho, mat.strength)
+        S_new, du_pl = return_mapping(
+            state.S, state.P, state.rho, mat.strength, state.Y0
+        )
         act = state.active
         state.S[act] = S_new[act]
         state.plastic_u_total += float(np.sum(state.m[act] * du_pl[act]))

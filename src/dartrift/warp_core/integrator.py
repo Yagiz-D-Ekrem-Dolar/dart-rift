@@ -127,3 +127,25 @@ def accumulate_scalar_3d(
     i = wp.tid()
     if active[i] != wp.uint8(0):
         target[i] = target[i] + dt * rate[i]
+
+
+@wp.kernel
+def damp_velocity_3d(
+    v: wp.array(dtype=V3),
+    active: wp.array(dtype=wp.uint8),
+    factor: F,
+):
+    """Hiz sonumleme: v <- factor * v  (FAZ 3 settling, P3-FR-05).
+
+    Moloz yigini uretildikten sonra parcaciklar denge konumunda DEGILDIR;
+    oz-yercekimi altinda yerlesirken istenmeyen kinetik enerji birikir. Bu
+    enerji sondurulmezse carpma senaryosu, mermiden gelmeyen bir hareketle
+    baslar ve beta olcumu kirlenir.
+
+    Sonumleme CARPANLA yapilir (kuvvet olarak degil): deterministiktir,
+    zaman adimindan bagimsizdir ve enerji defterinde ayrik bir kalem olarak
+    izlenebilir.
+    """
+    i = wp.tid()
+    if active[i] != wp.uint8(0):
+        v[i] = factor * v[i]

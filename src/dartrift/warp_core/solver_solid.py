@@ -45,9 +45,12 @@ class WarpSolid3D:
         num: RefParams | None = None,
         S0: np.ndarray | None = None,
         alpha0: np.ndarray | None = None,
+        Y0: np.ndarray | None = None,
         active: np.ndarray | None = None,
         device: str = "cuda:0",
         check_every: int = 50,
+        gravity_rebuild_every: int = 1,
+        gravity_drift_tol: float = 0.25,
     ):
         _init_warp()
         self.mat = mat
@@ -73,6 +76,20 @@ class WarpSolid3D:
             else np.asarray(alpha0, np.float64)
         )
         self.alpha = wp.array(a0, dtype=F, device=dev)
+        # Kohezyon PARCACIK BASINA: moloz yiginlarinda bloklar matristen daha
+        # dayanikli (P3-FR-03/04). Homojen kosularda skaler deger dizi olarak
+        # doldurulur — tek kod yolu, sonuc bit-ayni kalir.
+        y0 = (
+            np.full(n, mat.strength.Y0)
+            if Y0 is None
+            else np.asarray(Y0, np.float64)
+        )
+        if y0.shape != (n,):
+            raise ValueError(f"Y0 sekli (n,)={n} olmali, {y0.shape} geldi")
+        if mat.strength.enabled and np.any(y0 >= mat.strength.YM):
+            # Y(P) formulunde (YM - Y0) paydada: esitlik sonsuza gider.
+            raise ValueError("Y0 < YM olmali (Lundborg paydasi)")
+        self.Y0 = wp.array(y0, dtype=F, device=dev)
         for name in ("rho", "P", "cs", "divv", "fbal", "dudt", "phi",
                      "drhodt", "plastic_du", "dt_cfl", "dt_acc"):
             setattr(self, name, wp.zeros(n, dtype=F, device=dev))
@@ -111,6 +128,27 @@ class WarpSolid3D:
         self._evaluated = False
         self._step_count = 0
         self._x_version = 0
+        # Yercekimi agaci her K konum degisiminde bir yenilenir (ADR-0024).
+        # K=1 tam dogruluk. K>1 agac kurulumunu (CPU'da Python; olculdu:
+        # yercekimli degerlendirmenin %99.8'i) K kat ucuzlatir, ama
+        # YAKLASIKLIKTIR. Olculen bagimlilik ADIM SAYISI degil SURUKLENME:
+        #   suruklenme <= 0.06 aralik -> hata %0.96 (K=1 tabani %0.92 ile ayni)
+        #   suruklenme  = 6.1 aralik  -> hata %542 (kullanilamaz)
+        # Bu yuzden K>1 secildiginde suruklenme DENETLENIR; denetlenmeyen bir
+        # yaklasiklik, olmayan bir yaklasikliktir.
+        if gravity_rebuild_every < 1:
+            raise ValueError('gravity_rebuild_every >= 1 olmali')
+        self.gravity_rebuild_every = int(gravity_rebuild_every)
+        if gravity_drift_tol <= 0.0:
+            raise ValueError('gravity_drift_tol pozitif olmali')
+        self.gravity_drift_tol = float(gravity_drift_tol)
+        # Izleme yalnizca K>1 ve yercekimi acikken: her adimda v'yi CPU'ya
+        # cekmek K=1'de bos maliyettir (orada zaten yaklasiklik yok).
+        self._track_drift = (self.gravity_rebuild_every > 1
+                             and self._gravity is not None)
+        self._tree_drift = 0.0
+        self._tree_drift_max = 0.0
+        self._drift_exceeded = 0
         self.plastic_u_total = 0.0
 
     def _launch(self, kernel, inputs):
@@ -153,13 +191,20 @@ class WarpSolid3D:
             # degisir; step() icindeki ikinci _eval() ayni konumlari gorur ve
             # agac yeniden KURULMAZ (ADR-0021). Onbellek isabetinde GPU->CPU
             # kopyasi da atlanir.
-            hit = (self._gravity._cache_version == self._x_version
+            gver = self._x_version // self.gravity_rebuild_every
+            hit = (self._gravity._cache_version == gver
                    and self._gravity._cache_arrays is not None
                    and self.mat.gravity.mode == "barnes_hut")
+            if self._track_drift and not hit:
+                # agac yenileniyor: birikmis suruklenme sifirlanir; asilan
+                # tolerans SAYILIR ve budgets() ile raporlanir
+                if self._tree_drift > self.gravity_drift_tol * self.h:
+                    self._drift_exceeded += 1
+                self._tree_drift = 0.0
             x_np = None if hit else self.x.numpy().astype(np.float64)
             m_np = None if hit else self.m.numpy()
             self._gravity.compute(self.x, self.m, self.g, self.phi, x_np, m_np,
-                                  x_version=self._x_version)
+                                  x_version=gver)
         else:
             self.g.zero_()
             self.phi.zero_()
@@ -185,6 +230,15 @@ class WarpSolid3D:
             self._launch(I.accumulate_scalar_3d, [self.rho, self.drhodt, self.active, half])
         self._launch(I.drift_3d, [self.x, self.v, self.active, F(dt)])
         self._x_version += 1          # konumlar degisti -> agac gecersiz
+        if self._track_drift:
+            # Agac bayatlama DENETIMI (ADR-0024). Olculen bagimlilik: hata
+            # parcacik ARALIGINA gore surukleneye baglidir, adim sayisina
+            # degil. Ust sinir global maks hizla biriktirilir — kesin
+            # surukleneden buyuk oldugu icin guvenli taraftadir.
+            vmax = float(np.sqrt(np.max(np.sum(
+                self.v.numpy().astype(np.float64) ** 2, axis=1))))
+            self._tree_drift += abs(dt) * vmax
+            self._tree_drift_max = max(self._tree_drift_max, self._tree_drift)
         self._eval()  # (x1, v_half)
         self._launch(I.kick_v_3d, [self.v, self.a, self.active, half])
         self._eval()  # (x1, v1)
@@ -195,7 +249,8 @@ class WarpSolid3D:
         if self.mat.strength.enabled:
             self._launch(
                 return_mapping_k,
-                [self.S, self.P, self.rho, self.active, self._sp, self.plastic_du],
+                [self.S, self.P, self.rho, self.active, self.Y0, self._sp,
+                 self.plastic_du],
             )
             self.plastic_u_total += float(
                 np.sum(self.m.numpy() * self.plastic_du.numpy())
@@ -240,6 +295,12 @@ class WarpSolid3D:
         row["e_pot"] = ep
         row["e_tot"] = row["e_kin"] + row["e_int"] + ep
         row["plastic_cum"] = self.plastic_u_total
+        if self._track_drift:
+            # Yaklasikligin denetim kaydi (ADR-0024): kac kez tolerans asildi
+            # ve en kotu suruklenme neydi. Sifir olmayan bir sayac, K'nin o
+            # kosu icin fazla buyuk secildigi anlamina gelir.
+            row["gravity_tree_drift_max_over_h"] = self._tree_drift_max / self.h
+            row["gravity_tree_drift_exceeded"] = self._drift_exceeded
         if self.mat.strength.enabled:
             # TANI: deviatorik depolanmis elastik enerji (e_tot'a dahil DEGIL,
             # ADR-0012 — `u` bu isi zaten tasiyor)
