@@ -58,8 +58,10 @@ adlandırılır.
 
 ## Kırmızı takım (P0 §12 + P3 §10)
 
-`fa2c620` üzerinde **12/12 TEMİZ**. RT7–RT12 FAZ 3 maddeleridir ve hepsi
-gerçekten ölçülmüş bir kusurdan türemiştir:
+**Commit `153320d`, yerel (Windows / CPython 3.12.10), 2026-08-01T20:39:50 —
+12/12 TEMİZ.** (`5d92f54`'ten farkı yalnızca SLURM betiği ve DEVAM notlarıdır;
+`src/` ve `tests/` özdeştir.) RT7–RT12 FAZ 3 maddeleridir ve hepsi gerçekten
+ölçülmüş bir kusurdan türemiştir:
 
 | # | soru | sonuç |
 |---|---|---|
