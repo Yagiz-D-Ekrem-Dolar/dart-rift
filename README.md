@@ -20,14 +20,22 @@ geçilmez. Kanıtlar TRUBA/ARF-ACC üzerinde, temiz git ağacıyla üretilir.
 
 | Kapı | Kapsam | Sonuç | Karar |
 |---|---|---|---|
-| **G0** | Zemin sağlam (altyapı) | **GEÇTİ** 8/8 | FAZ 1 başlayabilir |
-| **G1** | Şok motoru çalışıyor | **GEÇTİ** 8/8 | FAZ 2 başlayabilir |
-| **G2** | Gerçek malzeme fiziği | **GEÇTİ** 7/7 | **FAZ 3 başlayabilir** |
+| **G0** | Zemin sağlam (altyapı) | **GEÇTİ** | FAZ 1 başlayabilir |
+| **G1** | Şok motoru çalışıyor | **GEÇTİ** | FAZ 2 başlayabilir |
+| **G2** | Gerçek malzeme fiziği | **GEÇTİ** | FAZ 3 başlayabilir |
+| **G3** | Sahne kurulumu | **KISMİ** — C1–C6 GEÇTİ, C7 **KANITLANAMADI** | **FAZ 4 başlayabilir**, eksik açıkça taşınarak |
 
-Üçü de **aynı commit üzerinde** (`b29c03a`, temiz ağaç) arka arkaya koşuldu:
-[kapanış kanıtı](docs/evidence/GATES_HEAD_b29c03a.md) — H100, işler
-1434417 / 1434418, **396 test geçti / 0 kaldı** (`xfail` yok), kapsam
-**%97,6**, kırmızı takım (§12) 6/6 temiz, üç çıkış kodu da 0.
+Dördü de **aynı commit üzerinde** (`5d92f54`, temiz ağaç) arka arkaya koşuldu:
+[G3 kanıt özeti](docs/evidence/G3_GATE_5d92f54.md) — TRUBA kolyoz1 / H100,
+iş 1445668, **533 test geçti / 0 kaldı** (`xfail` yok), kapsam **%94,4**,
+kırmızı takım (P0 §12 + P3 §10) **12/12 temiz**.
+
+> **G3 neden "KISMİ":** C7, PDS veri ürünlerinin kimliklerini ve sağlama
+> toplamlarını ister. Gerçek PDS ürünleri bu ortamda **yok**, dolayısıyla
+> kriter **kanıtlanamaz**. Kapı bunu `KANITLANAMADI` işaretler ve **geçmiş
+> saymaz** — çıkış kodu 3 döner. Kanıtlanamayan bir kriteri geçmiş saymak
+> kapının kendisini anlamsızlaştırırdı. Ayrıntı:
+> [`data_manifest/README.md`](data_manifest/README.md).
 
 Koşu bazlı raporlar: [G0](docs/evidence/G0_report_truba_1425656.md) ·
 [G1](docs/evidence/G1_report_truba_1426162.md) ·
@@ -38,7 +46,8 @@ aynı çıktı.
 
 > **Kapsam sınırı:** Kapılar motorun **doğrulama senaryolarını** geçtiği
 > anlamına gelir. Dimorphos hakkında **henüz hiçbir bilimsel sonuç iddia
-> edilmemektedir**; çarpma koşuları FAZ 3'tedir.
+> edilmemektedir**. FAZ 3 çarpma **sahnesini** kurar; çarpma **koşuları**
+> FAZ 4'tedir.
 
 > **Gözeneklilik kusuru — ÇÖZÜLDÜ:** P-α distansiyonu açık güncelleniyordu ve
 > sert Tillotson EOS'unda aşırı atıyordu (α tek adımda 1,5→1,0). Örtük
