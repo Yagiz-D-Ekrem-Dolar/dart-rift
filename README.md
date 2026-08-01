@@ -205,6 +205,7 @@ gerçek bir çekirdek hatasını kaydeder.
 | `warp_core/solid_stress` | P2-FR-01 | Jaumann objektif gerilme hızı, Randles-Libersky gradyan düzeltmesi |
 | `warp_core/strength_lundborg` | P2-FR-02 | Basınca bağlı dayanım Y(P) + von Mises return mapping |
 | `warp_core/porosity_palpha` | P2-FR-04 | P-α crush curve (geri genleşme yok) |
+| `warp_core/damage_gradykipp`, `cpu_reference/damage_ref` | P2 §1.3 (STRETCH → **kapandı**) | Grady-Kipp hasar + Weibull kusurları; yalnızca çekmeyi zayıflatır (ADR-0027) |
 | `warp_core/gravity_tree` | P2-FR-05 | Barnes-Hut halat-ağacı (deterministik DFS) + doğrudan N² referansı |
 | `warp_core/solver_solid` | P2 §4.1 | Katı SPH çözücüsü |
 | `cpu_reference/materials`, `solid_ref`, `gravity_ref` | — | NumPy referansları |
@@ -306,14 +307,17 @@ kopyalanıp sürümlenir.
 
 ## İzlenebilirlik ve mühendislik disiplini
 
-- **[docs/IZLENEBILIRLIK.md](docs/IZLENEBILIRLIK.md)** — 38 gereksinim
-  kimliğinin (13 P0 + 13 P1 + 12 P2) her biri kodu, testi ve kanıtıyla
+- **[docs/IZLENEBILIRLIK.md](docs/IZLENEBILIRLIK.md)** — 49 gereksinim
+  kimliğinin (13 P0 + 13 P1 + 12 P2 + 11 P3) her biri kodu, testi ve kanıtıyla
   eşlenmiştir. Aynı belge, şartnamece **yasak** olduğu için bilerek
   yapılmayanları da listeler ki eksik ile kapsam-dışı karışmasın.
-- **[docs/adr/](docs/adr/)** — 23 mimari karar kaydı. Her büyük teknik karar
+- **[docs/EKSIKLER.md](docs/EKSIKLER.md)** — bilinen eksiklerin tek kaydı:
+  ne kapandı, ne açık, ne bilinçli kapsam dışı. Amaç, bir eksiğin
+  "unutuldu" mu "bilinçli bırakıldı" mı olduğunun hiç belirsiz kalmaması.
+- **[docs/adr/](docs/adr/)** — 28 mimari karar kaydı. Her büyük teknik karar
   gerekçesi, değerlendirilen alternatifleri ve doğrulama testiyle kayıtlıdır;
   sessiz değişiklik yasaktır.
-- **[docs/defter/](docs/defter/)** — 14 mühendislik defteri kaydı. Başarısız
+- **[docs/defter/](docs/defter/)** — 15 mühendislik defteri kaydı. Başarısız
   denemeler ve negatif sonuçlar **silinmez**, işlenir; yanlış çıkan bir iddia
   da silinmez, düzeltme notuyla kayda geçer.
 - **[docs/evidence/](docs/evidence/)** — kapı raporları, koşu künyeleriyle.
