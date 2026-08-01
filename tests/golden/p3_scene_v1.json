@@ -1,0 +1,26 @@
+{
+  "scenario": "p3_scene_v1",
+  "seed": 11,
+  "params": {
+    "shape": "icosphere",
+    "radius": 82.0,
+    "subdiv": 4,
+    "spacing": 8.0,
+    "bulk_density": 1800.0,
+    "n_impactor": 400,
+    "model_class": "M1",
+    "f_boulder": 0.25,
+    "q": 3.0,
+    "r_min": 16.0,
+    "r_max": 48.0
+  },
+  "n_total": 6758,
+  "n_target": 6359,
+  "n_impactor": 399,
+  "sha256": "1c6f2a100ae4a8668556c9798d9bf4436a57ce2bb792cde4811554002347827d",
+  "verified_on": [
+    "Linux/CPython 3.10.15/numpy 1.26.4",
+    "Windows/CPython 3.12.10/numpy 2.5.1"
+  ],
+  "note": "FAZ 3 sahne karmasi. Bu altin dosya iki ayri kusur yuzunden eklendi: (1) isin-yuzey kesisimi mesh kosesinde dejenereydi ve yuzey normali makineye gore ~2.5 derece degisiyordu; (2) TriMesh.centroid np.sum kullaniyordu, toplama sirasi numpy surumune gore oynuyordu. Ikisi de duzeltildi (ADR-0025) ve karma artik iki platformda birebir ayni. Guncelleme yalnizca BILINCLI degisiklik + ADR sonrasi yapilir."
+}
