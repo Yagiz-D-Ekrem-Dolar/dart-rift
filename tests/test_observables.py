@@ -161,6 +161,15 @@ def test_duyarlilik_negatif_parametre_reddeder():
                          control_radii=[100.0, -5.0])
 
 
+def test_duyarlilik_sabit_tarama_degerini_reddeder():
+    """Tarama degiskenini kw ile sabitlemek TypeError ile patlardi; acik hata."""
+    x, v, m = _koni_durumu(50)
+    for bad in ({"control_radius": 100.0}, {"speed_threshold": 1.0}):
+        with pytest.raises(ValueError, match="tarama degiskenidir"):
+            beta_sensitivity(x, v, m, impactor_momentum=np.array([0.0, 0.0, -1.0e6]),
+                             control_radii=[100.0, 200.0], **bad)
+
+
 # =========================== ejekta katalogu ===========================
 
 def test_kumulatif_dagilim_monoton_azalir():

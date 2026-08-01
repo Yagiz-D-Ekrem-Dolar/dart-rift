@@ -178,6 +178,16 @@ def beta_sensitivity(
         raise ValueError("duyarlilik icin en az 2 kontrol yaricapi gerekir")
     if np.any(rr <= 0.0) or np.any(ff <= 0.0):
         raise ValueError("yaricap ve carpanlar pozitif olmali")
+    # `control_radius`/`speed_threshold` tarama degiskenleridir; kw ile de
+    # gelirlerse asagidaki cagrida ayni argüman iki kez verilir ve TypeError
+    # olur. Sessiz ezmek yerine ACIK reddediliyor: tarama yapan bir fonksiyona
+    # sabit bir tarama degeri vermek, cagiranin niyetinin belirsiz oldugunu
+    # gosterir.
+    cakisan = {"control_radius", "speed_threshold"} & set(kw)
+    if cakisan:
+        raise ValueError(
+            f"{sorted(cakisan)} tarama degiskenidir, kw ile verilemez; "
+            "control_radii / speed_factors kullanin")
 
     base = momentum_transfer(x, v, m, impactor_momentum=impactor_momentum, **kw)
     v_esc = base.criteria["escape_speed"]

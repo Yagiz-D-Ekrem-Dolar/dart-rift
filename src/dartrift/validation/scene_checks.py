@@ -215,9 +215,10 @@ def run_observable_selftest(seed: int = 23, beta_true: float = 3.0,
     p_imp = np.array([0.0, 0.0, -DART_MOMENTUM])
     # beta = 1 - (p_ej . e)/|p_imp| -> istenen beta icin gerekli eksenel momentum
     p_ax_target = -(beta_true - 1.0) * DART_MOMENTUM      # negatif: merminin tersi
-    d_ax = float(np.sum(rng.uniform(1.0, 1.0, n_e) * (v_e @ np.array([0.0, 0.0, -1.0]))))
-    m_per = p_ax_target / d_ax if d_ax != 0.0 else 1.0
-    m_e = np.full(n_e, abs(m_per))
+    d_ax = float(np.sum(v_e @ np.array([0.0, 0.0, -1.0])))
+    if d_ax == 0.0:
+        raise RuntimeError("ejekta konisinin eksenel bileseni sifir — sahne bozuk")
+    m_e = np.full(n_e, abs(p_ax_target / d_ax))
 
     # hedefe geri tepme: p_bagli = p_mermi - p_ejekta  (defter kapansin)
     p_ej = np.sum(m_e[:, None] * v_e, axis=0)
