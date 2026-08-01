@@ -5,7 +5,7 @@ kez gören birinin (veya sıfırdan başlayan bir oturumun) bilmesi gereken her
 şey burada: nerede duruyoruz, neyin kanıtı var, neyin yok, hangi tuzaklar
 zaten öğrenildi.
 
-**Son güncelleme:** 2026-08-01 · **Kanıt commit'i:** `5d92f54` · **Durum:**
+**Son güncelleme:** 2026-08-01 · **Kanıt commit'i:** `8916f42` · **Durum:**
 FAZ 0–2 kanıtla tamamlandı; **FAZ 3 tamamlandı, G3 KISMİ geçti** (kanıtlanabilir
 kriterlerin hepsi geçti, C7/PDS **KANITLANAMADI** — veri yok). FAZ 4
 başlayabilir, bu eksiği açıkça taşıyarak.
@@ -29,15 +29,19 @@ doğruluğu, diğer her şeyden önce gelir.
 
 | Kapı | Sonuç | Kanıt |
 |---|---|---|
-| G0 | **GEÇTİ** | iş 1445668 (`5d92f54`) |
-| G1 | **GEÇTİ** | iş 1445668 (`5d92f54`) |
-| G2 | **GEÇTİ** | iş 1445668 (`5d92f54`) |
-| **G3** | **KISMİ** — C1–C6 GEÇTİ, **C7 KANITLANAMADI** | iş 1445668 (`5d92f54`) |
+| G0 | **GEÇTİ** | iş 1445853 (`8916f42`) |
+| G1 | **GEÇTİ** | iş 1445853 (`8916f42`) |
+| G2 | **GEÇTİ** | iş 1445853 (`8916f42`) |
+| **G3** | **KISMİ** — C1–C6 GEÇTİ, **C7 KANITLANAMADI** | iş 1445853 (`8916f42`) |
 
-Dördü de aynı commit üzerinde, TRUBA kolyoz1 / H100'de, temiz git ağacıyla.
-**533 test geçiyor / 0 kaldı**, kapsam **%94,4**, kırmızı takım **12/12 temiz**.
+Dördü de aynı commit üzerinde, TRUBA kolyoz3 / H100'de, temiz git ağacıyla.
+**571 test geçiyor / 0 kaldı**, kapsam **%97,0**, kırmızı takım **14/14 temiz**.
 
-Ayrıntı: [G3 kanıt özeti](docs/evidence/G3_GATE_5d92f54.md).
+Sahne karması iki bağımsız ortamda birebir aynı: `1c6f2a100ae4a866…`
+(Linux/numpy 1.26.4 ve Windows/numpy 2.5.1). Bu eşitlik önce tutmuyordu —
+bkz. [ADR-0025](docs/adr/ADR-0025-sahne-makineler-arasi-determinizm.md).
+
+Ayrıntı: [G3 nihai kanıt](docs/evidence/G3_GATE_8916f42.md).
 
 Açık kusur **yok**. `xfail` **yok**.
 

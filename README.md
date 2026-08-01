@@ -25,10 +25,18 @@ geçilmez. Kanıtlar TRUBA/ARF-ACC üzerinde, temiz git ağacıyla üretilir.
 | **G2** | Gerçek malzeme fiziği | **GEÇTİ** | FAZ 3 başlayabilir |
 | **G3** | Sahne kurulumu | **KISMİ** — C1–C6 GEÇTİ, C7 **KANITLANAMADI** | **FAZ 4 başlayabilir**, eksik açıkça taşınarak |
 
-Dördü de **aynı commit üzerinde** (`5d92f54`, temiz ağaç) arka arkaya koşuldu:
-[G3 kanıt özeti](docs/evidence/G3_GATE_5d92f54.md) — TRUBA kolyoz1 / H100,
-iş 1445668, **533 test geçti / 0 kaldı** (`xfail` yok), kapsam **%94,4**,
-kırmızı takım (P0 §12 + P3 §10) **12/12 temiz**.
+Dördü de **aynı commit üzerinde** (`8916f42`, temiz ağaç) arka arkaya koşuldu:
+[G3 nihai kanıt](docs/evidence/G3_GATE_8916f42.md) — TRUBA kolyoz3 / H100,
+iş 1445853, **571 test geçti / 0 kaldı** (`xfail` yok), kapsam **%97,0**,
+kırmızı takım (P0 §12 + P3 §10) **14/14 temiz**.
+
+> **Makineler arası determinizm — ölçüldü.** FAZ 3 sahne karması iki bağımsız
+> ortamda birebir aynı: `1c6f2a100ae4a866…` (Linux/numpy 1.26.4/H100 ve
+> Windows/numpy 2.5.1/RTX 3050). Bu eşitlik önce **tutmuyordu**; iki gerçek
+> kusur bulundu — ışın-yüzey kesişiminin mesh köşesinde dejenere olması
+> (yüzey normali makineye göre **2,5°** oynuyordu, fiziksel olarak önemli) ve
+> `centroid`'de toplama sırası. İkisi de düzeltildi ve bir altın-karma
+> bekçisiyle kilitlendi ([ADR-0025](docs/adr/ADR-0025-sahne-makineler-arasi-determinizm.md)).
 
 > **G3 neden "KISMİ":** C7, PDS veri ürünlerinin kimliklerini ve sağlama
 > toplamlarını ister. Gerçek PDS ürünleri bu ortamda **yok**, dolayısıyla
