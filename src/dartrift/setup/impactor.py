@@ -221,12 +221,37 @@ def impact_geometry(
     )
 
 
+# Baryzentrik ve t karsilastirmalarinda kullanilan bagil tolerans.
+# 1e-12: cift hassasiyette ~4 basamak pay birakir; koseye/kenara denk gelen
+# isinlarda komsu ucgenleri toplamaya yeter, ayri ucgenleri karistirmaya
+# yetmez (ikosferde en kucuk faset acisi bundan mertebelerce buyuk).
+_RAY_TOL = 1.0e-12
+
+
 def _ray_surface(mesh: TriMesh, d: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
     """Merkezden `d` yonunde isin at; EN UZAK kesisimi dondur (dis yuzey).
 
     Icbukey sekillerde isin birden cok ucgeni deler; carpma noktasi disaridan
     gorunen yuzeydir, yani en buyuk t. En yakini almak, merminin cismin
     icindeki bir catlaga carpmasi anlamina gelirdi.
+
+    DEJENERELIK — OLCULMUS BIR KUSURUN DUZELTMESI. Isin bir KOSEDEN ya da
+    KENARDAN gecerse orada bulusan 5-6 ucgenin baryzentrik testi sinirdadir
+    (u, w = 0 ya da 1'e yuvarlanir) ve hangi ucgenin noktayi sahiplendigini
+    kayan-nokta gurultusu belirler. Olculdu: ikosfer(4, 82 m) merkezinden +z
+    isini, numpy 2.5.1/Windows'ta ucgen #4064'u, numpy 1.26.4/Linux'ta
+    #3984'u secti; ikisi de "1 kesisim" raporladi ama YUZEY NORMALLERI
+    farkliydi — (0.0441, 0, 0.9990) ve (0.0203, 0.0385, 0.9991), yaklasik
+    2.5 derecelik bir sapma. P3-FR-07 carpma acisini normale gore
+    tanimladigi icin bu, senaryoyu makineye bagimli hale getiriyordu.
+
+    COZUM: tek bir ucgen secmek yerine, ayni t'de bulusan TUM ucgenler
+    toplanir ve normal, ALAN AGIRLIKLI ortalamalari olarak hesaplanir
+    (yuz indeksi sirasinda toplanir -> deterministik). Bu hem makineden
+    bagimsizdir hem fiziksel olarak daha dogrudur: kosedeki faset normali
+    zaten bir ayriklastirma yapisidir, ortalama ise yerel yuzeye daha yakin.
+    Ayni hata sinifi shape_mesh.inside_points'te sol-ust kenar kuraliyla
+    cozulmustu; ayni duzeltme buraya uygulanmamisti.
     """
     o = mesh.centroid
     v0 = mesh.v[mesh.f[:, 0]]
@@ -243,14 +268,27 @@ def _ray_surface(mesh: TriMesh, d: np.ndarray) -> tuple[np.ndarray, np.ndarray, 
     qv = np.cross(tv, e1)
     w = np.einsum("j,ij->i", d, qv) * inv
     t = np.einsum("ij,ij->i", e2, qv) * inv
-    hit = ok & (u >= 0.0) & (w >= 0.0) & (u + w <= 1.0) & (t > 0.0)
+    # Baryzentrik testte TOLERANS: kosede/kenarda u ya da w kucuk bir negatif
+    # degere yuvarlanabilir. Toleranssiz test o ucgenleri eler ve dejenereligi
+    # gizler — "1 kesisim" gorunur, oysa 6 ucgen esit haklidir.
+    hit = ok & (u >= -_RAY_TOL) & (w >= -_RAY_TOL) & (u + w <= 1.0 + _RAY_TOL) & (t > 0.0)
     if not np.any(hit):
         raise ValueError("isin hicbir ucgeni delmedi — mesh kapali mi?")
-    idx = int(np.argmax(np.where(hit, t, -np.inf)))
-    face = mesh.f[idx]
-    nrm = np.cross(mesh.v[face[1]] - mesh.v[face[0]],
-                   mesh.v[face[2]] - mesh.v[face[0]])
-    return o + t[idx] * d, _unit(nrm), float(t[idx])
+
+    t_hit = float(np.max(np.where(hit, t, -np.inf)))
+    # ayni t'ye denk gelen TUM ucgenler (kose/kenar durumu)
+    same = hit & (np.abs(t - t_hit) <= _RAY_TOL * max(abs(t_hit), 1.0))
+    faces = np.nonzero(same)[0]          # np.nonzero artan indeks sirasi verir
+    nrm = np.zeros(3, dtype=np.float64)
+    for i in faces:                      # sabit sirada topla -> deterministik
+        f = mesh.f[i]
+        # cross'un boyu 2*alan: alan agirligi ayrica carpilmaz, zaten icinde
+        nrm += np.cross(mesh.v[f[1]] - mesh.v[f[0]], mesh.v[f[2]] - mesh.v[f[0]])
+    if float(np.linalg.norm(nrm)) == 0.0:
+        # zit yonlu fasetler birbirini goturdu (patolojik mesh); tek yuze dus
+        f = mesh.f[int(faces[0])]
+        nrm = np.cross(mesh.v[f[1]] - mesh.v[f[0]], mesh.v[f[2]] - mesh.v[f[0]])
+    return o + t_hit * d, _unit(nrm), t_hit
 
 
 def place_impactor(
