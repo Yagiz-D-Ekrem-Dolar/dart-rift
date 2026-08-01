@@ -12,9 +12,12 @@
 #SBATCH -C H100
 #SBATCH -N 1
 #SBATCH -n 1
-#SBATCH -c 16
+# 8 cekirdek / 3 saat: olculen kosu suresi ~45 dk ve is TEK IS PARCACIKLI
+# (agirlik GPU'da). Daha buyuk istemek kuyrukta AssocGrpCpuLimit ile
+# beklemeye yol aciyor ve paylasimli kumede karsiligi olmayan bir maliyet.
+#SBATCH -c 8
 #SBATCH --gres=gpu:1
-#SBATCH --time=06:00:00
+#SBATCH --time=03:00:00
 #SBATCH --output=g3_%j.out
 #SBATCH --error=g3_%j.out
 #SBATCH --exclude=kolyoz13,palamut5,palamut6
