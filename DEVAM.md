@@ -179,6 +179,20 @@ Bir alan üretiyorsanız, onu **denetleyen bir test** de yazın.
   mesajında parçalandı (`z'ye` → `-m` argümanı bölündü, git pathspec hatası
   verdi ve commit atlandı). Çok satırlı commit mesajını **dosyaya yazıp
   `git commit -F dosya`** ile verin.
+- Bir PowerShell komut satırı **ayrıştırma hatası verirse, `;` ile zincirlenen
+  önceki komutlar da çalışmaz.** `git add ...; git commit -F - << EOF` denedim;
+  satır hiç ayrıştırılamadı ve `git add` de yapılmadı. Sahnelemeyi
+  `git diff --cached --name-only` ile **her seferinde** doğrulayın.
+
+### Koşan bir işin ağacını değiştirmeyin
+
+Kapı koşarken depoyu `git pull` etmek ya da yerelde dosya düzenlemek, kanıtı
+**hangi commit'e ait olduğu belirsiz** hale getirir. Bunu bu fazda iki kez
+yaptım; ikisinde de koşuyu iptal edip baştan başlamak zorunda kaldım.
+
+Kural: **kapı kanıtı, iddia edilen commit üzerinde ve o commit dondurulmuşken
+üretilir.** Kod değişecekse önce değişikliği bitirin, commit edin, sonra tek
+temiz koşu yapın.
 
 ### FAZ 3'te öğrenilenler — ölçme yöntemi tuzakları
 
