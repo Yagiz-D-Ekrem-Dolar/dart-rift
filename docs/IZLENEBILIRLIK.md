@@ -148,3 +148,44 @@ Bunlar eksik değil, şartnamece **yasaktır**:
   davranış testiyle birlikte devreye alınacaktır.
 - Manifestteki `outputs.*_sha256` alanları sıfır doludur: FAZ 0'da checkpoint
   üretilmez. Bu, geçmiş bir test sonucu olarak sunulmamaktadır.
+
+---
+
+# FAZ 3 — Sahne Kurulumu (DR-RIFT-P3)
+
+## Fonksiyonel gereksinimler (§3.1)
+
+| ID | Gereksinim | Uygulama | Test |
+|----|-----------|----------|------|
+| P3-FR-01 | Şekil-mesh hattı: yükle, temizle, dışa yönlendir, iç testi | `setup/shape_mesh.py` | `test_shape_mesh.py` (18) |
+| P3-FR-02 | Mesh içini parçacıkla doldur; kütle hedef yoğunluğu versin | `setup/rubble_generator.py::fill_particles`, `lattice_points` | `test_rubble.py` |
+| P3-FR-03 | İri-blok dağılımı power-law; hacim oranı GERİ ÖLÇÜLSÜN | `rubble_generator.py::sample_boulder_radii`, `place_boulders` | `test_rubble.py` (kesin kesik CDF'ye karşı) |
+| P3-FR-04 | Parçacık başına malzeme (α₀, Y₀) ataması | `rubble_generator.py::assign_material`; çözücüde `Y0` dizisi | `test_rubble.py`, `test_solid_cross.py` |
+| P3-FR-05 | Öz-yerçekimi altında settling; istenmeyen KE söndürülür | `setup/settling.py`, `integrator.damp_velocity_3d` | `test_settling.py` (7) |
+| P3-FR-06 | DART mermisi sonlu boyutlu — **nokta parçacık yasak** | `setup/impactor.py::build_impactor` | `test_impactor.py` (25) |
+| P3-FR-07 | Çarpma noktası ve geliş yönü hedef şekli üzerinde | `impactor.py::impact_geometry`, `place_impactor` | `test_impactor.py` |
+| P3-FR-08 | Gözlenebilir çıkarıcılar: β, ejekta, krater, periyot | `observables/` (4 modül) | `test_observables.py` (32) |
+
+## Doğrulama eşikleri (§3.2)
+
+| ID | Eşik | Sonuç | Test |
+|----|------|-------|------|
+| P3-VR-01 | Settling sonrası KE ısıl gürültü altında | KE/E_bağ = 4.85e-13 (eşik 1e-3) | `test_settling.py`, G3 C3 |
+| P3-VR-02 | Mermi ≥3 çözünürlükte yakınsak | hacim hatası %3.5→%0.5; kütle hatası <6e-16 | `test_impactor.py`, G3 C4 |
+| P3-VR-03 | β kontrol yüzeyine duyarlılığıyla raporlanır | yayılım %7.3, ızgara 3×3 | `test_observables.py`, G3 C5 |
+
+## Kararlar
+
+- **ADR-0024** — yerçekimi ölçek kararı: settling "oturtma" değil **denge
+  sınaması**; yerçekimsel oturma gerekçeli olarak kapsam dışı (bir t_ff =
+  1.28e7 adım; P_lito/Y₀ = 3.05e-04). Ağaç yenileme aralığı K korunur ama
+  **sürüklenme denetlenir**.
+
+## KANITLANAMAYAN — taşınıyor
+
+- **G3 C7 (PDS veri manifestosu).** FAZ 0'da "FAZ 3'te dolacak" denmişti;
+  gerçek PDS ürünleri bu ortamda yok. Kapı **KANITLANAMADI** işaretler, GEÇTİ
+  değil; çıkış kodu 3, verdikt **KISMİ**. Ayrıntı: `data_manifest/README.md`.
+- Sonuç olarak FAZ 4 çıktıları, gerçek Dimorphos geometrisiyle tekrarlanana
+  kadar "DART senaryosu" değil **"DART benzeri senaryo"** olarak adlandırılır.
+- **Hasar/kırılma modeli yok** (D = 0) — P2 §1.3 STRETCH, eksiklik değil.

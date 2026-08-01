@@ -175,6 +175,36 @@ Bir alan üretiyorsanız, onu **denetleyen bir test** de yazın.
 - `git add` bir pathspec'te hata verirse **kalan dosyalar sahnelenmez** ama
   commit yine de gidebilir — eksik commit oluşur. `git show --stat` ile
   doğrulayın.
+- PowerShell `@'...'@` here-string'i, içinde **kesme işareti** geçen bir commit
+  mesajında parçalandı (`z'ye` → `-m` argümanı bölündü, git pathspec hatası
+  verdi ve commit atlandı). Çok satırlı commit mesajını **dosyaya yazıp
+  `git commit -F dosya`** ile verin.
+
+### FAZ 3'te öğrenilenler — ölçme yöntemi tuzakları
+
+Bu fazın altı kusurundan **dördü kodda değil ölçmedeydi**. Ortak kalıp: *en
+kötü örneklenen kutunun ya da en küçük paydanın belirlediği bir istatistik.*
+
+- **Yerel değere bölmeyin.** Ağaç bayatlama hatasını yerel `|g|`'ye bölünce
+  merkeze yakın parçacıklarda 0/0'a gidip "%14.8 hata" çıktı; gerçek değer
+  maks`|g|`'ye göre %0.92 idi. Normalizasyonu global ölçeğe yapın.
+- **Eşit açı ≠ eşit katı açı.** Küresel profil kutularını θ'da eşit aralıklarla
+  bölerseniz eksene yakın kutu kürenin ~1.7e-4'ünü kapsar; oradaki medyan
+  birkaç parçacıktan gelir, aşağı yanlıdır ve `max(sapma)` tam o gürültüyü
+  seçer. Bilinen 20 m'lik çukur 40 m ölçüldü. **cos θ'da** bölün + kutu başına
+  asgari örnek şartı koyun. (ADR-0017'deki hatanın aynısı — ikinci kez.)
+- **Kutu sayısı N'e bağlı olmalı.** Sabit 60×120 yön kutusu, N=8000'de kutu
+  başına ~1 örnek bırakır; "kutudaki en uzak parçacık" o zaman rastgele bir
+  parçacıktır. Hiç çukuru olmayan bir kürede 41 m'lik hayali krater çıktı.
+- **Sönümleme sinyali siler.** Yaklaşıklık hatasını sönümlemeli bir koşunun son
+  konumlarından ölçmeye çalışmayın; sönümleme farkı yok eder. Doğrudan
+  etkilenen büyüklüğü (burada ivmeyi) karşılaştırın.
+- **Cebirsel özdeşlik çapraz kontrol değildir.** β'yı ejektadan ve bağlı
+  kütleden hesaplayıp karşılaştırmak hiçbir şey doğrulamaz: momentum
+  korunuyorsa ikisi özdeştir. Farkın adı `momentum_closure`'dır.
+- **Sentetik doğrulama sahnesi de doğrulanmalıdır.** İlk sahnemde momentum
+  korunmuyordu, ejekta hızları üslü yasadan gelmiyordu (R²=0.56 yakaladı) ve
+  hedef çözünürlüğü krater çıkarıcı için yetersizdi (16 m → 2.95 m).
 
 ---
 
