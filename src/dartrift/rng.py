@@ -29,6 +29,11 @@ STREAMS: dict[str, int] = {
     "particles": 0,
     "material": 1,
     "realization": 2,
+    # SONA EKLEME (2026-08-01, hasar modeli). Mevcut kimlikler 0/1/2
+    # DEGISMEDIGI icin hicbir altin hash etkilenmez; ADR-0004'un yasakladigi
+    # sey var olan bir akisin kimligini/sirasini oynatmaktir, listeye yeni bir
+    # ad eklemek degil. Yeni akislar DAIMA sona eklenir.
+    "damage_flaws": 3,
 }
 
 

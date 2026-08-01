@@ -128,6 +128,47 @@ class GravityParams:
 
 
 @dataclass(frozen=True)
+class DamageParams:
+    """Grady-Kipp hasar + Weibull kusur dagilimi (Benz & Asphaug 1995).
+
+    FIZIK. Kirilgan bir kayada cekme dayanimi, malzemenin icindeki mikro
+    CATLAKLARIN (flaw) dagilimiyla belirlenir. Weibull dagilimi, birim
+    hacimde aktivasyon gerinimi `eps`ten KUCUK kusur sayisini verir:
+
+        n(eps) = k * eps^m
+
+    `m` kucukse kusurlar genis bir gerinim araligina yayilir (heterojen,
+    "zayif" kaya); buyukse hepsi ayni gerinimde acilir (homojen, "gevrek").
+
+    HASAR. Aktive olmus kusurlardan catlaklar `c_g` hiziyla buyur; hasar
+    kubuk kokuyle dogrusal ilerler:
+
+        d(D^(1/3))/dt = n_aktif * c_g / R_s
+
+    `R_s` parcacigin etkin yaricapi, `c_g = crack_speed_frac * c_s`.
+    D ∈ [0,1]; D=1 tamamen kirilmis (cekme tasiyamaz).
+
+    ETKI. Hasar YALNIZCA CEKMEYI zayiflatir:
+      - P < 0 ise P -> (1-D) * P    (kirik kaya cekme tasimaz)
+      - S -> (1-D) * S              (deviatorik dayanim da duser)
+    Basma (P > 0) ETKILENMEZ: kirik kaya hala basmaya dayanir. Bu ayrim
+    fiziksel olarak kritiktir; ikisini birden zayiflatmak kraterlesmeyi
+    tamamen yanlis yapar.
+
+    `k` [1/m^3] ve `m` [-] malzemeye ozgudur; bazalt icin literaturde
+    k ~ 1e29..1e61 (m ile birlikte kalibre edilir), m ~ 6..12
+    (Benz & Asphaug 1995, Tablo 1). Varsayilanlar bazalt icindir ve
+    FAZ 5'te posterior olarak SINANIR, varsayilmaz.
+    """
+
+    enabled: bool = False
+    k_weibull: float = 1.0e29   # [1/m^3]
+    m_weibull: float = 9.0      # [-]
+    crack_speed_frac: float = 0.4   # c_g / c_s (Benz & Asphaug: ~0.4)
+    n_flaws_per_particle: float = 10.0  # ortalama kusur/parcacik (tohumlama)
+
+
+@dataclass(frozen=True)
 class MaterialParams:
     """Bir kosunun tam malzeme tanimi. Ablasyon: her modul acilir/kapanir."""
 
@@ -145,6 +186,7 @@ class MaterialParams:
     strength: StrengthParams = field(default_factory=StrengthParams)
     porosity: PorosityParams = field(default_factory=lambda: PorosityParams(enabled=False))
     gravity: GravityParams = field(default_factory=GravityParams)
+    damage: DamageParams = field(default_factory=DamageParams)
     artificial_stress: ArtificialStressParams = field(
         default_factory=ArtificialStressParams
     )
@@ -176,6 +218,13 @@ class MaterialParams:
             ),
             gravity=GravityParams(
                 enabled=g.enabled, G=g.G, eps=g.eps, mode=g.mode, theta=g.theta
+            ),
+            damage=DamageParams(
+                enabled=ph.damage.enabled,
+                k_weibull=ph.damage.k_weibull,
+                m_weibull=ph.damage.m_weibull,
+                crack_speed_frac=ph.damage.crack_speed_frac,
+                n_flaws_per_particle=ph.damage.n_flaws_per_particle,
             ),
             artificial_stress=ArtificialStressParams(
                 enabled=ph.artificial_stress.enabled,

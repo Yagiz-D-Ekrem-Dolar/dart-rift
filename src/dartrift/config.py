@@ -169,6 +169,16 @@ class GravityConfig(_StrictModel):
     theta: float = Field(default=0.5, gt=0, le=1.0)
 
 
+class DamageConfig(_StrictModel):
+    """Grady-Kipp hasar + Weibull kusurlari (Benz & Asphaug 1995)."""
+
+    enabled: bool = False
+    k_weibull: float = Field(default=1.0e29, gt=0.0)   # [1/m^3]
+    m_weibull: float = Field(default=9.0, gt=0.0)
+    crack_speed_frac: float = Field(default=0.4, gt=0.0, le=1.0)
+    n_flaws_per_particle: float = Field(default=10.0, gt=0.0)
+
+
 class ArtificialStressConfig(_StrictModel):
     """Monaghan (2000) yapay gerilmesi — cekme kararsizligi (P1/P2 §9)."""
 
@@ -189,6 +199,7 @@ class PhysicsConfig(_StrictModel):
     strength: StrengthConfig = Field(default_factory=lambda: StrengthConfig(enabled=False))
     porosity: PorosityConfig = Field(default_factory=lambda: PorosityConfig(enabled=False))
     gravity: GravityConfig = Field(default_factory=lambda: GravityConfig(enabled=False))
+    damage: DamageConfig = Field(default_factory=DamageConfig)
     artificial_stress: ArtificialStressConfig = Field(
         default_factory=ArtificialStressConfig
     )

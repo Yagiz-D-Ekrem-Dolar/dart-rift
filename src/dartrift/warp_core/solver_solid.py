@@ -19,6 +19,7 @@ from . import density as D
 from . import eos_test as E
 from . import integrator as I
 from . import solid_stress as SS
+from .damage_gradykipp import accumulate_damage_k, apply_damage_k, damage_rate_k
 from .eos_tillotson import eos_solid, make_tillotson_wp
 from .gravity_tree import GravitySolver
 from .hash_grid import GridManager
@@ -51,6 +52,7 @@ class WarpSolid3D:
         check_every: int = 50,
         gravity_rebuild_every: int = 1,
         gravity_drift_tol: float = 0.25,
+        damage_seed: int = 0,
     ):
         _init_warp()
         self.mat = mat
@@ -119,6 +121,39 @@ class WarpSolid3D:
         self._tp = make_tillotson_wp(mat.tillotson)
         self._sp = make_strength_wp(mat.strength)
         self._pp = make_porosity_wp(mat.porosity)
+        # --- Grady-Kipp hasar (P2 §1.3 STRETCH; ADR-0027) ---
+        self._damage = mat.damage.enabled
+        if self._damage:
+            from ..cpu_reference.damage_ref import seed_flaws, youngs_modulus
+            from .damage_gradykipp import make_damage_wp
+
+            if not mat.strength.enabled:
+                raise ValueError(
+                    "hasar modeli dayanim ister: damage.enabled=True iken "
+                    "strength.enabled=False anlamsizdir (deviatorik gerilme yok)")
+            # Parcacik hacmi kutleden ve malzeme yogunlugundan turer; kusur
+            # yogunlugu HACIMSELDIR (n = k eps^m, birim 1/m^3).
+            rho_mat = mat.rho0_linear if mat.eos == "linear" else mat.tillotson.rho0
+            v_p = float(np.mean(np.asarray(m, np.float64))) / rho_mat
+            r_s = float((3.0 * v_p / (4.0 * np.pi)) ** (1.0 / 3.0))
+            e_min, n_fl = seed_flaws(n, v_p, mat.damage, damage_seed)
+            self.eps_min = wp.array(e_min, dtype=F, device=dev)
+            self.n_flaws = wp.array(n_fl, dtype=F, device=dev)
+            k_bulk = mat.c0**2 * mat.rho0_linear if mat.eos == "linear" \
+                else mat.tillotson.A
+            self._dp = make_damage_wp(
+                mat.damage, r_s, youngs_modulus(k_bulk, mat.strength.shear_G))
+            self.D = wp.zeros(n, dtype=F, device=dev)
+            self.D_cbrt = wp.zeros(n, dtype=F, device=dev)
+            self.dDdt_cbrt = wp.zeros(n, dtype=F, device=dev)
+            self.strain = wp.zeros(n, dtype=F, device=dev)
+            self._damage_diag = {
+                "particle_volume": v_p, "r_s": r_s,
+                "n_flaws_total": float(n_fl.sum()),
+                "eps_min_median": float(np.median(e_min[np.isfinite(e_min)]))
+                if np.any(np.isfinite(e_min)) else float("nan"),
+                "particles_without_flaw": int(np.count_nonzero(~np.isfinite(e_min))),
+            }
         self._gravity = GravitySolver(mat.gravity, dev) if mat.gravity.enabled else None
         # yapay gerilme normalizasyonu W(dp): CPU referansiyla ayni deger
         from ..cpu_reference.sph_ref import kernel_w as _kw
@@ -186,6 +221,19 @@ class WarpSolid3D:
             )
         else:
             self.dSdt.zero_()
+        if self._damage:
+            # YER: gerilme hizindan SONRA, kuvvetlerden ONCE.
+            #   - dSdt HAM S'den hesaplanmali (hasar, elastik evrimi degil
+            #     TASINAN gerilmeyi zayiflatir);
+            #   - kuvvetler ise ZAYIFLATILMIS P ve S'yi gormeli, yoksa hasarin
+            #     dinamige hicbir etkisi olmaz.
+            # SIRA: once hiz (ham gerilmeden), sonra uygulama. Tersi, hasarin
+            # kendi tetigini zayiflatmasina ve buyumenin yapay yavaslamasina
+            # yol acardi.
+            self._launch(damage_rate_k,
+                         [self.P, self.S, self.eps_min, self.n_flaws, self.cs,
+                          self.active, self._dp, self.dDdt_cbrt, self.strain])
+            self._launch(apply_damage_k, [self.P, self.S, self.D, self.active])
         if self._gravity is not None:
             # x_version: agac onbellegi icin. Konumlar yalnizca drift'te
             # degisir; step() icindeki ikinci _eval() ayni konumlari gorur ve
@@ -263,6 +311,13 @@ class WarpSolid3D:
                 porosity_update_k,
                 [self.alpha, self.rho, self.u, self.active, self._pp, self._tp],
             )
+        if self._damage:
+            # Hasar TAM adimda ilerletilir (yariya bolunmez): D monoton ve
+            # [0,1]'e kisik oldugu icin trapez yolunun bir anlami yok, ustelik
+            # iki yarim adim monotonluk kisitlamasiyla birlesince tekrarlanabilir
+            # olmayan bir sira dogururdu.
+            self._launch(accumulate_damage_k,
+                         [self.D_cbrt, self.dDdt_cbrt, self.D, self.active, F(dt)])
         self._step_count += 1
 
     def compute_dt(self, cfl: float | None = None) -> float:
@@ -295,6 +350,12 @@ class WarpSolid3D:
         row["e_pot"] = ep
         row["e_tot"] = row["e_kin"] + row["e_int"] + ep
         row["plastic_cum"] = self.plastic_u_total
+        if self._damage:
+            d = self.D.numpy()
+            row["damage_mean"] = float(np.mean(d))
+            row["damage_max"] = float(np.max(d))
+            row["damage_fully_broken"] = int(np.count_nonzero(d >= 0.999))
+            row["strain_max"] = float(np.max(self.strain.numpy()))
         if self._track_drift:
             # Yaklasikligin denetim kaydi (ADR-0024): kac kez tolerans asildi
             # ve en kotu suruklenme neydi. Sifir olmayan bir sayac, K'nin o
@@ -347,4 +408,6 @@ class WarpSolid3D:
             "alpha": self.alpha.numpy(),
             "phi": self.phi.numpy(),
             "a": self.a.numpy().astype(np.float64),
+            "D": self.D.numpy() if self._damage else np.zeros(self.n),
+            "strain": self.strain.numpy() if self._damage else np.zeros(self.n),
         }
