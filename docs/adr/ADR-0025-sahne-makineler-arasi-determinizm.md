@@ -86,7 +86,18 @@ noktası centroid'den türediği için merminin x,y'si ~1e-14 m kayıyor ve
 > hesaplanan** indirgemeler için uygundur. Nerede kullanılacağı ölçümle
 > belirlenir, alışkanlıkla değil.
 
-### Bilinen latent risk — kapatılmadı, izleniyor
+### Latent risk — SONRADAN KAPATILDI (2026-08-01)
+
+Aşağıdaki not, `volume`/`area`'yı fsum'a çevirmemek gerekçesiyle yazılmıştı.
+Gerekçe **ölçümle çürüdü**: değişiklik yapıldığında altın karma
+`1c6f2a10…` **hiç değişmedi**, çünkü `np.sum` bu veri için zaten doğru
+yuvarlanmış sonucu veriyormuş. Yani "altın referansı bozar" endişesi
+gerçekleşmedi ve riski kapatmak bedava çıktı.
+
+`TriMesh.volume` ve `TriMesh.area` artık `math.fsum` kullanıyor. Aşağıdaki
+bölüm, kararın **neden ertelendiğinin** kaydı olarak duruyor — silinmiyor.
+
+### (Tarihsel) Bilinen latent risk — kapatılmamıştı, izleniyordu
 
 `TriMesh.volume` ve `TriMesh.area` de `np.sum` kullanır ve **aynı sınıftandır**:
 mesh başına bir kez hesaplanır, sonuç aşağı akışta karara girer (`volume`,

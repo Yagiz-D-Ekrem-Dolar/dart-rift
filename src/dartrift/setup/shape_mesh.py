@@ -64,14 +64,21 @@ class TriMesh:
         """Isaretli hacim (diverjans teoremi). Disa donuk normalde POZITIF.
 
         V = (1/6) sum_T  a . (b x c)   — kapali ag icin kesin.
+
+        `math.fsum` ile: `np.sum`un ciftli toplama blok boyu numpy surumune
+        gore degisir ve sonuc makineler arasi 1-2 ULP oynar (ADR-0025).
+        Hacim, `place_boulders`'daki hedef blok hacmini ve `pile.mesh_volume`
+        tanisini belirledigi icin bu oynama asagi akista karara girer.
+        Mesh basina bir kez hesaplandigindan maliyeti onemsizdir.
         """
         a, b, c = self.tri[:, 0], self.tri[:, 1], self.tri[:, 2]
-        return float(np.sum(np.einsum("ij,ij->i", a, np.cross(b, c))) / 6.0)
+        return math.fsum(np.einsum("ij,ij->i", a, np.cross(b, c)).tolist()) / 6.0
 
     @property
     def area(self) -> float:
+        """Toplam yuzey alani. Toplam `math.fsum` ile — `volume` ile ayni gerekce."""
         a, b, c = self.tri[:, 0], self.tri[:, 1], self.tri[:, 2]
-        return float(0.5 * np.sum(np.linalg.norm(np.cross(b - a, c - a), axis=1)))
+        return 0.5 * math.fsum(np.linalg.norm(np.cross(b - a, c - a), axis=1).tolist())
 
     @property
     def bounds(self) -> tuple[np.ndarray, np.ndarray]:
