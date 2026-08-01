@@ -17,6 +17,7 @@ kendi kendini denetler, ayrica bir "mesh dogru mu" iddiasi gerekmez.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
@@ -78,14 +79,30 @@ class TriMesh:
 
     @property
     def centroid(self) -> np.ndarray:
-        """Hacim agirlikli merkez (kutle merkezi, homojen yogunlukta)."""
+        """Hacim agirlikli merkez (kutle merkezi, homojen yogunlukta).
+
+        TOPLAMLAR `math.fsum` ILE — sebebi olculdu. `np.sum` ciftli (pairwise)
+        toplama kullanir; blok boyu numpy surumune ve SIMD genisligine gore
+        degisir, dolayisiyla SONUC MAKINEDEN MAKINEYE 1-2 ULP oynar. Simetrik
+        bir ikosferde centroid tam 0 olmali; numpy 2.5.1/Windows
+        (8.0e-15, 2.1e-15, -9.0e-15), numpy 1.26.4/Linux ise
+        (5.6e-15, 2.0e-14, ...) veriyordu.
+
+        Bu artik fiziksel olarak sifirdir (82 m'lik cisimde 2e-16 bagil), ama
+        centroid carpma noktasini belirledigi icin fark SAHNENIN KARMASINA
+        siziyor ve "ayni tohum ayni sahne" iddiasi makineler arasi bozuluyordu.
+        `math.fsum` dogru yuvarlanmis ve SIRA-BAGIMSIZ toplam verir; centroid
+        mesh basina bir kez hesaplandigi icin maliyeti onemsizdir.
+        """
         a, b, c = self.tri[:, 0], self.tri[:, 1], self.tri[:, 2]
         vol6 = np.einsum("ij,ij->i", a, np.cross(b, c))          # 6*V_tet
         cen = (a + b + c) / 4.0                                   # tetra merkezi
-        tot = np.sum(vol6)
+        tot = math.fsum(vol6.tolist())
         if abs(tot) < 1.0e-300:
-            return self.v.mean(axis=0)
-        return (vol6 @ cen) / tot
+            return np.array([math.fsum(self.v[:, k].tolist()) / len(self.v)
+                             for k in range(3)])
+        wc = vol6[:, None] * cen
+        return np.array([math.fsum(wc[:, k].tolist()) / tot for k in range(3)])
 
     def is_edge_manifold(self) -> bool:
         """Her kenar TAM iki ucgende gorunmeli (kapali, delik yok).
