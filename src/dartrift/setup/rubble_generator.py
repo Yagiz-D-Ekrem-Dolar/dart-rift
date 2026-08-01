@@ -35,6 +35,8 @@ __all__ = [
     "RubblePile",
     "BoulderField",
     "fill_particles",
+    "lattice_points",
+    "particle_volume",
     "sample_boulder_radii",
     "place_boulders",
     "assign_material",
@@ -103,17 +105,27 @@ def fill_particles(mesh: TriMesh, spacing: float, packing: str = "fcc",
     kafes noktalari mesh koseleriyle cakismaz ve isin-atma testi dejenere
     duruma girmez (bkz. shape_mesh.inside_points).
     """
+    lo, hi = mesh.bounds
+    pts = lattice_points(lo - spacing, hi + spacing, spacing, packing)
+    return pts[inside_points(mesh, pts, cells=cells)]
+
+
+def lattice_points(lo: np.ndarray, hi: np.ndarray, spacing: float,
+                   packing: str = "fcc") -> np.ndarray:
+    """[lo,hi] kutusunu dolduran kafes noktalari -> (N,3).
+
+    Sekilden BAGIMSIZ tutuldu: hem mesh doldurma (fill_particles) hem mermi
+    ayriklastirma (impactor.build_impactor) ayni kafesi kullanir. Iki yerde
+    ayri kafes yazmak, ikisinin sessizce ayrisabilecegi bir yer acardi.
+    """
     if spacing <= 0.0:
         raise ValueError(f"aralik pozitif olmali, {spacing} geldi")
-    lo, hi = mesh.bounds
-    pad = spacing
-    lo = lo - pad
-    hi = hi + pad
-
+    lo = np.asarray(lo, dtype=np.float64).reshape(3)
+    hi = np.asarray(hi, dtype=np.float64).reshape(3)
     if packing == "cubic":
         axes = [np.arange(lo[k] + 0.5 * spacing, hi[k], spacing) for k in range(3)]
-        pts = np.stack(np.meshgrid(*axes, indexing="ij"), -1).reshape(-1, 3)
-    elif packing == "fcc":
+        return np.stack(np.meshgrid(*axes, indexing="ij"), -1).reshape(-1, 3)
+    if packing == "fcc":
         a = spacing * np.sqrt(2.0)                 # kafes sabiti
         basis = np.array([[0.0, 0.0, 0.0], [0.5, 0.5, 0.0],
                           [0.5, 0.0, 0.5], [0.0, 0.5, 0.5]]) * a
@@ -121,11 +133,8 @@ def fill_particles(mesh: TriMesh, spacing: float, packing: str = "fcc",
         gi = [np.arange(n[k]) * a + lo[k] + 0.25 * a for k in range(3)]
         cell = np.stack(np.meshgrid(*gi, indexing="ij"), -1).reshape(-1, 3)
         pts = (cell[:, None, :] + basis[None, :, :]).reshape(-1, 3)
-        pts = pts[np.all((pts >= lo) & (pts <= hi), axis=1)]
-    else:
-        raise ValueError(f"bilinmeyen yerlesim: {packing!r}")
-
-    return pts[inside_points(mesh, pts, cells=cells)]
+        return pts[np.all((pts >= lo) & (pts <= hi), axis=1)]
+    raise ValueError(f"bilinmeyen yerlesim: {packing!r}")
 
 
 def particle_volume(spacing: float, packing: str = "fcc") -> float:

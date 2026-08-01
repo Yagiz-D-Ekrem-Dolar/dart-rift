@@ -1,0 +1,68 @@
+﻿c_uzunlamasina = 4100.6 m/s   (bazalt, G=2.27e+10 Pa, rho=1800)
+
+(A)+(B) OLCEK TABLOSU
+cisim          R[m]   P_lito[Pa]  P_lito/Y0     t_ff[s]   dt_CFL[s]    adim/t_ff
+test           80.0        2.899  0.0002899        1566   0.0008535    1.834e+06
+Dimorphos      82.0        3.045  0.0003045        1566   0.0001219    1.284e+07
+Didymos       390.0        68.89   0.006889        1566   0.0004877     3.21e+06
+
+t_ff = sqrt(3 pi / (32 G rho)) yogunluga bagli, boyuttan BAGIMSIZ.
+
+(C) t=0 IVME AYRISTIRMASI   N=8842, R=80 m, aralik=7 m
+  |a_SPH|       medyan=0  maks=0
+  |a_yercekimi| medyan=3.216e-05  maks=3.902e-05
+  medyan oran a_g/a_SPH = inf
+  GM/R^2 analitik yuzey = 4.026e-05 m/s^2
+
+(D) AGAC BAYATLAMA: K adim once kurulan agacla ivme ne kadar kayar?
+    (sonumleme YOK; parcaciklar tipik settling hiziyla suruklenir)
+     K      maks_dA/A    medyan_dA/A     kayma[m]
+     1     1.4844e-01     2.6891e-03   4.2677e-05
+     2     1.4725e-01     2.6913e-03   8.5354e-05
+     4     1.4767e-01     2.7007e-03   1.7071e-04
+     8     1.4655e-01     2.6860e-03   3.4141e-04
+    16     1.4611e-01     2.6909e-03   6.8283e-04
+    32     1.4658e-01     2.6818e-03   1.3657e-03
+    64     1.4661e-01     2.6829e-03   2.7313e-03
+
+(E) AGAC KURULUM MALIYETI (yalniz yercekimi, tek degerlendirme)
+  N=  2000  yercekimli=0.0594 s  yercekimsiz=0.0003 s  agac payi=%99.5
+  N=  8842  yercekimli=0.2107 s  yercekimsiz=0.0004 s  agac payi=%99.8
+(1) t=0 KURULUM DENGESI  N=8842
+    maks |a_SPH|  = 0.000000e+00 m/s^2   (tam sifir mi: True)
+    maks |P|      = 0.000000e+00 Pa
+    maks |S|      = 0.000000e+00 Pa
+    rho araligi   = [1687.500000, 1687.500000]  (beklenen rho0/alpha0 = 1687.500000)
+
+    maks |a_yercekimi| = 3.902194e-05 m/s^2
+    -> t=0'da TEK dengesiz kuvvet yercekimidir.
+
+(2) YERCEKIMI KAYMASI vs PARCACIK ARALIGI
+    s = 0.5 |g| t^2 (ust sinir; gercekte basinc gradyani karsi koyar)
+  t_sim[s]       kayma[m]   kayma/aralik kayma/aralik_DART
+       1.0     1.9511e-05     2.7873e-06     1.9511e-05
+      10.0     1.9511e-03     2.7873e-04     1.9511e-03
+     100.0     1.9511e-01     2.7873e-02     1.9511e-01
+    1000.0     1.9511e+01     2.7873e+00     1.9511e+01
+
+(3) KACIS HIZI
+    test yigini : M=3.8601e+09 kg  R=79.9 m  v_kac=8.0284e-02 m/s
+    Dimorphos   : M=4.3e9 kg  R=82 m  v_kac=8.3665e-02 m/s
+    -> ejekta icin yercekimi BELIRLEYICI (cm/s mertebesi), hedef
+       govdesinin sok fazi dinamigi icin degil.
+
+(4) AGAC BAYATLAMA HATASI  (norm: maks|g| = 3.9022e-05)
+     K      kayma[m]  maks_dg/gmax   ort_dg/gmax  kayma/aralik
+     1    4.2677e-05    9.2028e-03    2.3768e-03    6.0967e-06
+    10    4.2677e-04    9.2743e-03    2.3976e-03    6.0967e-05
+   100    4.2677e-03    9.4925e-03    2.4060e-03    6.0967e-04
+  1000    4.2677e-02    9.5878e-03    2.4161e-03    6.0967e-03
+   100    4.2677e-01    9.6019e-03    2.4612e-03    6.0967e-02
+   100    4.2677e+01    5.4255e+00    9.5368e-02    6.0967e+00
+
+(5) SONUMLEMELI SETTLING PENCERESI (P3-VR-01)
+    E_baglanma = 7.464230e+06 J,  esik = 1e-3 * E_bag = 7.464230e+03 J
+    K=   1: adim=200  t=6.0320e-02 s  KE_son=3.6211e-06 J  KE/E_bag=4.8512e-13  yakinsadi=True
+            rho=[1687.5000,1687.5000] alpha=[1.6000,1.6000]
+    K= 100: adim=200  t=6.0320e-02 s  KE_son=3.6213e-06 J  KE/E_bag=4.8516e-13  yakinsadi=True
+            rho=[1687.5000,1687.5000] alpha=[1.6000,1.6000]
