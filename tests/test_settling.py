@@ -146,6 +146,45 @@ class TestSettlingGPU:
                         Y0=np.ascontiguousarray(pile.Y0), device="cuda:0")
         assert np.array_equal(s.Y0.numpy(), pile.Y0)
 
+    def test_parcacik_basina_Y0_SONUCU_degistiriyor(self):
+        """Diziyi tasimak yetmez: akma dayanimi gercekten farkli mi davraniyor?
+
+        Onceki test yalnizca `s.Y0` dizisinin SAKLANDIGINI denetliyordu. Dizi
+        yerinde durup cekirdek skaler `mat.strength.Y0` kullansaydi o test yine
+        gecerdi — heterojenlik kozmetik olurdu. Bu, hasar kusuruyla ayni sinif:
+        parca dogru, butun sinanmamis.
+
+        Olculebilir tahmin: her yerde ZAYIF kohezyon veren bir kosu, guclu
+        bloklar iceren kosudan DAHA COK plastik is uretmeli (akma daha erken
+        baslar). Esitlik cikarsa Y0 dizisi kullanilmiyor demektir.
+        """
+        self._needs_cuda()
+        from dartrift.cpu_reference.sph_ref import RefParams
+        from dartrift.warp_core.solver_solid import WarpSolid3D
+
+        mat, pile = self._kur()
+        y_het = np.ascontiguousarray(pile.Y0)
+        assert len(np.unique(y_het)) > 1
+        # ayni sahne, tek fark: her yerde en zayif kohezyon
+        y_zayif = np.full(pile.n, float(y_het.min()))
+
+        def kos(y0):
+            s = WarpSolid3D(np.ascontiguousarray(pile.x),
+                            np.ascontiguousarray(pile.x) * 2.0,   # akmayi tetikle
+                            pile.m, np.zeros(pile.n), 16.0, mat, RefParams(cfl=0.2),
+                            alpha0=np.ascontiguousarray(pile.alpha0),
+                            Y0=np.ascontiguousarray(y0), device="cuda:0",
+                            check_every=10**9)
+            for _ in range(20):
+                s.step(s.compute_dt())
+            return s.plastic_u_total
+
+        pl_het, pl_zayif = kos(y_het), kos(y_zayif)
+        assert pl_zayif > pl_het, (
+            f"zayif kohezyon daha cok plastik is uretmeli: "
+            f"heterojen={pl_het:.6e}, hepsi-zayif={pl_zayif:.6e} — "
+            "esitse cekirdek parcacik basina Y0'i KULLANMIYOR")
+
     def test_agac_suruklenmesi_yalnizca_K1_disinda_izlenir(self):
         """K=1'de yaklasiklik yok -> izleme de yok (her adim v kopyalamak bos
         maliyet). K>1'de denetim kaydi DOLU olmali."""
