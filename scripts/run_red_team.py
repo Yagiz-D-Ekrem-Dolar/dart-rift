@@ -298,18 +298,75 @@ def rt11_settling_claims_only_what_it_measured() -> Check:
 
 
 def rt12_data_manifest_gap_not_hidden() -> Check:
-    """Bos veri manifestosu 'gecti' diye mi sayiliyor?"""
-    c = Check("RT12", "Kanitlanamayan PDS manifestosu gecmis sayiliyor mu?")
-    gate = (REPO / "scripts" / "run_g3_gate.py").read_text(encoding="utf-8")
-    readme = (REPO / "data_manifest" / "README.md")
-    okur = readme.read_text(encoding="utf-8") if readme.exists() else ""
-    ok = ("unprovable" in gate and "KANITLANAMADI" in gate
-          and "KANITLANAMADI" in okur)
+    """Eksik/bozuk bir veri manifestosu 'gecti' diye sayilir mi?
+
+    DAVRANIS sinavi, dize eslesmesi DEGIL. Onceki surum `run_g3_gate.py`
+    icinde "unprovable" ve README'de "KANITLANAMADI" gecip gecmedigine
+    bakiyordu. C7 gercekten kapandiktan sonra README'de o kelime yalnizca
+    TARIHSEL bir notta kaldi ve madde TESADUFEN gecmeye basladi — rastlantiyla
+    gecen bir kirmizi takim maddesi hic olmamasindan kotudur.
+
+    Simdi kapinin denetleyicisi UC senaryoda dogrudan calistiriliyor:
+      (a) bos dizin           -> gecmemeli
+      (b) saglamasiz urun     -> gecmemeli
+      (c) bozuk SHA-256       -> gecmemeli
+    """
+    import importlib.util
+    import shutil
+    import tempfile
+
+    c = Check("RT12", "Eksik/bozuk PDS manifestosu gecmis sayiliyor mu?")
+    spec = importlib.util.spec_from_file_location(
+        "_g3", REPO / "scripts" / "run_g3_gate.py")
+    g3 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(g3)
+
+    gercek_man = REPO / "data_manifest"
+    yedek = tempfile.mkdtemp(prefix="rt12_")
+    kotu = []
+    try:
+        for f in gercek_man.glob("*.json"):
+            shutil.move(str(f), yedek)
+
+        with tempfile.TemporaryDirectory() as rd:
+            # (a) manifest yok
+            ok, _ = g3._data_manifest_status(Path(rd))
+            if ok:
+                kotu.append("bos dizin GECTI")
+
+            # (b) saglamasiz urun
+            (gercek_man / "_rt12.json").write_text(json.dumps(
+                {"bundle": "x", "products": [{"product_id": "p", "filename": "f",
+                                              "bytes": 1}]}), encoding="utf-8")
+            ok, _ = g3._data_manifest_status(Path(rd))
+            if ok:
+                kotu.append("saglamasiz urun GECTI")
+
+            # (c) dosya var ama SHA-256 tutmuyor
+            veri = Path(rd) / "veri"
+            veri.mkdir()
+            (veri / "f").write_bytes(b"gercek icerik")
+            (gercek_man / "_rt12.json").write_text(json.dumps(
+                {"bundle": "x", "data_root": str(veri),
+                 "products": [{"product_id": "p", "filename": "f",
+                               "sha256": "0" * 64, "md5_verified": True,
+                               "bytes": 13}]}), encoding="utf-8")
+            ok, ev = g3._data_manifest_status(Path(rd))
+            if ok:
+                kotu.append("bozuk SHA-256 GECTI")
+            elif "UYUSMAYAN" not in ev:
+                kotu.append("bozuk SHA-256 raporlanmadi")
+    finally:
+        (gercek_man / "_rt12.json").unlink(missing_ok=True)
+        for f in Path(yedek).glob("*.json"):
+            shutil.move(str(f), gercek_man)
+        shutil.rmtree(yedek, ignore_errors=True)
+
     c.record(
-        ok,
-        "G3 kosucusu C7'yi unprovable() ile isaretliyor ve README eksigi "
-        "acikca yaziyor" if ok else
-        "kapi ya da README eksigi gizliyor — KUSUR",
+        not kotu,
+        "uc senaryo da reddedildi (manifest yok / saglamasiz urun / bozuk "
+        "SHA-256); denetleyici davranissal olarak dogrulandi"
+        if not kotu else f"KUSUR: {kotu}",
     )
     return c
 
