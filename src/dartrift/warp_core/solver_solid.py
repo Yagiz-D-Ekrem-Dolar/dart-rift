@@ -147,6 +147,10 @@ class WarpSolid3D:
             self.D_cbrt = wp.zeros(n, dtype=F, device=dev)
             self.dDdt_cbrt = wp.zeros(n, dtype=F, device=dev)
             self.strain = wp.zeros(n, dtype=F, device=dev)
+            # TASINAN gerilme — DURUMDAN AYRI. `S` elastik durumdur ve
+            # yalnizca `kick_S_3d` ile evrilir; hasar onu asla yazmaz.
+            self.P_eff = wp.zeros(n, dtype=F, device=dev)
+            self.S_eff = wp.zeros(n, dtype=M3, device=dev)
             self._damage_diag = {
                 "particle_volume": v_p, "r_s": r_s,
                 "n_flaws_total": float(n_fl.sum()),
@@ -233,7 +237,12 @@ class WarpSolid3D:
             self._launch(damage_rate_k,
                          [self.P, self.S, self.eps_min, self.n_flaws, self.cs,
                           self.active, self._dp, self.dDdt_cbrt, self.strain])
-            self._launch(apply_damage_k, [self.P, self.S, self.D, self.active])
+            # AYRI dizilere yazar; `S` durumuna DOKUNMAZ (bkz. apply_damage_k
+            # basligindaki olcum: yerinde carpim S'yi adim basina (1-D)^2 ile
+            # kuculterek 5 adimda 1000 kat sapma uretiyordu).
+            self._launch(apply_damage_k,
+                         [self.P, self.S, self.D, self.active,
+                          self.P_eff, self.S_eff])
         if self._gravity is not None:
             # x_version: agac onbellegi icin. Konumlar yalnizca drift'te
             # degisir; step() icindeki ikinci _eval() ayni konumlari gorur ve
@@ -257,9 +266,13 @@ class WarpSolid3D:
             self.g.zero_()
             self.phi.zero_()
         ast = self.mat.artificial_stress
+        # Kuvvetler TASINAN gerilmeyi gorur. Hasar kapaliyken bunlar durumun
+        # kendisidir (ek dizi yok, ek maliyet yok).
+        p_use = self.P_eff if self._damage else self.P
+        s_use = self.S_eff if self._damage else self.S
         self._launch(
             SS.forces_solid_3d,
-            [gid, self.gridman.x32, self.x, self.v, self.m, self.rho, self.P, self.S,
+            [gid, self.gridman.x32, self.x, self.v, self.m, self.rho, p_use, s_use,
              self.cs, self.fbal, self.g, h, r32, F(self.num.alpha_av), F(self.num.beta_av),
              1 if ast.enabled else 0, F(ast.eps), F(ast.n_exp), F(self._ast_w_dp),
              self.a, self.dudt],

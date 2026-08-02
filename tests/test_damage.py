@@ -354,6 +354,69 @@ class TestDamageGPU:
         assert np.array_equal(a["x"], b["x"])
         assert np.array_equal(a["D"], np.zeros(len(a["D"])))
 
+    def test_hasar_durumu_bozmaz_tekrarli_eval(self):
+        """REGRESYON: `_eval()` tekrar cagrilinca S BIRIKIMLI kuculmemeli.
+
+        Bulunan kusur: `apply_damage_k` `S[i] = f*S[i]` diye YERINDE
+        carpiyordu. `S` bir DURUM degiskenidir (`kick_S_3d` ile integre edilir,
+        hicbir yerde yeniden hesaplanmaz) ve `_eval()` adim basina IKI kez
+        cagrilir — yani S her adimda (1-D)^2 ile kuculuyordu, birikimli.
+
+        Olculen (D = 0.5 sabit, hicbir fiziksel evrim yok):
+            S0 = 1.0e7
+            1./2./3./4. _eval() -> 5.0e6 / 2.5e6 / 1.25e6 / 6.25e5
+        `P` kurtuluyordu cunku EOS onu her eval yeniden hesapliyor.
+
+        Duzeltme: hasar AYRI dizilere (`P_eff`, `S_eff`) yazar; `S` durumuna
+        dokunmaz. Bu test tam o davranisi kilitler."""
+        self._needs_cuda()
+        from dartrift.cpu_reference.sph_ref import RefParams
+        from dartrift.warp_core.solver_solid import WarpSolid3D
+
+        x, m, h = self._kafes()
+        s = WarpSolid3D(x, np.zeros_like(x), m, np.zeros(len(x)), h,
+                        self._mat(True), RefParams(cfl=0.25), device="cuda:0",
+                        check_every=10**9, damage_seed=3)
+        D = np.full(len(x), 0.5)
+        S0 = np.zeros((len(x), 3, 3))
+        S0[:, 0, 1] = S0[:, 1, 0] = 1.0e7
+        s.S.assign(np.ascontiguousarray(S0))
+
+        for _ in range(4):
+            s.D.assign(D)                      # D sabit tut: buyume olmasin
+            s.D_cbrt.assign(np.cbrt(D))
+            s._eval()
+            # DURUM bozulmamali
+            assert s.S.numpy()[0, 0, 1] == pytest.approx(1.0e7, rel=1e-12), (
+                "hasar DURUMU degistirdi — birikimli kuculme kusuru geri geldi")
+            # TASINAN gerilme (1-D) ile zayiflamis olmali, HER SEFERINDE ayni
+            assert s.S_eff.numpy()[0, 0, 1] == pytest.approx(0.5e7, rel=1e-12)
+
+    def test_hasar_tasinan_gerilmeyi_zayiflatir(self):
+        """`S_eff = (1-D) S` ve basma basinci DEGISMEZ."""
+        self._needs_cuda()
+        from dartrift.cpu_reference.sph_ref import RefParams
+        from dartrift.warp_core.solver_solid import WarpSolid3D
+
+        x, m, h = self._kafes()
+        s = WarpSolid3D(x, np.zeros_like(x), m, np.zeros(len(x)), h,
+                        self._mat(True), RefParams(cfl=0.25), device="cuda:0",
+                        check_every=10**9, damage_seed=3)
+        S0 = np.zeros((len(x), 3, 3))
+        S0[:, 0, 1] = S0[:, 1, 0] = 1.0e7
+        s.S.assign(np.ascontiguousarray(S0))
+        for d in (0.0, 0.25, 1.0):
+            s.D.assign(np.full(len(x), d))
+            s.D_cbrt.assign(np.full(len(x), np.cbrt(d)))
+            s._eval()
+            assert s.S_eff.numpy()[0, 0, 1] == pytest.approx((1.0 - d) * 1.0e7,
+                                                             rel=1e-12), d
+            # basma (P>0) zayiflamamali
+            p, pe = s.P.numpy(), s.P_eff.numpy()
+            basma = p > 0.0
+            if basma.any():
+                assert np.allclose(pe[basma], p[basma]), "basma zayiflatildi"
+
     def test_hasar_sonucu_degistiriyor(self):
         """Hasar acikken sonuc kapaliyken ile AYNI OLMAMALI.
 

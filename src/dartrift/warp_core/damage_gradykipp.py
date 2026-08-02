@@ -158,23 +158,44 @@ def apply_damage_k(
     S: wp.array(dtype=M3),
     D: wp.array(dtype=F),
     active: wp.array(dtype=wp.uint8),
+    P_eff: wp.array(dtype=F),
+    S_eff: wp.array(dtype=M3),
 ):
-    """Hasari uygula: YALNIZCA cekme zayiflar, basma degismez.
+    """TASINAN gerilmeyi hesapla: yalnizca cekme zayiflar, basma degismez.
 
-    P < 0 -> (1-D) P ;  P >= 0 aynen kalir ;  S -> (1-D) S
+        P < 0 -> (1-D) P ;  P >= 0 aynen kalir ;  S -> (1-D) S
 
     Basmayi da zayiflatmak kraterlesmeyi yanlis yapardi: sok onunde malzeme
     basma altindadir ve orada dayanim kaybi fiziksel degildir.
+
+    DURUMU DEGISTIRMEZ — AYRI DIZILERE YAZAR. Bu kritik: `S` bir DURUM
+    degiskenidir (`kick_S_3d` ile integre edilir, hicbir yerde yeniden
+    hesaplanmaz). Onceki surum `S[i] = f * S[i]` diye YERINDE carpiyordu ve
+    `_eval()` adim basina IKI kez cagrildigi icin S her adimda (1-D)^2 ile
+    kuculuyordu — birikimli olarak.
+
+    Olculdu (D = 0.5 sabit, hicbir fiziksel evrim yokken):
+        baslangic S = 1.0e7
+        1./2./3./4. _eval() -> 5.0e6 / 2.5e6 / 1.25e6 / 6.25e5
+        5 adim sonra          -> 4.88e3   (olmasi gereken 5.0e6, 1000 kat sapma)
+    Yani deviatorik gerilme ussel olarak yok ediliyordu. `P` kurtuluyordu
+    cunku EOS onu her eval yeniden hesapliyor; `S` hesaplamiyor.
     """
     i = wp.tid()
     if active[i] == wp.uint8(0):
+        P_eff[i] = P[i]
+        S_eff[i] = S[i]
         return
     d = D[i]
     if d <= F(0.0):
+        P_eff[i] = P[i]
+        S_eff[i] = S[i]
         return
     if d > F(1.0):
         d = F(1.0)
     f = F(1.0) - d
     if P[i] < F(0.0):
-        P[i] = f * P[i]
-    S[i] = f * S[i]
+        P_eff[i] = f * P[i]
+    else:
+        P_eff[i] = P[i]
+    S_eff[i] = f * S[i]
