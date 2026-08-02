@@ -62,6 +62,21 @@ class SolidState:
     g: np.ndarray = field(default=None)  # yercekimi ivmesi (N,dim)
     phi: np.ndarray = field(default=None)  # yercekimi potansiyeli (N,)
     plastic_u_total: float = 0.0  # kumulatif plastik is [J] (enerji panosu)
+    # --- Grady-Kipp hasar (ADR-0027). mat.damage.enabled ise DOLU olmali ----
+    # `eps_min`/`n_flaws` kurulumda BIR KEZ tohumlanir (damage_ref.seed_flaws);
+    # rasgelelik adim icine tasinmaz (ADR-0004).
+    eps_min: np.ndarray = field(default=None)  # type: ignore[assignment]
+    n_flaws: np.ndarray = field(default=None)  # type: ignore[assignment]
+    r_s: float = 0.0        # parcacigin etkin yaricapi [m]
+    bulk_K: float = 0.0     # hacim modulu [Pa]; E, shear_G ile birlikte turetilir
+    D: np.ndarray = field(default=None)  # type: ignore[assignment]
+    D_cbrt: np.ndarray = field(default=None)  # type: ignore[assignment]
+    # evaluate_solid doldurur (TURETILMIS — durum DEGIL):
+    dDdt_cbrt: np.ndarray = field(default=None)  # type: ignore[assignment]
+    strain: np.ndarray = field(default=None)  # type: ignore[assignment]
+    # TASINAN gerilme. `P`/`S` HAM kalir; kuvvetler bunlari gorur.
+    P_eff: np.ndarray = field(default=None)  # type: ignore[assignment]
+    S_eff: np.ndarray = field(default=None)  # type: ignore[assignment]
 
     def __post_init__(self) -> None:
         self.x = np.atleast_2d(np.asarray(self.x, dtype=np.float64))
@@ -253,8 +268,29 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
         state.g = np.zeros_like(state.x)
         state.phi = np.zeros(state.n)
 
+    # --- hasar: hiz (HAM gerilmeden) + tasinan gerilme -------------------
+    # SIRA GPU ILE AYNI (solver_solid._eval): once dSdt (ham S'den), sonra
+    # hasar hizi (ham P,S'den), sonra tasinan gerilme. Kuvvetler TASINAN
+    # gerilmeyi gorur; `state.P`/`state.S` DEGISMEZ.
+    if mat.damage.enabled:
+        from .damage_ref import apply_damage, damage_rate, local_scalar_strain
+
+        if state.D is None or state.eps_min is None or state.r_s <= 0.0:
+            raise ValueError(
+                "hasar acik ama durum tohumlanmamis: D / D_cbrt / eps_min / "
+                "n_flaws / r_s / bulk_K doldurulmali (bkz. seed_solid_damage)")
+        state.strain = local_scalar_strain(
+            state.P, state.S, state.bulk_K, mat.strength.shear_G)
+        state.dDdt_cbrt = damage_rate(
+            state.strain, state.eps_min, state.n_flaws, state.cs,
+            state.r_s, mat.damage,
+        )
+        state.P_eff, state.S_eff = apply_damage(state.P, state.S, state.D)
+    else:
+        state.P_eff, state.S_eff = state.P, state.S
+
     # tam-tensor cift kuvveti: T = (-P I + S)/rho^2
-    T = (-state.P[:, None, None] * _I3 + state.S) / (state.rho**2)[:, None, None]
+    T = (-state.P_eff[:, None, None] * _I3 + state.S_eff) / (state.rho**2)[:, None, None]
 
     # yapay viskozite (FAZ 1 ile ayni)
     vij3 = -vji
@@ -273,7 +309,10 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
     # R_i = -eps P_i/rho_i^2 (yalnizca P_i<0), itme terimi f^n ile olceklenir.
     ast = mat.artificial_stress
     if ast.enabled:
-        r_i = np.where(state.P < 0.0, -ast.eps * state.P / state.rho**2, 0.0)
+        # TASINAN basinctan: GPU'da da yapay gerilme forces_solid_3d icinde
+        # kendisine verilen basinctan hesaplanir. Ham P kullanmak, hasarli
+        # malzemede var olmayan bir cekmeyi bastirmaya calismak olurdu.
+        r_i = np.where(state.P_eff < 0.0, -ast.eps * state.P_eff / state.rho**2, 0.0)
         dp = ast.dp_over_h * state.h
         w_dp = float(kernel_w(np.array([dp / state.h]), state.h, state.dim)[0])
         f_ij = _w() / max(w_dp, 1.0e-300)   # summation modunda yeniden kullanilir
@@ -331,6 +370,56 @@ def _apply_strength_and_porosity(state: SolidState, mat: MaterialParams) -> None
         state.alpha[state.active] = a_new[state.active]
 
 
+def seed_solid_damage(
+    state: SolidState, mat: MaterialParams, seed: int = 0
+) -> dict:
+    """Hasar durumunu tohumla — GPU `WarpSolid3D.__init__` ile AYNI buyuklukler.
+
+    Ayni tohum + ayni parcacik sayisi -> ayni `eps_min`/`n_flaws`. Bu, capraz
+    kontrolun on sartidir: iki uygulama farkli kusur alani gorurse karsilastirma
+    hicbir sey sinamaz.
+    """
+    from .damage_ref import seed_flaws
+
+    if not mat.damage.enabled:
+        return {}
+    if not mat.strength.enabled:
+        raise ValueError(
+            "hasar modeli dayanim ister: damage.enabled=True iken "
+            "strength.enabled=False anlamsizdir (deviatorik gerilme yok)")
+    rho_mat = mat.rho0_linear if mat.eos == "linear" else mat.tillotson.rho0
+    v_p = float(np.mean(np.asarray(state.m, np.float64))) / rho_mat
+    state.r_s = float((3.0 * v_p / (4.0 * np.pi)) ** (1.0 / 3.0))
+    state.bulk_K = (mat.c0**2 * mat.rho0_linear if mat.eos == "linear"
+                    else mat.tillotson.A)
+    state.eps_min, state.n_flaws = seed_flaws(state.n, v_p, mat.damage, seed)
+    state.D = np.zeros(state.n)
+    state.D_cbrt = np.zeros(state.n)
+    state.dDdt_cbrt = np.zeros(state.n)
+    state.strain = np.zeros(state.n)
+    return {"particle_volume": v_p, "r_s": state.r_s, "bulk_K": state.bulk_K}
+
+
+def _accumulate_damage(state: SolidState, mat: MaterialParams, dt: float) -> None:
+    """D^(1/3)'u TAM adimda ilerlet, kis, monotonlugu zorla (GPU ile ayni).
+
+    TAM adim, yariya bolunmus DEGIL. Gerekce ADR-0027'de: D monoton ve [0,1]'e
+    kisiktir; iki yarim adim, kisitlama araya girdiginde tekrarlanabilir
+    olmayan bir sira dogururdu. Trapez yolunun burada bir anlami yok.
+
+    Hasar GERI DONMEZ: kirilan kaya kendini onarmaz. Sayisal gurultu D'yi
+    dusurmeye kalkarsa engellenir.
+    """
+    if not mat.damage.enabled:
+        return
+    act = state.active
+    c = state.D_cbrt[act] + dt * state.dDdt_cbrt[act]
+    c = np.clip(c, 0.0, 1.0)
+    c = np.maximum(c, state.D_cbrt[act])     # geri donusum yok
+    state.D_cbrt[act] = c
+    state.D[act] = c**3
+
+
 def step_kdk_solid(state: SolidState, mat: MaterialParams, num: RefParams, dt: float) -> None:
     """KDK + tam-trapez u/S guncellemesi (sph_ref.step_kdk ile ayni iskelet)."""
     act = state.active
@@ -349,6 +438,7 @@ def step_kdk_solid(state: SolidState, mat: MaterialParams, num: RefParams, dt: f
     if cont:
         state.rho[act] += 0.5 * dt * state.drhodt[act]
     _apply_strength_and_porosity(state, mat)
+    _accumulate_damage(state, mat, dt)
 
 
 def compute_timestep_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> float:

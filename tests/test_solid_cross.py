@@ -7,6 +7,7 @@ import pytest
 
 from dartrift.cpu_reference import sph_ref as R
 from dartrift.cpu_reference.materials import (
+    DamageParams,
     GravityParams,
     MaterialParams,
     PorosityParams,
@@ -157,3 +158,93 @@ class TestContinuityDensityCross(TestSolidCpuGpuCross):
         # rho gercekten EVRILDI mi? Sabit kalsaydi bu test bos olurdu.
         rho0 = self._setup()[4].tillotson.rho0
         assert np.max(np.abs(st.rho - rho0)) / rho0 > 1.0e-6, "rho hic degismemis"
+
+
+@pytest.mark.skipif(not warp_available(), reason="warp yok")
+class TestDamageCross(TestSolidCpuGpuCross):
+    """ADR-0027: hasarin ENTEGRASYON SIRASI da capraz kontrol edilir.
+
+    NEDEN GEREKLI. Hasar modulunun testleri FORMULLERI dogruluyordu (asal
+    gerilme, kusur sayimi, hiz, uygulama) ve GPU testleri "hasar sonucu
+    degistiriyor mu" diye soruyordu. Ikisi de gecerken, DONGU duzeyinde
+    ciddi bir kusur aylarca yasayabilirdi — nitekim yasadi: `apply_damage_k`
+    gerilmeyi YERINDE carpiyordu ve `_eval()` adim basina iki kez
+    cagrildigindan S her adimda (1-D)^2 ile kuculuyordu (olculen sapma
+    5 adimda 1000 kat). Hicbir formul testi bunu goremezdi cunku hicbir
+    formul yanlis degildi.
+
+    Bu sinif eksigi kapatir: bagimsiz bir CPU uygulamasi ayni KDK sirasini
+    yurutur (hiz ham gerilmeden, tasinan gerilme ayri, D tam adimda ve
+    monoton) ve N adim sonra iki durum karsilastirilir. Sira farki burada
+    ancak sayisal gurultu kadar sapma verebilir.
+    """
+
+    N_STEPS = 10
+    DT = 5.0e-7
+    SEED = 3
+    # Genlesme hizi olcerek secildi. Taban kurulum (v = -30x, ICE dogru) basma
+    # uretir ve D TAM SIFIR kalir; isareti cevirmek de yetmiyor. Olculen:
+    #   carpan   gerinim_maks   D_maks    D>0
+    #    x1      8,78e-05       0,0000      0/150   (eps_min medyani 8,80e-04)
+    #    x6      5,26e-04       0,0000      0/150
+    #    x10     8,74e-04       0,0001      6/150
+    #    x20 (10 adim)  3,63e-03  0,0922  147/150   <-- secilen
+    # Yani bu carpan keyfi degil: kusurlarin cogunlugunun ACILDIGI ve hasarin
+    # olculebilir buyuklukte oldugu en dusuk mertebe.
+    V_SCALE = 20.0
+
+    def _setup(self):
+        x, v, m, h, mat, num, pp = _full_physics_setup()
+        mat = dataclasses.replace(
+            mat,
+            density_method="continuity",
+            damage=DamageParams(enabled=True, k_weibull=1.0e29, m_weibull=9.0),
+        )
+        return x, -self.V_SCALE * v, m, h, mat, num, pp
+
+    def _run_cpu(self):
+        from dartrift.cpu_reference.solid_ref import seed_solid_damage
+
+        x, v, m, h, mat, num, pp = self._setup()
+        st = SolidState(x=x.copy(), v=v.copy(), m=m, u=np.zeros(len(m)), h=h,
+                        active=np.ones(len(m), bool),
+                        alpha=np.full(len(m), pp.alpha0),
+                        rho=np.full(len(m), mat.tillotson.rho0 / pp.alpha0))
+        seed_solid_damage(st, mat, seed=self.SEED)
+        evaluate_solid(st, mat, num)
+        for _ in range(self.N_STEPS):
+            step_kdk_solid(st, mat, num, self.DT)
+        return st
+
+    def _run_warp(self, device):
+        from dartrift.warp_core.solver_solid import WarpSolid3D
+
+        x, v, m, h, mat, num, pp = self._setup()
+        sol = WarpSolid3D(x.copy(), v.copy(), m, np.zeros(len(m)), h, mat, num,
+                          alpha0=np.full(len(m), pp.alpha0), device=device,
+                          damage_seed=self.SEED)
+        for _ in range(self.N_STEPS):
+            sol.step(self.DT)
+        out = sol.state_numpy()
+        out["D"] = sol.D.numpy()
+        return out
+
+    def _compare(self, st, s):
+        # Once TESTIN BOS OLMADIGINI kanitla: hasar gercekten buyudu mu?
+        # Esikler olculen degerlerden (D_maks 0,092; 147/150 parcacik) rahat
+        # bir pay birakilarak secildi. Bunlar olmadan, hasar hic buyumese bile
+        # "CPU = GPU" gecerdi — sifiri sifirla karsilastirmak.
+        assert st.D.max() > 1.0e-2, (
+            f"CPU referansinda D yeterince buyumemis (maks {st.D.max():.2e}) — "
+            "senaryo cekme uretmiyor, bu karsilastirma hicbir sey sinamaz")
+        assert np.count_nonzero(st.D > 0.0) > st.n // 2, (
+            "hasar yalnizca birkac parcacikta — kusur alani ornekleme yapmiyor")
+        TestSolidCpuGpuCross._compare(self, st, s)
+        scale = np.max(np.abs(st.rho)) + 1e-300
+        assert np.max(np.abs(st.rho - s["rho"])) / scale < 1.0e-8, "rho sapmasi"
+        # D dogrudan karsilastirilir: [0,1] araliginda oldugu icin MUTLAK esik
+        # dogru olcu; goreli esik D->0 olan parcaciklarda anlamsiz buyurdu.
+        assert np.max(np.abs(st.D - s["D"])) < 1.0e-9, (
+            f"D sapmasi {np.max(np.abs(st.D - s['D'])):.3e}")
+        # Hasar monoton ve kisik
+        assert np.all(s["D"] >= 0.0) and np.all(s["D"] <= 1.0)
