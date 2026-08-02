@@ -29,7 +29,12 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-__all__ = ["BetaResult", "escape_speed", "momentum_transfer", "beta_sensitivity"]
+__all__ = ["BetaResult", "escape_speed", "estimate_target_radius",
+           "momentum_transfer", "beta_sensitivity"]
+
+# Duzgun dolu bir kurede yaricapin medyan uzakliga orani. r < R kabugundaki
+# kutle ~ (r/R)^3 oldugundan medyan uzaklik R/2^(1/3)'tur.
+_MEDIAN_TO_RADIUS = 2.0 ** (1.0 / 3.0)
 
 
 @dataclass(frozen=True)
@@ -54,6 +59,39 @@ def escape_speed(mass: float, radius: float, G: float = 6.6743e-11) -> float:
     if mass <= 0.0 or radius <= 0.0:
         raise ValueError("kutle ve yaricap pozitif olmali")
     return float(np.sqrt(2.0 * G * mass / radius))
+
+
+def estimate_target_radius(dist: np.ndarray) -> float:
+    """Merkeze uzakliklardan hedef yaricapini kestir.
+
+    ONCEKI HALI KUSURLUYDU: dogrudan `median(dist)` yaricap sayiliyordu.
+    Duzgun dolu bir kurede medyan uzaklik R DEGIL, R/2^(1/3) = 0,794 R'dir —
+    yani yaricap sistematik olarak **%21 kucuk** cikiyordu. Olculdu (300k
+    parcacik, R = 100 m duzgun dolu kure):
+
+        median(dist) = 79,294 m   (kuramsal 79,370)
+        v_kacis      = %12,3 BUYUK   (v ~ 1/sqrt(R))
+        r_kontrol    = 2*medyan = 1,59 R   (2,00 R saniliyordu)
+
+    Ikisi de ejekta olcutunu SIKILASTIRIR: daha yuksek hiz esigi, daha dar
+    kontrol yuzeyi. Ikisi de beta'yi kaydirir ve hicbir uyari vermezdi.
+    Kusur gorunmez kalmisti cunku gercek cagiranlarin HEPSI `target_radius`
+    veriyor; varsayilan yol hic kosulmuyordu.
+
+    MEDYAN NEDEN: carpma sonrasi anlik goruntude uzaga savrulmus ejekta
+    vardir. Medyan bu aykiri degerlere duyarsizdir; RMS yaricap (`sqrt(5/3
+    <r^2>)`, duzgun kure icin yine tam R verir) degildir — birkac uzak
+    parcacik onu buyuk gosterir. Bu yuzden medyan + kapali form duzeltme.
+
+    VARSAYIM ACIKTIR: duzgun DOLU cisim. Ici bos bir kabuk icin yanlistir
+    (kabukta medyan ~ R olur, bu tahmin R'yi %26 buyuk verir). Bilinen bir
+    yaricap varsa `target_radius` ile verin — o zaman bu fonksiyon hic
+    kullanilmaz.
+    """
+    d = np.asarray(dist, dtype=np.float64)
+    if d.size == 0:
+        raise ValueError("bos uzaklik dizisi")
+    return float(np.median(d)) * _MEDIAN_TO_RADIUS
 
 
 def momentum_transfer(
@@ -103,7 +141,8 @@ def momentum_transfer(
     r = x - c[None, :]
     dist = np.linalg.norm(r, axis=1)
     m_target = m_tot if target_mass is None else float(target_mass)
-    r_target = float(np.median(dist)) if target_radius is None else float(target_radius)
+    r_kestirim = target_radius is None
+    r_target = estimate_target_radius(dist) if r_kestirim else float(target_radius)
     r_ctrl = 2.0 * r_target if control_radius is None else float(control_radius)
     v_esc = escape_speed(m_target, r_target, G)
     v_thr = v_esc if speed_threshold is None else float(speed_threshold)
@@ -151,6 +190,9 @@ def momentum_transfer(
             "total_mass": m_tot,
             "max_distance": float(dist.max()),
             "max_radial_speed": float(v_rad.max()),
+            # Yaricap VERILDI mi yoksa KESTIRILDI mi — beta'yi okuyan bilmeli.
+            # Kestirim duzgun dolu cisim varsayar (estimate_target_radius).
+            "target_radius_estimated": bool(r_kestirim),
             "ejecta_direction_ok": bool(p_ej_ax < 0.0),
             "p_ejecta_transverse": float(
                 np.linalg.norm(p_ej - p_ej_ax * ehat)),
@@ -203,6 +245,15 @@ def beta_sensitivity(
                 control_radius=float(rc), speed_threshold=float(f * v_esc), **kw)
             grid[i, j] = b.beta
             frac[i, j] = b.ejecta_fraction
+    # EKSEN BASINA yayilim — toplam yayilim tek basina YANILTIR. Bir eksen
+    # hic is gormuyorsa (o boyutta hicbir parcacik siniflandirmasi degismiyorsa)
+    # toplam yayilim yine de pozitif cikar ve "iki boyutlu duyarlilik olculdu"
+    # sanilir. Olculdu: scene_checks sentetik sahnesinde ejekta hizlari
+    # 0,2 m/s'den baslar, kacis hizi 0,0183 m/s'dir; 2*v_kacis = 0,037 m/s
+    # bile en yavas ejektanin besde biri. Yani HIZ EKSENI TAMAMEN OLUYDU —
+    # toplam yayilimin hepsi yaricap ekseninden geliyordu.
+    yay_r = float(np.max(grid.max(axis=0) - grid.min(axis=0)))  # sabit f, r degisiyor
+    yay_f = float(np.max(grid.max(axis=1) - grid.min(axis=1)))  # sabit r, f degisiyor
     return {
         "control_radii": rr,
         "speed_factors": ff,
@@ -215,5 +266,9 @@ def beta_sensitivity(
         "beta_spread": float(grid.max() - grid.min()),
         "beta_relative_spread": float(
             (grid.max() - grid.min()) / max(abs(np.median(grid)), 1e-300)),
+        "beta_spread_radius_axis": yay_r,
+        "beta_spread_speed_axis": yay_f,
+        "radius_axis_active": bool(yay_r > 0.0),
+        "speed_axis_active": bool(yay_f > 0.0),
         "base": base,
     }

@@ -262,16 +262,37 @@ def rt9_global_deformation_not_crater() -> Check:
 
 
 def rt10_beta_definition_sensitivity_reported() -> Check:
-    """beta tek sayi olarak mi sunuluyor, yoksa tanim duyarliligiyla mi?"""
-    c = Check("RT10", "beta, kontrol yuzeyi secimine duyarliligi olmadan mi veriliyor?")
-    from dartrift.validation.scene_checks import run_observable_selftest
+    """beta tek sayi olarak mi sunuluyor, yoksa tanim duyarliligiyla mi?
+
+    ONCEKI HALI YETERSIZDI: yalnizca TOPLAM yayilimin pozitif olmasina
+    bakiyordu. Eksen basina olculunce hiz esigi ekseninin yayilimi TAM SIFIR
+    cikti — tarama iki boyutlu gorunuyor, aslinda tek boyutta calisiyordu.
+    O senaryoda en yavas ejekta 0,2 m/s, 2x kacis hizi 0,161 m/s; esik
+    hicbir seyi eleyemiyordu. Kriter geciyordu ama hiz esigi kod yolu HIC
+    kosulmamisti. Simdi HER IKI eksenin de bir yerde gercekten is gordugu
+    ayri ayri kanitlanir.
+    """
+    c = Check("RT10", "beta duyarliligi iki eksende de GERCEKTEN olculuyor mu?")
+    from dartrift.validation.scene_checks import (
+        run_observable_selftest,
+        run_speed_threshold_selftest,
+    )
 
     r = run_observable_selftest()
+    s = run_speed_threshold_selftest()
     yayilim = r["beta_relative_spread"]
     c.record(
-        bool(r["sensitivity_reported"]) and yayilim > 0.0,
+        bool(r["sensitivity_reported"]) and yayilim > 0.0
+        and bool(r["radius_axis_active"])          # yaricap ekseni: 1. senaryo
+        and bool(s["speed_axis_active"])           # hiz ekseni: 2. senaryo
+        and bool(s["beta_monotone_in_threshold"]),
         f"tarama yayilimi %{100 * yayilim:.2f} "
-        f"[{r['beta_min']:.3f}, {r['beta_max']:.3f}] — tek sayi degil",
+        f"[{r['beta_min']:.3f}, {r['beta_max']:.3f}]; yaricap ekseni "
+        f"{r['beta_spread_radius_axis']:.4f}, hiz ekseni (1. senaryoda) "
+        f"{r['beta_spread_speed_axis']:.4f} — hiz esigi orada OLU oldugu icin "
+        f"ayri senaryoyla kanitlandi: yayilim {s['beta_spread_speed_axis']:.4f}, "
+        f"beta {[round(b, 3) for b in s['beta_by_speed_factor']]} esikle monoton "
+        f"azaliyor ({s['beta_monotone_in_threshold']})",
     )
     return c
 

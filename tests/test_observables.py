@@ -134,6 +134,41 @@ def _koni_durumu(n=400, seed=3):
     return (np.vstack([x_ej, x_t]), np.vstack([v_ej, v_t]), np.concatenate([m_ej, m_t]))
 
 
+def test_hedef_yaricapi_kestirimi_yanli_degil():
+    """Varsayilan yaricap kestirimi duzgun dolu kurede DOGRU R vermeli.
+
+    Bulunan kusur: `median(dist)` dogrudan yaricap sayiliyordu. Duzgun dolu
+    kurede medyan uzaklik R/2^(1/3) = 0,794 R'dir; yani yaricap %21 KUCUK,
+    kacis hizi %12 BUYUK, kontrol yuzeyi 2,00 R yerine 1,59 R cikiyordu.
+    Ucu de ejekta olcutunu sikilastirir ve beta'yi sessizce kaydirir.
+    """
+    from dartrift.observables.momentum_transfer import estimate_target_radius
+
+    rng = np.random.default_rng(0)
+    n, R = 200000, 100.0
+    d = rng.normal(size=(n, 3)); d /= np.linalg.norm(d, axis=1)[:, None]
+    x = d * (R * rng.random(n) ** (1.0 / 3.0))[:, None]
+    dist = np.linalg.norm(x, axis=1)
+
+    kestirim = estimate_target_radius(dist)
+    assert abs(kestirim - R) / R < 0.01, f"kestirim {kestirim:.3f}, gercek {R}"
+    # ESKI kural ne kadar yaniltiyordu: bu, duzeltmenin gerekcesinin olcusu
+    eski = float(np.median(dist))
+    assert abs(eski - R) / R > 0.15, "eski kuralin yanliligi kayboldu mu?"
+
+
+def test_kestirilen_yaricap_taniyla_bildirilir():
+    """Yaricap KESTIRILDIYSE beta'yi okuyan bunu gormeli."""
+    x, v, m = _koni_durumu(100)
+    p = np.array([0.0, 0.0, -1.0e6])
+    verilen = momentum_transfer(x, v, m, impactor_momentum=p, center=np.zeros(3),
+                                target_mass=2.0e8, target_radius=80.0)
+    kestirilen = momentum_transfer(x, v, m, impactor_momentum=p, center=np.zeros(3),
+                                   target_mass=2.0e8)
+    assert verilen.diagnostics["target_radius_estimated"] is False
+    assert kestirilen.diagnostics["target_radius_estimated"] is True
+
+
 def test_duyarlilik_izgarasi_ve_yayilim():
     x, v, m = _koni_durumu()
     s = beta_sensitivity(x, v, m, impactor_momentum=np.array([0.0, 0.0, -3.5601e6]),
@@ -145,6 +180,66 @@ def test_duyarlilik_izgarasi_ve_yayilim():
     assert s["beta_min"] <= s["beta_median"] <= s["beta_max"]
     # tanim secimi beta'yi gercekten oynatmali; oynatmiyorsa tarama anlamsizdir
     assert s["beta_spread"] > 0.0, "duyarlilik taramasi hicbir sey degistirmedi"
+
+
+def test_duyarlilik_eksen_basina_ayrisiyor():
+    """Toplam yayilim YETMEZ: hangi eksenin is gordugu ayri ayri bilinmeli.
+
+    Bulunan kusur: `run_observable_selftest` iki boyutlu tarama raporluyordu,
+    ama olculen hiz ekseni yayilimi TAM SIFIRDI (butun yayilim yaricap
+    ekseninden). Kriter yine de geciyordu — hiz esigi kod yolu hic kosulmadan.
+    Burada iki eksen de TEK TEK dogrulanir.
+    """
+    x, v, m = _koni_durumu()
+    s = beta_sensitivity(x, v, m, impactor_momentum=np.array([0.0, 0.0, -3.5601e6]),
+                         control_radii=[110.0, 150.0, 250.0],
+                         speed_factors=[0.5, 1.0, 2.0],
+                         center=np.zeros(3), target_mass=2.0e8, target_radius=80.0)
+    assert s["beta_spread_radius_axis"] >= 0.0
+    assert s["beta_spread_speed_axis"] >= 0.0
+    # eksen yayilimlari toplam yayilimi asamaz
+    assert max(s["beta_spread_radius_axis"], s["beta_spread_speed_axis"]) \
+        <= s["beta_spread"] + 1e-12
+    assert s["radius_axis_active"] == (s["beta_spread_radius_axis"] > 0.0)
+    assert s["speed_axis_active"] == (s["beta_spread_speed_axis"] > 0.0)
+
+
+def test_olu_eksen_toplam_yayilimda_gizlenmez():
+    """Hiz esigi hicbir seyi elemiyorsa bu ACIKCA gorunmeli.
+
+    Butun ejekta kacis hizinin cok ustundeyse esik taramasi anlamsizdir;
+    toplam yayilim yine pozitif cikar (yaricap ekseninden). Eksen bazli
+    rapor bunu yakalar.
+    """
+    rng = np.random.default_rng(5)
+    n = 400
+    d = rng.normal(size=(n, 3)); d /= np.linalg.norm(d, axis=1)[:, None]
+    # hizlar 50-100 m/s: kacis hizi (~0.4 m/s) yaninda devasa -> esik olu
+    x = (rng.uniform(150.0, 600.0, n))[:, None] * d
+    v = (rng.uniform(50.0, 100.0, n))[:, None] * d
+    m = np.full(n, 1.0e3)
+    x = np.vstack([x, rng.normal(scale=20.0, size=(200, 3))])
+    v = np.vstack([v, np.zeros((200, 3))])
+    m = np.concatenate([m, np.full(200, 1.0e6)])
+    s = beta_sensitivity(x, v, m, impactor_momentum=np.array([0.0, 0.0, -3.5601e6]),
+                         control_radii=[160.0, 300.0], speed_factors=[0.5, 1.0, 2.0],
+                         center=np.zeros(3), target_mass=2.0e8, target_radius=80.0)
+    assert s["beta_spread_speed_axis"] == 0.0, "esik gercekten eliyorsa senaryo yanlis"
+    assert s["speed_axis_active"] is False
+    assert s["beta_spread"] > 0.0          # toplam yayilim yine pozitif...
+    assert s["radius_axis_active"] is True  # ...ama hepsi yaricaptan
+
+
+def test_hiz_esigi_beta_yi_monoton_dusurur():
+    """Esik yukseldikce sayilan ejekta ALT KUMEYE dusmeli -> beta azalmali."""
+    from dartrift.validation.scene_checks import run_speed_threshold_selftest
+
+    r = run_speed_threshold_selftest()
+    assert r["speed_axis_active"] is True
+    assert r["beta_monotone_in_threshold"] is True
+    assert r["mass_monotone_in_threshold"] is True
+    b = r["beta_by_speed_factor"]
+    assert b[0] > b[-1], f"esik beta'yi oynatmadi: {b}"
 
 
 def test_duyarlilik_en_az_iki_yaricap_ister():

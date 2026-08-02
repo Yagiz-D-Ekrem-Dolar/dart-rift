@@ -28,8 +28,88 @@ __all__ = [
     "run_rubble_quality",
     "run_impactor_convergence",
     "run_observable_selftest",
+    "run_speed_threshold_selftest",
     "run_scene_determinism",
 ]
+
+
+def run_speed_threshold_selftest(seed: int = 29) -> dict:
+    """HIZ ESIGI ekseni gercekten is goruyor mu (P3-VR-03'un ikinci yarisi).
+
+    NEDEN AYRI BIR SENARYO. `run_observable_selftest` iki boyutlu bir tarama
+    raporluyor ve "duyarlilik olculdu" diyordu. Eksen basina olculunce:
+
+        beta_spread_radius_axis = 0,2189
+        beta_spread_speed_axis  = 0,0        <-- TAM OLARAK SIFIR
+
+    Sebep fiziksel, sahne bozuk degil: o senaryoda kacis hizi 0,0803 m/s,
+    en yavas ejekta 0,2 m/s. Tarama 0,5x-2x arasi, yani en fazla 0,161 m/s —
+    hicbir parcaciği eleyemez. Yayilimin TAMAMI yaricap ekseninden geliyordu.
+    Yani hiz esigi kod yolu HIC KOSULMAMISTI, ama toplam yayilim pozitif
+    oldugu icin kapi kriteri geciyordu. (RT12 ile ayni sinif: dogru sonuc,
+    yanlis sebep.)
+
+    Bu senaryo, hizlari kacis hizinin ETRAFINA yayar; boylece esik gercekten
+    parcacik eler. Beklenen davranis: esik yukseldikce sayilan ejekta azalir,
+    |p_ejekta| duser, beta 1'e YAKLASIR — yani beta esikle MONOTON AZALIR.
+    Monotonluk sartsiz degil, olculebilir bir tahmindir; ihlali siniflandirma
+    mantiginda hata demektir.
+    """
+    rng = np.random.default_rng(seed)
+    m_target, r_target = 3.86e9, 80.0
+    v_esc = escape_speed(m_target, r_target)
+
+    n_t = 4000
+    p = rng.normal(size=(n_t, 3))
+    p /= np.linalg.norm(p, axis=1)[:, None]
+    x_t = p * (r_target * rng.uniform(0.0, 1.0, n_t) ** (1.0 / 3.0))[:, None]
+    m_t = np.full(n_t, m_target / n_t)
+
+    # Ejekta hizlari 0,25x - 4x v_kacis araliginda LOG-DUZGUN: tarama noktasi
+    # 0,5/1/2 arasi her dilimde parcacik var, yani her esik farkli sayida
+    # parcacik eler. Kritik nokta budur.
+    n_e = 3000
+    th = np.radians(rng.uniform(15.0, 45.0, n_e))
+    ph = rng.uniform(0.0, 2 * np.pi, n_e)
+    d = np.stack([np.sin(th) * np.cos(ph), np.sin(th) * np.sin(ph), np.cos(th)], -1)
+    sp = v_esc * 4.0 ** rng.uniform(-1.0, 1.0, n_e)
+    x_e = (rng.uniform(200.0, 600.0, n_e))[:, None] * d
+    v_e = sp[:, None] * d
+    m_e = np.full(n_e, 1.0e4)
+
+    p_imp = np.array([0.0, 0.0, -DART_MOMENTUM])
+    p_ej_all = np.sum(m_e[:, None] * v_e, axis=0)
+    v_t = np.tile((p_imp - p_ej_all) / float(np.sum(m_t)), (n_t, 1))
+
+    x = np.vstack([x_e, x_t])
+    v = np.vstack([v_e, v_t])
+    m = np.concatenate([m_e, m_t])
+
+    faktorler = [0.5, 1.0, 2.0]
+    sens = beta_sensitivity(
+        x, v, m, impactor_momentum=p_imp,
+        control_radii=[120.0, 160.0], speed_factors=faktorler,
+        center=np.zeros(3), target_mass=m_target, target_radius=r_target)
+
+    grid = sens["beta_grid"]                      # (yaricap, hiz)
+    frac = sens["ejecta_fraction_grid"]
+    # Her sabit yaricap icin beta esikle azalmali (fark <= 0, tolerans yok:
+    # esik yukselince ejekta kumesi bir ALT KUMEYE gecer, bu kesin bir sart)
+    monoton = bool(np.all(np.diff(grid, axis=1) <= 0.0))
+    kutle_monoton = bool(np.all(np.diff(frac, axis=1) <= 0.0))
+    return {
+        "escape_speed": v_esc,
+        "speed_factors": [float(f) for f in faktorler],
+        "beta_by_speed_factor": [float(b) for b in grid[0]],
+        "ejecta_fraction_by_speed_factor": [float(f) for f in frac[0]],
+        "beta_spread_speed_axis": sens["beta_spread_speed_axis"],
+        "beta_spread_radius_axis": sens["beta_spread_radius_axis"],
+        "speed_axis_active": sens["speed_axis_active"],
+        "beta_monotone_in_threshold": monoton,
+        "mass_monotone_in_threshold": kutle_monoton,
+        "n_ejecta_by_speed_factor": [
+            int(round(f * float(np.sum(m)) / 1.0e4)) for f in frac[0]],
+    }
 
 
 def run_scene_determinism() -> dict:
@@ -259,6 +339,12 @@ def run_observable_selftest(seed: int = 23, beta_true: float = 3.0,
         "beta_recovery_rel_err": abs(sens["base"].beta - beta_true) / beta_true,
         "beta_relative_spread": sens["beta_relative_spread"],
         "sensitivity_reported": bool(sens["beta_spread"] > 0.0),
+        # EKSEN BASINA: toplam yayilim tek basina "iki boyut da olculdu"
+        # sanisi verir. Hangi eksenin gercekten is gordugu ACIK yazilir.
+        "beta_spread_radius_axis": sens["beta_spread_radius_axis"],
+        "beta_spread_speed_axis": sens["beta_spread_speed_axis"],
+        "radius_axis_active": sens["radius_axis_active"],
+        "speed_axis_active": sens["speed_axis_active"],
         "escape_speed": v_esc,
         "momentum_closure": sens["base"].momentum_closure,
         "ejecta_direction_ok": bool(sens["base"].diagnostics["ejecta_direction_ok"]),

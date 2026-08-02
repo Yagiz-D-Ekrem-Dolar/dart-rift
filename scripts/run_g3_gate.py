@@ -172,6 +172,7 @@ def main() -> int:
         run_rubble_quality,
         run_scene_determinism,
         run_shape_pipeline,
+        run_speed_threshold_selftest,
     )
 
     shape = run_shape_pipeline()
@@ -267,14 +268,25 @@ def main() -> int:
     )
 
     obs = run_observable_selftest()
+    # Duyarlilik taramasinin IKI ekseni de gercekten is gormeli. Yalnizca
+    # toplam yayilima bakmak yeterli degildi: 1. senaryoda hiz esigi ekseninin
+    # yayilimi TAM SIFIR olmasina ragmen kriter geciyordu (butun yayilim
+    # yaricap ekseninden geliyordu). Hiz ekseni ayri bir senaryoyla kanitlanir.
+    spd = run_speed_threshold_selftest()
     crit["C5"].record(
         obs["beta_recovery_rel_err"] < 1e-6 and obs["momentum_closure"] < 1e-9
         and obs["sensitivity_reported"] and obs["crater_separates_global"]
+        and obs["radius_axis_active"] and spd["speed_axis_active"]
+        and spd["beta_monotone_in_threshold"] and spd["mass_monotone_in_threshold"]
         and obs["ejecta_power_law_rel_err"] < 0.10 and obs["ejecta_power_law_r2"] > 0.95,
         f"beta geri kazanimi {obs['beta_recovery_rel_err']:.1e} (gercek "
         f"{obs['beta_true']}), momentum defteri {obs['momentum_closure']:.1e}, "
         f"duyarlilik yayilimi {obs['beta_relative_spread']:.2%} "
-        f"[{obs['beta_min']:.3f}, {obs['beta_max']:.3f}]; ejekta us "
+        f"[{obs['beta_min']:.3f}, {obs['beta_max']:.3f}] — yaricap ekseni "
+        f"{obs['beta_spread_radius_axis']:.4f}, hiz ekseni {obs['beta_spread_speed_axis']:.4f} "
+        f"(bu senaryoda OLU; ayri senaryoda {spd['beta_spread_speed_axis']:.4f}, "
+        f"beta esikle monoton azaliyor {spd['beta_by_speed_factor'][0]:.3f}->"
+        f"{spd['beta_by_speed_factor'][-1]:.3f}); ejekta us "
         f"{obs['ejecta_power_law_exponent']:.3f} (gercek "
         f"{obs['ejecta_power_law_exponent_true']}, R^2={obs['ejecta_power_law_r2']:.4f}); "
         f"krater {obs['crater_depth']:.2f} m, kuresel degisim "
