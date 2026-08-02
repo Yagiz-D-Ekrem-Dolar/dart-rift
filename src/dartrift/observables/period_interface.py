@@ -29,7 +29,13 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
-__all__ = ["PeriodChange", "DIMORPHOS_SYSTEM", "period_change", "beta_from_period_change"]
+__all__ = ["PeriodChange", "DIMORPHOS_SYSTEM", "period_change",
+           "beta_from_period_change", "dart_beta_budget"]
+
+# Cheng ve digerleri 2023'un bildirdigi beta (tam yorunge analiziyle). Bu
+# modulun basit dairesel iki-cisim arayuzu ayni Delta_T'den 3,22 uretir;
+# fark KAYIT ALTINDADIR (bkz. `dart_beta_budget`), gizlenmez.
+DART_PUBLISHED_BETA = 3.6
 
 # Didymos-Dimorphos sistemi (Daly ve digerleri 2023; Thomas ve digerleri 2023)
 DIMORPHOS_SYSTEM = {
@@ -80,7 +86,11 @@ def period_change(
 
     SINIRLAR (kullanmadan once okunmali):
       * Dairesel yorunge varsayilir; gercek disbukeylik e ~ 0.03 goz ardi edilir.
-      * Birinci mertebe (dv << v_yor) — DART'ta dv/v ~ 1e-3, gecerli.
+      * Birinci mertebe (dv << v_yor). DUZELTME: burada once "dv/v ~ 1e-3"
+        yaziyordu; OLCULEN deger beta=3.6 icin **1,718e-02**, yani 17 kat
+        buyuk (beta=1 icin 4,77e-03). Sonuc degismiyor — ikinci mertebe
+        duzeltme (dv/v)^2 ~ 3e-4 hala ihmal edilebilir — ama yaklasimin
+        GEREKCESI olan sayi yanlisti. Not dusulerek duzeltildi, silinmedi.
       * Yalnizca tegetsel bilesen periyodu degistirir; radyal bilesen bu
         yaklasimda periyoda katkisiz sayilir.
       * Ejektanin ikincil yorunge etkisi ve gel-git sonumleme yoktur.
@@ -118,7 +128,8 @@ def period_change(
             "period_before": period_before,
             "period_after": period_before + dT,
             # Birinci mertebe gecerlilik: ikinci mertebe duzeltme ~(dv/v)^2.
-            # DART icin dv/v ~ 1.4e-2, yani duzeltme ~2e-4 — ihmal edilebilir.
+            # Olculdu: beta=1 -> 4,77e-03; beta=3 -> 1,43e-02; beta=3,6 ->
+            # 1,72e-02. En kotu halde duzeltme ~3e-4 — ihmal edilebilir.
             # Esik %5'te tutuldu; asilirsa tam yorunge cozumu gerekir.
             "first_order_valid": bool(dv / v_orb < 0.05),
         },
@@ -148,3 +159,54 @@ def beta_from_period_change(
     dv_t = delta_period * v_orb / (3.0 * period_before)
     dv = dv_t / along_track
     return float(dv * target_mass / impactor_momentum)
+
+
+def dart_beta_budget(impactor_momentum: float, **kw) -> dict:
+    """DART'in olculen Delta_T'sinden beta — BELIRSIZLIKLERIYLE birlikte.
+
+    NEDEN GEREKLI. `beta_from_period_change` tek bir sayi dondurur ve o sayi,
+    FAZ 4+'ta modelin HEDEFLEYECEGI degerdir. Tek sayi olarak sunmak, model
+    ile hedef arasindaki farkin nereden geldigini gorunmez kilar.
+
+    OLCULEN GERCEK — gizlenmiyor: bu basit dairesel iki-cisim arayuzu,
+    olculen -33,0 dakikadan **beta = 3,222** cikarir. Yayinlanan deger
+    (Cheng ve digerleri 2023, tam yorunge analizi) **~3,6**. Aradaki fark
+    **%10,5** ve ihmal edilebilir degildir.
+
+    FARK NEREDEN GELIYOR. beta, hedef kutlesiyle DOGRU ORANTILIDIR
+    (beta = dv M / p). Dimorphos'un kutlesi dogrudan olculmemistir; yigin
+    yogunlugundan turetilir ve belirsizligi buyuktur. Bu arayuzun kullandigi
+    4,3e9 kg yerine **4,80e9 kg** alinsaydi ayni Delta_T beta = 3,6 verirdi.
+    Yani fark bir HESAP HATASI degil, bir GIRDI VARSAYIMI farkidir — ve
+    hangi varsayimla calisildigi acikca yazilmak zorundadir.
+
+    KRITIK OLCUM: Delta_T'nin +/-1,0 dakikalik belirsizliginden gelen band
+    **[3,125 ; 3,320]**. Bu band yayinlanan 3,6'yi ICERMIYOR. Yani fark
+    periyot olcumunun hatasiyla ACIKLANAMAZ; kaynagi girdi varsayimlaridir
+    (kutle ve dairesel yorunge). Bunu "olcum belirsizligi icinde" diye
+    gecistirmek olculen seye aykiri olurdu.
+
+    Dondurulen sozluk hem Delta_T belirsizliginden gelen bandi hem de kutle
+    kaldiracini verir.
+    """
+    dT = DIMORPHOS_SYSTEM["measured_period_change"]
+    sig = DIMORPHOS_SYSTEM["measured_period_change_sigma"]
+    m_t = kw.get("target_mass", DIMORPHOS_SYSTEM["secondary_mass"])
+    b = beta_from_period_change(dT, impactor_momentum, **kw)
+    b_lo = beta_from_period_change(dT + sig, impactor_momentum, **kw)
+    b_hi = beta_from_period_change(dT - sig, impactor_momentum, **kw)
+    # beta kutleyle dogru orantili -> yayinlanan degeri verecek kutle
+    m_gerekli = m_t * DART_PUBLISHED_BETA / b if b != 0.0 else float("nan")
+    return {
+        "beta": b,
+        "beta_low": min(b_lo, b_hi),
+        "beta_high": max(b_lo, b_hi),
+        "delta_period_s": dT,
+        "delta_period_sigma_s": sig,
+        "target_mass_assumed": float(m_t),
+        "published_beta": DART_PUBLISHED_BETA,
+        "rel_diff_vs_published": abs(b - DART_PUBLISHED_BETA) / DART_PUBLISHED_BETA,
+        "target_mass_for_published_beta": float(m_gerekli),
+        # beta ~ M oldugundan bagil duyarlilik tam olarak 1
+        "d_ln_beta_d_ln_mass": 1.0,
+    }

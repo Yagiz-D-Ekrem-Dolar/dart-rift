@@ -12,7 +12,11 @@ import numpy as np
 from ..observables.crater_shape import crater_profile
 from ..observables.ejecta_catalog import catalog_ejecta
 from ..observables.momentum_transfer import beta_sensitivity, escape_speed
-from ..observables.period_interface import DIMORPHOS_SYSTEM, beta_from_period_change
+from ..observables.period_interface import (
+    DIMORPHOS_SYSTEM,
+    beta_from_period_change,
+    dart_beta_budget,
+)
 from ..setup.impactor import (
     DART_MASS,
     DART_MOMENTUM,
@@ -403,6 +407,7 @@ def run_observable_selftest(seed: int = 23, beta_true: float = 3.0,
 
     beta_dart = beta_from_period_change(
         DIMORPHOS_SYSTEM["measured_period_change"], DART_MOMENTUM)
+    bilanco = dart_beta_budget(DART_MOMENTUM)
 
     return {
         "beta_true": float(beta_true),
@@ -434,5 +439,17 @@ def run_observable_selftest(seed: int = 23, beta_true: float = 3.0,
         "crater_global_change": float(cs.global_radius_change),
         "crater_separates_global": bool(abs(cs.global_radius_change) < 5.0),
         "beta_from_dart_period": float(beta_dart),
+        # Bu sayi FAZ 4+'ta modelin HEDEFLEYECEGI degerdir; tek sayi olarak
+        # gecmek, model-hedef farkinin nereden geldigini gorunmez kilardi.
+        # Olculen: bu basit arayuz 3,222 veriyor, yayinlanan ~3,6 (%10,5 fark)
+        # ve Delta_T'nin +/-1 dk bandi [3,125 ; 3,320] 3,6'yi ICERMIYOR —
+        # yani fark olcum hatasi degil, KUTLE VARSAYIMI.
+        "beta_budget": bilanco,
+        "beta_dart_low": bilanco["beta_low"],
+        "beta_dart_high": bilanco["beta_high"],
+        "beta_dart_vs_published_rel": bilanco["rel_diff_vs_published"],
+        "beta_dart_band_covers_published": bool(
+            bilanco["beta_low"] <= bilanco["published_beta"] <= bilanco["beta_high"]),
+        "target_mass_for_published_beta": bilanco["target_mass_for_published_beta"],
     }
 

@@ -157,7 +157,31 @@ def test_krater_kuresel_degisimden_ayrisiyor(obs):
 
 
 def test_dart_periyodundan_beta_makul(obs):
-    assert 2.5 < obs["beta_from_dart_period"] < 4.5
+    """ONCEKI BAND (2,5-4,5) HICBIR SEY AYIRT ETMIYORDU.
+
+    Bu sayi FAZ 4+'ta modelin hedefleyecegi degerdir. 2 birim genisliginde bir
+    band, dogru sonucla %10 sapmis sonucu ayni sayar. Olculen deger 3,2225'tir
+    ve bu arayuzun (dairesel iki-cisim) kesin ciktisidir — dar tutulmali ki
+    girdi sabitlerinden biri sessizce degisirse test bunu yakalasin.
+    """
+    assert obs["beta_from_dart_period"] == pytest.approx(3.2225, rel=1e-3)
+
+
+def test_dart_beta_farki_kutle_varsayimina_baglaniyor(obs):
+    """Yayinlanan ~3,6 ile aradaki %10,5 fark ACIKLANMIS olmali.
+
+    Kritik olcum: Delta_T'nin +/-1,0 dakikalik bandi [3,125 ; 3,320] ve bu
+    band 3,6'yi ICERMIYOR. Yani fark periyot olcumunun hatasiyla aciklanamaz;
+    kaynagi kutle varsayimidir. beta kutleyle dogru orantili oldugundan
+    yayinlanan degeri verecek kutle 4,80e9 kg'dir (varsayilan 4,3e9).
+    Bunu "olcum belirsizligi icinde" diye gecistirmek olculene aykiri olurdu.
+    """
+    assert obs["beta_dart_low"] < obs["beta_from_dart_period"] < obs["beta_dart_high"]
+    assert obs["beta_dart_band_covers_published"] is False, (
+        "band 3,6'yi kapsiyorsa fark gercekten olcum hatasidir — "
+        "o zaman bu testin gerekcesi degismistir, yeniden olcun")
+    assert obs["beta_dart_vs_published_rel"] == pytest.approx(0.105, abs=0.01)
+    assert obs["target_mass_for_published_beta"] == pytest.approx(4.80e9, rel=0.02)
 
 
 # --------------------------- sahne determinizmi ---------------------------
