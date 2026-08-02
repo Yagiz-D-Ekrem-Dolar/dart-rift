@@ -51,28 +51,53 @@ def _head(url: str, timeout: float = 30.0) -> tuple[int, str]:
         return (-1, "")
 
 
-def _download(url: str, dest: Path, chunk: int = 1 << 20) -> tuple[str, int]:
-    """Indir ve SHA-256'yi AKIS HALINDE hesapla -> (sha256, bayt).
+def _download(url: str, dest: Path, chunk: int = 1 << 20) -> tuple[str, str, int]:
+    """Indir; SHA-256 VE MD5'i AKIS HALINDE hesapla -> (sha256, md5, bayt).
 
-    Karma, baytlar diske yazilirken ayni tampondan hesaplanir; dosyayi
-    sonradan tekrar okumaz. Boylece manifest, gercekten indirilen baytlarin
+    Karmalar, baytlar diske yazilirken ayni tampondan hesaplanir; dosya
+    sonradan tekrar okunmaz. Boylece manifest, gercekten indirilen baytlarin
     karmasini tasir.
+
+    MD5 neden de hesaplaniyor: PDS arsivi her koleksiyon icin resmi bir
+    `SUPPORT/CHECKSUM/current.md5` yayimliyor. Kendi hesapladigimiz karma
+    yalnizca "diskte ne var" der; ARSIVIN karmasiyla karsilastirmak
+    "dogru dosyayi, bozulmadan aldik mi" sorusunu yanitlar. Ikisi ayri
+    sorulardir ve ikisi de gerekir.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
     h = hashlib.sha256()
+    m = hashlib.md5()
     n = 0
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     tmp = dest.with_suffix(dest.suffix + ".part")
-    with urllib.request.urlopen(req, timeout=120) as r, open(tmp, "wb") as f:
+    with urllib.request.urlopen(req, timeout=600) as r, open(tmp, "wb") as f:
         while True:
             b = r.read(chunk)
             if not b:
                 break
             h.update(b)
+            m.update(b)
             f.write(b)
             n += len(b)
     tmp.replace(dest)
-    return h.hexdigest(), n
+    return h.hexdigest(), m.hexdigest(), n
+
+
+def _official_md5(collection_url: str) -> dict[str, str]:
+    """Koleksiyonun resmi `SUPPORT/CHECKSUM/current.md5` dosyasini oku."""
+    url = collection_url.rstrip("/") + "/SUPPORT/CHECKSUM/current.md5"
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    out: dict[str, str] = {}
+    try:
+        with urllib.request.urlopen(req, timeout=120) as r:
+            for line in r.read().decode("utf-8", "replace").splitlines():
+                p = line.split(None, 1)
+                if len(p) == 2:
+                    out[p[1].strip()] = p[0].strip().lower()
+    except (urllib.error.URLError, OSError) as exc:
+        print(f"  UYARI: resmi MD5 alinamadi ({exc}) — dogrulama YAPILAMAZ",
+              file=sys.stderr)
+    return out
 
 
 def main() -> int:
@@ -115,20 +140,46 @@ def main() -> int:
 
     out = Path(args.out)
     urunler = []
+    md5_cache: dict[str, dict[str, str]] = {}
+    dogrulanan, uyusmayan, dogrulanamayan = 0, [], 0
     for u in urls:
         ad = u.rstrip("/").split("/")[-1]
+        koleksiyon = u.rsplit("/", 1)[0]
         hedef = out / ad
         print(f"indiriliyor: {ad} ...", flush=True)
-        sha, n = _download(u, hedef)
-        print(f"  {n} bayt  sha256={sha}")
+        sha, md5, n = _download(u, hedef)
+
+        if koleksiyon not in md5_cache:
+            md5_cache[koleksiyon] = _official_md5(koleksiyon)
+        resmi = md5_cache[koleksiyon].get(ad)
+        if resmi is None:
+            durum = "resmi MD5 yok"
+            dogrulanamayan += 1
+        elif resmi == md5:
+            durum = "MD5 DOGRULANDI"
+            dogrulanan += 1
+        else:
+            durum = f"MD5 UYUSMADI (resmi {resmi})"
+            uyusmayan.append(ad)
+        print(f"  {n} bayt  sha256={sha[:16]}...  {durum}", flush=True)
+
         urunler.append({
             "product_id": f"{BUNDLE_LID}#{ad}",
             "filename": str(hedef),
             "source_url": u,
             "sha256": sha,
+            "md5": md5,
+            "md5_official": resmi,
+            "md5_verified": bool(resmi is not None and resmi == md5),
             "bytes": n,
-            "used_by": "setup/shape_mesh.load_obj (FAZ 4)",
+            "used_by": "setup/shape_mesh.load_obj",
         })
+
+    print(f"\nMD5: {dogrulanan} dogrulandi, {len(uyusmayan)} uyusmadi, "
+          f"{dogrulanamayan} dogrulanamadi", flush=True)
+    if uyusmayan:
+        print(f"HATA: bozuk indirme: {uyusmayan}", file=sys.stderr)
+        return 1
 
     man = {
         "bundle": BUNDLE_LID,
@@ -137,6 +188,8 @@ def main() -> int:
         "source_url": LANDING,
         "license": "NASA PDS acik veri; atif zorunlu",
         "citation": CITATION,
+        "md5_verified_count": dogrulanan,
+        "md5_unverifiable_count": dogrulanamayan,
         "products": urunler,
     }
     mp = Path(args.manifest) / "dart_shapemodel.json"
