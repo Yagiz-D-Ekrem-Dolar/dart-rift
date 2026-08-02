@@ -56,12 +56,19 @@ def cumulative_mass_velocity(
 
     Hizlar siralanir ve kutleler tersten toplanir; sonuc kutu genisligi
     secimine bagli degildir.
+
+    SIRALAMA KARARLI (`kind="stable"`). Varsayilan quicksort esit hizlarda
+    keyfi bir sira secer; farkli kutleli parcaciklar esit hiza sahipse
+    kumulatif egri o noktalarda degisir ve us kestirimi makineye/surume
+    bagli olur. Bu, ADR-0025'te olculen toplama-sirasi kusuruyla ayni sinif.
+    Kesin esitlik kayan noktada nadirdir ama "nadir" determinizm guvencesi
+    degildir; kararli siralama bedava.
     """
     s = np.asarray(speeds, dtype=np.float64)
     m = np.asarray(masses, dtype=np.float64)
     if s.shape != m.shape:
         raise ValueError(f"hiz ve kutle sekilleri esit olmali: {s.shape}/{m.shape}")
-    order = np.argsort(s)
+    order = np.argsort(s, kind="stable")
     s_sorted = s[order]
     m_cum = np.cumsum(m[order][::-1])[::-1]
     return s_sorted, m_cum

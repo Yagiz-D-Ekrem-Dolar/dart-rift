@@ -488,6 +488,14 @@ def budgets_solid(state: SolidState, mat: MaterialParams | None = None) -> dict:
     }
     if mat is not None:
         row["e_dev_stored"] = deviatoric_energy(state, mat)  # tani, toplama dahil DEGIL
+        if mat.damage.enabled and state.D is not None and mat.strength.enabled:
+            # HAM S'den hesaplanan depolanmis enerji, hasarli malzemede
+            # kuvvetlerin gordugunden (1-D)^2 kat buyuktur. Ikisi de yazilir;
+            # yalnizca hamini vermek var olmayan enerjiyi varmis gostermek olur.
+            f2 = (1.0 - np.clip(state.D, 0.0, 1.0)) ** 2
+            ss = np.einsum("nab,nab->n", state.S, state.S)
+            row["e_dev_effective"] = float(np.sum(
+                state.m * f2 * ss / (4.0 * mat.strength.shear_G * state.rho)))
     return row
 
 

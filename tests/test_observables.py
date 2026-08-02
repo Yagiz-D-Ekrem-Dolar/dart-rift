@@ -368,6 +368,73 @@ def test_yuzey_parcaciklari_kabuktan_secilir():
     assert len(si) < len(x)
 
 
+def _elipsoit_parcaciklari(a=44.0, b=43.5, c=32.5, n=60000, seed=1):
+    """Gercek Dimorphos oranlari: 88 x 87 x 65 m."""
+    rng = np.random.default_rng(seed)
+    p = rng.normal(size=(n, 3))
+    p /= np.linalg.norm(p, axis=1)[:, None]
+    return p * (rng.random(n) ** (1.0 / 3.0))[:, None] * np.array([a, b, c])
+
+
+def test_kuresel_referans_duzensiz_cisimde_hayali_krater_uretir():
+    """OLCULEN KUSUR — kaydi burada durur, gizlenmez.
+
+    Referansi tek bir sayi (carpma disi medyan yaricap) almak cismi KURE
+    kabul eder. Dimorphos kure degil (88x87x65 m). Kratersiz bir elipsoitte
+    olculen hayali krater:
+        kisa (z) eksende carpma : 9,04 m derinlik, 66,76 m cap
+        uzun (x) eksende carpma : 1,46 m derinlik
+    Bu test o rakami KILITLER: kuresel varsayimin bedeli budur ve
+    `reference_is_spherical` tanisiyla bildirilmek zorundadir.
+    """
+    x0 = _elipsoit_parcaciklari()
+    cs = crater_profile(x0, center=np.zeros(3),
+                        impact_direction=np.array([0.0, 0.0, -1.0]),
+                        reference_radius=40.0, outer_angle_deg=60.0, n_bins=12)
+    assert cs.diagnostics["reference_is_spherical"] is True
+    assert cs.depth > 5.0, (
+        f"hayali krater kayboldu mu ({cs.depth:.3f} m)? Oyleyse bu testin "
+        "gerekcesi degismistir — yeniden olcun")
+
+
+def test_carpma_oncesi_referans_hayali_krateri_sifirlar():
+    """Duzeltme: referans, cismin KENDI carpma oncesi sekli.
+
+    Ayni kratersiz elipsoit, `x_reference` verilince 0,000 m raporlamali.
+    """
+    x0 = _elipsoit_parcaciklari()
+    for yon in ([0.0, 0.0, -1.0], [-1.0, 0.0, 0.0]):
+        cs = crater_profile(x0, center=np.zeros(3),
+                            impact_direction=np.array(yon),
+                            reference_radius=40.0, outer_angle_deg=60.0,
+                            n_bins=12, x_reference=x0)
+        assert cs.diagnostics["reference_is_spherical"] is False
+        assert abs(cs.depth) < 1.0e-9, f"{yon}: derinlik {cs.depth:.3e}"
+        assert cs.diameter == 0.0
+
+
+def test_duzensiz_cisimde_bilinen_krater_dogru_olculur():
+    """Elipsoide BILINEN ~8 m'lik cukur; kuresel referans 2 kat sisiriyordu.
+
+    Olculdu: kuresel varsayimla 17,43 m (gercek ~8), carpma oncesi referansla
+    8,44 m. Yani duzeltme yalnizca hayali krateri silmiyor, GERCEK krateri de
+    dogru olcuyor.
+    """
+    x0 = _elipsoit_parcaciklari()
+    d = np.linalg.norm(x0, axis=1)
+    ca = x0[:, 2] / np.maximum(d, 1e-300)
+    r_local = np.linalg.norm(x0 / np.array([44.0, 43.5, 32.5]), axis=1)
+    kaz = (ca > np.cos(np.radians(25.0))) & (r_local > 1.0 - 8.0 / 32.5)
+    xk = x0[~kaz]
+    ort = dict(center=np.zeros(3), impact_direction=np.array([0.0, 0.0, -1.0]),
+               reference_radius=40.0, outer_angle_deg=60.0, n_bins=12)
+    kuresel = crater_profile(xk, **ort)
+    gercek = crater_profile(xk, **ort, x_reference=x0)
+    assert kuresel.depth > 15.0, kuresel.depth          # sisirilmis hali
+    assert gercek.depth == pytest.approx(8.0, rel=0.15), gercek.depth
+    assert gercek.depth < 0.6 * kuresel.depth
+
+
 def test_krater_derinligi_bilinen_cukurda():
     """Kureden 20 m'lik bir kalot cikarilir; olculen derinlik ~21 m olmali.
 

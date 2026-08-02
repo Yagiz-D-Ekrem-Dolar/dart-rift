@@ -382,6 +382,17 @@ class WarpSolid3D:
             row["e_dev_stored"] = float(
                 np.sum(s["m"] * ss / (4.0 * self.mat.strength.shear_G * s["rho"]))
             )
+            if self._damage:
+                # `e_dev_stored` HAM S'den hesaplanir; hasarli malzemede
+                # kuvvetlerin gordugu gerilme (1-D) S'dir. Yani dinamik olarak
+                # ERISILEBILIR deviatorik enerji (1-D)^2 katidir. Ikisini de
+                # yazmak zorunlu: yalnizca hamini raporlamak, var olmayan bir
+                # enerjiyi varmis gibi gostermek olurdu.
+                f2 = (1.0 - np.clip(self.D.numpy(), 0.0, 1.0)) ** 2
+                row["e_dev_effective"] = float(
+                    np.sum(s["m"] * f2 * ss
+                           / (4.0 * self.mat.strength.shear_G * s["rho"]))
+                )
         return row
 
     def run(self, t_end: float, max_steps: int = 500_000, budget_every: int = 10) -> dict:
