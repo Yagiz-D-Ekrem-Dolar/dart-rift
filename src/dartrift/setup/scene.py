@@ -27,7 +27,7 @@ import numpy as np
 
 from .impactor import build_impactor, impact_geometry, place_impactor
 from .rubble_generator import build_rubble_pile
-from .shape_mesh import TriMesh, ellipsoid, icosphere, load_obj
+from .shape_mesh import TriMesh, ellipsoid, icosphere, load_obj, orient_outward
 
 __all__ = ["Scene", "build_scene", "scene_from_config"]
 
@@ -85,7 +85,7 @@ class Scene:
 
 
 def _build_mesh(shape: str, *, radius=None, semi_axes=None, subdiv=4,
-                obj_path=None) -> TriMesh:
+                obj_path=None, obj_units="m") -> TriMesh:
     if shape == "icosphere":
         if radius is None:
             raise ValueError("icosphere icin radius zorunlu")
@@ -98,7 +98,9 @@ def _build_mesh(shape: str, *, radius=None, semi_axes=None, subdiv=4,
     if shape == "obj":
         if not obj_path:
             raise ValueError("obj icin obj_path zorunlu")
-        return load_obj(obj_path)
+        # PDS DART sekil modelleri KILOMETRE cinsindendir; birim cagiran
+        # taraftan ACIKCA gelir (bkz. shape_mesh.load_obj).
+        return orient_outward(load_obj(obj_path, units=obj_units))
     raise ValueError(f"bilinmeyen sekil: {shape!r}")
 
 
@@ -109,6 +111,7 @@ def build_scene(
     semi_axes: list[float] | None = None,
     subdiv: int = 4,
     obj_path: str | None = None,
+    obj_units: str = "m",
     spacing: float = 7.0,
     bulk_density: float = 1800.0,
     root_seed: int = 0,
@@ -141,7 +144,7 @@ def build_scene(
     dengedir (maks |a_SPH| = 0 tam olarak).
     """
     mesh = _build_mesh(shape, radius=radius, semi_axes=semi_axes,
-                       subdiv=subdiv, obj_path=obj_path)
+                       subdiv=subdiv, obj_path=obj_path, obj_units=obj_units)
 
     pile = build_rubble_pile(
         mesh, spacing=spacing, bulk_density=bulk_density, root_seed=root_seed,
@@ -235,7 +238,8 @@ def scene_from_config(cfg, material=None, device: str = "cuda:0") -> Scene:
     t, i, s = cfg.scene.target, cfg.scene.impactor, cfg.scene.settling
     return build_scene(
         shape=t.shape, radius=t.radius, semi_axes=t.semi_axes, subdiv=t.subdiv,
-        obj_path=t.obj_path, spacing=t.spacing, bulk_density=t.bulk_density,
+        obj_path=t.obj_path, obj_units=t.obj_units,
+        spacing=t.spacing, bulk_density=t.bulk_density,
         root_seed=cfg.random_seed, model_class=t.model_class,
         matrix_alpha0=t.matrix_alpha0, matrix_Y0=t.matrix_Y0,
         boulder_alpha0=t.boulder_alpha0, boulder_Y0=t.boulder_Y0,

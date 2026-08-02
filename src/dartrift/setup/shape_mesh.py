@@ -126,13 +126,47 @@ class TriMesh:
 # ---------------------------------------------------------------------------
 # Yukleme
 # ---------------------------------------------------------------------------
-def load_obj(path) -> TriMesh:
+#: PDS SPC sekil modellerinin birim sozlesmesi. NASA PDS Small Bodies Node,
+#: DART sekil modellerini KILOMETRE cinsinden yayimliyor; bu depo her yerde
+#: METRE kullaniyor. Donusum SESSIZ YAPILMAZ — cagiran taraf `units` ya da
+#: `scale` ile ne istedigini soylemek zorundadir.
+#:
+#: Olculdu (dimorphos_g_*_v004.obj): ham sinirlar +-0.09 x +-0.08 x +-0.06,
+#: esdeger yaricap 0.075. Kilometre kabul edilince 75.0 m cikiyor ve bu,
+#: Daly ve digerleri (2023) tarafindan yayimlanan Dimorphos yaricapiyla
+#: birebir ortusuyor. Metre saymak cismi 1000 kat kucultur, kutleyi 1e9 kat
+#: azaltir ve butun fizigi sessizce anlamsizlastirirdi.
+_UNIT_SCALE = {"m": 1.0, "km": 1000.0}
+
+
+def load_obj(path, units: str = "m", scale: float | None = None) -> TriMesh:
     """Wavefront OBJ oku (PDS sekil modelleri bu bicimde dagitilir).
 
     Yalnizca `v` ve `f` satirlari okunur; normaller/dokular yok sayilir
     (yonlendirme zaten `orient_outward` ile hacim isaretinden belirlenir).
     Poligon yuzler ucgen yelpazeye bolunur.
+
+    BIRIM. `units="m"` (varsayilan) dosyayi oldugu gibi alir. PDS'in DART
+    sekil modelleri **kilometre** cinsindendir; onlar icin `units="km"`
+    verilmelidir. Keyfi bir carpan gerekiyorsa `scale` kullanilir (`units`
+    ile birlikte verilemez — hangisinin gecerli oldugu belirsiz kalmasin).
+
+    Donusumun sessiz yapilmamasi bilincli: kilometreyi metre saymak cismi
+    1000 kat kucultur, kutlesini 1e9 kat azaltir ve butun fizigi
+    anlamsizlastirir — hicbir yerde hata vermeden.
     """
+    if scale is not None:
+        if units != "m":
+            raise ValueError("`units` ve `scale` birlikte verilemez; birini secin")
+        if not (scale > 0.0):
+            raise ValueError(f"scale pozitif olmali, {scale} geldi")
+        k = float(scale)
+    else:
+        if units not in _UNIT_SCALE:
+            raise ValueError(
+                f"bilinmeyen birim {units!r}; secenekler: {sorted(_UNIT_SCALE)}")
+        k = _UNIT_SCALE[units]
+
     verts: list[tuple[float, float, float]] = []
     faces: list[tuple[int, int, int]] = []
     with open(path, encoding="utf-8", errors="replace") as fh:
@@ -145,10 +179,12 @@ def load_obj(path) -> TriMesh:
                 idx = [int(tok.split("/")[0]) for tok in line.split()[1:]]
                 # OBJ 1-tabanli; negatif indeks sondan sayar
                 idx = [i - 1 if i > 0 else len(verts) + i for i in idx]
-                for k in range(1, len(idx) - 1):       # ucgen yelpaze
-                    faces.append((idx[0], idx[k], idx[k + 1]))
-    return TriMesh(np.array(verts, dtype=np.float64),
-                   np.array(faces, dtype=np.int64).reshape(-1, 3))
+                for k2 in range(1, len(idx) - 1):      # ucgen yelpaze
+                    faces.append((idx[0], idx[k2], idx[k2 + 1]))
+    v = np.array(verts, dtype=np.float64)
+    if k != 1.0:
+        v = v * k
+    return TriMesh(v, np.array(faces, dtype=np.int64).reshape(-1, 3))
 
 
 # ---------------------------------------------------------------------------

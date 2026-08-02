@@ -84,6 +84,35 @@ class TestLoadObj:
         assert len(m.f) == 4
         assert abs(m.volume) == pytest.approx(1.0 / 6.0, rel=1e-12)
 
+    def test_birim_donusumu_km(self, tmp_path):
+        """PDS sekil modelleri KILOMETRE cinsindendir; donusum acik olmali."""
+        p = self._yaz(tmp_path, (
+            "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\n"
+            "f 1 3 2\nf 1 2 4\nf 1 4 3\nf 2 3 4\n"))
+        m_m = load_obj(p, units="m")
+        m_km = load_obj(p, units="km")
+        assert abs(m_km.volume) == pytest.approx(1e9 * abs(m_m.volume), rel=1e-12)
+        assert np.allclose(m_km.v, 1000.0 * m_m.v)
+
+    def test_keyfi_olcek(self, tmp_path):
+        p = self._yaz(tmp_path, (
+            "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\n"
+            "f 1 3 2\nf 1 2 4\nf 1 4 3\nf 2 3 4\n"))
+        assert np.allclose(load_obj(p, scale=2.5).v, 2.5 * load_obj(p).v)
+
+    def test_birim_ve_olcek_birlikte_reddedilir(self, tmp_path):
+        """Ikisi birden verilirse hangisinin gecerli oldugu belirsizdir."""
+        p = self._yaz(tmp_path, "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\nf 1 3 2\n")
+        with pytest.raises(ValueError, match="birlikte verilemez"):
+            load_obj(p, units="km", scale=2.0)
+
+    def test_gecersiz_birim_ve_olcek(self, tmp_path):
+        p = self._yaz(tmp_path, "v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\nf 1 3 2\n")
+        with pytest.raises(ValueError, match="bilinmeyen birim"):
+            load_obj(p, units="mil")
+        with pytest.raises(ValueError, match="scale pozitif"):
+            load_obj(p, scale=0.0)
+
     def test_okunan_mesh_islenebilir(self, tmp_path):
         """Okunan mesh, hattin geri kalanina (yonlendirme, ic testi) girebilmeli."""
         from dartrift.setup.shape_mesh import inside_points, orient_outward

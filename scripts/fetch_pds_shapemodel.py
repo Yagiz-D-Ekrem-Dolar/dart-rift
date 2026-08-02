@@ -164,8 +164,11 @@ def main() -> int:
         print(f"  {n} bayt  sha256={sha[:16]}...  {durum}", flush=True)
 
         urunler.append({
+            # `filename` TASINABILIR olmali: manifest depoya girer ve baska
+            # makinede de okunur. Mutlak yol yazmak, manifesti uretildigi
+            # makineye baglar. Indirme dizini ayrica `data_root` alaninda.
             "product_id": f"{BUNDLE_LID}#{ad}",
-            "filename": str(hedef),
+            "filename": ad,
             "source_url": u,
             "sha256": sha,
             "md5": md5,
@@ -188,6 +191,10 @@ def main() -> int:
         "source_url": LANDING,
         "license": "NASA PDS acik veri; atif zorunlu",
         "citation": CITATION,
+        # Indirme dizini BILGI amacli; urun yollari `filename` ile TASINABILIR.
+        # Testler dosyalari DARTRIFT_PDS_DIR ortam degiskeni ya da varsayilan
+        # `data/pds` altinda arar.
+        "data_root": str(out),
         "md5_verified_count": dogrulanan,
         "md5_unverifiable_count": dogrulanamayan,
         "products": urunler,

@@ -216,6 +216,10 @@ class TargetConfig(_StrictModel):
 
     shape: Literal["icosphere", "ellipsoid", "obj"] = "icosphere"
     obj_path: str | None = None            # shape="obj" ise zorunlu
+    # PDS'in DART sekil modelleri KILOMETRE cinsindendir. Varsayilan "m"
+    # birakildi ki sessiz bir donusum olmasin: gercek PDS dosyasi kullanan
+    # config'in "km" YAZMASI gerekir. Metre saymak cismi 1000 kat kucultur.
+    obj_units: Literal["m", "km"] = "m"
     radius: float | None = Field(default=None, gt=0.0)          # icosphere
     semi_axes: list[float] | None = Field(default=None, min_length=3, max_length=3)
     subdiv: int = Field(default=4, ge=0, le=7)
