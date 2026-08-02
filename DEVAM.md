@@ -5,10 +5,36 @@ kez gören birinin (veya sıfırdan başlayan bir oturumun) bilmesi gereken her
 şey burada: nerede duruyoruz, neyin kanıtı var, neyin yok, hangi tuzaklar
 zaten öğrenildi.
 
-**Son güncelleme:** 2026-08-02 · **Kanıt commit'i:** `0b88ae9` · **Durum:**
-FAZ 0–3 kanıtla tamamlandı. **G3 TAM GEÇTİ (7/7, çıkış kodu 0)** — gerçek PDS
-Dimorphos şekil modeli dahil. Açık kusur, `xfail` ve kanıtlanamayan kriter
-**yok**. FAZ 4 başlayabilir.
+**Son güncelleme:** 2026-08-02 · **Durum:** FAZ 0–3 kanıtla tamamlandı, ama
+**"0 hata" iddiası yanlıştı ve düzeltildi.**
+
+> ### ⚠ DÜZELTME — hata ayıklama turu (2026-08-02)
+>
+> Burada daha önce şu yazıyordu: *"Açık kusur, xfail ve kanıtlanamayan kriter
+> yok."* Bu, o an geçerli olan kanıta dayanıyordu (627 test, G3 7/7, 14
+> kırmızı-takım maddesi temiz) ama **yanlıştı**. Silinmiyor, not düşülüyor
+> (RULES.txt).
+>
+> Aktif bir hata ayıklama turu **altı kusur** buldu; ikisi bilimsel sonucu
+> birinci mertebede bozuyordu:
+>
+> 1. **Hasar, `S` durum değişkenini bozuyordu.** `_eval()` adım başına iki kez
+>    çağrıldığı için `S <- (1-D)^2 S` birikimliydi. Ölçüldü: hiçbir fizik
+>    yokken **S 1,0e7 → 4,88e3 (5 adımda, 1000 kat)**.
+> 2. **Krater çıkarıcı cismi küre sanıyordu.** Dimorphos 88×87×65 m.
+>    **Kratersiz** elipsoitte **9,04 m hayali krater**; bilinen 8 m'lik çukur
+>    17,43 m.
+> 3. β duyarlılık taramasının **hız ekseni tamamen ölüydü** (`0,0`), kriter
+>    yine geçiyordu.
+> 4. Varsayılan hedef yarıçapı **%21 küçüktü** (`median(dist)`).
+> 5. `period_change` belgesinde `dv/v ~ 1e-3` yazıyordu; gerçek **1,72e-02**.
+> 6. `2.5 < beta_dart < 4.5` testi hiçbir şey ayırt etmiyordu.
+>
+> Hepsi düzeltildi, ölçümleriyle birlikte: **ADR-0029**, `docs/EKSIKLER.md` §0,
+> **KAYIT-016**.
+>
+> **Ders:** testler *parçaların doğruluğunu* sınıyordu, *bütünün davranışını*
+> değil. Bir kriter geçtiğinde **geçme sebebinin de ölçülmüş olması gerekir**.
 
 ---
 
