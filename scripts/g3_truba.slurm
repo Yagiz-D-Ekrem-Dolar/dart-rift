@@ -62,6 +62,10 @@ HEAD=$(git rev-parse --short HEAD)
 echo "== depo commit: $HEAD =="
 
 echo "########## G3 KAPISI (DR-RIFT-P3 §7) ##########"
+# PDS urunleri depoda DEGIL (100+ MB, .gitignore). Kapinin C7 kriteri
+# saglama toplamlarini diskte yeniden hesaplayabilsin diye veri dizini
+# gosteriliyor; yoksa yalnizca manifest kaydi denetlenir.
+export DARTRIFT_PDS_DIR=/arf/scratch/egitimg16/driftclaude/data/pds
 python3 -u scripts/run_g3_gate.py --device cuda:0 --run-dir "$REPO/gate_runs/g3_truba_${HEAD}_${SLURM_JOB_ID}"
 G3RC=$?
 echo "== G3 rc=$G3RC =="
