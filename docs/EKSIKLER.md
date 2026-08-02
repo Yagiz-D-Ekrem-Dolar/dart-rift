@@ -4,7 +4,39 @@ Bu belge projenin **bilinen eksiklerini** tek yerde tutar. Amaç: bir eksiğin
 "unutuldu" mu yoksa "bilinçli bırakıldı" mı olduğu hiçbir zaman belirsiz
 kalmasın.
 
-**Son güncelleme:** 2026-08-01
+**Son güncelleme:** 2026-08-02
+
+---
+
+## 0. Hata ayıklama turunda bulunan dört sessiz kusur — KAPANDI (2026-08-02)
+
+FAZ 3 "0 hata" diye sunulmuştu (627 test, G3 7/7, 14 kırmızı-takım maddesi
+temiz). Bu sunum **yanlıştı** ve not düşülerek düzeltiliyor, silinmiyor.
+Aktif hata ayıklama turu dört kusur buldu; ikisi bilimsel sonucu birinci
+mertebede bozuyordu. Tam kayıt: **ADR-0029**.
+
+| # | kusur | ölçülen etki | durum |
+|---|---|---|---|
+| 1 | Hasar `S` **durumunu** yerinde çarpıyordu; `_eval()` adım başına iki kez çağrıldığı için `S <- (1-D)^2 S` birikimliydi | D sabit ve hiçbir fiziksel evrim yokken **S: 1,0e7 → 4,88e3 (5 adımda, 1000 kat)** | ✅ ayrı `P_eff`/`S_eff`; GPU'da doğrulandı: S sabit 1,000000e+07 |
+| 2 | Krater çıkarıcı referansı tek sayı alıyor, cismi **küre** sanıyordu (Dimorphos 88×87×65 m) | **kratersiz** elipsoitte 9,04 m hayali krater; bilinen 8 m'lik çukur 17,43 m | ✅ çarpma öncesi şekil referans; 0,000 m / 8,66-9,04 m |
+| 3 | β duyarlılık taramasının **hız ekseni tamamen ölüydü** | `beta_spread_speed_axis = 0,0` — kriter yine geçiyordu | ✅ eksen başına rapor + ayrı senaryo (yayılım 0,3209, monoton) |
+| 4 | Varsayılan hedef yarıçapı `median(dist)` = **%21 küçük** | v_kaçış %12,3 büyük, r_kontrol 1,59 R (2,00 R sanılıyordu) | ✅ `estimate_target_radius` + `target_radius_estimated` tanısı |
+
+**Ortak kök neden:** testler *parçaların doğruluğunu* sınıyordu, *bütünün
+davranışını* değil. Hasarın formülleri doğruydu, **döngüsü** sınanmamıştı;
+krater çıkarıcı kürede doğruydu, **hedefin gerçek şekli** sınanmamıştı.
+
+**Yapısal önlemler** (kusur sınıfını kapatır, tek tek kusurları değil):
+- `tests/test_solver_idempotence.py` — `_eval()` durumu değiştirmez (saflık
+  değişmezi, üç yolda);
+- `cpu_reference/solid_ref.py` artık hasar **döngüsünü** de içeriyor ve
+  `TestDamageCross` GPU↔CPU'yu 10 adım karşılaştırıyor (bu referans **yoktu**);
+- G3 C5 ve RT9/RT10 artık *neyin iş gördüğünü* ayrı ayrı şart koşuyor:
+  `radius_axis_active`, `speed_axis_active`, `reference_is_spherical`.
+
+**Ölçülüp değiştirilmeyenler** (yeniden tartışılmasın): uslu yasa
+uydurmasının yanlılığı N=2000'de −%0,67 (tolerans %10); `momentum_transfer`
+toplamlarında sıra duyarlılığı ~1e-15 (tolerans 1e-6).
 
 ---
 
