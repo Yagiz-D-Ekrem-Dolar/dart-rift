@@ -5,10 +5,10 @@ kez gören birinin (veya sıfırdan başlayan bir oturumun) bilmesi gereken her
 şey burada: nerede duruyoruz, neyin kanıtı var, neyin yok, hangi tuzaklar
 zaten öğrenildi.
 
-**Son güncelleme:** 2026-08-01 · **Kanıt commit'i:** `932af74` · **Durum:**
-FAZ 0–2 kanıtla tamamlandı; **FAZ 3 tamamlandı, G3 KISMİ geçti** (kanıtlanabilir
-kriterlerin hepsi geçti, C7/PDS **KANITLANAMADI** — veri yok). FAZ 4
-başlayabilir, bu eksiği açıkça taşıyarak.
+**Son güncelleme:** 2026-08-02 · **Kanıt commit'i:** `0b88ae9` · **Durum:**
+FAZ 0–3 kanıtla tamamlandı. **G3 TAM GEÇTİ (7/7, çıkış kodu 0)** — gerçek PDS
+Dimorphos şekil modeli dahil. Açık kusur, `xfail` ve kanıtlanamayan kriter
+**yok**. FAZ 4 başlayabilir.
 
 ---
 
@@ -29,19 +29,19 @@ doğruluğu, diğer her şeyden önce gelir.
 
 | Kapı | Sonuç | Kanıt |
 |---|---|---|
-| G0 | **GEÇTİ** | iş 1445937 (`932af74`) |
-| G1 | **GEÇTİ** | iş 1445937 (`932af74`) |
-| G2 | **GEÇTİ** | iş 1445937 (`932af74`) |
-| **G3** | **KISMİ** — C1–C6 GEÇTİ, **C7 KANITLANAMADI** | iş 1445937 (`932af74`) |
+| G0 | **GEÇTİ** | iş 1446129 (`0b88ae9`) |
+| G1 | **GEÇTİ** | iş 1446129 (`0b88ae9`) |
+| G2 | **GEÇTİ** | iş 1446129 (`0b88ae9`) |
+| **G3** | **GEÇTİ** 7/7 | iş 1446129 (`0b88ae9`) |
 
 Dördü de aynı commit üzerinde, TRUBA kolyoz3 / H100'de, temiz git ağacıyla.
-**605 test geçiyor / 0 kaldı**, kapsam **%97,0**, kırmızı takım **14/14 temiz**.
+**620 test geçiyor / 0 kaldı**, kapsam **%97,0**, kırmızı takım **14/14 temiz**.
 
 Sahne karması iki bağımsız ortamda birebir aynı: `6d6f1d10eaff64e2…`
 (Linux/numpy 1.26.4 ve Windows/numpy 2.5.1). Bu eşitlik önce tutmuyordu —
 bkz. [ADR-0025](docs/adr/ADR-0025-sahne-makineler-arasi-determinizm.md).
 
-Ayrıntı: [G3 kanıtı](docs/evidence/G3_GATE_932af74.md) ·
+Ayrıntı: [G3 kanıtı](docs/evidence/G3_GATE_0b88ae9.md) ·
 **eksikler kaydı:** [docs/EKSIKLER.md](docs/EKSIKLER.md).
 
 ### FAZ 3 sonrası kapatılan eksikler
@@ -54,14 +54,21 @@ Ayrıntı: [G3 kanıtı](docs/evidence/G3_GATE_932af74.md) ·
 | Uzun koşu kararlılığı | **30 000 adım**, hata birebir sabit | ADR-0028 |
 | Çarpma enerji kayması | `O(dt)` kesme hatası, CFL ile ayarlanır | ADR-0028 |
 | Mermi çözünürlüğü | **1,72e9 parçacık** gerekiyor → FAZ 4 yerel incelme | ADR-0026 |
+| PDS veri manifestosu (C7) | 10 ürün çekildi, **10/10 resmi MD5** doğrulandı | EKSIKLER §7 |
 
 Açık kusur **yok**. `xfail` **yok**.
 
-**Tek kanıtlanamayan:** G3 C7 — gerçek PDS veri ürünleri bu ortamda yok, bu
-yüzden ürün kimlikleri + SHA-256 manifesti üretilemedi. Kapı bunu
-KANITLANAMADI işaretler, **geçmiş saymaz**. Sonuç olarak FAZ 4 çıktıları,
-gerçek Dimorphos geometrisiyle tekrarlanana kadar "DART senaryosu" değil
-**"DART benzeri senaryo"** olarak adlandırılmalıdır.
+**Kanıtlanamayan kriter yok.** G3 C7 (PDS veri manifestosu) kapandı: paket
+`urn:nasa:pds:dart_shapemodel::1.0` çekildi, **10/10 ürün arşivin resmi
+MD5'iyle** doğrulandı, kapı sağlamaları diskte yeniden hesaplayıp eşleştirdi.
+Okunan Dimorphos eşdeğer yarıçapı **75,0 m** (Daly ve dig. 2023 ile birebir).
+
+> **BİRİM:** PDS şekil modelleri **kilometre** cinsindendir. `obj_units: km`
+> yazılmazsa cisim 1000 kat küçük olur ve hiçbir yerde hata vermeden bütün
+> fizik anlamsızlaşır. `load_obj` dönüşümü sessizce yapmaz.
+
+Taşınan tek tasarım kararı: **mermi çözünürlüğü** (ADR-0026) — FAZ 4 yerel
+incelme gerektirir.
 
 ---
 
@@ -117,7 +124,7 @@ Windows + RTX 3050 (sm_86). FP64 hızı FP32'nin 1/32'si, yani GPU testleri
 TRUBA'dan ~50 kat yavaş. Tam paket ~20 dakika.
 
 ```bash
-pytest -q                          # tam paket (396 test)
+pytest -q                          # tam paket (620 test)
 ```
 
 ```bash

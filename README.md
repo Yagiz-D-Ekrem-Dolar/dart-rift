@@ -23,27 +23,30 @@ geçilmez. Kanıtlar TRUBA/ARF-ACC üzerinde, temiz git ağacıyla üretilir.
 | **G0** | Zemin sağlam (altyapı) | **GEÇTİ** | FAZ 1 başlayabilir |
 | **G1** | Şok motoru çalışıyor | **GEÇTİ** | FAZ 2 başlayabilir |
 | **G2** | Gerçek malzeme fiziği | **GEÇTİ** | FAZ 3 başlayabilir |
-| **G3** | Sahne kurulumu | **KISMİ** — C1–C6 GEÇTİ, C7 **KANITLANAMADI** | **FAZ 4 başlayabilir**, eksik açıkça taşınarak |
+| **G3** | Sahne kurulumu | **GEÇTİ** 7/7 | **FAZ 4 başlayabilir** |
 
-Dördü de **aynı commit üzerinde** (`8916f42`, temiz ağaç) arka arkaya koşuldu:
-[G3 nihai kanıt](docs/evidence/G3_GATE_8916f42.md) — TRUBA kolyoz3 / H100,
-iş 1445853, **571 test geçti / 0 kaldı** (`xfail` yok), kapsam **%97,0**,
-kırmızı takım (P0 §12 + P3 §10) **14/14 temiz**.
+[G3 kanıtı](docs/evidence/G3_GATE_0b88ae9.md) — commit `0b88ae9`, TRUBA / H100,
+iş 1446129, **620 test geçti / 0 kaldı** (`xfail` yok), kapsam **%97,0**,
+kırmızı takım (P0 §12 + P3 §10) **14/14 temiz**, çıkış kodu **0**.
 
 > **Makineler arası determinizm — ölçüldü.** FAZ 3 sahne karması iki bağımsız
-> ortamda birebir aynı: `1c6f2a100ae4a866…` (Linux/numpy 1.26.4/H100 ve
+> ortamda birebir aynı: `6d6f1d10eaff64e2…` (Linux/numpy 1.26.4/H100 ve
 > Windows/numpy 2.5.1/RTX 3050). Bu eşitlik önce **tutmuyordu**; iki gerçek
 > kusur bulundu — ışın-yüzey kesişiminin mesh köşesinde dejenere olması
 > (yüzey normali makineye göre **2,5°** oynuyordu, fiziksel olarak önemli) ve
 > `centroid`'de toplama sırası. İkisi de düzeltildi ve bir altın-karma
 > bekçisiyle kilitlendi ([ADR-0025](docs/adr/ADR-0025-sahne-makineler-arasi-determinizm.md)).
 
-> **G3 neden "KISMİ":** C7, PDS veri ürünlerinin kimliklerini ve sağlama
-> toplamlarını ister. Gerçek PDS ürünleri bu ortamda **yok**, dolayısıyla
-> kriter **kanıtlanamaz**. Kapı bunu `KANITLANAMADI` işaretler ve **geçmiş
-> saymaz** — çıkış kodu 3 döner. Kanıtlanamayan bir kriteri geçmiş saymak
-> kapının kendisini anlamsızlaştırırdı. Ayrıntı:
-> [`data_manifest/README.md`](data_manifest/README.md).
+> **Gerçek Dimorphos geometrisi kullanılıyor.** C7 kriteri PDS veri
+> ürünlerinin kimlik ve sağlama toplamlarını ister; paket
+> `urn:nasa:pds:dart_shapemodel::1.0` çekildi (Daly ve dig., NASA PDS 2023) ve
+> **10/10 ürün arşivin resmi MD5'iyle doğrulandı**. Okunan Dimorphos eşdeğer
+> yarıçapı **75,0 m** — yayımlanan değerle birebir. Veri depoda değildir;
+> depoya giren köken kaydıdır ([`data_manifest/`](data_manifest/README.md)).
+>
+> **Birim uyarısı:** PDS şekil modelleri kilometre cinsindendir. Metre saymak
+> cismi 1000 kat küçültür ve hiçbir yerde hata vermeden bütün fiziği
+> anlamsızlaştırır; bu yüzden dönüşüm `units="km"` ile **açıkça** verilir.
 
 Koşu bazlı raporlar: [G0](docs/evidence/G0_report_truba_1425656.md) ·
 [G1](docs/evidence/G1_report_truba_1426162.md) ·
@@ -86,10 +89,17 @@ Doğrulama senaryolarını geçmek, hedef problemi çözebilmek anlamına gelmez
   kalem CPU'da Python'da kurulan Barnes-Hut ağacıdır. FAZ 5'in öngördüğü
   "yüzlerce koşu" yerçekimsiz ~30 GPU-günü ile **fizibil**; yerçekimli
   koşular için ağacın GPU'ya taşınması ya da K adımda bir yenilenmesi gerekir.
-- Fizik seti (Tillotson + P-α + basınca bağlı dayanım + öz-yerçekimi) zayıf
-  ve gözenekli hedefler için literatürdeki standart settir. **Hasar/kırılma
-  modeli yoktur** (`D = 0`, P2 §1.3 STRETCH); bu rejimde savunulabilir ama
-  bir model sınırlamasıdır ve her posteriorla birlikte belirtilmelidir.
+- Fizik seti (Tillotson + P-α + basınca bağlı dayanım + öz-yerçekimi +
+  **Grady-Kipp hasar**) zayıf ve gözenekli hedefler için literatürdeki
+  standart settir. Hasar modeli P2 §1.3'te STRETCH olarak bırakılmış ve `D = 0`
+  sabitlenmişti; **kapatıldı** — Weibull kusur dağılımı, çekmeyi zayıflatan
+  (basmayı değil) uygulama, 32 test, çekme dayanımı ≈32 MPa (bazalt bandı) —
+  [ADR-0027](docs/adr/ADR-0027-grady-kipp-hasar-modeli.md).
+- **Mermi çözünürlüğü FAZ 4'ün tasarımını belirliyor.** DART mermisini çapı
+  boyunca 6 parçacıkla çözmek **1,72e9 parçacık** ister — ölçülmüş fizibil
+  sınırın (1,12e7) **153 katı**. Tekdüze ağ yetmez; çarpma bölgesinde yerel
+  yüksek çözünürlük gerekir —
+  [ADR-0026](docs/adr/ADR-0026-mermi-cozunurlugu-tekduze-agda-imkansiz.md).
 
 ## Doğrulama sonuçları
 

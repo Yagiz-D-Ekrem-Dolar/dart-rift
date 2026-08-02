@@ -87,21 +87,36 @@ boşluksuz olsun" biçimine daraltıldı.
 
 ---
 
+### 7. G3 C7 — PDS veri manifestosu — **KAPANDI**
+
+**Durum:** FAZ 0'da "PDS ürün kimlikleri ve checksumları FAZ 3'te eklenecek"
+denmişti; FAZ 3 sonunda eklenememiş ve açıkça **KANITLANAMADI** olarak
+kaydedilmişti.
+
+**Kapanış.** Paket `urn:nasa:pds:dart_shapemodel::1.0` çekildi — Dimorphos
+v004 global şekil modelleri (19,40 / 9,72 / 4,87 m) + Didymos v003 + PDS4
+etiketleri + koleksiyon envanteri; 10 ürün, ~134 MB.
+
+- SHA-256 ve MD5 **baytlar diske yazılırken** hesaplanır.
+- Her ürün arşivin **resmi MD5**'iyle doğrulandı: **10/10**.
+- Kapı, dosyalar varsa SHA-256'ları **yeniden hesaplar**: **10/10** eşleşti.
+- Veri depoda değil (`.gitignore`); depoya giren **köken kaydı**
+  (`data_manifest/dart_shapemodel.json`).
+
+**Dış kaynak kontrolü:** okunan Dimorphos eşdeğer yarıçapı **75,0 m** —
+Daly ve dig. (2023) ile birebir.
+
+**Yakalanan tuzak:** PDS şekil modelleri **kilometre** cinsindendir. Metre
+saymak cismi 1000 kat küçültür ve *hiçbir yerde hata vermeden* bütün fiziği
+anlamsızlaştırırdı. `load_obj` dönüşümü sessizce yapmaz; `units="km"` açıkça
+verilir ve iki yönlü test edilir.
+
+**Sonuç: G3 artık TAM GEÇİYOR (7/7, çıkış kodu 0).** "DART benzeri senaryo"
+nitelemesi kalktı.
+
+---
+
 ## Açık kalanlar
-
-### A. G3 C7 — PDS veri manifestosu · **ONAY BEKLİYOR**
-
-Gereken paket **belirlendi**: `urn:nasa:pds:dart_shapemodel::1.0`
-(DART Shapemodel Archive Bundle, Daly ve diğerleri 2023). TRUBA giriş
-düğümünden PDS-SBN'e erişim **ölçüldü ve var**. İndirme + manifest betiği
-yazıldı (`scripts/fetch_pds_shapemodel.py`; SHA-256'yı indirme sırasında akış
-halinde hesaplar, varsayılan olarak hiçbir şey indirmez).
-
-**Eksik olan tek şey:** dış kaynaktan dosya indirme onayı. Onay geldiğinde tek
-komutla kapanır. Ayrıntı: `data_manifest/GEREKEN_URUNLER.md`.
-
-**Etkisi:** FAZ 4 çıktıları gerçek Dimorphos geometrisiyle tekrarlanana kadar
-"DART senaryosu" değil **"DART benzeri senaryo"** olarak adlandırılır.
 
 ### B. Mermi çözünürlüğü · **ÖLÇÜLDÜ, FAZ 4 TASARIM KARARI**
 
