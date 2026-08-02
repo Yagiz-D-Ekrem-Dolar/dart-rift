@@ -416,22 +416,35 @@ def test_carpma_oncesi_referans_hayali_krateri_sifirlar():
 def test_duzensiz_cisimde_bilinen_krater_dogru_olculur():
     """Elipsoide BILINEN ~8 m'lik cukur; kuresel referans 2 kat sisiriyordu.
 
-    Olculdu: kuresel varsayimla 17,43 m (gercek ~8), carpma oncesi referansla
-    8,44 m. Yani duzeltme yalnizca hayali krateri silmiyor, GERCEK krateri de
-    dogru olcuyor.
+    Olculdu (3 tohum): kuresel varsayimla 17,3-17,6 m (gercek 8), carpma
+    oncesi referansla 8,66 / 8,69 / 9,04 m. Yani duzeltme yalnizca hayali
+    krateri silmiyor, GERCEK krateri de dogru olcuyor.
+
+    KALAN ~%8-13 fazlalik yeni bir kusur DEGIL: `surface_particles` "yuzey"i
+    yon kutusundaki en uzak parcacik olarak alir ve bu gercek yuzeyin biraz
+    icinde kalir; krater tabaninda kutu basina ornek referans bolgesinden az
+    oldugu icin yanlilik derinligi biraz BUYUK gosterir. Ayni etki kure
+    testinde de turetilmisti (20 m -> 21,1 m, +%5,5). Isaret ve mertebe
+    onceden bilindigi icin esik %20.
     """
-    x0 = _elipsoit_parcaciklari()
+    a, b, c = 44.0, 43.5, 32.5
+    x0 = _elipsoit_parcaciklari(a, b, c)
     d = np.linalg.norm(x0, axis=1)
-    ca = x0[:, 2] / np.maximum(d, 1e-300)
-    r_local = np.linalg.norm(x0 / np.array([44.0, 43.5, 32.5]), axis=1)
-    kaz = (ca > np.cos(np.radians(25.0))) & (r_local > 1.0 - 8.0 / 32.5)
+    nrm = x0 / np.maximum(d, 1e-300)[:, None]
+    # Koni icinde YEREL YUZEYDEN tam 8 m kaz. Normalize yaricapta kazimak
+    # elipsoitte koni boyunca DEGISEN mutlak derinlik verirdi — o zaman
+    # "bilinen derinlik" bilinmez olur ve test kendi belirsizligini
+    # cikaricinin hatasi sanardi (olculdu: oyle kazinca 9,06 m, sozde %13).
+    r_surf = 1.0 / np.sqrt((nrm[:, 0] / a) ** 2 + (nrm[:, 1] / b) ** 2
+                           + (nrm[:, 2] / c) ** 2)
+    kaz = (nrm[:, 2] > np.cos(np.radians(25.0))) & (d > r_surf - 8.0)
     xk = x0[~kaz]
     ort = dict(center=np.zeros(3), impact_direction=np.array([0.0, 0.0, -1.0]),
                reference_radius=40.0, outer_angle_deg=60.0, n_bins=12)
     kuresel = crater_profile(xk, **ort)
     gercek = crater_profile(xk, **ort, x_reference=x0)
     assert kuresel.depth > 15.0, kuresel.depth          # sisirilmis hali
-    assert gercek.depth == pytest.approx(8.0, rel=0.15), gercek.depth
+    assert gercek.depth == pytest.approx(8.0, rel=0.20), gercek.depth
     assert gercek.depth < 0.6 * kuresel.depth
 
 

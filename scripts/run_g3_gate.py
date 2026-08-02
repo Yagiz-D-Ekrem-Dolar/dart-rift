@@ -170,6 +170,7 @@ def main() -> int:
         run_impactor_convergence,
         run_observable_selftest,
         run_rubble_quality,
+        run_crater_irregular_selftest,
         run_scene_determinism,
         run_shape_pipeline,
         run_speed_threshold_selftest,
@@ -273,11 +274,16 @@ def main() -> int:
     # yayilimi TAM SIFIR olmasina ragmen kriter geciyordu (butun yayilim
     # yaricap ekseninden geliyordu). Hiz ekseni ayri bir senaryoyla kanitlanir.
     spd = run_speed_threshold_selftest()
+    # Krater cikaricinin butun sinavlari KURE uzerindeydi; Dimorphos degil
+    # (88x87x65 m). Duzensiz cisim senaryosu artik kriterin parcasi.
+    cir = run_crater_irregular_selftest()
     crit["C5"].record(
         obs["beta_recovery_rel_err"] < 1e-6 and obs["momentum_closure"] < 1e-9
         and obs["sensitivity_reported"] and obs["crater_separates_global"]
         and obs["radius_axis_active"] and spd["speed_axis_active"]
         and spd["beta_monotone_in_threshold"] and spd["mass_monotone_in_threshold"]
+        and cir["phantom_removed"] and cir["depth_rel_err_true_ref"] < 0.20
+        and cir["spherical_flag_reported"]
         and obs["ejecta_power_law_rel_err"] < 0.10 and obs["ejecta_power_law_r2"] > 0.95,
         f"beta geri kazanimi {obs['beta_recovery_rel_err']:.1e} (gercek "
         f"{obs['beta_true']}), momentum defteri {obs['momentum_closure']:.1e}, "
@@ -290,7 +296,13 @@ def main() -> int:
         f"{obs['ejecta_power_law_exponent']:.3f} (gercek "
         f"{obs['ejecta_power_law_exponent_true']}, R^2={obs['ejecta_power_law_r2']:.4f}); "
         f"krater {obs['crater_depth']:.2f} m, kuresel degisim "
-        f"{obs['crater_global_change']:.2f} m (ayrisiyor)",
+        f"{obs['crater_global_change']:.2f} m (ayrisiyor); DUZENSIZ cisim "
+        f"(88x87x65 m): kuresel referans kratersiz cisimde "
+        f"{cir['phantom_depth_spherical_ref']:.2f} m HAYALI krater uretiyor, "
+        f"carpma oncesi referansla {cir['phantom_depth_true_ref']:.1e} m ve "
+        f"bilinen {cir['known_depth']:.0f} m cukur "
+        f"{cir['measured_depth_true_ref']:.2f} m olculuyor "
+        f"(hata %{100 * cir['depth_rel_err_true_ref']:.1f})",
     )
 
     scn = run_scene_determinism()

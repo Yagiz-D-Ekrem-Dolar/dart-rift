@@ -242,8 +242,9 @@ def rt9_global_deformation_not_crater() -> Check:
     Bu, olculmus bir kusurdur: yon kutulari yetersiz orneklendiginde hicbir
     cukuru olmayan bir kurede 41 m'lik hayali krater raporlanmisti.
     """
-    c = Check("RT9", "Kuresel buzusme krater olarak mi sayiliyor?")
+    c = Check("RT9", "Kuresel buzusme ya da CISMIN SEKLI krater olarak mi sayiliyor?")
     from dartrift.observables.crater_shape import crater_profile
+    from dartrift.validation.scene_checks import run_crater_irregular_selftest
 
     rng = np.random.default_rng(4)
     p = rng.normal(size=(30000, 3))
@@ -253,10 +254,22 @@ def rt9_global_deformation_not_crater() -> Check:
                         impact_direction=np.array([0.0, 0.0, -1.0]),
                         reference_radius=100.0, outer_angle_deg=60.0)
     hayali = abs(cs.depth) > 5.0
+    # ONCEKI HALI YALNIZCA KUREYI SINIYORDU. Izotropik buzusme referansa
+    # zaten girer; asil tehlike cismin KENDI seklidir. Dimorphos 88x87x65 m
+    # ve kuresel referans varsayimiyla KRATERSIZ elipsoitte 9,04 m hayali
+    # krater olculdu. Duzensiz cisim senaryosu artik sart.
+    ir = run_crater_irregular_selftest()
     c.record(
-        not hayali,
-        f"cukursuz %10 buzusmus kurede derinlik {cs.depth:.2f} m, "
-        f"kuresel degisim {cs.global_radius_change:.2f} m",
+        not hayali and ir["phantom_removed"] and ir["depth_rel_err_true_ref"] < 0.20
+        and ir["spherical_flag_reported"] and ir["true_ref_flag_reported"],
+        f"cukursuz %10 buzusmus kurede derinlik {cs.depth:.2f} m, kuresel degisim "
+        f"{cs.global_radius_change:.2f} m; DUZENSIZ cisim (88x87x65 m): kuresel "
+        f"referans kratersiz cisimde {ir['phantom_depth_spherical_ref']:.2f} m "
+        f"HAYALI krater ve bilinen {ir['known_depth']:.0f} m cukuru "
+        f"{ir['measured_depth_spherical_ref']:.2f} m gosteriyor; carpma oncesi "
+        f"referansla hayali {ir['phantom_depth_true_ref']:.2e} m ve gercek olcum "
+        f"{ir['measured_depth_true_ref']:.2f} m (hata "
+        f"%{100 * ir['depth_rel_err_true_ref']:.1f})",
     )
     return c
 

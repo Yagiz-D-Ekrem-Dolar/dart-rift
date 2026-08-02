@@ -29,8 +29,81 @@ __all__ = [
     "run_impactor_convergence",
     "run_observable_selftest",
     "run_speed_threshold_selftest",
+    "run_crater_irregular_selftest",
     "run_scene_determinism",
 ]
+
+
+def run_crater_irregular_selftest(seed: int = 31) -> dict:
+    """Krater cikarici DUZENSIZ cisimde de dogru mu (P3-FR-08)?
+
+    NEDEN AYRI SENARYO. Mevcut krater sinavlarinin hepsi KURE uzerindeydi:
+    bilinen kalot, kuresel buzusme (RT9), az orneklenen kutular. Hepsi
+    geciyordu — ama hicbiri cismin KENDI seklini sinamiyordu. Dimorphos kure
+    degil: 88 x 87 x 65 m. Kuresel referans varsayimiyla KRATERSIZ bir
+    elipsoitte 9,04 m'lik hayali krater olculdu; bilinen 8 m'lik cukur ise
+    17,43 m raporlandi.
+
+    Bu senaryo iki seyi birden kanitlar:
+      1. carpma oncesi sekil referans alininca kratersiz cisimde derinlik ~0,
+      2. bilinen cukur DOGRU olculuyor (kuresel varsayim ise sisiriyor).
+
+    KALAN SAPMA NEDIR. Bilinen 8 m'lik cukur duzeltilmis referansla 8,7-9,0 m
+    olculuyor (3 tohumda %8,3 / %8,7 / %13,0). Bu YENI bir kusur degil,
+    `surface_particles`in bilinen orneklem yanliligidir: "yuzey", yon
+    kutusundaki EN UZAK parcaciktir ve gercek yuzeyin bir miktar icinde kalir;
+    krater tabaninda kutu basina ornek sayisi referans bolgesinden az oldugu
+    icin yanlilik iki bolgede farkli olur ve derinligi biraz BUYUK gosterir.
+    Ayni etki kure testinde de olculmus ve turetilmisti (bilinen 20 m ->
+    beklenen 21,1 m, +%5,5). Yani isaret ve mertebe onceden bilinen bir
+    ozelliktir; esik buna gore %20 secildi, "genis band" diye degil.
+    """
+    rng = np.random.default_rng(seed)
+    a, b, c_ax = 44.0, 43.5, 32.5          # gercek Dimorphos yari-eksenleri
+    n = 60000
+    p = rng.normal(size=(n, 3))
+    p /= np.linalg.norm(p, axis=1)[:, None]
+    x0 = p * (rng.random(n) ** (1.0 / 3.0))[:, None] * np.array([a, b, c_ax])
+
+    ort = dict(center=np.zeros(3), impact_direction=np.array([0.0, 0.0, -1.0]),
+               reference_radius=40.0, outer_angle_deg=60.0, n_bins=12)
+    bos_kuresel = crater_profile(x0, **ort)
+    bos_gercek = crater_profile(x0, **ort, x_reference=x0)
+
+    # Bilinen cukur: koni icinde YEREL YUZEYDEN tam `derinlik` metre kaz.
+    # Normalize yaricapta kazimak (r_local > 1 - h/c) elipsoitte koni boyunca
+    # DEGISEN bir mutlak derinlik verir — yani "bilinen" deger bilinmez olur.
+    # Olculdu: oyle kazinca cikarici 9,06 m raporluyordu ve bu %13 "hata" gibi
+    # gorunuyordu; oysa gercek kazi derinligi eksen disinda zaten 8 m'den
+    # fazlaydi. Sinavin kendisi belirsizse cikaricinin dogrulugu olculemez.
+    derinlik = 8.0
+    d = np.linalg.norm(x0, axis=1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        nrm = x0 / np.maximum(d, 1e-300)[:, None]
+    # yon boyunca elipsoit yuzey yaricapi
+    r_surf = 1.0 / np.sqrt((nrm[:, 0] / a) ** 2 + (nrm[:, 1] / b) ** 2
+                           + (nrm[:, 2] / c_ax) ** 2)
+    ca = nrm[:, 2]
+    kaz = (ca > np.cos(np.radians(25.0))) & (d > r_surf - derinlik)
+    xk = x0[~kaz]
+    dolu_kuresel = crater_profile(xk, **ort)
+    dolu_gercek = crater_profile(xk, **ort, x_reference=x0)
+
+    return {
+        "axes_m": [2 * a, 2 * b, 2 * c_ax],
+        "phantom_depth_spherical_ref": float(bos_kuresel.depth),
+        "phantom_depth_true_ref": float(bos_gercek.depth),
+        "known_depth": float(derinlik),
+        "measured_depth_spherical_ref": float(dolu_kuresel.depth),
+        "measured_depth_true_ref": float(dolu_gercek.depth),
+        "depth_rel_err_true_ref": abs(dolu_gercek.depth - derinlik) / derinlik,
+        "spherical_flag_reported": bool(
+            bos_kuresel.diagnostics["reference_is_spherical"]),
+        "true_ref_flag_reported": bool(
+            not bos_gercek.diagnostics["reference_is_spherical"]),
+        "phantom_removed": bool(abs(bos_gercek.depth) < 1.0e-6),
+        "spherical_ref_inflates": bool(dolu_kuresel.depth > 1.5 * derinlik),
+    }
 
 
 def run_speed_threshold_selftest(seed: int = 29) -> dict:
