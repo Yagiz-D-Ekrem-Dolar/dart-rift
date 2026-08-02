@@ -1,0 +1,123 @@
+{
+  "bundle": "urn:nasa:pds:dart_shapemodel::1.0",
+  "retrieved_utc": "2026-08-02T08:16:07.554787+00:00",
+  "retrieved_by": "scripts/fetch_pds_shapemodel.py",
+  "source_url": "https://pds-smallbodies.astro.umd.edu/holdings/pds4-dart_shapemodel-v1.0/SUPPORT/dataset.shtml",
+  "license": "NASA PDS acik veri; atif zorunlu",
+  "citation": "Daly, T., Barnouin, O., Ernst, C., Nair, H., Espiritu, R., Waller, D., DART Shapemodel Archive Bundle, urn:nasa:pds:dart_shapemodel::1.0, NASA Planetary Data System, 2023.",
+  "data_root": "data/pds",
+  "md5_verified_count": 10,
+  "md5_unverifiable_count": 0,
+  "products": [
+    {
+      "product_id": "urn:nasa:pds:dart_shapemodel::1.0#dimorphos_g_1940mm_spc_obj_0000n00000_v004.obj",
+      "filename": "dimorphos_g_1940mm_spc_obj_0000n00000_v004.obj",
+      "source_url": "https://pds-smallbodies.astro.umd.edu/holdings/pds4-dart_shapemodel-v1.0/data_derived_dimorphos_model_v004/dimorphos_g_1940mm_spc_obj_0000n00000_v004.obj",
+      "sha256": "833eaeac8c49338abe64012a679b1b9695f774f1b5e4842a8e5b9f0af1d28664",
+      "md5": "f3e759b1179844e8884eca73010c74c9",
+      "md5_official": "f3e759b1179844e8884eca73010c74c9",
+      "md5_verified": true,
+      "bytes": 3616213,
+      "used_by": "setup/shape_mesh.load_obj"
+    },
+    {
+      "product_id": "urn:nasa:pds:dart_shapemodel::1.0#dimorphos_g_1940mm_spc_obj_0000n00000_v004.xml",
+      "filename": "dimorphos_g_1940mm_spc_obj_0000n00000_v004.xml",
+      "source_url": "https://pds-smallbodies.astro.umd.edu/holdings/pds4-dart_shapemodel-v1.0/data_derived_dimorphos_model_v004/dimorphos_g_1940mm_spc_obj_0000n00000_v004.xml",
+      "sha256": "715a4f105d2284ad818b5a3b5eb64087be8f37a6c997fafc31e88724a2c765f6",
+      "md5": "012004c4d442f999dc0f03e61272221b",
+      "md5_official": "012004c4d442f999dc0f03e61272221b",
+      "md5_verified": true,
+      "bytes": 9204,
+      "used_by": "setup/shape_mesh.load_obj"
+    },
+    {
+      "product_id": "urn:nasa:pds:dart_shapemodel::1.0#dimorphos_g_0972mm_spc_obj_0000n00000_v004.obj",
+      "filename": "dimorphos_g_0972mm_spc_obj_0000n00000_v004.obj",
+      "source_url": "https://pds-smallbodies.astro.umd.edu/holdings/pds4-dart_shapemodel-v1.0/data_derived_dimorphos_model_v004/dimorphos_g_0972mm_spc_obj_0000n00000_v004.obj",
+      "sha256": "9633847a16c34faad7590f43ba6b07fed53926fb363da0a72f977f6cf2c61f3e",
+      "md5": "1505479b844683c6cb3617170b3ec1da",
+      "md5_official": "1505479b844683c6cb3617170b3ec1da",
+      "md5_verified": true,
+      "bytes": 14454228,
+      "used_by": "setup/shape_mesh.load_obj"
+    },
+    {
+      "product_id": "urn:nasa:pds:dart_shapemodel::1.0#dimorphos_g_0972mm_spc_obj_0000n00000_v004.xml",
+      "filename": "dimorphos_g_0972mm_spc_obj_0000n00000_v004.xml",
+      "source_url": "https://pds-smallbodies.astro.umd.edu/holdings/pds4-dart_shapemodel-v1.0/data_derived_dimorphos_model_v004/dimorphos_g_0972mm_spc_obj_0000n00000_v004.xml",
+      "sha256": "885aedadb7836a6b93a739d64efba816c982e72da427d111b124b5231d3e6eb8",
+      "md5": "9c374a9735c84e6a3e773288fad1957b",
+      "md5_official": "9c374a9735c84e6a3e773288fad1957b",
+      "md5_verified": true,
+      "bytes": 9206,
+      "used_by": "setup/shape_mesh.load_obj"
+    },
+    {
+      "product_id": "urn:nasa:pds:dart_shapemodel::1.0#dimorphos_g_0487mm_spc_obj_0000n00000_v004.obj",
+      "filename": "dimorphos_g_0487mm_spc_obj_0000n00000_v004.obj",
+      "source_url": "https://pds-smallbodies.astro.umd.edu/holdings/pds4-dart_shapemodel-v1.0/data_derived_dimorphos_model_v004/dimorphos_g_0487mm_spc_obj_0000n00000_v004.obj",
+      "sha256": "2a1bc1a880dc6ce850d277605c5c40f19f2e9afe5dd7cb880ffd9b49b0e9a8d8",
+      "md5": "41c98ffe28f4381be012092cacf5563a",
+      "md5_official": "41c98ffe28f4381be012092cacf5563a",
+      "md5_verified": true,
+      "bytes": 57806304,
+      "used_by": "setup/shape_mesh.load_obj"
+    },
+    {
+      "product_id": "urn:nasa:pds:dart_shapemodel::1.0#dimorphos_g_0487mm_spc_obj_0000n00000_v004.xml",
+      "filename": "dimorphos_g_0487mm_spc_obj_0000n00000_v004.xml",
+      "source_url": "https://pds-smallbodies.astro.umd.edu/holdings/pds4-dart_shapemodel-v1.0/data_derived_dimorphos_model_v004/dimorphos_g_0487mm_spc_obj_0000n00000_v004.xml",
+      "sha256": "1fcd6f5c9290659940a995d883cbb088a434abe305e820f2cb1107d3d6063d7f",
+      "md5": "d794da333cc19c45c541cd5782ae87d4",
+      "md5_official": "d794da333cc19c45c541cd5782ae87d4",
+      "md5_verified": true,
+      "bytes": 9208,
+      "used_by": "setup/shape_mesh.load_obj"
+    },
+    {
+      "product_id": "urn:nasa:pds:dart_shapemodel::1.0#overview_data_derived_dimorphos_model_v004.txt",
+      "filename": "overview_data_derived_dimorphos_model_v004.txt",
+      "source_url": "https://pds-smallbodies.astro.umd.edu/holdings/pds4-dart_shapemodel-v1.0/data_derived_dimorphos_model_v004/overview_data_derived_dimorphos_model_v004.txt",
+      "sha256": "34b300648d7ed08d16bcf39c2572d3a1052391395a0366c28e78b4146aac144d",
+      "md5": "7004f7b45b432cfcda16900fba5aa3ab",
+      "md5_official": "7004f7b45b432cfcda16900fba5aa3ab",
+      "md5_verified": true,
+      "bytes": 5510,
+      "used_by": "setup/shape_mesh.load_obj"
+    },
+    {
+      "product_id": "urn:nasa:pds:dart_shapemodel::1.0#collection_data_derived_dimorphos_model_v004.csv",
+      "filename": "collection_data_derived_dimorphos_model_v004.csv",
+      "source_url": "https://pds-smallbodies.astro.umd.edu/holdings/pds4-dart_shapemodel-v1.0/data_derived_dimorphos_model_v004/collection_data_derived_dimorphos_model_v004.csv",
+      "sha256": "0348703a4020cf1f94928f9b07c2a126cecf0fb26f5f1292e68c049447d44afe",
+      "md5": "e3705aac3e9fd8353381c286e6c8dae6",
+      "md5_official": "e3705aac3e9fd8353381c286e6c8dae6",
+      "md5_verified": true,
+      "bytes": 9234,
+      "used_by": "setup/shape_mesh.load_obj"
+    },
+    {
+      "product_id": "urn:nasa:pds:dart_shapemodel::1.0#didymos_g_2329mm_spc_obj_0000n00000_v003.obj",
+      "filename": "didymos_g_2329mm_spc_obj_0000n00000_v003.obj",
+      "source_url": "https://pds-smallbodies.astro.umd.edu/holdings/pds4-dart_shapemodel-v1.0/data_derived_didymos_model_v003/didymos_g_2329mm_spc_obj_0000n00000_v003.obj",
+      "sha256": "1dfe8e3a24a38973b115fe88a3f2e34396e232db6b630f3ecd9a6e553200177a",
+      "md5": "3037cad9b9402dd4e2f47b1a58246250",
+      "md5_official": "3037cad9b9402dd4e2f47b1a58246250",
+      "md5_verified": true,
+      "bytes": 57806280,
+      "used_by": "setup/shape_mesh.load_obj"
+    },
+    {
+      "product_id": "urn:nasa:pds:dart_shapemodel::1.0#didymos_g_2329mm_spc_obj_0000n00000_v003.xml",
+      "filename": "didymos_g_2329mm_spc_obj_0000n00000_v003.xml",
+      "source_url": "https://pds-smallbodies.astro.umd.edu/holdings/pds4-dart_shapemodel-v1.0/data_derived_didymos_model_v003/didymos_g_2329mm_spc_obj_0000n00000_v003.xml",
+      "sha256": "4f72ea66acbbf841a6da7876a0d399d79996e29e25490bd511fb48fdb36e6ab1",
+      "md5": "6e6cea5f631ae56647ac0d3d860abece",
+      "md5_official": "6e6cea5f631ae56647ac0d3d860abece",
+      "md5_verified": true,
+      "bytes": 9124,
+      "used_by": "setup/shape_mesh.load_obj"
+    }
+  ]
+}

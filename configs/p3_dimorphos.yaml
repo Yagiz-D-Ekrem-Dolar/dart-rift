@@ -1,0 +1,108 @@
+# FAZ 3 sahnesi — GERÇEK Dimorphos şekil modeli (PDS).
+#
+# Bu, `p3_scene.yaml`den tek farkla ayrılır: hedef şekli analitik ikosfer
+# değil, NASA PDS'ten indirilmiş DART SPC şekil modelidir.
+#
+#   paket : urn:nasa:pds:dart_shapemodel::1.0
+#   ürün  : dimorphos_g_0972mm_spc_obj_0000n00000_v004.obj  (9,72 m çözünürlük)
+#   köken : data_manifest/dart_shapemodel.json (SHA-256 + arşivin resmi MD5'i)
+#   atıf  : Daly ve dig., DART Shapemodel Archive Bundle, NASA PDS, 2023
+#
+# BİRİM UYARISI — SİLMEYİN. PDS şekil modelleri KİLOMETRE cinsindendir.
+# `obj_units: km` olmazsa cisim 1000 kat küçük, kütlesi 1e9 kat az olur ve
+# hiçbir yerde hata vermeden bütün fizik anlamsızlaşır. Ölçüldü: km ile
+# eşdeğer yarıçap 75,0 m (Daly ve dig. 2023 ile birebir), m ile 0,075 m.
+#
+# VERİ DEPODA DEĞİLDİR (100+ MB). İndirmek için:
+#   python scripts/fetch_pds_shapemodel.py --url-file <urls> --out data/pds --yes
+#
+# ÜS GÖSTERİMİNDEKİ "+" ZORUNLUDUR (ADR-0005): PyYAML işaretsiz üssü string
+# okur ve şema strict=True olduğu için config REDDEDİLİR.
+
+schema_version: 1
+run_id: p3_dimorphos_pds
+random_seed: 20260802
+
+numerics:
+  precision: deterministic_fp64
+  kernel: wendland_c2
+  cfl: 0.25
+  alpha_av: 1.0
+  beta_av: 2.0
+
+io:
+  output_layers: [scalar_budget, sparse_snapshot, event_catalog]
+  hdf5_compression: gzip
+
+physics:
+  eos: tillotson
+  density_method: continuity
+  tillotson:                      # Benz & Asphaug (1999) bazalt, SI
+    rho0: 2700.0
+    A: 2.67e+10
+    B: 2.67e+10
+    a: 0.5
+    b: 1.5
+    u0: 4.87e+8
+    u_iv: 4.72e+6
+    u_cv: 1.82e+7
+    alpha_t: 5.0
+    beta_t: 5.0
+    cs_floor_frac: 0.05
+  strength:
+    enabled: true
+    Y0: 1.0e+4                    # Ek A taraması 0,1–1e+3 Pa'ya inecek (FAZ 5)
+    mu_f: 0.6
+    YM: 1.5e+9
+    shear_G: 2.27e+10
+    jaumann: true
+  porosity:
+    enabled: true
+    alpha0: 1.6
+    Pe: 1.0e+6
+    Ps: 1.0e+8
+    n_exp: 2.0
+  gravity:
+    enabled: true
+    G: 6.6743e-11
+    eps: 0.0
+    mode: barnes_hut
+    theta: 0.5
+  damage:                         # Grady-Kipp (ADR-0027)
+    enabled: true
+    k_weibull: 1.0e+29
+    m_weibull: 9.0
+    crack_speed_frac: 0.4
+    n_flaws_per_particle: 10.0
+
+scene:
+  target:
+    shape: obj
+    obj_path: data/pds/dimorphos_g_0972mm_spc_obj_0000n00000_v004.obj
+    obj_units: km                 # ZORUNLU — yukarıdaki birim uyarısını okuyun
+    spacing: 4.0
+    bulk_density: 1800.0          # ~%33 gözeneklilik, moloz yığını
+    model_class: M1
+    matrix_alpha0: 1.6
+    matrix_Y0: 1.0e+4
+    boulder_alpha0: 1.05
+    boulder_Y0: 1.0e+7
+    f_boulder: 0.25
+    q: 3.0
+    r_min: 8.0
+    r_max: 24.0
+  impactor:
+    n_particles: 2000             # >=8 şema şartı: nokta parçacık YASAK
+    mass: 579.4                   # kg, çarpma anındaki DART kütlesi
+    speed: 6144.9                 # m/s
+    density: 2700.0
+    aim: [0.0, 0.0, 1.0]
+    angle_deg: 0.0
+    azimuth_deg: 0.0
+  settling:
+    enabled: true
+    damping: 0.02
+    max_steps: 400
+    ke_frac: 1.0e-3
+    gravity_rebuild_every: 1      # ADR-0024: K=1 tam doğruluk
+    gravity_drift_tol: 0.25

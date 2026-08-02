@@ -15,9 +15,12 @@ Kriterler:
     (ayni tohum ayni karma, FARKLI tohum FARKLI karma) ve tum paket geciyor.
  7. Veri manifestosu: PDS urun kimlikleri + saglama toplamlari.
 
-C7 UYARISI: gercek PDS veri urunleri depoda yoktur. Kanit uretilemedigi icin
-bu kriter "KANITLANAMADI" isaretlenir — GECTI ISARETLENMEZ. Kanitlanamayan
-bir kriteri gecmis saymak, kapinin kendisini anlamsizlastirir.
+C7 NOTU: veri DEPOYA konmaz (100+ MB); depoya giren sey KOKEN KAYDIDIR
+(`data_manifest/*.json`: urun kimligi, SHA-256, arsivin resmi MD5'i). Veri
+`scripts/fetch_pds_shapemodel.py` ile cekilir. Manifest yoksa ya da bir urun
+kimlik/saglama tasimiyorsa kriter "KANITLANAMADI" isaretlenir — GECTI
+ISARETLENMEZ. Kanitlanamayan bir kriteri gecmis saymak kapinin kendisini
+anlamsizlastirir.
 """
 
 from __future__ import annotations
@@ -52,31 +55,73 @@ class Crit:
 
 
 def _data_manifest_status(run_dir: Path) -> tuple[bool, str]:
-    """PDS urun kimlikleri + saglamalar var mi? Yoksa KANITLANAMADI."""
+    """PDS urun kimlikleri + saglamalar var mi ve TUTUYOR mu?
+
+    Uc kademeli denetim — her biri ayri bir soruyu yanitlar:
+      1. Manifest var mi ve her urun kimlik + SHA-256 tasiyor mu?
+      2. Her urun ARSIVIN resmi MD5'iyle dogrulanmis mi? (`md5_verified`)
+         Kendi karmamiz "diskte ne var" der; arsivinki "dogru dosya mi".
+      3. Dosyalar bu makinede VARSA, SHA-256'lari yeniden hesaplanip
+         manifestle karsilastirilir. Bayat bir manifestin sessizce gecmesi
+         boylece engellenir.
+    """
+    import hashlib
+    import json
+    import os
+
     man = REPO / "data_manifest"
     files = sorted(man.glob("*.json")) if man.is_dir() else []
     if not files:
         return False, (
-            f"data_manifest/ bos ya da yok ({man}); gercek PDS urunleri depoda "
-            "degil. Urun kimlikleri ve SHA-256 toplamlari olmadan bu kriter "
+            f"data_manifest/ bos ya da yok ({man}); gercek PDS urunleri yok. "
+            "Urun kimlikleri ve SHA-256 toplamlari olmadan bu kriter "
             "KANITLANAMAZ — gecmis sayilmaz."
         )
-    import json
-    total, with_sum = 0, 0
+
+    total = with_sum = md5_ok = 0
+    checked = mismatched = 0
+    kotu: list[str] = []
     for f in files:
         try:
             d = json.loads(f.read_text(encoding="utf-8"))
         except Exception as exc:  # noqa: BLE001
             return False, f"{f.name} okunamadi: {exc}"
+        kokler = [Path(p) for p in (
+            os.environ.get("DARTRIFT_PDS_DIR"), d.get("data_root"),
+            str(REPO / "data" / "pds")) if p]
         for item in d.get("products", []):
             total += 1
             if item.get("sha256") and item.get("product_id"):
                 with_sum += 1
+            if item.get("md5_verified"):
+                md5_ok += 1
+            for kok in kokler:
+                p = kok / item["filename"]
+                if p.is_file():
+                    h = hashlib.sha256()
+                    with open(p, "rb") as fh:
+                        for b in iter(lambda fh=fh: fh.read(1 << 20), b""):
+                            h.update(b)
+                    checked += 1
+                    if h.hexdigest() != item["sha256"]:
+                        mismatched += 1
+                        kotu.append(item["filename"])
+                    break
+
     (run_dir / "data_manifest_summary.txt").write_text(
-        f"dosya={len(files)} urun={total} kimlik+saglama={with_sum}\n", encoding="utf-8")
-    return (total > 0 and with_sum == total,
-            f"{len(files)} manifest dosyasi, {total} urun, {with_sum} tanesi "
-            f"kimlik+SHA-256 tasiyor")
+        f"dosya={len(files)} urun={total} kimlik+saglama={with_sum} "
+        f"resmi_md5={md5_ok} diskte_dogrulanan={checked} uyusmayan={mismatched}\n",
+        encoding="utf-8")
+
+    ok = (total > 0 and with_sum == total and md5_ok == total and mismatched == 0)
+    ev = (f"{len(files)} manifest, {total} urun; kimlik+SHA-256 {with_sum}/{total}; "
+          f"arsivin resmi MD5'iyle dogrulanmis {md5_ok}/{total}; "
+          f"diskte yeniden hesaplanip eslesen {checked - mismatched}/{checked}")
+    if kotu:
+        ev += f"; SAGLAMA UYUSMAYAN: {kotu}"
+    if checked == 0:
+        ev += " (dosyalar bu makinede yok — yalnizca kayit denetlendi)"
+    return ok, ev
 
 
 def main() -> int:

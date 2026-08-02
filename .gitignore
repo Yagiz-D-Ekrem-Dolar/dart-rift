@@ -32,3 +32,9 @@ slurm-*.out
 .vscode/
 .DS_Store
 Thumbs.db
+
+# PDS veri urunleri — 100+ MB, DEPOYA GIRMEZ.
+# Depoya giren sey koken kaydidir: data_manifest/*.json (urun kimligi,
+# SHA-256, arsivin resmi MD5'i). Veri su komutla cekilir:
+#   python scripts/fetch_pds_shapemodel.py --url-file <urls> --out data/pds --yes
+data/
