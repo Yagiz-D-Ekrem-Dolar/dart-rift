@@ -186,8 +186,10 @@ ince sarsılıyor) — yoksa iki bölge farklı düzensizlikte olurdu.
 1. Arayüz hatası **gürültü tabakasıdır**, yönlü kuvvet değil (%86–99,5 yönsüz).
 2. Mutlak basınçla ölçeklenir → **düzgün alanlarda göreli olarak kötüdür**
    (`0,21·L/h`).
-3. **Gerçekçi düzensizlik varken ikinci mertebeye düşer**: ≥%5 sarsıntıda
-   RMS katkısı ≤%42, %10'da ölçülemez.
+3. ~~**Gerçekçi düzensizlik varken ikinci mertebeye düşer**~~ — **koşulluydu.**
+   Doğrusu: *≥%5 sarsıntı **varsa** RMS katkısı ≤%42, %10'da ölçülemez.* Ama
+   E1 ölçtü ki bu modelde sarsıntı **~0** (KAYIT-022 §1), yani bu indirim
+   **geçerli değil**: arayüz hatası maskelenmiyor.
 4. Momentum korunumu kütle oranından **etkilenmiyor** (1e-16).
 
 ### Söylenemeyen — ve 4.2 kararının beklediği
@@ -198,8 +200,9 @@ ince sarsılıyor) — yoksa iki bölge farklı düzensizlikte olurdu.
 | ~~E2~~ | ~~Dinamik birikim~~ | **ÖLÇÜLDÜ (KAYIT-022 §3): 8:1'de DOYUYOR** (`v ~ t^0,72`, sabit kuvvet `t¹` verirdi). Birikmiyor. |
 | E3 | Şok geçişi | ölçüm yumuşak alanda yapıldı; çarpmanın asıl sorusu arayüzden geçen şoktur. |
 
-**E1 bir sonraki iştir** ve ucuzdur: FAZ 3'ün ürettiği gerçek yığına aynı
-sondayı uygulamak yeter.
+~~**E1 bir sonraki iştir**~~ — **E1 ve E2 tamamlandı**, bkz.
+[KAYIT-022](KAYIT-022_2026-08-04_E1-E2-karar-verisi.md). Kalan tek eksik
+**E3: arayüzden şok geçişi**.
 
 ---
 
