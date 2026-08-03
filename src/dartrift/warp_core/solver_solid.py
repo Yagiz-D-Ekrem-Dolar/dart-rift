@@ -390,6 +390,17 @@ class WarpSolid3D:
         row["e_pot"] = ep
         row["e_tot"] = row["e_kin"] + row["e_int"] + ep
         row["plastic_cum"] = self.plastic_u_total
+        # K21: rho <= 0 ASLA fizik degildir (sureklilikte drho/dt = -rho*div v
+        # ustel azalir, sifiri ancak dt fazla buyukse gecer). EOS artik orada
+        # NaN yerine sonlu bir deger dondurur — ama bu, sorunu MASKELEMEK
+        # olmamali. Sayac sifirdan buyukse o kosu GECERSIZDIR.
+        row["nonpositive_density_count"] = int(
+            np.count_nonzero(s["rho"][s["active"].astype(bool)] <= 0.0))
+        row["rho_min"] = float(np.min(s["rho"][s["active"].astype(bool)]))
+        # Sessiz NaN'a karsi ikinci koruma: defterin kendisi sonlu mu?
+        row["state_is_finite"] = bool(
+            np.all(np.isfinite(s["rho"])) and np.all(np.isfinite(s["v"]))
+            and np.all(np.isfinite(s["u"])))
         if self._damage:
             d = self.D.numpy()
             row["damage_mean"] = float(np.mean(d))

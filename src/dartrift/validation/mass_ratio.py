@@ -237,7 +237,8 @@ def run_mass_ratio_scan(
 def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
                                   rho0: float = 2700.0,
                                   eps: float = 0.01,
-                                  rho_base: np.ndarray | None = None) -> dict:
+                                  rho_base: np.ndarray | None = None,
+                                  interior_mask: np.ndarray | None = None) -> dict:
     """DÜZGÜN (sabit) bir basınç alanında `a_SPH` — **sıfır** olmalı.
 
     SPH'in sıfırıncı mertebe tutarlılık sınavı: **sabit bir alanın gradyanı
@@ -297,9 +298,24 @@ def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
     p_yayilim = float(np.ptp(st.P))
 
     a = np.linalg.norm(st.a, axis=1)
-    mk = _masks(z, h)
-    kenar, arayuz = mk["kenar"], mk["arayuz"]
-    derin = kenar & ~arayuz
+    if interior_mask is None:
+        mk = _masks(z, h)
+        kenar, arayuz = mk["kenar"], mk["arayuz"]
+        derin = kenar & ~arayuz
+    else:
+        # TEK POPULASYON kipi: iki bolgeli duzenek yok, yalnizca "yuzeyden
+        # yeterince uzak ic bolge". Cagiran taraf maskeyi KENDI verir cunku
+        # kuresel `r` duzensiz bir cisimde VEKILDIR (K14'un dersi): 88x87x74
+        # bir elipsoitte |x| yuzeye uzakligi vermez. Dogrusu mesh'in
+        # ISARETLI MESAFESIDIR.
+        kenar = np.ascontiguousarray(interior_mask, bool)
+        if kenar.shape != (n,):
+            raise ValueError(f"interior_mask sekli {kenar.shape}, ({n},) olmali")
+        if not kenar.any():
+            raise ValueError("interior_mask BOS — olcum hicbir sey olcmez")
+        arayuz = kenar
+        derin = np.zeros(n, bool)
+        mk = {"margin": float("nan")}
 
     # ISARETLI RADYAL BILESEN. Maksimum tek bir parcacigi gosterir; asil soru
     # hatanin SISTEMATIK mi (arayuzu surukler) yoksa RASTGELE mi (birbirini
@@ -340,6 +356,7 @@ def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
         "n_interface": int(arayuz.sum()),
         "n_deep": int(derin.sum()),
         "margin": mk["margin"],
+        "single_population_mode": bool(interior_mask is not None),
         # Dagilim: maksimum tek parcacik, medyan/p90 ise arayuzun BUTUNU.
         "a_p50_interface": (
             float(np.median(a[arayuz])) if arayuz.any() else float("nan")),

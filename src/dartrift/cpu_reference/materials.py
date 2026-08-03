@@ -262,15 +262,36 @@ def tillotson_pressure(rho: np.ndarray, u: np.ndarray, p: TillotsonParams) -> np
     u = np.maximum(np.asarray(u, dtype=np.float64), 0.0)
     eta = rho / p.rho0
     mu_t = eta - 1.0
-    omega = u / (p.u0 * eta * eta) + 1.0
+    # eta = 0'da `1/eta^2` sonsuzdur. Soguk kolda `b/omega -> 0` verdigi icin
+    # SONUC dogrudur, ama sifira bolme uyarisi gercek sorunlari gizler. Taban
+    # o kadar kucuk ki gecerli hicbir girdiyi degistirmez (|eta| > 1e-150).
+    # NOT: carpim SIRASI korunmali. `u0*(eta*eta)` ile `(u0*eta)*eta` farkli
+    # yuvarlar (olculdu: goreli ~1e-14) ve determinizm KILITLI bir ozelliktir
+    # (ADR-0004). Bu yuzden ifade aynen birakilip yalnizca SIFIR durumu
+    # kapatiliyor — gecerli girdide BIT AYNI.
+    payda = p.u0 * eta * eta
+    tekil = payda == 0.0                        # yalnizca rho == 0'da
+    # Gecerli yerlerde ifade AYNEN `u / payda` — bit ayni. Tekil noktada
+    # dogru LIMIT yaziliyor: u > 0 ise omega -> inf (ve `b/omega -> 0`),
+    # u == 0 ise terim zaten 0'dir.
+    oran = np.divide(u, np.where(tekil, 1.0, payda))
+    oran = np.where(tekil, np.where(u > 0.0, np.inf, 0.0), oran)
+    omega = oran + 1.0
 
     p_cold = (p.a + p.b / omega) * rho * u + p.A * mu_t + p.B * mu_t * mu_t
 
-    ex = np.exp(-p.beta_t * (1.0 / eta - 1.0))
-    ex2 = np.exp(-p.alpha_t * (1.0 / eta - 1.0) ** 2)
+    # K21: rho <= 0'da `1/eta` buyuk NEGATIF, `-beta*(1/eta-1)` buyuk POZITIF
+    # olur ve `exp` TASAR; sonra `inf * 0` NaN verir. Bu ussu hic olusturmamak
+    # icin sicak kol GUVENLI bir eta ile hesaplanir; o parcaciklar zaten
+    # asagida `expanded`den DISLANIR ve soguk kolu kullanir.
+    # (rho <= 0 asla fizik degildir — bkz. GPU cekirdegindeki ayni not.)
+    pozitif = rho > 0.0
+    eta_g = np.where(pozitif, eta, 1.0)
+    ex = np.exp(-p.beta_t * (1.0 / eta_g - 1.0))
+    ex2 = np.exp(-p.alpha_t * (1.0 / eta_g - 1.0) ** 2)
     p_hot = p.a * rho * u + (p.b * rho * u / omega + p.A * mu_t * ex) * ex2
 
-    expanded = eta < 1.0
+    expanded = (eta < 1.0) & pozitif
     hot = expanded & (u >= p.u_cv)
     mid = expanded & (u > p.u_iv) & (u < p.u_cv)
 

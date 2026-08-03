@@ -495,7 +495,15 @@ def budgets_solid(state: SolidState, mat: MaterialParams | None = None) -> dict:
     ie = float(np.sum(state.m * state.u))
     ep = 0.5 * float(np.sum(state.m * state.phi)) if state.phi is not None else 0.0
     mom = state.v.T @ state.m
+    # K21: rho <= 0 asla fizik degildir; sayac sifirdan buyukse kosu
+    # GECERSIZDIR. GPU cozucusunun defterinde de ayni iki alan var.
+    akt = state.active.astype(bool) if state.active is not None else slice(None)
     row = {
+        "nonpositive_density_count": int(np.count_nonzero(state.rho[akt] <= 0.0)),
+        "rho_min": float(np.min(state.rho[akt])),
+        "state_is_finite": bool(np.all(np.isfinite(state.rho))
+                                and np.all(np.isfinite(state.v))
+                                and np.all(np.isfinite(state.u))),
         "mass": float(np.sum(state.m)),
         "momentum": [float(p) for p in mom],
         "mom_scale": float(np.sum(state.m * np.sqrt(np.sum(state.v * state.v, axis=1)))),

@@ -48,7 +48,15 @@ def make_tillotson_wp(p) -> TillotsonWp:
 def _till_cold(rho: F, u: F, tp: TillotsonWp) -> F:
     eta = rho / tp.rho0
     mu_t = eta - F(1.0)
-    omega = u / (tp.u0 * eta * eta) + F(1.0)
+    # Carpim SIRASI korunur (bkz. CPU notu): gecerli girdide bit ayni.
+    # Tekil noktada (rho == 0) dogru LIMIT: u > 0 ise omega -> inf.
+    payda = tp.u0 * eta * eta
+    oran = F(0.0)
+    if payda != F(0.0):
+        oran = u / payda
+    elif u > F(0.0):
+        oran = F(1.0e300) * F(1.0e300)      # +inf
+    omega = oran + F(1.0)
     return (tp.a + tp.b / omega) * rho * u + tp.A * mu_t + tp.B * mu_t * mu_t
 
 
@@ -56,7 +64,15 @@ def _till_cold(rho: F, u: F, tp: TillotsonWp) -> F:
 def _till_hot(rho: F, u: F, tp: TillotsonWp) -> F:
     eta = rho / tp.rho0
     mu_t = eta - F(1.0)
-    omega = u / (tp.u0 * eta * eta) + F(1.0)
+    # Carpim SIRASI korunur (bkz. CPU notu): gecerli girdide bit ayni.
+    # Tekil noktada (rho == 0) dogru LIMIT: u > 0 ise omega -> inf.
+    payda = tp.u0 * eta * eta
+    oran = F(0.0)
+    if payda != F(0.0):
+        oran = u / payda
+    elif u > F(0.0):
+        oran = F(1.0e300) * F(1.0e300)      # +inf
+    omega = oran + F(1.0)
     ex = wp.exp(-tp.beta_t * (F(1.0) / eta - F(1.0)))
     ex2 = wp.exp(-tp.alpha_t * (F(1.0) / eta - F(1.0)) * (F(1.0) / eta - F(1.0)))
     return tp.a * rho * u + (tp.b * rho * u / omega + tp.A * mu_t * ex) * ex2
@@ -65,6 +81,19 @@ def _till_hot(rho: F, u: F, tp: TillotsonWp) -> F:
 @wp.func
 def tillotson_p(rho: F, u_in: F, tp: TillotsonWp) -> F:
     u = wp.max(u_in, F(0.0))
+    # K21: rho <= 0 icin genlesmis-sicak kol NaN uretir. `ex` ussu
+    # -beta*(1/eta - 1)'dir; eta kucuk NEGATIF iken us buyuk POZITIF olur,
+    # exp TASAR (inf) ve `inf * ex2` (ex2 = exp(-cok buyuk) = 0) NaN verir.
+    # NaN oradan her komsu toplamina yayilir ve kosuyu SESSIZCE zehirler —
+    # GPU'da uyari da yoktur.
+    #
+    # rho <= 0 ASLA fizik degildir: sureklilikte drho/dt = -rho*div(v) ustel
+    # azalir, sifiri ancak dt fazla buyukse gecer. Yani bu her zaman SAYISAL
+    # BASARISIZLIKTIR. Burada EOS'u TOPLAM yapiyoruz (sonlu girdi -> sonlu
+    # cikti) ama sorunu MASKELEMIYORUZ: cozucu `nonpositive_density_count`
+    # sayacini rapor eder ve sifirdan buyukse kosu GECERSIZDIR.
+    if rho <= F(0.0):
+        return _till_cold(rho, u, tp)
     eta = rho / tp.rho0
     if eta >= F(1.0) or u <= tp.u_iv:
         return _till_cold(rho, u, tp)
