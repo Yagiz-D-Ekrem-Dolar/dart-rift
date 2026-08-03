@@ -88,13 +88,28 @@ class PorosityParams:
     Ps: float = 1.0e8  # tam sikisma [Pa]
     n_exp: float = 2.0
 
-    def crush_alpha(self, P: np.ndarray) -> np.ndarray:
-        """Yukleme egrisi alpha(P) (henuz geri-genlesme kisiti uygulanmamis)."""
+    def crush_alpha(self, P: np.ndarray, alpha_ref=None) -> np.ndarray:
+        """Yukleme egrisi alpha(P) (henuz geri-genlesme kisiti uygulanmamis).
+
+        `alpha_ref` PARCACIK BASINA baslangic distansiyonudur ve egrinin
+        TAVANIDIR (ADR-0031). Verilmezse malzemenin skaleri kullanilir —
+        homojen kosularda dogrudur.
+
+        NEDEN PARCACIK BASINA. Gozeneklilik parcacik basinadir (P3-FR-03/04:
+        bloklar gozeneksiz, matris gozenekli). Skaler tavan, onu ASAN her
+        parcacigi ILK ADIMDA tavana ezer; `rho*alpha = rho0` gerilmesiz
+        baslangic sarti bozulur ve devasa YAPAY CEKME dogar. Olculdu
+        (yigin matrisi 1.7273 vs malzeme 1.6; is 1449888, H100):
+            adim 1: alpha 1.727253 -> 1.600000
+            adim 2: P = -1.1389e+09 Pa,  KE = 3.36e+10 J
+        Tavan yigina uygun verilince alpha sabit, KE ~ 1e-6 J (oran 8.587e+17).
+        """
         P = np.asarray(P, dtype=np.float64)
-        mid = 1.0 + (self.alpha0 - 1.0) * (
+        a0 = self.alpha0 if alpha_ref is None else np.asarray(alpha_ref, np.float64)
+        mid = 1.0 + (a0 - 1.0) * (
             np.clip((self.Ps - P) / (self.Ps - self.Pe), 0.0, 1.0) ** self.n_exp
         )
-        return np.where(P <= self.Pe, self.alpha0, np.where(P >= self.Ps, 1.0, mid))
+        return np.where(P <= self.Pe, a0, np.where(P >= self.Ps, 1.0, mid))
 
 
 @dataclass(frozen=True)
@@ -347,7 +362,8 @@ def porosity_update(
 
 
 def solve_alpha_implicit(
-    alpha_old: np.ndarray, rho: np.ndarray, u: np.ndarray, mat, n_iter: int = 40
+    alpha_old: np.ndarray, rho: np.ndarray, u: np.ndarray, mat,
+    n_iter: int = 40, alpha_ref: np.ndarray | None = None
 ) -> np.ndarray:
     """P-alpha distansiyonunu ORTUK coz: alpha = crush_alpha(P_kati(alpha*rho,u)/alpha).
 
@@ -383,7 +399,8 @@ def solve_alpha_implicit(
 
     def _residual(a: np.ndarray) -> np.ndarray:
         p = tillotson_pressure(a * rho, u, mat.tillotson) / a
-        target = np.maximum(1.0, np.minimum(alpha_old, pp.crush_alpha(p)))
+        target = np.maximum(
+            1.0, np.minimum(alpha_old, pp.crush_alpha(p, alpha_ref)))
         return a - target
 
     for _ in range(n_iter):

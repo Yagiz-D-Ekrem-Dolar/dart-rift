@@ -47,6 +47,9 @@ class SolidState:
     active: np.ndarray
     S: np.ndarray = field(default=None)  # type: ignore[assignment]
     alpha: np.ndarray = field(default=None)  # type: ignore[assignment]
+    # BASLANGIC distansiyonu — crush egrisinin PARCACIK BASINA tavani
+    # (ADR-0031). None ise __post_init__ `alpha`nin kopyasini alir.
+    alpha_ref: np.ndarray = field(default=None)  # type: ignore[assignment]
     Y0: np.ndarray = field(default=None)  # parcacik basina kohezyon [Pa]; None=skaler
     # evaluate_solid doldurur:
     rho: np.ndarray = field(default=None)  # type: ignore[assignment]
@@ -91,6 +94,8 @@ class SolidState:
             self.S = np.zeros((n, 3, 3))
         if self.alpha is None:
             self.alpha = np.ones(n)
+        if self.alpha_ref is None:
+            self.alpha_ref = np.array(self.alpha, dtype=np.float64, copy=True)
 
     @property
     def n(self) -> int:
@@ -366,7 +371,9 @@ def _apply_strength_and_porosity(state: SolidState, mat: MaterialParams) -> None
         state.S[act] = S_new[act]
         state.plastic_u_total += float(np.sum(state.m[act] * du_pl[act]))
     if mat.porosity.enabled:
-        a_new = solve_alpha_implicit(state.alpha, state.rho, state.u, mat)
+        # ADR-0031: crush tavani PARCACIK BASINA baslangic distansiyonudur.
+        a_new = solve_alpha_implicit(state.alpha, state.rho, state.u, mat,
+                                     alpha_ref=state.alpha_ref)
         state.alpha[state.active] = a_new[state.active]
 
 

@@ -78,6 +78,11 @@ class WarpSolid3D:
             else np.asarray(alpha0, np.float64)
         )
         self.alpha = wp.array(a0, dtype=F, device=dev)
+        # BASLANGIC distansiyonu — crush egrisinin TAVANI (ADR-0031).
+        # Tavan PARCACIK BASINA olmali: gozeneklilik parcacik basinadir
+        # (bloklar gozeneksiz, matris gozenekli). Skaler tavan, onu ASAN
+        # parcaciklari ilk adimda EZIYOR ve -1,14 GPa yapay cekme doguruyordu.
+        self.alpha_ref = wp.array(a0, dtype=F, device=dev)
         # Kohezyon PARCACIK BASINA: moloz yiginlarinda bloklar matristen daha
         # dayanikli (P3-FR-03/04). Homojen kosularda skaler deger dizi olarak
         # doldurulur — tek kod yolu, sonuc bit-ayni kalir.
@@ -343,7 +348,8 @@ class WarpSolid3D:
             # denklemini bisection ile cozer.
             self._launch(
                 porosity_update_k,
-                [self.alpha, self.rho, self.u, self.active, self._pp, self._tp],
+                [self.alpha, self.alpha_ref, self.rho, self.u, self.active,
+                 self._pp, self._tp],
             )
         if self._damage:
             # Hasar TAM adimda ilerletilir (yariya bolunmez): D monoton ve
