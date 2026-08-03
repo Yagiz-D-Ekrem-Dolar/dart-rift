@@ -82,6 +82,41 @@ Bu yüzden eklenen her şey artık **neyin iş gördüğünü** ayrı ayrı rapo
 `radius_axis_active`, `speed_axis_active`, `reference_is_spherical`,
 `target_radius_estimated`, ve `_eval()` saflık değişmezi.
 
+## Turun kendi hatası — GPU testinin tahmini ölçülmeden yazıldı
+
+Tur sırasında eklediğim `test_parcacik_basina_Y0_SONUCU_degistiriyor` **kaldı**
+ve **dört kapıyı birden düşürdü** (her kapı tam pytest paketini koşuyor).
+
+Kusur kodda değildi, **benim tahminimdeydi**: *"zayıf kohezyon daha çok
+plastik iş üretir"* yazmıştım. Ölçülen tam tersi.
+
+Ters çevirmeden önce ilişkiyi ölçtüm (iş 1448928, H100, testin kendi kurulumu):
+
+| kol | Y0_ort | plastik iş |
+|---|---|---|
+| hepsi-zayıf | 1,0000e+04 | 1,459238e+07 J |
+| heterojen | 2,3565e+06 | 1,890912e+09 J |
+| hepsi-güçlü | 1,0000e+07 | 1,264309e+10 J |
+
+`hepsi-güçlü / hepsi-zayıf = 866,42` (Y0 oranı 1000).
+
+**Fizik:** tam plastik rejimde dağılım hızı `σ_akma · ε̇_p`, yani iş yield
+gerilmesiyle **artar**. Akmanın *başlangıcı* ile *büyüklüğünü* karıştırmışım:
+düşük Y0'da akma erken başlar ama her adımda az enerji atar; yüksek Y0'da geç
+başlar ve çok atar — ikincisi baskın.
+
+Yeni test öncekinden **güçlü**: üç kol ve **kuşatma**. Heterojen değer iki
+homojen sınırın tam arasında olmalı; çekirdek herhangi bir skaler kullansaydı
+sınırlardan birine otururdu.
+
+**İki ders:**
+
+1. **GPU-only testler yerelde SKIP oluyor.** Yerel takım 528/0 geçerken bu
+   test hiç koşmadı. Yerel yeşil, GPU testi için kanıt değildir.
+2. **Bir GPU testinin tahmini önce ÖLÇÜLMELİ, sonra yazılmalı.** Bu turun
+   tamamı "ölçmeden iddia etme" üzerineydi; aynı hatayı testi yazarken
+   yaptım.
+
 ## Süreç notu
 
 - `squeue -u egitimg16` boş dönüyor: işler `egitimg16u4` altında koşuyor.
