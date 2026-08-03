@@ -135,6 +135,39 @@ her iki malzemede de 1,0002 olması — interpolasyon tutarlı, yumuşama ise
 süreklilik yoğunluğunun neden seçildiğinin (ADR-0015) doğrudan gerekçesi.
 M0'da ayrışma **+%0,0**'a düştü; yani eski +%6,7 tamamen bookkeeping hatasıydı.
 
+## Ek — kütle heterojenleşince ortaya çıkan iki hasar kusuru
+
+Kütleler artık parçacıktan parçacığa değiştiği için, hasar modülünün hacim
+kullanımı sınandı. **İki farklı hacim** vardır ve karıştırılıyorlardı:
+
+| kullanım | doğru hacim | eski kod |
+|---|---|---|
+| kusur yoğunluğu (Weibull) | **katı** `m/rho0` | `mean(m)/rho0` — tek değere indirgenmiş |
+| çatlak yolu (`r_s`) | **geometrik** `m·alpha/rho0` | katı hacim — gözenekler sayılmıyor |
+
+**Kusur 1 — `r_s` gözenekleri saymıyordu.** `damage_ref.damage_rate` `r_s`'yi
+açıkça *"çatlağın kat etmesi gereken uzunluk"* diye tanımlar; çatlak gözenekler
+dahil bütün parçacığı geçer. Ölçüldü (α = 1,5):
+
+```
+r_s mevcut (katı hacimden)  = 3,8624 m
+r_s doğru  (geometrik)      = 4,4214 m      -> %12,6 küçük
+dD/dt ~ 1/r_s               -> hasar %14,5 HIZLI büyüyordu
+```
+
+**Kusur 2 — kusurlar hacimden bağımsız dağıtılıyordu.** `seed_flaws`
+sahipliği `rng.integers` ile **tekdüze** seçiyordu; bu yalnızca bütün hacimler
+eşitken doğrudur. ADR-0030'dan sonra M1 yığınında katı hacim gerçekten
+değişiyor (**blok 344,8 · matris 209,6 m³ — %56 yayılım**) ve tekdüze dağıtım
+gözenekli matrise hak ettiğinden fazla kusur verirdi.
+
+Düzeltme: sahiplik hacimle orantılı (ters-CDF, aynı RNG akışı, deterministik).
+Ölçüldü: 2× hacim → **1,9775× kusur** (beklenen 2,0); tekdüze hacimde iki yarı
+arası oran **0,9977** (beklenen 1,0).
+
+`geometrik hacim = m·alpha/rho0` her parçacıkta **tam olarak kafes hacmi
+V_p = 362,04 m³** çıkıyor — ADR-0030 tutarlılığının bağımsız bir doğrulaması.
+
 ## Altın sahne karması
 
 Kütleler değiştiği için `Scene.digest` değişti:

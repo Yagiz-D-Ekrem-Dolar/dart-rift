@@ -387,17 +387,29 @@ def seed_solid_damage(
         raise ValueError(
             "hasar modeli dayanim ister: damage.enabled=True iken "
             "strength.enabled=False anlamsizdir (deviatorik gerilme yok)")
+    # IKI HACIM — GPU `WarpSolid3D.__init__` ile BIREBIR ayni olmali, yoksa
+    # capraz kontrol anlamsizlasir:
+    #   kusur yogunlugu -> KATI hacim  (m/rho0), parcacik basina
+    #   catlak yolu     -> GEOMETRIK hacim (m*alpha/rho0)
     rho_mat = mat.rho0_linear if mat.eos == "linear" else mat.tillotson.rho0
-    v_p = float(np.mean(np.asarray(state.m, np.float64))) / rho_mat
-    state.r_s = float((3.0 * v_p / (4.0 * np.pi)) ** (1.0 / 3.0))
+    m64 = np.asarray(state.m, np.float64)
+    a64 = np.asarray(state.alpha if state.alpha is not None
+                     else np.ones(state.n), np.float64)
+    v_kati = m64 / rho_mat
+    v_geom = m64 * a64 / rho_mat
+    state.r_s = float(np.mean((3.0 * v_geom / (4.0 * np.pi)) ** (1.0 / 3.0)))
     state.bulk_K = (mat.c0**2 * mat.rho0_linear if mat.eos == "linear"
                     else mat.tillotson.A)
-    state.eps_min, state.n_flaws = seed_flaws(state.n, v_p, mat.damage, seed)
+    state.eps_min, state.n_flaws = seed_flaws(state.n, v_kati, mat.damage, seed)
     state.D = np.zeros(state.n)
     state.D_cbrt = np.zeros(state.n)
     state.dDdt_cbrt = np.zeros(state.n)
     state.strain = np.zeros(state.n)
-    return {"particle_volume": v_p, "r_s": state.r_s, "bulk_K": state.bulk_K}
+    return {"flaw_volume_mean": float(np.mean(v_kati)),
+            "flaw_volume_min": float(np.min(v_kati)),
+            "flaw_volume_max": float(np.max(v_kati)),
+            "crack_volume_mean": float(np.mean(v_geom)),
+            "r_s": state.r_s, "bulk_K": state.bulk_K}
 
 
 def _accumulate_damage(state: SolidState, mat: MaterialParams, dt: float) -> None:

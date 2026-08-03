@@ -85,7 +85,7 @@ def weibull_strain_scale(k: float, m: float, volume: float) -> float:
 
 def seed_flaws(
     n_particles: int,
-    particle_volume: float,
+    particle_volume: float | np.ndarray,
     dp: DamageParams,
     root_seed: int,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -111,20 +111,32 @@ def seed_flaws(
     """
     if n_particles <= 0:
         raise ValueError(f"n_particles pozitif olmali, {n_particles} geldi")
-    if particle_volume <= 0.0:
+    if np.ndim(particle_volume) == 0 and particle_volume <= 0.0:
         raise ValueError(f"parcacik hacmi pozitif olmali, {particle_volume} geldi")
     if dp.k_weibull <= 0.0 or dp.m_weibull <= 0.0:
         raise ValueError("k_weibull ve m_weibull pozitif olmali")
     if dp.n_flaws_per_particle <= 0.0:
         raise ValueError("n_flaws_per_particle pozitif olmali")
 
-    v_total = particle_volume * n_particles
+    v_i = np.broadcast_to(np.asarray(particle_volume, dtype=np.float64),
+                          (n_particles,)).astype(np.float64)
+    if np.any(v_i <= 0.0):
+        raise ValueError("her parcacik hacmi pozitif olmali")
+    v_total = float(np.sum(v_i))
     n_f = int(round(dp.n_flaws_per_particle * n_particles))
     rng = stream_generator(root_seed, "damage_flaws")
 
     j = np.arange(1, n_f + 1, dtype=np.float64)
     eps_j = (j / (dp.k_weibull * v_total)) ** (1.0 / dp.m_weibull)
-    owner = rng.integers(0, n_particles, size=n_f)
+    # Kusur sahipligi HACIMLE ORANTILI. Onceki hali `rng.integers` ile
+    # TEKDUZE dagitiyordu; bu yalnizca butun hacimler esitken dogrudur.
+    # ADR-0030'dan sonra moloz yiginlarinda kusur hacmi parcaciktan parcaciga
+    # olculur bicimde degisiyor (blok 344.8 vs matris 209.6 m^3, %56 yayilim);
+    # tekduze dagitmak, gozenekli matrise hak ettiginden fazla kusur verirdi.
+    # Ters-CDF: deterministik, O(n_f log N) ve `stream_generator` akisindan.
+    cdf = np.cumsum(v_i)
+    owner = np.searchsorted(cdf, rng.random(n_f) * v_total, side="right")
+    np.clip(owner, 0, n_particles - 1, out=owner)
 
     eps_min = np.full(n_particles, np.inf, dtype=np.float64)
     np.minimum.at(eps_min, owner, eps_j)

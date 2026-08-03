@@ -131,12 +131,28 @@ class WarpSolid3D:
                 raise ValueError(
                     "hasar modeli dayanim ister: damage.enabled=True iken "
                     "strength.enabled=False anlamsizdir (deviatorik gerilme yok)")
-            # Parcacik hacmi kutleden ve malzeme yogunlugundan turer; kusur
-            # yogunlugu HACIMSELDIR (n = k eps^m, birim 1/m^3).
+            # IKI FARKLI HACIM — karistirilmasi olculmus bir kusurdu:
+            #
+            #  * KUSUR YOGUNLUGU icin KATI hacim (V_kati = m/rho0). Kusurlar
+            #    katı malzemedeki mikro catlaklardir; gozenek hacmi kusur
+            #    tasimaz. Parcacik BASINA verilir: ADR-0030'dan sonra moloz
+            #    yiginlarinda bu hacim gercekten degisir (olculdu: blok 344.8
+            #    vs matris 209.6 m^3, %56 yayilim). Eskiden `mean(m)` ile TEK
+            #    degere indirgeniyordu.
+            #
+            #  * CATLAK YOLU icin GEOMETRIK hacim (V_geom = m*alpha/rho0).
+            #    `damage_ref.damage_rate` r_s'yi "catlagin kat etmesi gereken
+            #    uzunluk" diye tanimlar; catlak gozenekler dahil TUM parcacigi
+            #    gecer. Eskiden r_s KATI hacimden hesaplaniyordu. Olculdu
+            #    (alpha=1.5): r_s = 3.8624 m yerine 4.4214 m olmali, yani
+            #    %12,6 kucuk; dD/dt ~ 1/r_s oldugundan hasar hizi %14,5 HIZLI
+            #    calisiyordu.
             rho_mat = mat.rho0_linear if mat.eos == "linear" else mat.tillotson.rho0
-            v_p = float(np.mean(np.asarray(m, np.float64))) / rho_mat
-            r_s = float((3.0 * v_p / (4.0 * np.pi)) ** (1.0 / 3.0))
-            e_min, n_fl = seed_flaws(n, v_p, mat.damage, damage_seed)
+            m64 = np.asarray(m, np.float64)
+            v_kati = m64 / rho_mat                     # (N,) kusur hacmi
+            v_geom = m64 * np.asarray(a0, np.float64) / rho_mat   # (N,) catlak yolu
+            r_s = float(np.mean((3.0 * v_geom / (4.0 * np.pi)) ** (1.0 / 3.0)))
+            e_min, n_fl = seed_flaws(n, v_kati, mat.damage, damage_seed)
             self.eps_min = wp.array(e_min, dtype=F, device=dev)
             self.n_flaws = wp.array(n_fl, dtype=F, device=dev)
             k_bulk = mat.c0**2 * mat.rho0_linear if mat.eos == "linear" \
@@ -152,7 +168,12 @@ class WarpSolid3D:
             self.P_eff = wp.zeros(n, dtype=F, device=dev)
             self.S_eff = wp.zeros(n, dtype=M3, device=dev)
             self._damage_diag = {
-                "particle_volume": v_p, "r_s": r_s,
+                # IKI hacim de raporlanir: hangisinin nereye girdigi gorunsun.
+                "flaw_volume_mean": float(np.mean(v_kati)),
+                "flaw_volume_min": float(np.min(v_kati)),
+                "flaw_volume_max": float(np.max(v_kati)),
+                "crack_volume_mean": float(np.mean(v_geom)),
+                "r_s": r_s,
                 "n_flaws_total": float(n_fl.sum()),
                 "eps_min_median": float(np.median(e_min[np.isfinite(e_min)]))
                 if np.any(np.isfinite(e_min)) else float("nan"),

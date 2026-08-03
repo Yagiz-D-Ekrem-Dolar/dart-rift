@@ -480,3 +480,79 @@ class TestDamageGPU:
         got = out.numpy()
         olcek = np.maximum(np.abs(beklenen), 1e3)
         assert np.max(np.abs(got - beklenen) / olcek) < 1e-10
+
+
+class TestFlawVolumeAndCrackPath:
+    """ADR-0030 eki: kusur hacmi ile catlak yolu FARKLI hacimlerdir.
+
+    Ikisi karistiriliyordu ve ikisi de olculebilir sekilde yanlisti:
+
+      1. `r_s` (catlagin kat etmesi gereken uzunluk) KATI hacimden
+         hesaplaniyordu. Catlak gozenekler dahil TUM parcacigi gecer, yani
+         GEOMETRIK hacim gerekir. Olculdu (alpha=1.5): 3.8624 m yerine
+         4.4214 m — %12,6 kucuk. dD/dt ~ 1/r_s oldugundan hasar %14,5 HIZLI
+         buyuyordu.
+      2. Kusurlar parcaciklara TEKDUZE dagitiliyordu (`rng.integers`). Bu
+         yalnizca butun hacimler esitken dogrudur. ADR-0030'dan sonra moloz
+         yigininda kusur hacmi gercekten degisiyor (blok 344.8 vs matris
+         209.6 m^3, %56 yayilim) ve tekduze dagitim gozenekli matrise hak
+         ettiginden fazla kusur verirdi.
+    """
+
+    def test_kusurlar_hacimle_orantili_dagitiliyor(self):
+        """Iki kat hacim -> iki kat kusur."""
+        n = 4000
+        v = np.where(np.arange(n) < n // 2, 100.0, 200.0)
+        _, nf = seed_flaws(n, v, DamageParams(enabled=True, k_weibull=1e29,
+                                              m_weibull=9.0), 3)
+        oran = nf[n // 2:].sum() / nf[:n // 2].sum()
+        assert oran == pytest.approx(2.0, rel=0.05), oran
+
+    def test_tekduze_hacimde_dagitim_duz(self):
+        """Bosluk kontrolu: hacimler esitse hicbir yari ayricalikli olmamali."""
+        n = 4000
+        _, nf = seed_flaws(n, 150.0, DamageParams(enabled=True, k_weibull=1e29,
+                                                  m_weibull=9.0), 3)
+        oran = nf[n // 2:].sum() / nf[:n // 2].sum()
+        assert oran == pytest.approx(1.0, rel=0.05), oran
+
+    def test_hacimli_tohumlama_deterministik_ve_tohuma_duyarli(self):
+        n = 500
+        v = np.linspace(80.0, 300.0, n)
+        dp = DamageParams(enabled=True, k_weibull=1e29, m_weibull=9.0)
+        a, na = seed_flaws(n, v, dp, 7)
+        b, nb = seed_flaws(n, v, dp, 7)
+        c, _ = seed_flaws(n, v, dp, 8)
+        assert np.array_equal(a, b) and np.array_equal(na, nb)
+        assert not np.array_equal(a, c)
+
+    def test_sifir_veya_negatif_hacim_reddediliyor(self):
+        dp = DamageParams(enabled=True, k_weibull=1e29, m_weibull=9.0)
+        with pytest.raises(ValueError, match="pozitif"):
+            seed_flaws(4, np.array([1.0, 2.0, 0.0, 3.0]), dp, 1)
+
+    def test_r_s_geometrik_hacimden_gelir(self):
+        """`r_s` gozenekleri SAYAR; katı hacimden hesaplamak %14,5 hizli
+        hasar veriyordu."""
+        from dartrift.cpu_reference.solid_ref import SolidState, seed_solid_damage
+        from dartrift.cpu_reference.materials import (
+            MaterialParams, PorosityParams, StrengthParams)
+
+        n, rho0, alpha = 200, 2700.0, 1.5
+        v_geom = 362.04                      # kafeste kapladigi hacim
+        m = np.full(n, (rho0 / alpha) * v_geom)
+        st = SolidState(x=np.zeros((n, 3)), v=np.zeros((n, 3)), m=m,
+                        u=np.zeros(n), h=1.0, active=np.ones(n, bool),
+                        alpha=np.full(n, alpha))
+        mat = MaterialParams(
+            eos="tillotson",
+            strength=StrengthParams(enabled=True),
+            porosity=PorosityParams(enabled=True, alpha0=alpha),
+            damage=DamageParams(enabled=True, k_weibull=1e29, m_weibull=9.0))
+        seed_solid_damage(st, mat, seed=1)
+        beklenen = (3.0 * v_geom / (4.0 * np.pi)) ** (1.0 / 3.0)
+        assert st.r_s == pytest.approx(beklenen, rel=1e-12), (st.r_s, beklenen)
+        # ESKI (katı hacimden) deger belirgin sekilde KUCUKTU — duzeltmenin olcusu
+        eski = (3.0 * (v_geom / alpha) / (4.0 * np.pi)) ** (1.0 / 3.0)
+        assert st.r_s / eski == pytest.approx(alpha ** (1.0 / 3.0), rel=1e-12)
+        assert st.r_s > 1.10 * eski
