@@ -393,8 +393,15 @@ def run_rubble_quality(spacing: float = 7.0, seed: int = 17) -> dict:
         "boulder_mass_over_volume_fraction": f_mass / max(f_meas, 1e-300),
         "boulder_saturated": bool(boul.diagnostics.get("boulder_saturated", False)),
         "n_boulders": int(0 if boul.boulders is None else len(boul.boulders.radii)),
-        "deterministic": bool(np.array_equal(boul.x, rep.x)
-                              and np.array_equal(boul.Y0, rep.Y0)),
+        # TAM durum karsilastirilir: x ve Y0 yetmez. ADR-0030'dan sonra `m`
+        # ve `alpha0` TURETILMIS buyukluklerdir; determinizm iddiasi onlari
+        # da kapsamali, yoksa turetme yolundaki bir sapma gorunmezdi.
+        "deterministic": bool(
+            np.array_equal(boul.x, rep.x)
+            and np.array_equal(boul.m, rep.m)
+            and np.array_equal(boul.alpha0, rep.alpha0)
+            and np.array_equal(boul.Y0, rep.Y0)
+            and np.array_equal(boul.is_boulder, rep.is_boulder)),
         "matrix_alpha0_solved": float(plain.diagnostics["matrix_alpha0_solved"]),
         "alpha0_distinct": bool(len(np.unique(boul.alpha0)) > 1),
         "Y0_distinct": bool(len(np.unique(boul.Y0)) > 1),
@@ -531,9 +538,25 @@ def run_observable_selftest(seed: int = 23, beta_true: float = 3.0,
     dd = np.linalg.norm(x_t, axis=1)
     ca = x_t[:, 2] / np.maximum(dd, 1e-300)
     keep = ~((ca > np.cos(np.radians(30.0))) & (dd > 64.0))
-    cs = crater_profile(x_t[keep], center=np.zeros(3),
-                        impact_direction=np.array([0.0, 0.0, -1.0]),
-                        reference_radius=80.0, outer_angle_deg=60.0, n_bins=12)
+    _ort = dict(center=np.zeros(3), impact_direction=np.array([0.0, 0.0, -1.0]),
+                reference_radius=80.0, outer_angle_deg=60.0, n_bins=12)
+    cs = crater_profile(x_t[keep], **_ort)
+    # ADR-0039: `global_radius_change` = YUZEY ORNEKLEM YANLILIGI + gercek
+    # deformasyon. Onceki olcut `abs(...) < 5.0` idi — elle yazilmis bir sayi
+    # ve ikisini KARISTIRIYORDU. Yanlilik, DEFORMASYONSUZ ayni cisimden
+    # dogrudan olculur; kriter ondan SAPMAYA bakar.
+    #
+    # Olculdu (80 m kure, 40000 parcacik):
+    #     deformasyonsuz     : -1,5335 m   <-- saf yanlilik (gercek 0)
+    #     16 m kraterli      : -1,5335 m   -> yanliliktan sapma +0,0000
+    #     %10 kuresel buzusme: -9,3802 m   -> yanliliktan sapma -7,8466 (~-8)
+    # Yani cikarici krateri kuresel degisimden MUKEMMEL ayiriyor; kusur
+    # olcutteydi.
+    cs_ref = crater_profile(x_t, **_ort)              # deformasyonsuz taban
+    cs_shrink = crater_profile(0.9 * x_t, **_ort)     # POZITIF kontrol: %10 buzusme
+    global_bias = float(cs_ref.global_radius_change)
+    global_excess = float(cs.global_radius_change) - global_bias
+    shrink_excess = float(cs_shrink.global_radius_change) - global_bias
 
     beta_dart = beta_from_period_change(
         DIMORPHOS_SYSTEM["measured_period_change"], DART_MOMENTUM)
@@ -567,7 +590,15 @@ def run_observable_selftest(seed: int = 23, beta_true: float = 3.0,
         "crater_depth": float(cs.depth),
         "crater_depth_expected": 16.0,
         "crater_global_change": float(cs.global_radius_change),
-        "crater_separates_global": bool(abs(cs.global_radius_change) < 5.0),
+        # ADR-0039: yanlilik ayristirildi; olcut TURETILMIS, elle yazilmis degil.
+        "crater_global_bias": global_bias,
+        "crater_global_excess": global_excess,
+        "crater_shrink_excess": shrink_excess,
+        # krater KURESEL degisime sizmamali: yanliliktan sapma ~0
+        "crater_separates_global": bool(abs(global_excess) < 0.5),
+        # POZITIF KONTROL: gercek buzusme GERCEKTEN yakalanmali, yoksa
+        # yukaridaki sart bos bir dogru olurdu
+        "crater_detects_real_shrink": bool(shrink_excess < -5.0),
         "beta_from_dart_period": float(beta_dart),
         # Bu sayi FAZ 4+'ta modelin HEDEFLEYECEGI degerdir; tek sayi olarak
         # gecmek, model-hedef farkinin nereden geldigini gorunmez kilardi.

@@ -305,3 +305,42 @@ def test_mermi_disarida_MESH_UYELIGIYLE(impactor):
     """
     assert impactor["starts_outside_target"] is True
     assert impactor["impactor_particles_inside_mesh"] == [0, 0, 0]
+
+
+def test_krater_kuresel_ayrimi_YANLILIKTAN_ayristirilmis(obs):
+    """ADR-0039: `global_radius_change` = YUZEY YANLILIGI + gercek deformasyon.
+
+    Onceki olcut `abs(global_radius_change) < 5.0` idi — ELLE YAZILMIS bir
+    sayi ve ikisini KARISTIRIYORDU. Olculdu (80 m kure, 40000 parcacik):
+        deformasyonsuz      : -1,5335 m   <-- saf yanlilik (gercek 0)
+        16 m kraterli       : -1,5335 m   -> yanliliktan sapma +0,0000
+        %10 kuresel buzusme : -9,3802 m   -> yanliliktan sapma -7,8466 (~-8)
+
+    Yani cikarici krateri kuresel degisimden MUKEMMEL ayiriyor; kusur
+    olcutteydi. Kriter artik yanliliktan SAPMAYA bakiyor ve tolerans 0.5 —
+    eskisinden 10 KAT dar, ustelik dogru buyuklugu olcuyor.
+    """
+    assert obs["crater_global_excess"] == pytest.approx(0.0, abs=1e-9), obs
+    assert obs["crater_separates_global"] is True
+    # yanlilik SIFIR OLMAMALI: sifirsa bu ayristirmanin gerekcesi kalmazdi
+    assert abs(obs["crater_global_bias"]) > 0.5, obs["crater_global_bias"]
+
+
+def test_krater_POZITIF_KONTROL_gercek_buzusmeyi_yakaliyor(obs):
+    """Bosluk kontrolu: gercek deformasyon GERCEKTEN yakalaniyor mu?
+
+    Yakalanmiyorsa "krater kuresel degisimden ayrisiyor" bos bir dogru olur —
+    cikarici hicbir seyi ayirmiyor, sadece her seye 0 diyor olurdu.
+    """
+    assert obs["crater_detects_real_shrink"] is True
+    # %10 buzusme -> yaklasik -8 m fazlalik beklenir
+    assert obs["crater_shrink_excess"] == pytest.approx(-8.0, abs=1.0), obs
+
+
+def test_determinizm_TAM_durumu_karsilastiriyor(rubble):
+    """`m` ve `alpha0` ADR-0030'dan sonra TURETILMIS buyukluklerdir.
+
+    Onceki olcut yalnizca `x` ve `Y0`'i karsilastiriyordu; turetme yolundaki
+    bir sapma gorunmezdi.
+    """
+    assert rubble["deterministic"] is True

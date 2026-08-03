@@ -292,6 +292,9 @@ def main() -> int:
     crit["C5"].record(
         obs["beta_recovery_rel_err"] < 1e-6 and obs["momentum_closure"] < 1e-9
         and obs["sensitivity_reported"] and obs["crater_separates_global"]
+        # ADR-0039: POZITIF KONTROL — gercek buzusme yakalanmali,
+        # yoksa "krater kuresel degisimden ayrisiyor" bos bir dogru olur.
+        and obs["crater_detects_real_shrink"]
         and obs["radius_axis_active"] and spd["speed_axis_active"]
         and spd["beta_monotone_in_threshold"] and spd["mass_monotone_in_threshold"]
         and cir["phantom_removed"] and cir["depth_rel_err_true_ref"] < 0.20
@@ -307,8 +310,11 @@ def main() -> int:
         f"{spd['beta_by_speed_factor'][-1]:.3f}); ejekta us "
         f"{obs['ejecta_power_law_exponent']:.3f} (gercek "
         f"{obs['ejecta_power_law_exponent_true']}, R^2={obs['ejecta_power_law_r2']:.4f}); "
-        f"krater {obs['crater_depth']:.2f} m, kuresel degisim "
-        f"{obs['crater_global_change']:.2f} m (ayrisiyor); DUZENSIZ cisim "
+        f"krater {obs['crater_depth']:.2f} m; kuresel degisim "
+        f"{obs['crater_global_change']:.2f} m = yuzey orneklem yanliligi "
+        f"{obs['crater_global_bias']:.2f} + fazlalik {obs['crater_global_excess']:.3f} "
+        f"(krater sizmiyor); pozitif kontrol: %10 buzusmede fazlalik "
+        f"{obs['crater_shrink_excess']:.2f} m (yakalaniyor); DUZENSIZ cisim "
         f"(88x87x65 m): kuresel referans kratersiz cisimde "
         f"{cir['phantom_depth_spherical_ref']:.2f} m HAYALI krater uretiyor, "
         f"carpma oncesi referansla {cir['phantom_depth_true_ref']:.1e} m ve "

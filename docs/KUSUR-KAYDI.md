@@ -33,6 +33,7 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | K15 | `validation/scene_checks` | Komşuluk "iç bölge"si **ölçülen büyüklükle** seçiliyordu | %25 bozuk kafes **11,19** ile bant [11,0–12,01]'den **geçiyordu**; gerçek **10,25** | 0036 | ✅ |
 | K16 | `validation/scene_checks` | "Yakınsıyor" ölçütü **monoton olmayan** bir büyüklüğe bakıyordu | kalıntı bir adımda **+0,01625 artıyor**; kriter seçilen N'lere bağlı — (400,800,1600) ile **False** | 0037 | ✅ |
 | K17 | `setup/shape_mesh` | Kenar-manifold kontrolü **ters sarımı göremiyor** | 100 yüz ters → manifold hâlâ **True**, hacim **%15,5 yanlış**; yüklenen OBJ'de yakalayan yok | 0038 | ✅ |
+| K18 | `validation/scene_checks` | Krater ölçütü **yanlılık + sinyal** toplamına elle yazılmış eşik uyguluyordu | yanlılık **−1,5335 m**; eşik 5,0 ikisini ayırmıyordu, pozitif kontrol yoktu | 0039 | ✅ |
 | S1 | `tests/test_settling` | *Turun kendi hatası:* Y0 testinin **tahmini ters** | ölçülen 130 kat **ters yönde** | — | ✅ |
 | S2 | `docs/KUSUR-KAYDI.md` | *Turun ikinci hatası:* kaydın kendisi **sessizce eksik kaldı** | `str.replace` çapası tutmadı → **3 bölüm birden** kayboldu (K10/K11/K12) | — | ✅ |
 
@@ -727,6 +728,46 @@ gerekli.**
 
 ### Ders
 > **Bir kontrolün adı, neyi kontrol ettiğini söylemeyebilir.**
+
+---
+
+## K18 — Krater ölçütü yanlılık ile sinyali karıştırıyordu
+
+**Modül:** `src/dartrift/validation/scene_checks.py` · **Şiddet:** orta
+**ADR:** 0039
+
+### Nasıl bulundu
+Elle yazılmış eşikler tarandı: `abs(cs.global_radius_change) < 5.0` — 5,0
+nereden geliyor?
+
+### Ölçülen etki (80 m küre, 40000 parçacık)
+| durum | `global_radius_change` | yanlılıktan sapma |
+|---|---|---|
+| **deformasyonsuz** | **−1,5335 m** | — (saf yanlılık; gerçek 0) |
+| 16 m kraterli | −1,5335 m | **+0,0000 m** |
+| %10 küresel büzüşme | −9,3802 m | **−7,8466 m** (beklenen ≈ −8) |
+
+**Çıkarıcı mükemmel ayırıyor** — kusur ölçütteydi. `global_radius_change`
+yüzey örneklem yanlılığı ile gerçek deformasyonun **toplamı**; eşik 5,0
+yalnızca yanlılığı (1,53) barındıracak kadar genişti, ikisini **ayırmıyordu**.
+
+### Düzeltme
+Yanlılık, aynı cismin **deformasyonsuz** hâlinden ölçülür; kriter **farka**
+bakar (`|excess| < 0,5` — 10 kat dar). **Pozitif kontrol** eklendi: %10
+büzüşme gerçekten yakalanmalı — yoksa "ayrışıyor" iddiası boş bir doğru olur
+(her şeye 0 diyen bir çıkarıcı da onu sağlar).
+
+### Ek düzeltme
+`deterministic` ölçütü yalnızca `x` ve `Y0` karşılaştırıyordu; `m` ve
+`alpha0` ADR-0030'dan sonra **türetilmiş** — türetme yolundaki sapma
+görünmezdi. Tam duruma genişletildi.
+
+### Ders
+> **Bir ölçüm, aradığın sinyal ile bilinen bir yanlılığın toplamıysa,
+> yanlılığı ayrı ölç ve kriteri FARKA uygula.** Yanlılığı barındıracak kadar
+> geniş bir eşik, sinyali de barındırır.
+
+Ve her "ayrışıyor" iddiası bir **pozitif kontrol** ister.
 
 ---
 
