@@ -34,6 +34,7 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | K16 | `validation/scene_checks` | "Yakınsıyor" ölçütü **monoton olmayan** bir büyüklüğe bakıyordu | kalıntı bir adımda **+0,01625 artıyor**; kriter seçilen N'lere bağlı — (400,800,1600) ile **False** | 0037 | ✅ |
 | K17 | `setup/shape_mesh` | Kenar-manifold kontrolü **ters sarımı göremiyor** | 100 yüz ters → manifold hâlâ **True**, hacim **%15,5 yanlış**; yüklenen OBJ'de yakalayan yok | 0038 | ✅ |
 | K18 | `validation/scene_checks` | Krater ölçütü **yanlılık + sinyal** toplamına elle yazılmış eşik uyguluyordu | yanlılık **−1,5335 m**; eşik 5,0 ikisini ayırmıyordu, pozitif kontrol yoktu | 0039 | ✅ |
+| K19 | `scripts/run_red_team` | Kırmızı takımın **kendi** ölçütlerinde iki kusur: RT7 kütle kesri, RT11 **kendini doğrulayan** koşul | RT11'in üçüncü anahtarı `"X" if "X" in doc else "Y"` — **asla düşemez** | — | ✅ |
 | S1 | `tests/test_settling` | *Turun kendi hatası:* Y0 testinin **tahmini ters** | ölçülen 130 kat **ters yönde** | — | ✅ |
 | S2 | `docs/KUSUR-KAYDI.md` | *Turun ikinci hatası:* kaydın kendisi **sessizce eksik kaldı** | `str.replace` çapası tutmadı → **3 bölüm birden** kayboldu (K10/K11/K12) | — | ✅ |
 
@@ -768,6 +769,51 @@ görünmezdi. Tam duruma genişletildi.
 > geniş bir eşik, sinyali de barındırır.
 
 Ve her "ayrışıyor" iddiası bir **pozitif kontrol** ister.
+
+---
+
+## K19 — Kırmızı takımın kendi ölçütlerinde iki kusur
+
+**Modül:** `scripts/run_red_team.py` · **Şiddet:** orta
+
+### Nasıl bulundu
+Ölçüt denetimi, denetleyicinin **kendisine** uygulandı: *kırmızı takım
+maddeleri doğru sebeple mi geçiyor?*
+
+### Kusur A — RT7 kütle kesri ölçüyordu (K13'ün ikinci sahnesi)
+```python
+olculen = float(np.sum(pile.m[pile.is_boulder]) / np.sum(pile.m))   # KÜTLE
+```
+İstenen `f_boulder = 0,90` ise **hacim** kesri. ADR-0030'dan sonra bloklar
+%65 daha ağır olduğu için kütle kesri hacim kesrinden **büyük** çıkar
+(ölçülen 0,3034 → 0,4335). RT7 bir *doyma* sınavı olduğu için (ölçülen ≪
+istenen) yön kusuru sonucu değiştirmiyordu — ama yanlış büyüklüktü.
+
+### Kusur B — RT11'de kendini doğrulayan koşul
+```python
+anahtar = ["denge", "ZATEN", "KAPSAM DISI" if "KAPSAM DISI" in doc else "hesaplanabilir"]
+```
+Üçüncü anahtar **belgede varsa onu arıyor** — yani `"KAPSAM DISI"` mevcutsa
+onu, değilse `"hesaplanabilir"`i. Bu koşul **asla düşemez**.
+
+Ölçüldü: belgede `"KAPSAM DISI"` **yok**, `"hesaplanabilir"` **var** → üçüncü
+anahtar otomatik sağlanıyor. RT11 üç anahtar arıyor gibi görünüp **ikisini**
+sınıyordu; üstelik ikisi de **dize eşleşmesi** — RT12'nin düzeltilmiş günahı.
+
+### Düzeltme
+- **RT7**: `boulder_volume_fraction`; kütle kesri ayrıca raporlanır.
+- **RT11**: dize eşleşmesi yerine **davranışsal** sınav — bir iddia, onu
+  destekleyen **ölçümü döndürmedikçe** geçerli sayılmaz:
+  `a_sph_max_t0`, `a_gravity_max_t0`, `steps_per_free_fall`, `ke_threshold`,
+  `converged` üretiliyor mu; `converged` **koşullu** mu (sabit True değil);
+  `SettleResult` varsayılanı `converged=False` mi.
+
+### Ders
+> **Denetleyici de denetlenir.** Bir koşulun ölçtüğü şey, o koşulun kendi
+> girdisinden türetiliyorsa, koşul boştur.
+
+K15 ile aynı aile: orada örneklem ölçülen büyüklükle seçiliyordu, burada
+**eşik** aranan metnin kendisinden seçiliyor.
 
 ---
 

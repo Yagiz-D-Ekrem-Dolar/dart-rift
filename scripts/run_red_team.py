@@ -209,12 +209,17 @@ def rt7_boulder_saturation_not_silent() -> Check:
                               rho0_solid=2700.0,
                              model_class="M1", f_boulder=0.9, q=3.0,
                              r_min=12.0, r_max=30.0)
-    olculen = float(np.sum(pile.m[pile.is_boulder]) / np.sum(pile.m))
+    # ADR-0034: blok kesri HACIM kesridir. Onceki hali KUTLE kesrini
+    # olcuyordu; ADR-0030'dan sonra bloklar %65 daha agir oldugu icin
+    # kutle kesri hacim kesrinden BUYUK cikar (olculen 0.3034 -> 0.4335).
+    olculen = float(pile.boulder_volume_fraction)
+    olculen_kutle = float(np.sum(pile.m[pile.is_boulder]) / np.sum(pile.m))
     bayrak = bool(pile.diagnostics.get("boulder_saturated", False))
     sessiz = (olculen < 0.85) and not bayrak
     c.record(
         not sessiz,
-        f"istenen 0.90, olculen {olculen:.3f}, doyma bayragi "
+        f"istenen 0.90 (HACIM), olculen hacim {olculen:.3f} "
+        f"(kutle kesri {olculen_kutle:.3f}), doyma bayragi "
         f"{'ACIK' if bayrak else 'KAPALI'} -> "
         f"{'SESSIZCE YUTULDU' if sessiz else 'raporlandi'}",
     )
@@ -319,15 +324,38 @@ def rt11_settling_claims_only_what_it_measured() -> Check:
     demektir.
     """
     c = Check("RT11", "Settling, olcmedigi bir basariyi iddia ediyor mu?")
+    import inspect
+
     from dartrift.setup import settling as S
 
-    doc = (S.__doc__ or "") + (S.settle_pile.__doc__ or "")
-    anahtar = ["denge", "ZATEN", "KAPSAM DISI" if "KAPSAM DISI" in doc else "hesaplanabilir"]
-    eksik = [k for k in anahtar if k not in doc]
+    # ONCEKI HALI IKI SEKILDE ZAYIFTI:
+    #  1. DIZE ESLESMESIYDI (RT12'nin duzeltilen gunahi),
+    #  2. ucuncu anahtar KENDINI DOGRULUYORDU:
+    #         "KAPSAM DISI" if "KAPSAM DISI" in doc else "hesaplanabilir"
+    #     yani belgede varsa onu ariyordu — ASLA DUSEMEZDI.
+    #
+    # Yeni sinav DAVRANISSAL: bir iddia, onu DESTEKLEYEN OLCUMU dondurmedikce
+    # gecerli sayilmaz. `settle_pile` "baslangic zaten dengede" diyorsa,
+    # bunu kanitlayan tani alanlarini URETMEK zorundadir.
+    src = inspect.getsource(S.settle_pile)
+    gereken = ("a_sph_max_t0", "a_gravity_max_t0", "steps_per_free_fall",
+               "ke_threshold", "converged")
+    eksik_tani = [k for k in gereken if k not in src]
+
+    # Ve `converged` SABIT True olmamali: yakinsamama yolu gercekten var mi?
+    yakinsama_kosullu = ("converged=" in src or "converged =" in src) and (
+        "ke_final" in src or "ke_thr" in src)
+
+    # SettleResult varsayilani "basarisiz" olmali — sessizce "oldu" demez.
+    varsayilan_kotumser = S.SettleResult(
+        x=np.zeros((1, 3)), v=np.zeros((1, 3)), rho=np.ones(1),
+        alpha=np.ones(1), n_steps=0, t_end=0.0).converged is False
+
     c.record(
-        not eksik,
-        f"modul belgesi denge/kapsam sinirini {'yaziyor' if not eksik else 'YAZMIYOR'}"
-        + (f"; eksik={eksik}" if eksik else ""),
+        not eksik_tani and yakinsama_kosullu and varsayilan_kotumser,
+        f"iddiayi destekleyen tanilar uretiliyor (eksik={eksik_tani or 'yok'}); "
+        f"yakinsama KOSULLU={yakinsama_kosullu}; "
+        f"SettleResult varsayilani converged=False: {varsayilan_kotumser}",
     )
     return c
 
