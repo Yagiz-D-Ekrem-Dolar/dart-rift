@@ -261,3 +261,116 @@ class TestBoulderFractionRecovery:
         assert d["fill_ratio"] == pytest.approx(1.0, abs=0.06)
         assert d["n_boulders"] == len(pile.boulders.radii)
         assert d["boulder_volume_placed"] <= d["boulder_volume_target"] * 1.5
+
+
+class TestMassPorosityConsistency:
+    """ADR-0030: kutle ile gozeneklilik TUTARLI olmak zorunda.
+
+    Bulunan kusur: kutle `bulk_density * V_p` ile TEKDUZE atiliyordu, cozucu
+    ise `rho = rho0_solid/alpha0` atiyor (ADR-0022). SPH'de parcacigin hacmi
+    `m/rho`'dur ve kafeste kapladigi hacme (`V_p`) esit olmali; degilse birim
+    bolunmesi `sum_j (m_j/rho_j) W_ij = 1` bozulur.
+
+    Olculen (h'den bagimsiz, uc h'de): M0 1.067 (+%6,7), M1 blok 0.77-0.80.
+    Ayni dizilim toplam yogunlukla bloklarda -7,624e+09 Pa yapay cekme
+    veriyordu. G3 C2 kutle butcesini (m), C3 gerilmesiz baslangici (rho)
+    olcuyordu; TUTARLILIGA bakan kriter YOKTU.
+    """
+
+    @staticmethod
+    def _pile(**kw):
+        varsayilan = dict(spacing=8.0, bulk_density=RHO_BULK,
+                          rho0_solid=RHO0_SOLID, root_seed=4)
+        return build_rubble_pile(icosphere(4, 100.0), **{**varsayilan, **kw})
+
+    @pytest.mark.parametrize("kw", [
+        dict(model_class="M0"),
+        dict(model_class="M1", f_boulder=0.20, r_min=14.0, r_max=30.0),
+        dict(model_class="M1", f_boulder=0.05, r_min=14.0, r_max=30.0),
+    ])
+    def test_m_bolu_rho_parcacik_hacmine_esit(self, kw):
+        """ASIL DEGISMEZ: m_i/rho_i = V_p, her parcacikta."""
+        from dartrift.setup.rubble_generator import particle_volume
+
+        pile = self._pile(**kw)
+        v_p = particle_volume(pile.spacing, "fcc")
+        rho = RHO0_SOLID / pile.alpha0
+        oran = (pile.m / rho) / v_p
+        assert np.allclose(oran, 1.0, rtol=1e-12), (
+            f"m/(rho*V_p) araligi [{oran.min():.6f}, {oran.max():.6f}] — "
+            "1 olmali, yoksa SPH birim bolunmesi bozulur")
+        # tani da bunu bildirmeli
+        d = pile.diagnostics
+        assert d["volume_consistency_min"] == pytest.approx(1.0, rel=1e-12)
+        assert d["volume_consistency_max"] == pytest.approx(1.0, rel=1e-12)
+
+    def test_hedef_yigin_yogunlugu_TAM_tutturuluyor(self):
+        """`bulk_density` bir HEDEF; cozulen alpha onu tam tutturmali.
+
+        Eski hali hedefi kutleyle "tutturuyor" gorunuyordu ama yogunluk alani
+        baska bir cisim tarif ediyordu. Simdi ikisi ayni cisim.
+        """
+        for kw in (dict(model_class="M0"),
+                   dict(model_class="M1", f_boulder=0.20, r_min=14.0, r_max=30.0)):
+            pile = self._pile(**kw)
+            d = pile.diagnostics
+            assert d["bulk_density_achieved"] == pytest.approx(RHO_BULK, rel=1e-12), kw
+            # yogunluk alanindan hesaplanan kutle de ayni cismi vermeli
+            rho = RHO0_SOLID / pile.alpha0
+            assert float(np.mean(rho)) == pytest.approx(RHO_BULK, rel=1e-12), kw
+
+    def test_bloklar_gercekten_daha_agir(self):
+        """Kati kaya gozenekli matristen YOGUNDUR.
+
+        Eskiden blok ve matris parcaciklari AYNI kutleye sahipti; yani "blok"
+        yalnizca bir etiketti. Olculen yeni oran: +%65.
+        """
+        pile = self._pile(model_class="M1", f_boulder=0.20, r_min=14.0, r_max=30.0)
+        b, mtx = pile.is_boulder, ~pile.is_boulder
+        assert b.any() and mtx.any()
+        assert pile.m[b].min() > pile.m[mtx].max(), (
+            f"blok kutlesi {pile.m[b].min():.4e} matris {pile.m[mtx].max():.4e}")
+        oran = pile.m[b][0] / pile.m[mtx][0]
+        # alpha oranindan tam olarak belirlenir: m ~ 1/alpha
+        beklenen = pile.alpha0[mtx][0] / pile.alpha0[b][0]
+        assert oran == pytest.approx(beklenen, rel=1e-12)
+        assert oran > 1.3, oran
+
+    def test_celisik_matrix_alpha0_SESSIZ_gecmiyor(self):
+        """Elle verilen alpha hedefi tutturmuyorsa HATA — sessizce farkli bir
+        cisim uretmek gozeneklilik cikariminin girdisini gorunmeden kaydirirdi.
+
+        1.6, tam olarak kusurun eski degeridir: rho0=2700 ile yigin yogunlugu
+        1687.5 demek, ama hedef 1800 yaziliydi.
+        """
+        with pytest.raises(ValueError, match="sapiyor") as exc:
+            self._pile(model_class="M0", matrix_alpha0=1.6)
+        mesaj = str(exc.value)
+        # Hata, TUTTURAN degeri de soylemeli — yoksa kullanici ne yapacagini
+        # bilemez ve en kolay yol tutarsizligi geri getirmek olur.
+        assert "1.5" in mesaj, mesaj
+        assert "matrix_alpha0=None" in mesaj, mesaj
+
+    def test_tutarli_matrix_alpha0_KABUL_ediliyor(self):
+        """Cozulen degeri elle vermek gecerli olmali (kapi kapanmasin)."""
+        cozulen = self._pile(model_class="M0").diagnostics["matrix_alpha0_solved"]
+        pile = self._pile(model_class="M0", matrix_alpha0=cozulen)
+        assert pile.diagnostics["matrix_alpha0_was_solved"] is False
+        assert pile.diagnostics["bulk_density_achieved"] == pytest.approx(
+            RHO_BULK, rel=1e-9)
+
+    def test_rho0_solid_zorunlu(self):
+        """Kok neden: uretici rho0'i HIC BILMIYORDU. Artik bilmek zorunda."""
+        with pytest.raises(TypeError, match="rho0_solid"):
+            build_rubble_pile(icosphere(2, 100.0), 25.0, RHO_BULK, 1)
+
+    def test_ulasilamaz_hedef_ACIK_reddediliyor(self):
+        """Bloklar tek basina hedefi asiyorsa sessizce yaklasik cozum yok."""
+        from dartrift.setup.rubble_generator import matrix_alpha0_for_bulk_density
+
+        with pytest.raises(ValueError, match="ulasilamaz"):
+            # bloklar parcaciklarin %90'i ve her biri 2571 kg/m^3 -> 1800 imkansiz
+            matrix_alpha0_for_bulk_density(1800.0, 2700.0, 1.05, 0.90)
+        with pytest.raises(ValueError, match="fiziksel degil"):
+            # katidan yogun matris istemek
+            matrix_alpha0_for_bulk_density(2800.0, 2700.0, 1.05, 0.0)

@@ -19,9 +19,10 @@
   "n_impactor": 399,
   "sha256": "ca730c2c8fa666b1683b2fd49bc2a1a175eb904a565c6292a6dd6e8feaafdfcb",
   "verified_on": [
+    "Linux/CPython 3.10.15/numpy 1.26.4",
     "Windows/CPython 3.12.10/numpy 2.4.6"
   ],
-  "note": "FAZ 3 sahne karmasi. ADR-0030 ile yenilendi: kutle gozeneklilikten tureiyor ve matrix_alpha0 hedef yigin yogunlugundan cozuluyor. Altin dosya mekanizmasi (ADR-0025) bu degisikligi DURDURDU — amacina uygun calisti. Ikinci platform (Linux/TRUBA) dogrulamasi bekleniyor; o eklenene kadar test_iki_platformda_dogrulanmis KALIR ve bu BILINEN, GECICI bir durumdur.",
+  "note": "FAZ 3 sahne karmasi. ADR-0030 ile yenilendi: kutle gozeneklilikten tureiyor ve matrix_alpha0 hedef yigin yogunlugundan cozuluyor. Altin dosya mekanizmasi (ADR-0025) bu degisikligi DURDURDU — amacina uygun calisti. Yeni karma iki bagimsiz ortamda birebir ayni: Linux/numpy 1.26.4 (TRUBA) ve Windows/numpy 2.4.6.",
   "history": [
     {
       "sha256": "6d6f1d10eaff64e2b3987df1119e4391a08fe8d48eb1874728d1e4984b2c28fa",
