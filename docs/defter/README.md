@@ -27,6 +27,7 @@ koşulardan gelir; iş numaraları yazılıdır.
 | **[019](KAYIT-019_2026-08-03_FAZ4-baslangic.md)** | 03.08 | **FAZ 4 başlangıç** — kütle oranı toleransı, ilk ölçüm |
 | **[020](KAYIT-020_2026-08-04_arayuz-hatasi-nicel.md)** | 04.08 | **FAZ 4.1** — arayüz hatası nicelendi: gürültü tabakası, `0,21·L/h`, %5 düzensizlik 8:1'den kötü |
 | **[021](KAYIT-021_2026-08-04_K21-sessiz-nan.md)** | 04.08 | **K21** — Tillotson'da sessiz NaN; hatalı bir ölçümün (S4) açığa çıkardığı gerçek kusur |
+| **[022](KAYIT-022_2026-08-04_E1-E2-karar-verisi.md)** | 04.08 | **E1+E2** — model kusursuz kafes (eşdeğer sarsıntı ~0) → arayüz hatası maskelenmiyor; ama 8:1'de **doyuyor** |
 
 > 017/018 numaraları kronolojiyle ters: 018 (2. tur) 017'den (3. tur) **önce**
 > yaşandı ama sonra yazıldı. Numaralar yazım sırasını, tablo yaşanma sırasını

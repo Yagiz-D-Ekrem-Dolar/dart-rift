@@ -160,6 +160,13 @@ ince sarsılıyor) — yoksa iki bölge farklı düzensizlikte olurdu.
 | 0,05 | 1,0070e+03 | 1,4255e+03 | 1,42× | 0,2421 | 0,3291 |
 | **0,10** | 1,9912e+03 | 1,7963e+03 | **0,90×** | 0,4714 | 0,5460 |
 
+> **SONRAKİ ÖLÇÜM (E1, [KAYIT-022](KAYIT-022_2026-08-04_E1-E2-karar-verisi.md)):**
+> Bu tablo doğrudur ama aşağıdaki yargı **koşulludur** ve koşul **sağlanmıyor**.
+> Ölçüldü: bu projenin oturmuş yığını **neredeyse kusursuz FCC kafesi**
+> (`a_rms = 3,27e-06`, komşu saçılımı `9,58e-12`) — yani **en üstteki satır**.
+> Öyleyse arayüz hatası **maskelenmiyor**; bu modelde **tek başına baskındır**.
+> Aşağısı silinmiyor: ölçüm doğruydu, varsaydığım **koşul** yanlıştı.
+
 ### Okuma
 
 - **%10 düzensizlikte 8:1 arayüz RMS'i artırmıyor** (0,90×) — arayüz katkısı
@@ -187,8 +194,8 @@ ince sarsılıyor) — yoksa iki bölge farklı düzensizlikte olurdu.
 
 | # | eksik | neden karar için gerekli |
 |---|---|---|
-| **E1** | **Gerçek oturmuş yığının sarsıntısı kaç?** | §5 tablosunda hangi satırda olduğumuzu bilmiyoruz. %2 ise arayüz 3,26× katıyor; %10 ise hiç katmıyor. **Karar tamamen buna bağlı.** |
-| E2 | Dinamik birikim | statik ölçüm `t = 0` anlıktır. Sabit bir yapay ivme hızı **doğrusal**, konumu **karesel** büyütür. |
+| ~~E1~~ | ~~Gerçek oturmuş yığının sarsıntısı kaç?~~ | **ÖLÇÜLDÜ (KAYIT-022 §1): ~0.** Model kusursuz kafes; arayüz hatası maskelenmiyor. |
+| ~~E2~~ | ~~Dinamik birikim~~ | **ÖLÇÜLDÜ (KAYIT-022 §3): 8:1'de DOYUYOR** (`v ~ t^0,72`, sabit kuvvet `t¹` verirdi). Birikmiyor. |
 | E3 | Şok geçişi | ölçüm yumuşak alanda yapıldı; çarpmanın asıl sorusu arayüzden geçen şoktur. |
 
 **E1 bir sonraki iştir** ve ucuzdur: FAZ 3'ün ürettiği gerçek yığına aynı
