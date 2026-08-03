@@ -81,8 +81,50 @@ class RubblePile:
 
     @property
     def bulk_density(self) -> float:
-        """Toplam kutle / mesh hacmi — hedef yigin yogunlugunu vermeli."""
+        """Toplam kutle / MESH hacmi.
+
+        DIKKAT — IKI FARKLI YIGIN YOGUNLUGU VAR ve ayrimlari isimlendirildi
+        (ADR-0033):
+
+          * bu ozellik      = sum(m) / V_mesh        (kalibin hacmi)
+          * `diagnostics["bulk_density_achieved"]` = sum(m) / (N * V_p)
+            (AYRIKLASTIRILMIS cismin gercek hacmi; ADR-0030 hedefi TAM tutturur)
+
+        Ikisinin orani tam olarak DOLUM ORANIDIR (`fill_ratio`): FCC kafesi
+        duzensiz bir sinira tam oturmaz. Olculdu:
+
+            sekil                 N      dolum    A(mesh)   B(dolu)
+            ikosfer r=100 s=9   8103    0.9993    1798.80   1800.00
+            ikosfer r=60  s=8   2448    0.9881    1778.51   1800.00
+            elipsoit 120x100x85 17555   0.9987    1797.65   1800.00
+            ikosfer r=82  s=7   9544    1.0044    1807.98   1800.00
+
+        Yani A, hedeften -%1,19 ile +%0,44 arasinda sapar. Bu bir kusur DEGIL,
+        iki farkli sorunun iki farkli yanitidir; ama hangisinin kullanildigi
+        ACIK olmali. Kutle ve SPH tutarliligi B'ye baglidir (m_i = rho_i V_p);
+        cismin kalip hacmine gore yogunlugu A'dir.
+
+        AYRIKLASTIRILMIS CISMIN HACMI N*V_p'DIR, V_mesh degil. Mesh yalnizca
+        bir kaliptir; parcaciklarin kapladigi hacim gercek cisimdir.
+        """
         return float(np.sum(self.m) / self.mesh_volume)
+
+    @property
+    def discretised_volume(self) -> float:
+        """AYRIKLASTIRILMIS cismin hacmi = N * V_p (kalip degil, gercek cisim)."""
+        from_spacing = particle_volume(self.spacing, "fcc")
+        return float(self.n * from_spacing)
+
+    @property
+    def discretised_radius(self) -> float:
+        """Ayriklastirilmis hacme karsilik gelen etkin yaricap.
+
+        Baglanma enerjisi ve kacis hizi KUTLE ile YARICAP'i birlikte kullanir;
+        ikisini farkli hacim tanimlarindan almak (kutle N*V_p'den, yaricap
+        V_mesh'ten) sessiz bir tutarsizliktir. Oran kucuktur (yaricapta
+        dolum^(1/3), yani <%0,4) ama isimsiz kalmamali.
+        """
+        return float((3.0 * self.discretised_volume / (4.0 * np.pi)) ** (1.0 / 3.0))
 
     @property
     def boulder_volume_fraction(self) -> float:
@@ -404,6 +446,8 @@ def build_rubble_pile(
         "boulder_volume_target": float(f_boulder * mesh.volume),
         "boulder_volume_placed": float(boulders.volume) if boulders is not None else 0.0,
         "boulder_fraction_measured": float(np.count_nonzero(is_b) / max(len(x), 1)),
+        # ADR-0033: iki yigin yogunlugu tanimi ACIKCA ayri raporlanir.
+        "bulk_density_over_mesh": float(np.sum(m) / mesh.volume) if mesh.volume else 0.0,
         "model_class": model_class,
         # Tutarlilik kaydi (ADR-0030): kutle gozeneklilikten turedi mi?
         "rho0_solid": float(rho0_solid),

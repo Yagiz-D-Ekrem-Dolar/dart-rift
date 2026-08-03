@@ -26,6 +26,7 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | K8 | `warp_core/solver_solid` | `r_s` **katı** hacimden (gözenekler sayılmıyor) | r_s **%12,6 küçük** → hasar **%14,5 hızlı** | 0030 ek | ✅ |
 | K9 | `cpu_reference/damage_ref` | Kusurlar **hacimden bağımsız** dağıtılıyordu | kusur hacmi **%56 yayılım**, dağıtım tekdüze | 0030 ek | ✅ |
 | K11 | `setup/scene` | Mermi distansiyonu **sabit 1**, yogunlugu ayri parametre | yogunluklar ayrisinca SPH/paketleme hacmi orani **1,1111** ya da **0,7407** | 0032 | ✅ |
+| K12 | `setup/rubble_generator` | **Ayni ad iki buyukluk**: yigin yogunlugu mesh mi dolu hacim mi | fark = dolum orani, **-%1,19 … +%0,44**; `rel=0.05` bandi yutuyordu | 0033 | ✅ |
 | S1 | `tests/test_settling` | *Turun kendi hatası:* Y0 testinin **tahmini ters** | ölçülen 130 kat **ters yönde** | — | ✅ |
 
 ---

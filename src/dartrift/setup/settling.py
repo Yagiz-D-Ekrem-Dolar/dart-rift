@@ -119,7 +119,11 @@ def settle_pile(
 
     # esik: yigini bir arada tutan enerjinin kucuk bir kesri
     m_tot = float(np.sum(m))
-    r_eff = float((3.0 * pile.mesh_volume / (4.0 * np.pi)) ** (1.0 / 3.0))
+    # ADR-0033: KUTLE ile YARICAP ayni hacim tanimindan gelmeli. Kutle
+    # ayriklastirilmis cismindir (sum m_i = rho_yigin * N * V_p); yaricapi
+    # MESH hacminden almak sessiz bir tutarsizlikti. Fark kucuk (yaricapta
+    # dolum^(1/3), olculen -%0,4 ile +%0,15) ama isimsiz kalmamali.
+    r_eff = pile.discretised_radius
     e_bind = binding_energy(m_tot, r_eff)
     ke_thr = ke_frac * e_bind
 

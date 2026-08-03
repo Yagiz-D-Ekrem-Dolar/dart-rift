@@ -374,3 +374,54 @@ class TestMassPorosityConsistency:
         with pytest.raises(ValueError, match="fiziksel degil"):
             # katidan yogun matris istemek
             matrix_alpha0_for_bulk_density(2800.0, 2700.0, 1.05, 0.0)
+
+
+class TestBulkDensityDefinitions:
+    """ADR-0033: 'yigin yogunlugu' IKI farkli sey demek; ikisi de isimli.
+
+      A) `RubblePile.bulk_density`              = sum(m) / V_mesh
+      B) `diagnostics["bulk_density_achieved"]` = sum(m) / (N * V_p)
+
+    Ikisinin orani TAM OLARAK dolum oranidir. Olculdu:
+        ikosfer r=100 s=9  : dolum 0.9993  A=1798.80  B=1800.00
+        ikosfer r=60  s=8  : dolum 0.9881  A=1778.51  B=1800.00
+        elipsoit 120x100x85: dolum 0.9987  A=1797.65  B=1800.00
+        ikosfer r=82  s=7  : dolum 1.0044  A=1807.98  B=1800.00
+    Yani A hedeften -%1,19 ile +%0,44 sapar. Kusur DEGIL, iki ayri sorunun
+    iki ayri yaniti — ama eski test bandi (rel=0.05) bu ayrimi YUTUYORDU ve
+    hangisinin kullanildigi belirsizdi.
+    """
+
+    @pytest.mark.parametrize(("mesh_fn", "sp"), [
+        (lambda: icosphere(4, 100.0), 9.0),
+        (lambda: icosphere(3, 60.0), 8.0),
+        (lambda: ellipsoid(120.0, 100.0, 85.0, subdiv=4), 7.0),
+    ])
+    def test_iki_tanim_dolum_oraniyla_bagli(self, mesh_fn, sp):
+        pile = build_rubble_pile(mesh_fn(), spacing=sp, bulk_density=RHO_BULK,
+                                 rho0_solid=RHO0_SOLID, root_seed=3,
+                                 model_class="M0")
+        d = pile.diagnostics
+        # B hedefi TAM tutturur (ADR-0030)
+        assert d["bulk_density_achieved"] == pytest.approx(RHO_BULK, rel=1e-12)
+        # A = B * dolum orani — kapali form iliski, tolerans yok
+        assert pile.bulk_density == pytest.approx(
+            d["bulk_density_achieved"] * d["fill_ratio"], rel=1e-12)
+        assert d["bulk_density_over_mesh"] == pytest.approx(
+            pile.bulk_density, rel=1e-12)
+
+    def test_ayriklastirilmis_hacim_ve_yaricap_tutarli(self):
+        """Kutle ile yaricap AYNI hacim tanimindan gelmeli."""
+        from dartrift.setup.rubble_generator import particle_volume
+
+        pile = build_rubble_pile(icosphere(3, 60.0), spacing=8.0,
+                                 bulk_density=RHO_BULK, rho0_solid=RHO0_SOLID,
+                                 root_seed=3, model_class="M0")
+        v_p = particle_volume(pile.spacing, "fcc")
+        assert pile.discretised_volume == pytest.approx(pile.n * v_p, rel=1e-12)
+        beklenen_r = (3.0 * pile.discretised_volume / (4.0 * np.pi)) ** (1.0 / 3.0)
+        assert pile.discretised_radius == pytest.approx(beklenen_r, rel=1e-12)
+        # mesh yaricapindan FARKLI olmali (aksi halde bu ayrim bos olurdu)
+        r_mesh = (3.0 * pile.mesh_volume / (4.0 * np.pi)) ** (1.0 / 3.0)
+        assert pile.discretised_radius != r_mesh
+        assert abs(pile.discretised_radius / r_mesh - 1.0) < 0.02
