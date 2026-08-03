@@ -35,6 +35,7 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | K17 | `setup/shape_mesh` | Kenar-manifold kontrolü **ters sarımı göremiyor** | 100 yüz ters → manifold hâlâ **True**, hacim **%15,5 yanlış**; yüklenen OBJ'de yakalayan yok | 0038 | ✅ |
 | K18 | `validation/scene_checks` | Krater ölçütü **yanlılık + sinyal** toplamına elle yazılmış eşik uyguluyordu | yanlılık **−1,5335 m**; eşik 5,0 ikisini ayırmıyordu, pozitif kontrol yoktu | 0039 | ✅ |
 | K19 | `scripts/run_red_team` | Kırmızı takımın **kendi** ölçütlerinde iki kusur: RT7 kütle kesri, RT11 **kendini doğrulayan** koşul | RT11'in üçüncü anahtarı `"X" if "X" in doc else "Y"` — **asla düşemez** | — | ✅ |
+| K20 | `scripts/run_g1_gate` | G1 C7 bir **özdeşliği** sınıyordu — asla düşemez | iki yüzde `100·n_cfl/n` ve `100·(n−n_cfl)/n`; toplamları **inşaat gereği 100** | 0040 | ✅ |
 | S1 | `tests/test_settling` | *Turun kendi hatası:* Y0 testinin **tahmini ters** | ölçülen 130 kat **ters yönde** | — | ✅ |
 | S2 | `docs/KUSUR-KAYDI.md` | *Turun ikinci hatası:* kaydın kendisi **sessizce eksik kaldı** | `str.replace` çapası tutmadı → **3 bölüm birden** kayboldu (K10/K11/K12) | — | ✅ |
 
@@ -814,6 +815,49 @@ sınıyordu; üstelik ikisi de **dize eşleşmesi** — RT12'nin düzeltilmiş g
 
 K15 ile aynı aile: orada örneklem ölçülen büyüklükle seçiliyordu, burada
 **eşik** aranan metnin kendisinden seçiliyor.
+
+---
+
+## K20 — G1 C7 bir özdeşliği sınıyordu (asla düşemezdi)
+
+**Modül:** `scripts/run_g1_gate.py` · **Şiddet:** orta (sınama boşluğu)
+**ADR:** 0040
+
+### Nasıl bulundu
+K15/K19'un sorusu ("koşul kendi girdisinden mi türüyor?") FAZ 1 kapısına
+uygulandı.
+
+### Ölçülen etki
+```python
+# summarize_timestep_stats:
+binding_cfl_viscous_pct  = 100.0 * n_cfl / n
+binding_acceleration_pct = 100.0 * (n - n_cfl) / n
+```
+G1 C7 ise şunu sınıyordu:
+```python
+abs(binding_cfl_viscous_pct + binding_acceleration_pct - 100.0) < 1e-9
+```
+Toplam **inşaat gereği tam 100**. Bu bir **özdeşlik**, kanıt değil —
+`1e-9` toleransı yalnızca kayan nokta yuvarlaması içindi. Kriterin
+düşebileceği tek gerçek koşul `n_steps > 0` idi.
+
+### Düzeltme
+Düşebilecek şartlar:
+- gerekli alanların **tamamı** var,
+- `n_steps > 0`,
+- üç yüzde de `[0, 100]` aralığında,
+- `0 < dt_min ≤ dt_max < ∞`,
+- **log anlamlı mı:** `dt_max > dt_min` — sabit `dt`'de kısıt-yüzdesi logu
+  bilgi taşımaz ve P1-FR-07'nin amacı karşılanmaz.
+
+Kanıt metni artık örnek `dt` aralığını ve bağlayıcı kısıt yüzdesini yazıyor.
+
+### Ders
+> **Bir koşulun düşebileceği bir dünya var mı?** Yoksa o koşul kanıt değil,
+> yalnızca bir özdeşliğin yeniden yazımıdır.
+
+K19-B ile aynı aile: orada eşik aranan metinden, burada karşılaştırılan
+büyüklük kendi tanımından türüyordu.
 
 ---
 

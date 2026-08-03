@@ -239,13 +239,45 @@ def main() -> int:
         )
     else:
         crit["C5"].record(False, "CUDA yok: Sedov kosulamadi -> KANITLANAMADI")
-    ts_ok = all(
-        m["timestep_summary"]["n_steps"] > 0
-        and abs(m["timestep_summary"]["binding_cfl_viscous_pct"]
-                + m["timestep_summary"]["binding_acceleration_pct"] - 100.0) < 1e-9
-        for m in list(sod_ladder.values()) + list(sedov_ladder.values()) + [cons]
-    )
-    crit["C7"].record(ts_ok, "her senaryoda kisit-yuzdesi ozeti mevcut ve tutarli")
+    # ADR-0040: ONCEKI KOSUL DUSEMEZDI. Iki yuzde su sekilde uretiliyor:
+    #     binding_cfl_viscous_pct = 100*n_cfl/n
+    #     binding_acceleration_pct = 100*(n-n_cfl)/n
+    # yani toplamlari INSAAT GEREGI tam 100. `abs(toplam-100) < 1e-9` bir
+    # OZDESLIKTIR, kanit degil. Yerine DUSEBILECEK sartlar konuldu.
+    def _ts_gecerli(m) -> tuple[bool, str]:
+        t = m.get("timestep_summary", {})
+        gereken = ("n_steps", "binding_cfl_viscous_pct", "binding_acceleration_pct",
+                   "mean_pct_particles_cfl", "dt_min", "dt_max")
+        eksik = [k for k in gereken if k not in t]
+        if eksik:
+            return False, f"eksik alan {eksik}"
+        if t["n_steps"] <= 0:
+            return False, "n_steps <= 0"
+        for k in ("binding_cfl_viscous_pct", "binding_acceleration_pct",
+                  "mean_pct_particles_cfl"):
+            if not (0.0 <= t[k] <= 100.0):
+                return False, f"{k}={t[k]} [0,100] disinda"
+        if not (0.0 < t["dt_min"] <= t["dt_max"] < float("inf")):
+            return False, f"dt araligi bozuk: [{t['dt_min']}, {t['dt_max']}]"
+        # LOG ANLAMLI MI: dt gercekten uyarlaniyor mu? Sabit dt'de kisit-yuzdesi
+        # logu bilgi tasimaz ve P1-FR-07'nin amaci karsilanmaz.
+        if t["dt_max"] <= t["dt_min"]:
+            return False, "dt sabit — kisit logu bilgi tasimiyor"
+        return True, ""
+
+    ts_sonuc = [(ad, _ts_gecerli(m)) for ad, m in
+                (list(sod_ladder.items()) + list(sedov_ladder.items())
+                 + [("conservation", cons)])]
+    ts_ok = all(r[0] for _, r in ts_sonuc)
+    ts_kotu = [f"{ad}: {r[1]}" for ad, r in ts_sonuc if not r[0]]
+    _t0 = (list(sod_ladder.values()) + [cons])[0]["timestep_summary"]
+    crit["C7"].record(
+        ts_ok,
+        f"{len(ts_sonuc)} senaryoda kisit-ozeti alanlari tam, yuzdeler [0,100], "
+        f"dt araligi gecerli ve dt UYARLANIYOR (ornek: dt "
+        f"{_t0['dt_min']:.3e}..{_t0['dt_max']:.3e}, "
+        f"CFL-baglayici %{_t0['binding_cfl_viscous_pct']:.1f})"
+        + (f"; SORUNLU: {ts_kotu}" if ts_kotu else ""))
 
     # yakinsama (P1-VR-06) — rapora girer
     l1 = [sod_ladder[r]["l1_rho"] for r in SOD_RESOLUTIONS]
