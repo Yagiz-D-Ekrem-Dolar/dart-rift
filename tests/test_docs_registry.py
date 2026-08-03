@@ -30,11 +30,11 @@ def metin() -> str:
 
 
 def _tablo_kimlikleri(t: str) -> list[str]:
-    return re.findall(r"^\| (K\d+|S\d+) ", t, re.M)
+    return re.findall(r"^\| (K\d+|S\d+|B\d+) ", t, re.M)
 
 
 def _govde_kimlikleri(t: str) -> list[str]:
-    return re.findall(r"^## (K\d+|S\d+) ", t, re.M)
+    return re.findall(r"^## (K\d+|S\d+|B\d+) ", t, re.M)
 
 
 def test_tablo_ve_govde_birebir_ayni(metin):
@@ -71,7 +71,7 @@ def test_her_kusurun_olculen_etkisi_var(metin):
     for b in bolumler:
         basl = b.split("\n", 1)[0].strip()
         kimlik = basl.split(" ")[0]
-        if not re.match(r"^[KS]\d+$", kimlik):
+        if not re.match(r"^[KSB]\d+$", kimlik):
             continue
         if not re.search(r"\d[\d.,]*e[+-]?\d|\d+,\d+|%\d|\d+\.\d+", b):
             sayisiz.append(kimlik)

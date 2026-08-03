@@ -248,3 +248,83 @@ class TestDamageCross(TestSolidCpuGpuCross):
             f"D sapmasi {np.max(np.abs(st.D - s['D'])):.3e}")
         # Hasar monoton ve kisik
         assert np.all(s["D"] >= 0.0) and np.all(s["D"] <= 1.0)
+
+
+@needs_warp
+class TestTimestepCross:
+    """`dt` hesabi CPU referansiyla AYNI mi — kapsam bosluguydu.
+
+    Bulunan bosluk: hicbir test `warp_core/timestep.py`'yi ya da
+    `compute_timestep_solid`'i CAPRAZ kontrol etmiyordu. Ustelik
+    `TestSolidCpuGpuCross` SABIT bir `DT` kullaniyor (5.0e-7), yani `dt`
+    hesabi hic karsilastirilmamisti.
+
+    Bu onemlidir: `dt` hem kararliligi hem dogrulugu belirler. GPU ile CPU
+    farkli `dt` secseydi, sabit-dt capraz kontrolleri bunu GORMEZDI —
+    ADR-0028'de olculen enerji kaymasi da tam olarak `O(dt)` kesme
+    hatasiydi, yani `dt` dogrudan bilimsel sonuca giriyor.
+
+    ADR-0040'un kurali burada da gecerli: sinav DUSEBILMELI. Bu yuzden
+    yalnizca "ikisi de pozitif" degil, BIREBIR esitlik (goreli 1e-12)
+    araniyor ve `dt`nin gercekten kisitlarla degistigi ayrica dogrulaniyor.
+    """
+
+    @staticmethod
+    def _durumlar():
+        """Farkli kisitlarin baglayici oldugu birkac durum."""
+        x, v, m, h, mat, num, pp = _full_physics_setup()
+        return [
+            ("ice cokme", v),                    # taban (CFL baglayici)
+            ("genlesme", -v),
+            ("yavas", 0.05 * v),                 # ivme kisiti one cikar
+            ("hizli", 5.0 * v),
+        ], (x, m, h, mat, num, pp)
+
+    def _cpu_dt(self, x, v, m, h, mat, num, pp):
+        from dartrift.cpu_reference.solid_ref import compute_timestep_solid
+
+        st = SolidState(x=x.copy(), v=v.copy(), m=m, u=np.zeros(len(m)), h=h,
+                        active=np.ones(len(m), bool),
+                        alpha=np.full(len(m), pp.alpha0))
+        evaluate_solid(st, mat, num)
+        return float(compute_timestep_solid(st, mat, num))
+
+    def _gpu_dt(self, x, v, m, h, mat, num, pp, device):
+        from dartrift.warp_core.solver_solid import WarpSolid3D
+
+        sol = WarpSolid3D(x.copy(), v.copy(), m, np.zeros(len(m)), h, mat, num,
+                          alpha0=np.full(len(m), pp.alpha0), device=device,
+                          check_every=10**9)
+        sol._eval()
+        return float(sol.compute_dt())
+
+    def _kos(self, device):
+        durumlar, (x, m, h, mat, num, pp) = self._durumlar()
+        satir = []
+        for ad, v in durumlar:
+            c = self._cpu_dt(x, v, m, h, mat, num, pp)
+            g = self._gpu_dt(x, v, m, h, mat, num, pp, device)
+            satir.append((ad, c, g))
+        return satir
+
+    def _dogrula(self, satir):
+        for ad, c, g in satir:
+            assert c > 0.0 and np.isfinite(c), (ad, c)
+            assert g == pytest.approx(c, rel=1e-12), (
+                f"{ad}: CPU dt={c:.6e}, GPU dt={g:.6e}, "
+                f"goreli fark {abs(g / c - 1):.2e}")
+        # BOSLUK KONTROLU: dt gercekten duruma gore DEGISIYOR mu?
+        # Hepsi ayni ciksaydi esitlik testi bos bir dogru olurdu.
+        dts = [c for _, c, _ in satir]
+        assert max(dts) / min(dts) > 1.5, (
+            f"dt durumlar arasinda neredeyse hic degismiyor: {dts} — "
+            "bu durumda esitlik testi hicbir sey sinamaz")
+
+    def test_warp_cpu_device_dt_matches_reference(self):
+        self._dogrula(self._kos("cpu"))
+
+    @pytest.mark.gpu
+    def test_cuda_dt_matches_reference(self):
+        if not any(d.startswith("cuda") for d in warp_devices()):
+            pytest.skip("CUDA yok")
+        self._dogrula(self._kos("cuda:0"))

@@ -36,6 +36,7 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | K18 | `validation/scene_checks` | Krater ölçütü **yanlılık + sinyal** toplamına elle yazılmış eşik uyguluyordu | yanlılık **−1,5335 m**; eşik 5,0 ikisini ayırmıyordu, pozitif kontrol yoktu | 0039 | ✅ |
 | K19 | `scripts/run_red_team` | Kırmızı takımın **kendi** ölçütlerinde iki kusur: RT7 kütle kesri, RT11 **kendini doğrulayan** koşul | RT11'in üçüncü anahtarı `"X" if "X" in doc else "Y"` — **asla düşemez** | — | ✅ |
 | K20 | `scripts/run_g1_gate` | G1 C7 bir **özdeşliği** sınıyordu — asla düşemez | iki yüzde `100·n_cfl/n` ve `100·(n−n_cfl)/n`; toplamları **inşaat gereği 100** | 0040 | ✅ |
+| B1 | `warp_core/timestep` | **Kapsam boşluğu:** `dt` hesabı CPU referansıyla hiç karşılaştırılmamış | çapraz kontroller **sabit** `DT=5e-7` kullanıyordu; `dt` doğrudan `O(dt)` enerji kaymasına giriyor | — | ✅ |
 | S1 | `tests/test_settling` | *Turun kendi hatası:* Y0 testinin **tahmini ters** | ölçülen 130 kat **ters yönde** | — | ✅ |
 | S2 | `docs/KUSUR-KAYDI.md` | *Turun ikinci hatası:* kaydın kendisi **sessizce eksik kaldı** | `str.replace` çapası tutmadı → **3 bölüm birden** kayboldu (K10/K11/K12) | — | ✅ |
 
@@ -858,6 +859,45 @@ Kanıt metni artık örnek `dt` aralığını ve bağlayıcı kısıt yüzdesini
 
 K19-B ile aynı aile: orada eşik aranan metinden, burada karşılaştırılan
 büyüklük kendi tanımından türüyordu.
+
+---
+
+## B1 — Kapsam boşluğu: `dt` hesabı hiç çapraz kontrol edilmemiş
+
+**Modül:** `src/dartrift/warp_core/timestep.py`, `WarpSolid3D.compute_dt`
+**Tür:** kapsam boşluğu (kod doğru, sınanmamış)
+
+### Nasıl bulundu
+Yapısal denetim: **16 GPU çekirdeği** ile **5 CPU referansı** eşleştirildi.
+K1'in kök nedeni tam bu türdendi (hasarın CPU döngü referansı yoktu).
+
+Eşleşme sonucu — tek boşluk `timestep`:
+
+| GPU çekirdeği | CPU referansı | çapraz kontrol |
+|---|---|---|
+| `density`, `forces`, `integrator`, `kernel_fn`, `neighbors`, `hash_grid`, `solver` | `sph_ref` | `test_sph_cross` ✓ |
+| `eos_tillotson`, `solid_stress`, `strength_lundborg`, `porosity_palpha`, `solver_solid` | `solid_ref`, `materials` | `test_solid_cross` ✓ |
+| `gravity_tree` | `gravity_ref` | `test_uniform_sphere`, `test_two_body` ✓ |
+| `damage_gradykipp` | `damage_ref` | `TestDamageCross` ✓ *(bu turda eklendi)* |
+| **`timestep`** | `compute_timestep_solid` | **YOK** |
+
+### Neden önemli
+`dt` hem kararlılığı hem doğruluğu belirler. Üstelik mevcut çapraz kontroller
+**sabit** `DT = 5.0e-7` kullanıyor — GPU ile CPU farklı `dt` seçseydi bu
+testler **görmezdi**. ADR-0028'de ölçülen enerji kayması da tam olarak
+`O(dt)` kesme hatasıydı, yani `dt` doğrudan bilimsel sonuca giriyor.
+
+### Düzeltme
+`TestTimestepCross` — dört farklı hız ölçeğinde (içe çökme, genleşme, yavaş,
+hızlı) `WarpSolid3D.compute_dt()` ile `compute_timestep_solid()` **birebir**
+karşılaştırılır (`rel=1e-12`), hem `cpu` hem `cuda:0` cihazında.
+
+**Boşluk kontrolü** (ADR-0040): `dt` durumlar arasında gerçekten değişmeli
+(`max/min > 1,5`) — hepsi aynı çıksaydı eşitlik testi hiçbir şey sınamazdı.
+
+### Not
+Bu bir **kusur kaydı değil**, kapatılan bir kapsam boşluğudur — kodun doğru
+olup olmadığı TRUBA koşusunda görülecek.
 
 ---
 
