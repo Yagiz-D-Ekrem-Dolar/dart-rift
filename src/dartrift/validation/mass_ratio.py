@@ -196,6 +196,12 @@ def run_mass_ratio_scan(
             "a_interface_over_ref": sa["a_interface_over_reference"],
             "a_deep": sa["a_max_deep"],
             "a_interface": sa["a_max_interface"],
+            "a_p50": sa["a_p50_interface"],
+            "a_rms": sa["a_rms_interface"],
+            "a_radial_mean": sa["a_radial_mean_interface"],
+            "systematic_ratio": sa["systematic_ratio"],
+            "momentum_residual": sa["net_momentum_residual"],
+            "n_deep": sa["n_deep"],
             "field_is_uniform": sa["field_is_uniform"],
         })
 
@@ -281,6 +287,22 @@ def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
     kenar, arayuz = mk["kenar"], mk["arayuz"]
     derin = kenar & ~arayuz
 
+    # ISARETLI RADYAL BILESEN. Maksimum tek bir parcacigi gosterir; asil soru
+    # hatanin SISTEMATIK mi (arayuzu surukler) yoksa RASTGELE mi (birbirini
+    # goturur) oldugudur. Radyal ortalama sifirdan ayrilirsa arayuz kayar.
+    r_vec = z["x"]
+    r_nrm = np.linalg.norm(r_vec, axis=1)
+    guvenli = r_nrm > 1.0e-12
+    a_rad = np.zeros(n)
+    a_rad[guvenli] = np.einsum(
+        "ij,ij->i", st.a[guvenli], r_vec[guvenli] / r_nrm[guvenli, None])
+
+    # Momentum korunumu: SPH'in simetrik kuvvet bicimi ANTISIMETRIKTIR, yani
+    # SUM(m_i a_i) TAM SIFIR olmali. Sifir degilse cozucude hata var, arayuzde
+    # degil — bu, olcum aracinin kendi kalibrasyonudur.
+    net_p = float(np.linalg.norm((m[:, None] * st.a).sum(axis=0)))
+    olcek_p = float(np.sum(m * a)) or 1.0
+
     # Olcek: ayni kurulumda GERCEK bir basinctan dogacak ivme mertebesi.
     # Boylece "buyuk mu" sorusu mutlak degil, KIYASLI yanitlanir.
     # Olcek: uygulanan DUZGUN basincin kendisinden dogacak ivme mertebesi
@@ -301,4 +323,19 @@ def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
         "n_interface": int(arayuz.sum()),
         "n_deep": int(derin.sum()),
         "margin": mk["margin"],
+        # Dagilim: maksimum tek parcacik, medyan/p90 ise arayuzun BUTUNU.
+        "a_p50_interface": (
+            float(np.median(a[arayuz])) if arayuz.any() else float("nan")),
+        "a_p90_interface": (
+            float(np.percentile(a[arayuz], 90)) if arayuz.any() else float("nan")),
+        "a_rms_interface": (
+            float(np.sqrt(np.mean(a[arayuz] ** 2))) if arayuz.any() else float("nan")),
+        # Sistematik mi rastgele mi: isaretli radyal ortalama / RMS.
+        "a_radial_mean_interface": (
+            float(np.mean(a_rad[arayuz])) if arayuz.any() else float("nan")),
+        "systematic_ratio": (
+            float(abs(np.mean(a_rad[arayuz])) / np.sqrt(np.mean(a[arayuz] ** 2)))
+            if arayuz.any() and np.any(a[arayuz]) else 0.0),
+        # Olcum aracinin kendi kalibrasyonu (bkz. YONTEM "araci da kalibre et").
+        "net_momentum_residual": net_p / olcek_p,
     }
