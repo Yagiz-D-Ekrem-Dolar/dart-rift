@@ -39,6 +39,7 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | B1 | `warp_core/timestep` | **Kapsam boşluğu:** `dt` hesabı CPU referansıyla hiç karşılaştırılmamış | çapraz kontroller **sabit** `DT=5e-7` kullanıyordu; `dt` doğrudan `O(dt)` enerji kaymasına giriyor | — | ✅ |
 | S1 | `tests/test_settling` | *Turun kendi hatası:* Y0 testinin **tahmini ters** | ölçülen 130 kat **ters yönde** | — | ✅ |
 | S2 | `docs/KUSUR-KAYDI.md` | *Turun ikinci hatası:* kaydın kendisi **sessizce eksik kaldı** | `str.replace` çapası tutmadı → **3 bölüm birden** kayboldu (K10/K11/K12) | — | ✅ |
+| S3 | `tests/test_solid_cross` | *Turun üçüncü hatası:* `dt`'nin **hızla** değişeceği varsayımı | ölçülen yayılım **%1,9** — boşluk kontrolü haklı olarak düştü; CFL **ses hızına** bağlı | — | ✅ |
 
 ---
 
@@ -975,6 +976,41 @@ kusurun ortak imzası — *sessiz başarısızlık, doğrulanmamış varsayım* 
 belgeyi yazan araçta da geçerliydi.
 
 ---
+
+
+## S3 — Turun üçüncü hatası: `dt`'nin hızla değişeceği varsayımı
+
+**Modül:** `tests/test_solid_cross.py` · **Şiddet:** süreç
+
+### Ne oldu
+B1 için yazdığım `TestTimestepCross`'ta **boşluk kontrolü** şuydu: `dt`, dört
+farklı hız ölçeğinde en az 1,5 kat oynamalı — yoksa eşitlik testi boş bir
+doğruyu sınar.
+
+**Eşitlik geçti** (`dt_CPU == dt_GPU`, rel 1e-12, dört durumda da — yani `dt`
+kodu **doğru**). Düşen şey benim boşluk kontrolümdü.
+
+### Ölçüm (TRUBA iş 1450286, H100)
+```
+hız çarpanı   0,05      1        1        5
+dt          5,320e-06 5,402e-06 5,402e-06 5,421e-06
+yayılım     %1,9
+```
+
+### Kök neden — fizik
+CFL kısıtı **ses hızına** bağlıdır (Tillotson bazaltta ~5000 m/s). Denenen
+parçacık hızları (1,5–150 m/s) onun yanında ihmal edilebilir. Yani hız, bu
+rejimde `dt`'yi **sürmüyor**. `dt` gerçekten `h` ve `cfl` ile oynar:
+`dt_cfl = cfl · h / visc`.
+
+### Düzeltme
+Sınav `h` (0,5×, 1×, 2×) ve `cfl` (0,2 / 0,05) ile kuruldu; eşitlik böylece
+**geniş** bir `dt` aralığında sınanıyor.
+
+### Ders
+Bu, S1 ile **aynı** hata: bir GPU testinin tahminini ölçmeden yazmak. İkinci
+kez oldu. Kural artık kayıtlı: **boşluk kontrolünün kendisi de bir tahmindir
+ve ölçülmelidir.**
 
 ## Ortak kök neden — dokuz kusurun tamamı
 
