@@ -25,9 +25,11 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | K7 | `setup/rubble_generator` | Kütle tekdüze, yoğunluk parçacık başına → **tutarsız** | birim bölünmesi blok **0,77**; toplam yoğunlukla **−7,624e+09 Pa** yapay çekme | 0030 | ✅ |
 | K8 | `warp_core/solver_solid` | `r_s` **katı** hacimden (gözenekler sayılmıyor) | r_s **%12,6 küçük** → hasar **%14,5 hızlı** | 0030 ek | ✅ |
 | K9 | `cpu_reference/damage_ref` | Kusurlar **hacimden bağımsız** dağıtılıyordu | kusur hacmi **%56 yayılım**, dağıtım tekdüze | 0030 ek | ✅ |
+| K10 | `warp_core/porosity_palpha` | Crush tavanı **skaler**, gözeneklilik parçacık başına | tavanı aşan parçacık ilk adımda ezilir → **−1,14 GPa** yapay çekme; KE bağ. enerjisinin **2,9 milyon katı** | 0031 | ✅ |
 | K11 | `setup/scene` | Mermi distansiyonu **sabit 1**, yogunlugu ayri parametre | yogunluklar ayrisinca SPH/paketleme hacmi orani **1,1111** ya da **0,7407** | 0032 | ✅ |
 | K12 | `setup/rubble_generator` | **Ayni ad iki buyukluk**: yigin yogunlugu mesh mi dolu hacim mi | fark = dolum orani, **-%1,19 … +%0,44**; `rel=0.05` bandi yutuyordu | 0033 | ✅ |
 | S1 | `tests/test_settling` | *Turun kendi hatası:* Y0 testinin **tahmini ters** | ölçülen 130 kat **ters yönde** | — | ✅ |
+| S2 | `docs/KUSUR-KAYDI.md` | *Turun ikinci hatası:* kaydın kendisi **sessizce eksik kaldı** | `str.replace` çapası tutmadı → **3 bölüm birden** kayboldu (K10/K11/K12) | — | ✅ |
 
 ---
 
@@ -367,6 +369,143 @@ deterministik: True   tohuma duyarlı: True
 
 ---
 
+## K10 — Crush eğrisinin tavanı skalerdi, gözeneklilik parçacık başına
+
+**Modül:** `warp_core/porosity_palpha.py` + `cpu_reference/materials.py`
+**Şiddet:** kritik · **ADR:** 0031
+
+### Belirti
+ADR-0030'dan sonra `test_esik_altinda_ve_yakinsadi` kaldı — settling
+yakınsamıyordu.
+
+### Nasıl bulundu
+Testi düzeltmek yerine **ne değiştiği ölçüldü** (iş 1449843):
+
+```
+E_bağ = 1,703479e+06 J     eşik(1e-3) = 1,703479e+03 J
+  40 adım: KE_son = 4,894274e+12 J   KE/E_bağ = 2,873e+06
+ 200 adım: KE_son = 3,896113e+09 J   KE/E_bağ = 2,287e+03
+1000 adım: KE_son = 3,556281e+07 J   KE/E_bağ = 2,088e+01
+```
+
+KE, bağlanma enerjisinin **2,9 milyon katı**. Yerçekiminden gelemez:
+`a_yerçekimi(t=0) = 3,213e-05 m/s²` ile 0,0134 s'de `v ~ 4e-7 m/s` beklenirken
+ölçülen `v_rms ≈ 78 m/s`. Yani enerji **başka bir yerden** giriyordu.
+
+### Ölçülen etki — karşı-kontrollü (iş 1449888, H100)
+| adım | malzeme tavanı 1,6 (mevcut) | malzeme tavanı 1,7273 (uygun) |
+|---|---|---|
+| 0 | α=1,727253 · P=0 · KE=0 | α=1,727253 · P=0 · KE=0 |
+| 1 | **α=1,600000** · P=0 · KE=8,23e-08 | α=1,727253 · P=0 · KE=8,23e-08 |
+| 2 | α=1,600000 · **P=−1,1389e+09 Pa** · KE=3,36e+10 | α=1,727253 · P=−1,6e-04 Pa · KE=2,70e-07 |
+| 4 | α=1,600000 · P=−1,1294e+09 Pa · **KE=8,29e+11** | α=1,727253 · P=5,1e-03 Pa · **KE=9,66e-07** |
+
+**KE oranı: 8,587e+17.**
+
+### Kök neden
+`crush_alpha` distansiyonun üst sınırını **malzemenin skaler** `alpha0`
+değerinden alıyordu. Yığının matris α'sı 1,7273 (ADR-0030 ile hedef yığın
+yoğunluğundan çözülüyor), malzemenin skaleri 1,6. Fark %7,4 ve ilk adımda
+`rho·alpha = rho0` şartını (ADR-0022) bozarak **−1,14 GPa** üretiyor.
+
+### Kusur ne kadar eskiydi
+**ADR-0030 onu görünür yaptı, ama kusur hep vardı.** Önceden matris α₀ = 1,6
+**tesadüfen** malzemeninkine eşitti; bloklar (1,05 < 1,6) ise geri-genleşme
+yasağıyla korunuyordu. Model **yalnızca homojen gözeneklilik için** doğruydu —
+oysa heterojen yığın tam olarak FAZ 3'ün ürettiği şey.
+
+### Düzeltme
+Tavan parçacık başına: GPU'da `alpha_ref` dizisi, CPU'da
+`crush_alpha(P, alpha_ref)` ve `solve_alpha_implicit(..., alpha_ref)`.
+Verilmezse skaler kullanılır — homojen koşularda davranış değişmez.
+
+### Düzeltme sonrası ölçüm (iş 1449929, H100)
+```
+40 adım: yakınsadı=True
+KE_son = 5,724292e-06 J   KE/E_bağ = 3,360e-12    (önce 2,873e+06)
+```
+
+### Yapısal önlem
+`TestPerParticleCrushCeiling` — eşik altında her parçacık kendi α₀'ını korur;
+geriye dönük uyum; gerilmesiz başlangıç bozulmuyor; **boşluk kontrolü:**
+gerçek basma hâlâ eziyor.
+
+---
+
+## K11 — Merminin distansiyonu sabit 1'di, yoğunluğu ayrı parametre
+
+**Modül:** `src/dartrift/setup/scene.py` · **Şiddet:** yüksek · **ADR:** 0032
+
+### Nasıl bulundu
+K7 ve K10'un ortak deseni ("aynı büyüklük iki yerde") **sistematik** arandı.
+Mermi, çözücünün `rho0_solid/alpha0` kuralına tabi ama yoğunluğu
+`impactor_density` ile ayrıca veriliyor.
+
+### Ölçülen etki (`rho0_solid = 2700`)
+| `impactor_density` | `alpha0` | çözücünün ρ'su | V_SPH / V_paketleme |
+|---|---|---|---|
+| 2700 | 1,0000 | 2700,0 | 1,0000 |
+| 3000 | 1,0000 | 2700,0 | **1,1111** |
+| 2000 | 1,0000 | 2700,0 | **0,7407** |
+
+%11–26 tutarsızlık, hiçbir uyarı olmadan. **Mermi β'yı taşıyan bileşendir**;
+buradaki hata doğrudan başlık sayısına gider.
+
+### Neden görünmüyordu
+Üretim konfigürasyonunda ikisi de 2700 — **tesadüfen**. Bağlayan hiçbir şey
+yoktu; biri değiştiğinde sessizce ayrışacaktı.
+
+### Düzeltme
+`alpha_imp = rho0_solid / impactor_density`. Eşitken α = 1,0 **tam** çıkar
+(geriye dönük aynı); `impactor_density > rho0_solid` ise α < 1 gerekirdi —
+fiziksel değil, **açık hata** (çözücü tek malzemeli; mermi ancak **seyrek**
+temsil edilebilir).
+
+### Düzeltme sonrası ölçüm
+| `impactor_density` | `alpha0` | tutarlılık |
+|---|---|---|
+| 2700 | 1,0000 | **1,000000** |
+| 2000 | 1,3500 | **1,000000** |
+| 1500 | 1,8000 | **1,000000** |
+| 3000 | — | **açık hata** |
+
+Kütle ve momentum defteri etkilenmiyor (test ile kilitli).
+
+---
+
+## K12 — "Yığın yoğunluğu" iki farklı şeydi, ikisi de aynı adla
+
+**Modül:** `src/dartrift/setup/rubble_generator.py` · **Şiddet:** düşük-orta
+**ADR:** 0033
+
+### Nasıl bulundu
+Desenin daha yumuşak biçimi arandı: *aynı ad iki farklı hesabı taşıyor mu?*
+
+### Ölçülen etki
+| şekil | dolum | A (mesh) | B (dolu) | A sapma |
+|---|---|---|---|---|
+| ikosfer r=100 s=9 | 0,9993 | 1798,80 | 1800,00 | −%0,07 |
+| ikosfer r=60 s=8 | 0,9881 | 1778,51 | 1800,00 | **−%1,19** |
+| elipsoit 120×100×85 | 0,9987 | 1797,65 | 1800,00 | −%0,13 |
+| ikosfer r=82 s=7 | 1,0044 | 1807,98 | 1800,00 | **+%0,44** |
+
+Somut sonucu: `settle_pile` bağlanma enerjisini **kütleyi bir hacim
+tanımından, yarıçapı diğerinden** alarak hesaplıyordu.
+
+### Neden görünmüyordu
+`test_bulk_density_recovered` `rel=0.05` bandı kullanıyordu — ayrımı yutuyordu.
+
+### Düzeltme
+İki tanım ayrı adlandırıldı; `discretised_volume`/`discretised_radius`
+eklendi; `settle_pile` artık kütle ile yarıçapı **aynı** tanımdan alıyor.
+
+### Yapısal önlem
+`A = B × dolum_oranı` kapalı-form ilişkisi **toleranssız** (`rel=1e-12`)
+kilitlendi. Kural genişletildi: *"yaklaşık eşit" bir tolerans bandı, ayrımı
+gizlemenin en kolay yoludur.*
+
+---
+
 ## S1 — Turun kendi hatası: GPU testinin tahmini ölçülmeden yazıldı
 
 **Modül:** `tests/test_settling.py` · **Şiddet:** süreç
@@ -394,6 +533,51 @@ Tam plastik rejimde dağılım hızı `σ_akma · ε̇_p`, yani iş yield gerilm
 1. **GPU-only testler yerelde SKIP oluyor.** Yerel takım 528/0 geçerken bu
    test hiç koşmadı. Yerel yeşil, GPU testi için kanıt değildir.
 2. **GPU testinin tahmini önce ÖLÇÜLMELİ, sonra yazılmalı.**
+
+---
+
+## S2 — Turun ikinci hatası: kusur kaydının kendisi sessizce eksik kaldı
+
+**Modül:** `docs/KUSUR-KAYDI.md` · **Şiddet:** süreç
+
+### Ne oldu
+K10, K11 ve K12 kayda eklenirken kullanılan `str.replace` çağrılarının çapası
+`"## S1 — Turun kendi hatasi"` yazıyordu; dosyadaki gerçek başlık
+`"...hatası"` (Türkçe **ı**). Eşleşme olmadı, `replace` **sessizce hiçbir şey
+yapmadı** ve **üç bölüm birden kayboldu**. Tablo K11/K12'yi gösteriyordu ama
+gövdelerinde bölüm yoktu; K10 ise **hiçbir yerde** yoktu.
+
+### Nasıl bulundu
+Belge okunurken tabloda K9'dan sonra doğrudan K11 geldiği görüldü. Denetim:
+```
+tablo : K1 K2 K3 K4 K5 K6 K7 K8 K9 K11 K12 S1     -> 12 kimlik
+gövde : K1 K2 K3 K4 K5 K6 K7 K8 K9 S1             -> 10 kimlik
+```
+Ölçülen: beklenen **13,0** kayıttan tabloda **12,0**, gövdede **10,0** vardı;
+**3,0** bölüm (K10, K11, K12) sessizce kaybolmuştu ve **1,0** kusur (K10)
+hiçbir yerde yoktu. Kayıp oranı **%23,1**.
+
+### Kök neden
+**Doğrulanmamış varsayım + sessiz başarısızlık** — kayıtta belgelenen kusur
+sınıfının tam aynısı. `str.replace` eşleşme bulamazsa hata vermez; ben de
+sonucu denetlemedim.
+
+### Düzeltme
+Üç bölüm de yazıldı; ekleme **assert'li** yapıldı ve sonuç yeniden okunarak
+tablo ile gövde karşılaştırıldı.
+
+### Yapısal önlem
+`tests/test_docs_registry.py` — **belge de sınanır**:
+- tablo ile gövde birebir aynı (eksik/fazla kimlik yok),
+- kimlikler K1..Kn kesintisiz, tekrarsız, sıralı,
+- her kusur kaydında **en az bir ölçülen sayı** var (kaydın kendi kuralı:
+  *"hiçbir sayı tahmin değildir"*),
+- anılan her ADR dosyası diskte var.
+
+### Ders
+Teslim ürünü olan bir belge, kod kadar sınanmalıdır. Bu turda bulunan on iki
+kusurun ortak imzası — *sessiz başarısızlık, doğrulanmamış varsayım* —
+belgeyi yazan araçta da geçerliydi.
 
 ---
 
