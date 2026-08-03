@@ -225,7 +225,14 @@ def run_scene_determinism() -> dict:
         "target_radius": a.target_radius,
         "impactor_outside_target": bool(imp_dist > a.target_radius),
         "target_at_rest": bool(np.all(a.v[tgt] == 0.0)),
-        "impactor_nonporous": bool(np.all(a.alpha0[a.is_impactor] == 1.0)),
+        # ADR-0032: mermi distansiyonu rho0_solid/impactor_density olarak
+        # TURETILIR. Ikisi esitken 1.0 cikar; sabit 1 beklemek, ayrisma
+        # durumunda SPH hacmini paketleme hacminden koparirdi.
+        "impactor_alpha0": float(a.alpha0[a.is_impactor][0]),
+        "impactor_volume_consistency": float(
+            a.diagnostics["impactor_volume_consistency"]),
+        "impactor_nonporous": bool(np.all(
+            a.alpha0[a.is_impactor] == a.diagnostics["impactor_alpha0"])),
         "target_porous": bool(np.any(a.alpha0[tgt] > 1.0)),
         "material_heterogeneous": bool(len(np.unique(a.alpha0[tgt])) > 1
                                        and len(np.unique(a.Y0[tgt])) > 1),

@@ -191,13 +191,32 @@ def build_scene(
     r_eff = float((3.0 * mesh.volume / (4.0 * np.pi)) ** (1.0 / 3.0))
 
     # Mermiye hedefin malzemesi DEGIL kendi malzemesi verilir: uzay araci
-    # gozeneksizdir (alpha0 = 1) ve moloz matrisiyle ayni kohezyona sahip
-    # degildir. Bunu hedefin degerleriyle doldurmak, merminin kendisini
-    # gozenekli asteroit malzemesi yapardi.
+    # moloz matrisiyle ayni kohezyona sahip degildir. Bunu hedefin
+    # degerleriyle doldurmak, merminin kendisini gozenekli asteroit
+    # malzemesi yapardi.
+    #
+    # MERMININ alpha0'I SABIT 1 DEGIL, TURETILIR (ADR-0032). Cozucu TEK
+    # malzemelidir: her parcacigin yogunlugunu `rho0_solid / alpha0` diye
+    # atar (ADR-0022). Merminin yogunlugu `impactor_density` ile ayrica
+    # veriliyor ve `build_impactor` paketleme hacmini ondan hesapliyor.
+    # alpha0 = 1 yazmak, ikisi ayrisinca SPH hacmini paketleme hacminden
+    # kopariyordu. Olculdu (rho0 = 2700):
+    #     impactor_density=3000 -> V_SPH / V_paketleme = 1.1111
+    #     impactor_density=2000 -> V_SPH / V_paketleme = 0.7407
+    # Distansiyon tam olarak bu orandir: alpha = rho0_solid / yogunluk.
+    # Ikisi esitken alpha = 1.0 cikar — geriye donuk ayni.
+    if impactor_density > rho0_solid:
+        raise ValueError(
+            f"impactor_density={impactor_density} > rho0_solid={rho0_solid}: "
+            "distansiyon 1'in altina duserdi (fiziksel degil). Cozucu tek "
+            "malzemelidir; mermi ancak hedef malzemesinden SEYREK (gozenekli) "
+            "temsil edilebilir. `rho0_solid`i yukseltin ya da mermi "
+            "yogunlugunu dusurun.")
+    alpha_imp = float(rho0_solid) / float(impactor_density)
     x = np.vstack([x_t, imp.x])
     v = np.vstack([v_t, imp.v])
     m = np.concatenate([pile.m, imp.m])
-    alpha0 = np.concatenate([pile.alpha0, np.ones(n_i)])
+    alpha0 = np.concatenate([pile.alpha0, np.full(n_i, alpha_imp)])
     Y0 = np.concatenate([pile.Y0, np.full(n_i, boulder_Y0)])
     is_imp = np.concatenate([np.zeros(n_t, bool), np.ones(n_i, bool)])
     is_bld = np.concatenate([pile.is_boulder, np.zeros(n_i, bool)])
@@ -212,6 +231,13 @@ def build_scene(
             "n_total": int(n_t + n_i),
             "n_target": int(n_t),
             "n_impactor": int(n_i),
+            # ADR-0032: mermi distansiyonu TURETILIR, sabit degil.
+            "impactor_alpha0": alpha_imp,
+            "impactor_density": float(impactor_density),
+            "rho0_solid": float(rho0_solid),
+            # SPH hacmi ile paketleme hacmi orani — 1.0 olmali.
+            "impactor_volume_consistency": float(
+                (imp.m[0] / (rho0_solid / alpha_imp)) / (imp.m[0] / impactor_density)),
             "root_seed": int(root_seed),
             "shape": shape,
             "model_class": model_class,

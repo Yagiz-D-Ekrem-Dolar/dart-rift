@@ -192,3 +192,57 @@ def test_sema_M1_blok_kesri_ister(tmp_path):
         encoding="utf-8")
     with pytest.raises(ConfigError):
         load_config(raw)
+
+
+class TestImpactorDensityConsistency:
+    """ADR-0032: merminin distansiyonu TURETILIR, sabit 1 degildir.
+
+    Cozucu TEK malzemelidir: her parcacigin yogunlugunu `rho0_solid/alpha0`
+    diye atar (ADR-0022). Merminin yogunlugu ise `impactor_density` ile AYRICA
+    veriliyor ve `build_impactor` paketleme hacmini ondan hesapliyor. alpha0=1
+    yazmak, ikisi ayrisinca SPH hacmini paketleme hacminden koparir.
+
+    Olculdu (rho0_solid = 2700):
+        impactor_density=3000 -> V_SPH / V_paketleme = 1.1111
+        impactor_density=2000 -> V_SPH / V_paketleme = 0.7407
+    Ikisi de sessizdi. Uretim konfigurasyonunda ikisi de 2700 oldugu icin
+    oran 1.0 cikiyordu — ama TESADUFEN, tipki K10'daki gibi.
+
+    Distansiyon tam olarak bu orandir: alpha = rho0_solid / yogunluk.
+    """
+
+    @staticmethod
+    def _sahne(dens, rho0=2700.0):
+        from dartrift.setup.scene import build_scene
+        return build_scene(shape="icosphere", radius=82.0, subdiv=3,
+                           spacing=10.0, bulk_density=1800.0, n_impactor=200,
+                           model_class="M0", impactor_density=dens,
+                           rho0_solid=rho0, root_seed=1)
+
+    @pytest.mark.parametrize("dens", [2700.0, 2000.0, 1500.0])
+    def test_mermi_hacmi_her_yogunlukta_tutarli(self, dens):
+        s = self._sahne(dens)
+        d = s.diagnostics
+        assert d["impactor_volume_consistency"] == pytest.approx(1.0, rel=1e-12), d
+        assert d["impactor_alpha0"] == pytest.approx(2700.0 / dens, rel=1e-12)
+
+    def test_esit_yogunlukta_alpha_tam_bir(self):
+        """Geriye donuk: uretim degerinde davranis DEGISMEMELI."""
+        s = self._sahne(2700.0)
+        assert s.alpha0[s.is_impactor][0] == 1.0
+        assert np.all(s.alpha0[s.is_impactor] == 1.0)
+
+    def test_katidan_yogun_mermi_ACIK_reddediliyor(self):
+        """alpha < 1 fiziksel degil; sessizce tutarsiz sahne uretilmemeli."""
+        with pytest.raises(ValueError, match="distansiyon 1'in altina"):
+            self._sahne(3000.0)
+
+    def test_mermi_kutlesi_ve_momentumu_korunuyor(self):
+        """Distansiyon degisikligi kutle/momentum defterine DOKUNMAMALI."""
+        from dartrift.setup.impactor import DART_MASS
+
+        for dens in (2700.0, 2000.0):
+            s = self._sahne(dens)
+            im = s.is_impactor
+            assert float(np.sum(s.m[im])) == pytest.approx(DART_MASS, rel=1e-12)
+            assert float(np.linalg.norm(s.impactor_momentum)) > 0.0
