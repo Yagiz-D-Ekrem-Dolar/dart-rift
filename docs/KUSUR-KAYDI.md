@@ -10,6 +10,15 @@ doğrudan girecek ayrıntıda tutar. Her kayıt aynı şablonu izler:
 Kural: **hiçbir sayı tahmin değildir.** Buradaki her rakam bir koşudan
 gelir ve iş numarası ile commit'i yazılıdır.
 
+### İlgili belgeler
+
+| belge | ne verir |
+|---|---|
+| [`KUSUR-KAYDI-KOD.md`](KUSUR-KAYDI-KOD.md) | her kusurun **önce/sonra kodu**, çalıştırılabilir **yeniden üretme** betiği, ve seçilmeyen alternatifler |
+| [`YONTEM.md`](YONTEM.md) | kusurları bulan **üç soru** ve aktarılabilir hâli |
+| [`DURUM-DEGERLENDIRMESI.md`](DURUM-DEGERLENDIRMESI.md) | verdikt + kalan riskler (R1–R10) |
+| [`defter/`](defter/README.md) | **anlatı** — nasıl bulundu, hangi tahmin tutmadı |
+
 ---
 
 ## Özet tablo

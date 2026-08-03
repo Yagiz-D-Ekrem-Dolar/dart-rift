@@ -39,6 +39,8 @@ koşulardan gelir; iş numaraları yazılıdır.
 | kaynak | ne içerir |
 |---|---|
 | [`docs/KUSUR-KAYDI.md`](../KUSUR-KAYDI.md) | **kayıt** — her kusurun tam dökümü, ölçülen sayılarla |
+| [`docs/KUSUR-KAYDI-KOD.md`](../KUSUR-KAYDI-KOD.md) | **kod** — önce/sonra, yeniden üretme betikleri, seçilmeyen alternatifler |
+| [`docs/YONTEM.md`](../YONTEM.md) | **yöntem** — kusurları bulan üç soru, aktarılabilir hâli |
 | [`docs/DURUM-DEGERLENDIRMESI.md`](../DURUM-DEGERLENDIRMESI.md) | **verdikt** — ne kanıtlandı, nerede hâlâ risk var |
 | KAYIT-016/017/018 | **anlatı** — nasıl bulundu, hangi tahmin tutmadı |
 | ADR-0029…0040 | **kararlar** — neden böyle çözüldü |
