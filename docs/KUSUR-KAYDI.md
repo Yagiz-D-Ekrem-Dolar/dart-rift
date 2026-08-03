@@ -29,6 +29,7 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | K11 | `setup/scene` | Mermi distansiyonu **sabit 1**, yogunlugu ayri parametre | yogunluklar ayrisinca SPH/paketleme hacmi orani **1,1111** ya da **0,7407** | 0032 | ✅ |
 | K12 | `setup/rubble_generator` | **Ayni ad iki buyukluk**: yigin yogunlugu mesh mi dolu hacim mi | fark = dolum orani, **-%1,19 … +%0,44**; `rel=0.05` bandi yutuyordu | 0033 | ✅ |
 | K13 | `validation/scene_checks` | Blok kesri **kütle** olarak ölçülüp **hacim** hedefiyle karşılaştırılıyordu | hacim 0,3034 (+%1,1) ama kütle **0,4335** (+%44,5) → G3 C2 **kalıyordu** | 0034 | ✅ |
+| K14 | `validation/scene_checks` | "Mermi dışarıda mı" **eşdeğer küre yarıçapı vekiliyle** ölçülüyordu | elipsoit kısa eksende **yanlış negatif**: gerçekte 0/207 içeride ama kriter False | 0035 | ✅ |
 | S1 | `tests/test_settling` | *Turun kendi hatası:* Y0 testinin **tahmini ters** | ölçülen 130 kat **ters yönde** | — | ✅ |
 | S2 | `docs/KUSUR-KAYDI.md` | *Turun ikinci hatası:* kaydın kendisi **sessizce eksik kaldı** | `str.replace` çapası tutmadı → **3 bölüm birden** kayboldu (K10/K11/K12) | — | ✅ |
 
@@ -549,6 +550,44 @@ test **ADR-0030 ile ADR-0034'ü birden** bekçilik eder.
 ### Ders
 Desenin en öğretici örneği: **kod doğruydu, ölçüm yanlıştı.** Bir kriter
 kaldığında ilk soru *"üretici mi bozuk, ölçü mü yanlış?"* olmalıdır.
+
+---
+
+## K14 — "Mermi hedefin dışında mı" vekil ölçütle sınanıyordu
+
+**Modül:** `src/dartrift/validation/scene_checks.py` · **Şiddet:** orta
+**ADR:** 0035
+
+### Nasıl bulundu
+K12/K13 deseni ("ölçüt asıl soruyu mu ölçüyor?") sahne bütünlüğü kriterine
+uygulandı.
+
+### Ölçülen etki (elipsoit 88×87×65 m, r_eff = 39,59 m)
+| çarpma ekseni | mermi min uzaklık | vekil (`\|x\|>r_eff`) | mesh içinde | gerçek |
+|---|---|---|---|---|
+| kısa (z) | 32,63 m | **False** | **0/207** | dışarıda |
+| uzun (x) | 44,13 m | True | 0/207 | dışarıda |
+
+Kısa eksende **yanlış negatif**. Ters yön de mümkün: uzun eksende yüzey
+r_eff'ten 4,4 m dışarıda olduğu için, r_eff'i geçen ama gövdeye **gömülü**
+bir mermi "dışarıda" sayılırdı.
+
+### Neden görünmüyordu
+Denetim **ikosfer** üzerinde koşuyordu; orada `r_eff` gerçek yarıçapa eşit ve
+vekil **tesadüfen** doğru. Üretim konfigürasyonu gerçek PDS şeklini kullanıyor.
+
+### Doğrulanan: yerleştirme kodu DOĞRU
+Dört senaryoda (küre/elipsoit × kısa/uzun eksen) **0/207** mermi parçacığı
+mesh içinde; en yakın mesafe 1,72–4,09 m (parçacık aralığı 6,0). Kusur
+**ölçütteydi**, üreticide değil — K13 ile aynı sınıf.
+
+### Düzeltme
+Doğrudan `inside_points` ölçümü + aynı sınav **düzensiz cisimde** de.
+G3 C6 artık `irregular_all_outside` şartını koşuyor.
+
+### Yapısal önlem
+Üç test; sonuncusu **boşluk kontrolü**: vekil gerçekten yanılıyor mu?
+Yanılmıyorsa düzeltmenin gerekçesi kaybolmuş demektir.
 
 ---
 

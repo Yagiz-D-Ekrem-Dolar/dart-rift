@@ -201,6 +201,8 @@ def run_scene_determinism() -> dict:
     """
     from ..setup.scene import build_scene
 
+    from ..setup.shape_mesh import ellipsoid, icosphere, inside_points
+
     kw = dict(radius=82.0, spacing=8.0, n_impactor=400, model_class="M1",
               f_boulder=0.25, q=3.0, r_min=16.0, r_max=48.0)
     a = build_scene(root_seed=11, **kw)
@@ -209,6 +211,40 @@ def run_scene_determinism() -> dict:
     d = a.diagnostics
     imp_dist = float(np.linalg.norm(a.x[a.is_impactor], axis=1).min())
     tgt = ~a.is_impactor
+
+    # "Mermi hedefin disinda mi" sorusunun DOGRU olcusu: hicbir mermi
+    # parcacigi hedef MESH'inin icinde olmamali (ADR-0035).
+    #
+    # Onceki olcut `|x|_min > target_radius` idi. `target_radius` ESDEGER KURE
+    # yaricapidir; yalnizca KURE icin gecerli bir vekildir. Olculdu — gercek
+    # Dimorphos oranlarinda elipsoit (88x87x65 m), KISA eksende carpma:
+    #     r_eff                     = 39,59 m
+    #     merminin en yakin parcacigi= 32,63 m
+    #     vekil olcut (|x|>r_eff)   = False   <-- YANLIS NEGATIF
+    #     mesh icindeki mermi parc. = 0/207   <-- GERCEKTE DISARIDA
+    # Denetim KURE uzerinde kosuldugu icin vekil tesadufen dogruydu; uretim
+    # konfigurasyonu ise GERCEK PDS seklini kullaniyor.
+    mesh_kure = icosphere(4, 82.0)
+    n_ic_kure = int(np.count_nonzero(inside_points(mesh_kure, a.x[a.is_impactor])))
+
+    # Ayni sinav DUZENSIZ cisimde de kosulur: vekilin kirildigi yer orasi.
+    yari = [44.0, 43.5, 32.5]
+    mesh_el = ellipsoid(*yari, subdiv=4)
+    el_sonuc = {}
+    for etiket, aim in (("kisa_eksen", [0.0, 0.0, 1.0]),
+                        ("uzun_eksen", [1.0, 0.0, 0.0])):
+        e = build_scene(shape="ellipsoid", semi_axes=yari, subdiv=4, spacing=6.0,
+                        bulk_density=1800.0, n_impactor=200, model_class="M0",
+                        aim=np.array(aim), root_seed=1)
+        ei = e.is_impactor
+        el_sonuc[etiket] = {
+            "n_inside_mesh": int(np.count_nonzero(
+                inside_points(mesh_el, e.x[ei]))),
+            "min_dist": float(np.linalg.norm(e.x[ei], axis=1).min()),
+            "r_eff": float(e.target_radius),
+        }
+        el_sonuc[etiket]["proxy_says_outside"] = bool(
+            el_sonuc[etiket]["min_dist"] > el_sonuc[etiket]["r_eff"])
     return {
         "digest": a.digest,
         "reproducible": bool(a.digest == b.digest),
@@ -223,7 +259,19 @@ def run_scene_determinism() -> dict:
         "mass_ratio": d["mass_ratio_target_over_impactor"],
         "impactor_min_distance": imp_dist,
         "target_radius": a.target_radius,
-        "impactor_outside_target": bool(imp_dist > a.target_radius),
+        # ADR-0035: DOGRUDAN olcum — vekil degil.
+        "impactor_outside_target": bool(n_ic_kure == 0),
+        "impactor_particles_inside_mesh": n_ic_kure,
+        # Duzensiz cisimde de sinandi; vekilin YANLIS NEGATIF verdigi yer
+        # burada acikca kayitlidir.
+        "irregular_impactor_inside_mesh": {
+            k: v["n_inside_mesh"] for k, v in el_sonuc.items()},
+        "irregular_all_outside": bool(
+            all(v["n_inside_mesh"] == 0 for v in el_sonuc.values())),
+        "irregular_proxy_disagrees": bool(
+            any(v["n_inside_mesh"] == 0 and not v["proxy_says_outside"]
+                for v in el_sonuc.values())),
+        "irregular_detail": el_sonuc,
         "target_at_rest": bool(np.all(a.v[tgt] == 0.0)),
         # ADR-0032: mermi distansiyonu rho0_solid/impactor_density olarak
         # TURETILIR. Ikisi esitken 1.0 cikar; sabit 1 beklemek, ayrisma

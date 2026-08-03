@@ -311,6 +311,10 @@ def main() -> int:
         tests_ok and "FAILED" not in out
         and rub["deterministic"] and scn["reproducible"] and scn["seed_sensitive"]
         and scn["impactor_outside_target"] and scn["target_at_rest"]
+        # ADR-0035: DUZENSIZ cisimde de mermi hedefin disinda olmali.
+        # Onceki olcut esdeger-kure yaricapi vekiliydi ve yalnizca kure
+        # icin gecerliydi; uretim konfigurasyonu gercek PDS seklini kullaniyor.
+        and scn["irregular_all_outside"]
         and scn["impactor_nonporous"] and scn["target_porous"]
         and scn["material_heterogeneous"]
         and scn["impactor_mass_rel_err"] < 1e-12

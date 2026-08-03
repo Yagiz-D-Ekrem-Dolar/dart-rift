@@ -223,3 +223,42 @@ def test_tum_kanit_alanlari_sonlu(shape, rubble, impactor, obs, scene):
         for k, v in r.items():
             if isinstance(v, float):
                 assert np.isfinite(v), f"{ad}.{k} = {v}"
+
+
+def test_mermi_disarida_olcumu_VEKIL_DEGIL(scene):
+    """ADR-0035: 'mermi hedefin disinda mi' DOGRUDAN olculur.
+
+    Onceki olcut `|x|_min > target_radius` idi; `target_radius` ESDEGER KURE
+    yaricapidir ve yalnizca KURE icin gecerli bir vekildir. Denetim kure
+    uzerinde kosuldugu icin vekil TESADUFEN dogruydu — uretim konfigurasyonu
+    ise gercek PDS seklini kullaniyor.
+
+    Olculdu (Dimorphos oranlarinda elipsoit 88x87x65 m, KISA eksende carpma):
+        r_eff                       = 39,59 m
+        merminin en yakin parcacigi = 32,63 m
+        vekil olcut (|x| > r_eff)   = False    <-- YANLIS NEGATIF
+        mesh icindeki mermi parcaci = 0/207    <-- GERCEKTE DISARIDA
+    """
+    assert scene["impactor_outside_target"] is True
+    assert scene["impactor_particles_inside_mesh"] == 0
+
+
+def test_duzensiz_cisimde_de_mermi_disarida(scene):
+    """Vekilin kirildigi yer: duzensiz cisim. Iki eksende de sinanir."""
+    assert scene["irregular_all_outside"] is True
+    assert all(v == 0 for v in scene["irregular_impactor_inside_mesh"].values()), \
+        scene["irregular_impactor_inside_mesh"]
+
+
+def test_vekil_olcutun_yanildigi_KAYITLI(scene):
+    """Bosluk kontrolu: vekil gercekten yaniliyor mu?
+
+    Yanilmiyorsa bu duzeltmenin gerekcesi kaybolmus demektir ve yukaridaki
+    iki test bos bir dogruyu sinar. Kayit, kisa eksende vekilin YANLIS NEGATIF
+    verdigini gostermeli.
+    """
+    assert scene["irregular_proxy_disagrees"] is True
+    kisa = scene["irregular_detail"]["kisa_eksen"]
+    assert kisa["n_inside_mesh"] == 0            # gercekte disarida
+    assert kisa["proxy_says_outside"] is False   # ama vekil "degil" diyor
+    assert kisa["min_dist"] < kisa["r_eff"]
