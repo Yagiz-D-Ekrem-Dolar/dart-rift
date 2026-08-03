@@ -28,6 +28,7 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | K10 | `warp_core/porosity_palpha` | Crush tavanı **skaler**, gözeneklilik parçacık başına | tavanı aşan parçacık ilk adımda ezilir → **−1,14 GPa** yapay çekme; KE bağ. enerjisinin **2,9 milyon katı** | 0031 | ✅ |
 | K11 | `setup/scene` | Mermi distansiyonu **sabit 1**, yogunlugu ayri parametre | yogunluklar ayrisinca SPH/paketleme hacmi orani **1,1111** ya da **0,7407** | 0032 | ✅ |
 | K12 | `setup/rubble_generator` | **Ayni ad iki buyukluk**: yigin yogunlugu mesh mi dolu hacim mi | fark = dolum orani, **-%1,19 … +%0,44**; `rel=0.05` bandi yutuyordu | 0033 | ✅ |
+| K13 | `validation/scene_checks` | Blok kesri **kütle** olarak ölçülüp **hacim** hedefiyle karşılaştırılıyordu | hacim 0,3034 (+%1,1) ama kütle **0,4335** (+%44,5) → G3 C2 **kalıyordu** | 0034 | ✅ |
 | S1 | `tests/test_settling` | *Turun kendi hatası:* Y0 testinin **tahmini ters** | ölçülen 130 kat **ters yönde** | — | ✅ |
 | S2 | `docs/KUSUR-KAYDI.md` | *Turun ikinci hatası:* kaydın kendisi **sessizce eksik kaldı** | `str.replace` çapası tutmadı → **3 bölüm birden** kayboldu (K10/K11/K12) | — | ✅ |
 
@@ -503,6 +504,51 @@ eklendi; `settle_pile` artık kütle ile yarıçapı **aynı** tanımdan alıyor
 `A = B × dolum_oranı` kapalı-form ilişkisi **toleranssız** (`rel=1e-12`)
 kilitlendi. Kural genişletildi: *"yaklaşık eşit" bir tolerans bandı, ayrımı
 gizlemenin en kolay yoludur.*
+
+---
+
+## K13 — Blok kesri kütle olarak ölçülüp hacim hedefiyle karşılaştırılıyordu
+
+**Modül:** `src/dartrift/validation/scene_checks.py` · **Şiddet:** yüksek
+**ADR:** 0034
+
+### Belirti
+ADR-0030+0031 sonrası G3 C2 kaldı: *"blok kesri 0.433 (hedef 0.30)"*.
+Bu sefer pytest geçiyordu — kriterin kendisi düşüyordu.
+
+### Nasıl bulundu
+İlk soru: *"üretici mi bozuk, ölçü mü yanlış?"* Üretici ölçüldü.
+
+### Ölçülen etki (ikosfer r=80, s=7, f_boulder=0,30)
+| büyüklük | değer | sapma |
+|---|---|---|
+| hedef (hacim) | 0,3000 | — |
+| ölçülen **hacim** kesri | **0,3034** | **+%1,1** |
+| ölçülen **kütle** kesri (eski kod) | **0,4335** | **+%44,5** |
+
+**Üretici doğruydu.** Kapalı form 6 hane tuttu:
+`f_kütle = f_h·r/(f_h·r + 1 − f_h)`, `f_h = 0,3034`, `r = 1,7565` → **0,433483**;
+ölçülen **0,433483**. `r = α_matris/α_blok = 1,8443/1,05` — ADR-0030'un
+doğrudan sonucu.
+
+### Kök neden
+`f_boulder` **hacim** olarak tanımlı (`boulder_volume_target = f_boulder ·
+mesh.volume`), ölçülen ise **kütle** kesriydi. Tekdüze kütlede aynı sayı;
+bloklar ağırlaşınca ayrıştılar.
+
+### Düzeltme
+Kriter `boulder_volume_fraction` okur. Kütle kesri **ayrı adla** raporlanır
+(`boulder_mass_fraction`) — fiziksel olarak anlamlı ama hedefle
+karşılaştırılmaz.
+
+### Yapısal önlem
+`TestBoulderFractionIsVolumeNotMass` — kapalı-form ilişki `rel=1e-12` ile
+kilitli; kütle kesrinin hacim kesrinden **belirgin** büyük olması şart, yani
+test **ADR-0030 ile ADR-0034'ü birden** bekçilik eder.
+
+### Ders
+Desenin en öğretici örneği: **kod doğruydu, ölçüm yanlıştı.** Bir kriter
+kaldığında ilk soru *"üretici mi bozuk, ölçü mü yanlış?"* olmalıdır.
 
 ---
 

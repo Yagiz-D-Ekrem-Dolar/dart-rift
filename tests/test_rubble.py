@@ -425,3 +425,65 @@ class TestBulkDensityDefinitions:
         r_mesh = (3.0 * pile.mesh_volume / (4.0 * np.pi)) ** (1.0 / 3.0)
         assert pile.discretised_radius != r_mesh
         assert abs(pile.discretised_radius / r_mesh - 1.0) < 0.02
+
+
+class TestBoulderFractionIsVolumeNotMass:
+    """ADR-0034: blok kesri HACIM kesridir, kutle kesri DEGIL.
+
+    `f_boulder` hedefi hacim olarak tanimlidir
+    (`boulder_volume_target = f_boulder * mesh.volume`). Denetim ise KUTLE
+    kesrini olcup bu hedefle karsilastiriyordu. Tekduze kutlede ikisi AYNI
+    sayidir; ADR-0030'dan sonra bloklar agirlastigi icin AYRISTILAR.
+
+    Olculdu (ikosfer r=80, s=7, f_boulder=0.30):
+        hedef (hacim)        0.3000
+        olculen hacim kesri  0.3034   (+%1,1)   <-- uretici DOGRU
+        olculen kutle kesri  0.4335   (+%44,5)  <-- yanlis buyukluk
+    Yani G3 C2 "blok kesri 0.433 (hedef 0.30)" diye KALIYORDU, oysa uretici
+    hedefi %1,1 hatayla tutturuyordu.
+    """
+
+    @staticmethod
+    def _pile():
+        return build_rubble_pile(icosphere(4, 80.0), spacing=7.0,
+                                 bulk_density=RHO_BULK, rho0_solid=RHO0_SOLID,
+                                 root_seed=17, model_class="M1", f_boulder=0.30,
+                                 q=3.0, r_min=14.0, r_max=42.0)
+
+    def test_hacim_kesri_hedefi_tutturuyor(self):
+        p = self._pile()
+        assert p.boulder_volume_fraction == pytest.approx(0.30, rel=0.10)
+
+    def test_kutle_kesri_hacim_kesrinden_BUYUK(self):
+        """Bloklar daha yogun -> kutle payi hacim payindan buyuk olmali.
+
+        Esitlik cikarsa ADR-0030 geri alinmis demektir (bloklar yine ayni
+        kutlede) — yani bu test iki duzeltmeyi birden bekcilik eder.
+        """
+        p = self._pile()
+        f_h = p.boulder_volume_fraction
+        f_m = float(np.sum(p.m[p.is_boulder]) / np.sum(p.m))
+        assert f_m > f_h + 0.05, (f_h, f_m)
+
+    def test_iki_kesir_KAPALI_FORMLA_bagli(self):
+        """f_kutle = f_h*r / (f_h*r + 1 - f_h),  r = m_blok/m_matris.
+
+        Toleranssiz: iliski cebirsel, yaklasik degil.
+        """
+        p = self._pile()
+        f_h = p.boulder_volume_fraction
+        f_m = float(np.sum(p.m[p.is_boulder]) / np.sum(p.m))
+        r = float(p.m[p.is_boulder][0] / p.m[~p.is_boulder][0])
+        assert f_m == pytest.approx(f_h * r / (f_h * r + 1.0 - f_h), rel=1e-12)
+        # r, alpha oranindan turer (ADR-0030)
+        assert r == pytest.approx(
+            p.alpha0[~p.is_boulder][0] / p.alpha0[p.is_boulder][0], rel=1e-12)
+
+    def test_denetim_HACIM_kesrini_raporluyor(self):
+        """G3 C2'nin okudugu deger hacim kesri olmali, kutle kesri ayri adla."""
+        from dartrift.validation.scene_checks import run_rubble_quality
+
+        r = run_rubble_quality()
+        assert r["boulder_fraction_rel_err"] < 0.15, r["boulder_fraction_measured"]
+        assert r["boulder_mass_fraction"] > r["boulder_fraction_measured"]
+        assert r["boulder_mass_over_volume_fraction"] > 1.0

@@ -282,7 +282,19 @@ def run_rubble_quality(spacing: float = 7.0, seed: int = 17) -> dict:
                              f_boulder=0.30, q=3.0,
                              r_min=2.0 * spacing, r_max=6.0 * spacing)
     cn = coordination_number(plain.x, spacing)
-    f_meas = float(np.sum(boul.m[boul.is_boulder]) / np.sum(boul.m))
+    # HACIM kesri — hedef `f_boulder` HACIM olarak tanimlidir
+    # (`boulder_volume_target = f_boulder * mesh.volume`). Onceki hali KUTLE
+    # kesrini olcup HACIM hedefiyle karsilastiriyordu; tekduze kutlede ikisi
+    # ayni sayidir, ADR-0030'dan sonra DEGIL. Olculdu (ADR-0034):
+    #     hedef (hacim)        0.3000
+    #     olculen hacim kesri  0.3034   (+%1,1)  <-- uretici DOGRU
+    #     olculen kutle kesri  0.4335   (+%44,5) <-- yanlis buyukluk
+    # Kapali form: f_kutle = f_h*r/(f_h*r + 1 - f_h),  r = m_blok/m_matris.
+    # Olculen r = 1.7565 ile 0.433483 cikiyor; olculen deger 0.433483.
+    f_meas = float(boul.boulder_volume_fraction)
+    # Kutle kesri de FIZIKSEL OLARAK anlamli (bloklar kutlenin daha buyuk
+    # payini tasir) — ama AYRI adla raporlanir, hedefle karistirilmaz.
+    f_mass = float(np.sum(boul.m[boul.is_boulder]) / np.sum(boul.m))
     # determinizm: ayni tohum ayni yigin
     rep = build_rubble_pile(mesh, spacing=spacing, bulk_density=1800.0, rho0_solid=2700.0,
                             root_seed=seed, model_class="M1",
@@ -298,6 +310,9 @@ def run_rubble_quality(spacing: float = 7.0, seed: int = 17) -> dict:
         "boulder_fraction_target": 0.30,
         "boulder_fraction_measured": f_meas,
         "boulder_fraction_rel_err": abs(f_meas - 0.30) / 0.30,
+        # ADR-0034: kutle kesri AYRI bir buyukluk; hedefle karsilastirilmaz.
+        "boulder_mass_fraction": f_mass,
+        "boulder_mass_over_volume_fraction": f_mass / max(f_meas, 1e-300),
         "boulder_saturated": bool(boul.diagnostics.get("boulder_saturated", False)),
         "n_boulders": int(0 if boul.boulders is None else len(boul.boulders.radii)),
         "deterministic": bool(np.array_equal(boul.x, rep.x)
