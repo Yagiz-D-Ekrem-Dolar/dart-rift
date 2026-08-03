@@ -259,14 +259,23 @@ def main() -> int:
     imp = run_impactor_convergence()
     crit["C4"].record(
         imp["no_point_particle"] and imp["n_resolutions"] >= 3
-        and imp["volume_error_converges"] and imp["max_mass_rel_err"] < 1e-12
+        # ADR-0037: GERCEK yakinsama olcusu cap boyunca parcacik sayisidir.
+        # `volume_error` kafes-oturma kalintisidir ve MONOTON DEGILDIR; onceki
+        # olcut (ilk>son) hangi N'lerin secildigine bagliydi.
+        and imp["resolution_increases"] and imp["volume_error_envelope_shrinks"]
+        and imp["max_mass_rel_err"] < 1e-12
         and imp["max_momentum_rel_err"] < 1e-12 and imp["min_particles_across"] >= 5.0
         and imp["starts_outside_target"],
         f"{imp['n_resolutions']} cozunurluk "
         f"(N={[r['n_actual'] for r in imp['resolutions']]}), cap boyunca en az "
         f"{imp['min_particles_across']:.1f} parcacik, kutle hatasi "
         f"{imp['max_mass_rel_err']:.1e}, momentum {imp['max_momentum_rel_err']:.1e}, "
-        f"hacim hatasi yakinsiyor {imp['volume_error_converges']}",
+        f"cozunurluk artiyor {imp['resolution_increases']} "
+        f"(cap boyunca {[round(a, 2) for a in imp['particles_across_ladder']]}); "
+        f"kafes-oturma kalintisi {[round(v, 5) for v in imp['volume_error_ladder']]} "
+        f"— MONOTON DEGIL ({imp['volume_error_monotone']}), zarf kuculuyor "
+        f"{imp['volume_error_envelope_shrinks']}; mermi mesh icinde "
+        f"{imp['impactor_particles_inside_mesh']}",
     )
 
     obs = run_observable_selftest()

@@ -31,6 +31,7 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | K13 | `validation/scene_checks` | Blok kesri **kütle** olarak ölçülüp **hacim** hedefiyle karşılaştırılıyordu | hacim 0,3034 (+%1,1) ama kütle **0,4335** (+%44,5) → G3 C2 **kalıyordu** | 0034 | ✅ |
 | K14 | `validation/scene_checks` | "Mermi dışarıda mı" **eşdeğer küre yarıçapı vekiliyle** ölçülüyordu | elipsoit kısa eksende **yanlış negatif**: gerçekte 0/207 içeride ama kriter False | 0035 | ✅ |
 | K15 | `validation/scene_checks` | Komşuluk "iç bölge"si **ölçülen büyüklükle** seçiliyordu | %25 bozuk kafes **11,19** ile bant [11,0–12,01]'den **geçiyordu**; gerçek **10,25** | 0036 | ✅ |
+| K16 | `validation/scene_checks` | "Yakınsıyor" ölçütü **monoton olmayan** bir büyüklüğe bakıyordu | kalıntı bir adımda **+0,01625 artıyor**; kriter seçilen N'lere bağlı — (400,800,1600) ile **False** | 0037 | ✅ |
 | S1 | `tests/test_settling` | *Turun kendi hatası:* Y0 testinin **tahmini ters** | ölçülen 130 kat **ters yönde** | — | ✅ |
 | S2 | `docs/KUSUR-KAYDI.md` | *Turun ikinci hatası:* kaydın kendisi **sessizce eksik kaldı** | `str.replace` çapası tutmadı → **3 bölüm birden** kayboldu (K10/K11/K12) | — | ✅ |
 
@@ -633,6 +634,51 @@ kafeste iki ölçüt ayrışmalı ve eski ölçüt eşiği geçerken gerçek ge�
 ### Ders
 > **Bir alt kümeyi, ölçmek istediğin büyüklüğe göre seçme.** Seçim ölçütü ile
 > ölçülen büyüklük aynı şeyse, sonuç kendini doğrular.
+
+---
+
+## K16 — "Yakınsıyor" ölçütü monoton olmayan bir büyüklüğe bakıyordu
+
+**Modül:** `src/dartrift/validation/scene_checks.py` · **Şiddet:** orta
+**ADR:** 0037
+
+### Nasıl bulundu
+K15'ten sonra soru genişletildi: *ölçüt, yakınsaması BEKLENEN bir büyüklüğe mi
+bakıyor?*
+
+### Ölçülen etki
+| N | 207 | 399 | 803 | 1568 | 3184 | 6401 | 12808 |
+|---|---|---|---|---|---|---|---|
+| kafes kalıntısı | 0,03500 | 0,00250 | 0,00375 | **0,02000** | 0,00500 | 0,00016 | 0,00063 |
+
+**Monoton değil**; bir adımda **+0,01625 artıyor**. Kriter `ilk > son` idi ve
+sonucu **hangi N'lerin seçildiğine** bağlı:
+- `(200, 800, 3200)` → True (mevcut seçim)
+- `(400, 800, 1600)` → **False**
+
+### Kök neden
+`volume_error = |N·V_p − V_küre|/V_küre` kafesin küreye **nasıl oturduğunun**
+kalıntısıdır, ayrıklaştırma hatası değil. Yakınsaması beklenen bir büyüklük
+değil.
+
+### Gerçekten yakınsayan
+çap boyunca parçacık: 6,46 → 25,86 **kesin artan**
+(`25,86/6,46 = 4,00` vs `(12808/207)^(1/3) = 3,94` ✓);
+kütle ≤ 5,89e-16; momentum ≤ 4,0e-14.
+
+### Düzeltme
+Kriter `resolution_increases`. Kalıntı olduğu gibi raporlanır (merdiven,
+`volume_error_monotone = False`, zarf). G3 C4 **zarfın** küçülmesini şart
+koşar. Ayrıca elle yazılmış `> 80.0` eşiği kaldırıldı → ADR-0035'in mesh
+üyeliği ölçüsü.
+
+### Yapısal önlem
+Üç test; ortadaki **boşluk kontrolü**: kalıntı monoton çıkarsa düzeltmenin
+gerekçesi kaybolmuş demektir.
+
+### Ders
+> **Bir büyüklüğün "yakınsadığını" iddia etmeden önce, o büyüklüğün
+> yakınsaması BEKLENEN bir büyüklük olup olmadığı sorulmalıdır.**
 
 ---
 

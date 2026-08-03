@@ -101,7 +101,10 @@ def test_yigin_doyma_bayragi_kesirle_tutarli(rubble):
 
 def test_mermi_uc_cozunurluk_ve_yakinsama(impactor):
     assert impactor["n_resolutions"] >= 3          # P3-VR-02
-    assert impactor["volume_error_converges"] is True
+    # ADR-0037: `volume_error_converges` KALDIRILDI — kafes-oturma kalintisi
+    # monoton degil ve o olcutun sonucu secilen N'lere bagliydi. Gercek
+    # yakinsama olcusu cozunurluktur (asagidaki ayri testte).
+    assert impactor["resolution_increases"] is True
 
 
 def test_mermi_nokta_parcacik_degil(impactor):
@@ -262,3 +265,43 @@ def test_vekil_olcutun_yanildigi_KAYITLI(scene):
     assert kisa["n_inside_mesh"] == 0            # gercekte disarida
     assert kisa["proxy_says_outside"] is False   # ama vekil "degil" diyor
     assert kisa["min_dist"] < kisa["r_eff"]
+
+
+def test_yakinsama_olcusu_CAP_BOYUNCA_parcacik(impactor):
+    """ADR-0037: gercek yakinsama olcusu cozunurluktur, kafes kalintisi degil.
+
+    `volume_error = |N*V_p - V_kure|/V_kure` kafesin kureye NASIL oturdugunun
+    kalintisidir; duzgun bir ayriklastirma hatasi DEGIL. Olculdu
+    (N = 207..12808):
+        0.03500  0.00250  0.00375  0.02000  0.00500  0.00016  0.00063
+    Bir adimda +0.01625 ARTIYOR. Onceki olcut `ilk > son` idi ve sonucu
+    HANGI N'LERIN SECILDIGINE bagliydi: (400, 800, 1600) ile 0.00250 > 0.02000
+    yanlis cikar ve kriter DUSERDI.
+    """
+    assert impactor["resolution_increases"] is True
+    ladder = impactor["particles_across_ladder"]
+    assert len(ladder) >= 3
+    assert all(ladder[i] < ladder[i + 1] for i in range(len(ladder) - 1)), ladder
+
+
+def test_kafes_kalintisi_MONOTON_OLMADIGI_kayitli(impactor):
+    """Bosluk kontrolu: kalinti gercekten dalgalaniyor mu?
+
+    Monoton cikarsa bu duzeltmenin gerekcesi kaybolmus demektir — o zaman
+    eski olcut de dogru olurdu ve bu testin varlik sebebi kalmazdi.
+    """
+    assert impactor["volume_error_monotone"] is False, (
+        "kalinti monoton ciktiysa yeniden olcun: ADR-0037'nin gerekcesi bu "
+        "dalgalanmadir")
+    assert impactor["volume_error_envelope_shrinks"] is True
+    assert impactor["volume_error_max"] < 0.05
+
+
+def test_mermi_disarida_MESH_UYELIGIYLE(impactor):
+    """ADR-0035 ile ayni olcu; elle yazilmis `> 80.0` esigi kaldirildi.
+
+    Eski esik mesh yaricapina esitti (tesadufen dogru) ama SABIT bir sayiydi:
+    mesh degisirse kriter sessizce anlamsizlasirdi.
+    """
+    assert impactor["starts_outside_target"] is True
+    assert impactor["impactor_particles_inside_mesh"] == [0, 0, 0]

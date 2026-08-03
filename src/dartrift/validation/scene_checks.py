@@ -25,7 +25,7 @@ from ..setup.impactor import (
     place_impactor,
 )
 from ..setup.rubble_generator import build_rubble_pile, coordination_number
-from ..setup.shape_mesh import ellipsoid, icosphere
+from ..setup.shape_mesh import ellipsoid, icosphere, inside_points
 
 __all__ = [
     "run_shape_pipeline",
@@ -412,15 +412,45 @@ def run_impactor_convergence(n_list: tuple[int, ...] = (200, 800, 3200)) -> dict
             "particles_across_diameter": float(d["particles_across_diameter"]),
             "min_distance_to_center": float(np.linalg.norm(imp.x, axis=1).min()),
         })
+    # ASIL YAKINSAYAN BUYUKLUK: cap boyunca parcacik sayisi (ADR-0037).
+    # `volume_error` = |N*V_p - V_kure|/V_kure, yani kafesin kureye NASIL
+    # oturdugunun kalintisidir — duzgun bir ayriklastirma hatasi DEGIL.
+    # Olculdu (N = 207..12808):
+    #     0.03500  0.00250  0.00375  0.02000  0.00500  0.00016  0.00063
+    # Bir adimda +0.01625 ARTIYOR. Onceki olcut `ilk > son` idi ve sonucu
+    # HANGI N'LERIN SECILDIGINE baglidir: (400, 800, 1600) secilseydi
+    # 0.00250 > 0.02000 yanlis cikar ve kriter DUSERDI.
+    across = [r["particles_across_diameter"] for r in rows]
+    verr = [r["volume_error"] for r in rows]
+    yari = max(1, len(verr) // 2)
+    # kafes kalintisi icin dogru ifade: ZARF (ust sinir) kuculuyor mu
+    zarf_dusuyor = bool(max(verr[yari:]) <= max(verr[:yari]))
+
+    # "Hedefin disinda" DOGRUDAN olculur (ADR-0035); elle yazilmis 80.0
+    # esigi mesh yaricapina bagliydi ve mesh degisirse sessizce anlamsizlasirdi.
+    n_ic = [int(np.count_nonzero(inside_points(mesh, place_impactor(
+        build_impactor(n), geom).x))) for n in n_list]
+
     return {
         "resolutions": rows,
         "n_resolutions": len(rows),
-        "volume_error_converges": bool(rows[0]["volume_error"] > rows[-1]["volume_error"]),
+        # GERCEK yakinsama: cozunurluk artarken cap boyunca parcacik KESIN artmali
+        "resolution_increases": bool(
+            all(across[i] < across[i + 1] for i in range(len(across) - 1))),
+        "particles_across_ladder": across,
+        # kafes kalintisi: MONOTON DEGIL — oldugu gibi raporlanir
+        "volume_error_ladder": verr,
+        "volume_error_monotone": bool(
+            all(verr[i] > verr[i + 1] for i in range(len(verr) - 1))),
+        "volume_error_envelope_shrinks": zarf_dusuyor,
+        "volume_error_max": max(verr),
         "max_mass_rel_err": max(r["mass_rel_err"] for r in rows),
         "max_momentum_rel_err": max(r["momentum_rel_err"] for r in rows),
         "min_particles_across": min(r["particles_across_diameter"] for r in rows),
         "no_point_particle": bool(min(r["n_actual"] for r in rows) >= 8),
-        "starts_outside_target": bool(min(r["min_distance_to_center"] for r in rows) > 80.0),
+        # ADR-0035 ile ayni olcu: mesh uyeligi, uzaklik vekili DEGIL
+        "impactor_particles_inside_mesh": n_ic,
+        "starts_outside_target": bool(all(k == 0 for k in n_ic)),
         "impact_angle_deg": float(geom.angle_deg),
         "cos_incidence": float(geom.diagnostics["cos_incidence"]),
     }
