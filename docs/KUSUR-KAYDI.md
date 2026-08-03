@@ -32,6 +32,7 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | K14 | `validation/scene_checks` | "Mermi dışarıda mı" **eşdeğer küre yarıçapı vekiliyle** ölçülüyordu | elipsoit kısa eksende **yanlış negatif**: gerçekte 0/207 içeride ama kriter False | 0035 | ✅ |
 | K15 | `validation/scene_checks` | Komşuluk "iç bölge"si **ölçülen büyüklükle** seçiliyordu | %25 bozuk kafes **11,19** ile bant [11,0–12,01]'den **geçiyordu**; gerçek **10,25** | 0036 | ✅ |
 | K16 | `validation/scene_checks` | "Yakınsıyor" ölçütü **monoton olmayan** bir büyüklüğe bakıyordu | kalıntı bir adımda **+0,01625 artıyor**; kriter seçilen N'lere bağlı — (400,800,1600) ile **False** | 0037 | ✅ |
+| K17 | `setup/shape_mesh` | Kenar-manifold kontrolü **ters sarımı göremiyor** | 100 yüz ters → manifold hâlâ **True**, hacim **%15,5 yanlış**; yüklenen OBJ'de yakalayan yok | 0038 | ✅ |
 | S1 | `tests/test_settling` | *Turun kendi hatası:* Y0 testinin **tahmini ters** | ölçülen 130 kat **ters yönde** | — | ✅ |
 | S2 | `docs/KUSUR-KAYDI.md` | *Turun ikinci hatası:* kaydın kendisi **sessizce eksik kaldı** | `str.replace` çapası tutmadı → **3 bölüm birden** kayboldu (K10/K11/K12) | — | ✅ |
 
@@ -679,6 +680,53 @@ gerekçesi kaybolmuş demektir.
 ### Ders
 > **Bir büyüklüğün "yakınsadığını" iddia etmeden önce, o büyüklüğün
 > yakınsaması BEKLENEN bir büyüklük olup olmadığı sorulmalıdır.**
+
+---
+
+## K17 — Kenar-manifold kontrolü ters sarımı göremiyordu
+
+**Modül:** `src/dartrift/setup/shape_mesh.py` · **Şiddet:** yüksek
+**ADR:** 0038
+
+### Nasıl bulundu
+Ölçüt denetimi mesh kontrollerine uzatıldı: *"manifold" adı neyi garanti
+ediyor?* Kod kenarları **sıralayarak** sayıyor — `(a,b)` ile `(b,a)` aynı.
+
+### Ölçülen etki (ikosfer(3), yüzler ters çevrilerek)
+| ters yüz | `is_edge_manifold()` | hacim hatası |
+|---|---|---|
+| 1 | **True** | %0,109 |
+| 5 | **True** | %0,764 |
+| 20 | **True** | %3,112 |
+| 100 | **True** | **%15,545** |
+
+### Neden önemli
+Mesh hacmi üç yere giriyor: yığın yoğunluğu (`Σm/V_mesh`), blok hacim hedefi
+(`f_boulder·V_mesh`), etkin yarıçap (kaçış hızı, bağlanma enerjisi).
+
+### Neden görünmüyordu
+Analitik şekillerde C1'in `max_volume_rel_err < 0.01` kontrolü yakalar.
+**Yüklenen OBJ'de — gerçek PDS Dimorphos modelinde — analitik hacim YOK**;
+orada yakalayan başka bir şey de yoktu. `orient_outward` yalnızca toplam
+hacim negatifse **tüm** ağı çevirir.
+
+### Düzeltme
+`is_consistently_oriented()`: her **yönlü** kenar tam bir kez. G3 C1 ve PDS
+testi artık bunu da şart koşuyor. Tespit edilir ve **reddedilir**, sessizce
+onarılmaz.
+
+### Ölçülen: iki kontrol BAĞIMSIZ
+| bozulma | manifold | yönelim |
+|---|---|---|
+| delik | **False** | True |
+| ters sarım | True | **False** |
+
+İlk yazdığım test *"delik ikisini de bozar"* diye tahmin ediyordu ve düştü.
+Kod doğru; kapalılık ile yönelim ayrı özellikler — **tam bu yüzden ikisi de
+gerekli.**
+
+### Ders
+> **Bir kontrolün adı, neyi kontrol ettiğini söylemeyebilir.**
 
 ---
 

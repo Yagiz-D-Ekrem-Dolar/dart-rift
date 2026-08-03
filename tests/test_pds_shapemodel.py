@@ -127,6 +127,10 @@ def test_mesh_kapali_ve_manifold():
     p = _gerekli("dimorphos_g_0972mm")
     mesh = orient_outward(load_obj(p, units="km"))
     assert mesh.is_edge_manifold(), "PDS mesh'i kenar-manifold degil"
+    # ADR-0038: kenar-manifold TERS SARIMI goremez ve YUKLENEN OBJ'de
+    # karsilastirilacak analitik hacim YOKTUR — yakalayan baska sey yok.
+    assert mesh.is_consistently_oriented(), (
+        "PDS mesh'inde yonelim tutarsiz: bazi ucgenler ters sarilmis. Hacim (ve ondan turetilen yigin yogunlugu, blok hedefi, etkin yaricap) sessizce yanlis olurdu.")
     assert mesh.volume > 0.0, "disa yonlendirme sonrasi hacim pozitif olmali"
 
 

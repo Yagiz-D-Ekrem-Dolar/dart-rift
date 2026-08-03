@@ -178,9 +178,11 @@ def main() -> int:
 
     shape = run_shape_pipeline()
     crit["C1"].record(
-        shape["all_manifold"] and shape["volume_converges"]
+        shape["all_manifold"] and shape["all_oriented"]
+        and shape["volume_converges"]
         and shape["max_volume_rel_err"] < 0.01,
-        f"kenar-manifold {shape['all_manifold']}, hacim hatasi maks "
+        f"kenar-manifold {shape['all_manifold']}, yonelim tutarli "
+        f"{shape['all_oriented']}, hacim hatasi maks "
         f"{shape['max_volume_rel_err']:.3%}, bolunmeyle "
         f"{'azaliyor' if shape['volume_converges'] else 'AZALMIYOR'} "
         f"({shape['volume_error_ladder'][0]:.2%}->{shape['volume_error_ladder'][-1]:.3%})",

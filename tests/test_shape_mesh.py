@@ -318,3 +318,82 @@ class TestNonConvexMembership:
         # ve merkez-yon yaricapi yone gore DEGISIYOR (yildizsi ama kure degil)
         d = np.linalg.norm(mesh.v, axis=1)
         assert d.max() / d.min() > 1.5
+
+
+class TestOrientationConsistency:
+    """ADR-0038: kenar-manifold TERS SARIMI goremez.
+
+    `is_edge_manifold` kenarlari SIRALAYARAK sayar, yani (a,b) ile (b,a) ayni
+    sayilir. Ters sarilmis bir yuz bu testten GECER. Olculdu (ikosfer(3),
+    yuzler rastgele ters cevrilerek):
+
+        ters yuz   is_edge_manifold()   is_consistently_oriented()   hacim hatasi
+             1           True                    False                  %0,109
+             5           True                    False                  %0,764
+            20           True                    False                  %3,112
+           100           True                    False                 %15,545
+
+    Hacim su uc yere giriyor: yigin yogunlugu (kutle/V_mesh), blok hacim
+    hedefi (f_boulder*V_mesh) ve etkin yaricap (kacis hizi, baglanma enerjisi).
+
+    Analitik sekillerde C1'in hacim kontrolu bunu yakalar. YUKLENEN OBJ'de —
+    yani GERCEK PDS Dimorphos modelinde — karsilastirilacak analitik hacim
+    YOKTUR; orada yakalayan baska bir sey de yoktu.
+    """
+
+    @staticmethod
+    def _ters_cevir(mesh, k, seed=0):
+        rng = np.random.default_rng(seed)
+        f = mesh.f.copy()
+        idx = rng.choice(len(f), size=k, replace=False)
+        f[idx] = f[idx][:, ::-1]
+        return TriMesh(v=mesh.v, f=f)
+
+    def test_saglam_mesh_her_iki_kontrolden_gecer(self):
+        for m in (icosphere(2, 1.0), icosphere(4, 82.0),
+                  ellipsoid(44.0, 43.5, 32.5, subdiv=4)):
+            assert m.is_edge_manifold()
+            assert m.is_consistently_oriented()
+
+    @pytest.mark.parametrize("k", [1, 5, 20, 100])
+    def test_ters_sarim_YAKALANIR(self, k):
+        m = icosphere(3, 100.0)
+        bozuk = self._ters_cevir(m, k)
+        # kusurun olcusu: kenar-manifold hala GECIYOR
+        assert bozuk.is_edge_manifold() is True
+        # yeni kontrol YAKALIYOR
+        assert bozuk.is_consistently_oriented() is False
+
+    def test_ters_sarim_hacmi_bozuyor(self):
+        """Bosluk kontrolu: yonelim bozuklugu GERCEKTEN zararli mi?
+
+        Hacmi bozmuyorsa bu kontrolun gerekcesi kalmazdi.
+        """
+        m = icosphere(3, 100.0)
+        v0 = m.volume
+        hatalar = [abs(self._ters_cevir(m, k).volume / v0 - 1.0)
+                   for k in (1, 5, 20, 100)]
+        assert all(hatalar[i] < hatalar[i + 1] for i in range(len(hatalar) - 1)), hatalar
+        assert hatalar[-1] > 0.10, hatalar          # 100 yuzde %10'dan fazla
+        assert hatalar[0] > 1e-4, hatalar           # tek yuzde bile olculebilir
+
+    def test_iki_kontrol_BAGIMSIZ(self):
+        """Ikisi FARKLI seyleri olcer; biri digerini kapsamaz.
+
+        Olculen davranis:
+          * delik acmak  -> manifold KALIR, yonelim GECER
+            (kalan yuzlerin sarimi tutarli; yalnizca kapali degil)
+          * yuz ters cevirmek -> manifold GECER, yonelim KALIR
+
+        Ilk yazdigim test "delik ikisini de bozar" diye TAHMIN ediyordu ve
+        dustu. Kod dogru: yonelim tutarliligi ile kapalilik AYRI ozelliklerdir
+        ve tam bu yuzden IKISI DE gereklidir.
+        """
+        m = icosphere(2, 1.0)
+        delikli = TriMesh(v=m.v, f=m.f[:-1])
+        assert delikli.is_edge_manifold() is False        # kapali degil
+        assert delikli.is_consistently_oriented() is True  # ama sarim tutarli
+
+        ters = self._ters_cevir(m, 3)
+        assert ters.is_edge_manifold() is True             # kapali
+        assert ters.is_consistently_oriented() is False    # ama sarim bozuk

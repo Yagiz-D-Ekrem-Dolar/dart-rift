@@ -111,6 +111,37 @@ class TriMesh:
         wc = vol6[:, None] * cen
         return np.array([math.fsum(wc[:, k].tolist()) / tot for k in range(3)])
 
+    def is_consistently_oriented(self) -> bool:
+        """Butun ucgenler AYNI yonde mi sariliyor (yonelim tutarli mi)?
+
+        `is_edge_manifold` kenarlari SIRALAYARAK sayar, yani (a,b) ile (b,a)
+        ayni sayilir — ters sarilmis bir yuzu goremez. Olculdu (ikosfer(3),
+        yuzler rastgele ters cevrilerek):
+
+            ters yuz   is_edge_manifold()   hacim hatasi
+                 1           True              %0,185
+                 5           True              %0,820
+                20           True              %3,120
+               100           True             %15,725
+
+        Yani yonelimi bozuk bir ag "manifold" sayilip hacmi %15,7 yanlis
+        verebiliyordu. Hacim su uc yere giriyor: yigin yogunlugu
+        (kutle/V_mesh), blok hacim hedefi (f_boulder*V_mesh) ve etkin yaricap
+        (kacis hizi, baglanma enerjisi).
+
+        Analitik sekillerde (ikosfer, elipsoit) C1'in hacim kontrolu bunu
+        yakalar. YUKLENEN OBJ'de — yani GERCEK PDS Dimorphos modelinde —
+        karsilastirilacak analitik hacim YOKTUR; orada yakalayan baska bir
+        sey de yoktu.
+
+        DOGRU OLCU: her YONLU kenar tam bir kez gorunmeli. Kapali ve tutarli
+        yonelimli bir agda her kenar bir ucgende (a,b), komsusunda (b,a)
+        olarak gecer.
+        """
+        e = np.concatenate([self.f[:, [0, 1]], self.f[:, [1, 2]], self.f[:, [2, 0]]])
+        _, counts = np.unique(e, axis=0, return_counts=True)
+        return bool(np.all(counts == 1))
+
     def is_edge_manifold(self) -> bool:
         """Her kenar TAM iki ucgende gorunmeli (kapali, delik yok).
 

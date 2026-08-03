@@ -305,6 +305,10 @@ def run_shape_pipeline() -> dict:
             "volume_exact": float(v_exact),
             "volume_rel_err": float(abs(v - v_exact) / v_exact),
             "edge_manifold": bool(mesh.is_edge_manifold()),
+            # ADR-0038: kenar-manifold TERS SARIMI GOREMEZ (kenarlari
+            # siralayarak sayar). Olculdu: 100 yuz ters cevrilince
+            # manifold hala True ama hacim %15,7 yanlis.
+            "orientation_consistent": bool(mesh.is_consistently_oriented()),
             "area": float(mesh.area),
         }
     # yakinsama: bolunme arttikca hacim hatasi kuculmeli (ikosfer icyazili
@@ -316,6 +320,9 @@ def run_shape_pipeline() -> dict:
     out["volume_error_ladder"] = errs
     out["volume_converges"] = bool(errs[0] > errs[1] > errs[2])
     out["all_manifold"] = all(c["edge_manifold"] for c in out["cases"].values())
+    # ADR-0038: yonelim tutarliligi AYRI bir sart — kenar-manifold onu gormez.
+    out["all_oriented"] = all(
+        c["orientation_consistent"] for c in out["cases"].values())
     out["max_volume_rel_err"] = max(c["volume_rel_err"] for c in out["cases"].values())
     return out
 
