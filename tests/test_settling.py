@@ -154,9 +154,32 @@ class TestSettlingGPU:
         gecerdi — heterojenlik kozmetik olurdu. Bu, hasar kusuruyla ayni sinif:
         parca dogru, butun sinanmamis.
 
-        Olculebilir tahmin: her yerde ZAYIF kohezyon veren bir kosu, guclu
-        bloklar iceren kosudan DAHA COK plastik is uretmeli (akma daha erken
-        baslar). Esitlik cikarsa Y0 dizisi kullanilmiyor demektir.
+        BU TESTIN ILK HALI KALDI VE TAHMINI YANLISTI. "Zayif kohezyon daha cok
+        plastik is uretir" diye yazmistim (akma daha erken baslar). Olculen tam
+        tersi cikti. Ters cevirmeden once ILISKI olculdu (is 1448928, H100,
+        ayni kurulum, uc kol):
+
+            kol           Y0_ort       plastik is
+            hepsi-zayif   1,0000e+04   1,459238e+07 J
+            heterojen     2,3565e+06   1,890912e+09 J
+            hepsi-guclu   1,0000e+07   1,264309e+10 J
+
+            heterojen / hepsi-zayif  = 129,58
+            hepsi-guclu/ heterojen   =   6,69
+            hepsi-guclu/ hepsi-zayif = 866,42   (Y0 orani 1000)
+
+        FIZIK: tam plastik rejimde dagilim hizi sigma_akma * eps_nokta_p'dir,
+        yani is yield gerilmesiyle ARTAR. Akmanin BASLANGICI ile BUYUKLUGUNU
+        karistirmistim: dusuk Y0'da akma erken baslar ama her adimda cok az
+        enerji atar; yuksek Y0'da gec baslar ve cok atar. Ikincisi baskin
+        (866 kat / 1000 kat — hafif alt-dogrusal, cunku yuksek Y0'da bir kisim
+        elastik kalir).
+
+        ASIL KANIT KUSATMADIR: heterojen deger iki HOMOJEN sinirin TAM
+        ARASINDA. Cekirdek herhangi bir SKALER kullansaydi heterojen kosu
+        sinirlardan birine OTURURDU. Ustelik het/zayif = 129,58 iken ortalama
+        Y0 orani 235,65 — yani sonuc ortalamanin da degil, gercek bir
+        karisimin sonucu.
         """
         self._needs_cuda()
         from dartrift.cpu_reference.sph_ref import RefParams
@@ -165,8 +188,6 @@ class TestSettlingGPU:
         mat, pile = self._kur()
         y_het = np.ascontiguousarray(pile.Y0)
         assert len(np.unique(y_het)) > 1
-        # ayni sahne, tek fark: her yerde en zayif kohezyon
-        y_zayif = np.full(pile.n, float(y_het.min()))
 
         def kos(y0):
             s = WarpSolid3D(np.ascontiguousarray(pile.x),
@@ -179,11 +200,23 @@ class TestSettlingGPU:
                 s.step(s.compute_dt())
             return s.plastic_u_total
 
-        pl_het, pl_zayif = kos(y_het), kos(y_zayif)
-        assert pl_zayif > pl_het, (
-            f"zayif kohezyon daha cok plastik is uretmeli: "
-            f"heterojen={pl_het:.6e}, hepsi-zayif={pl_zayif:.6e} — "
-            "esitse cekirdek parcacik basina Y0'i KULLANMIYOR")
+        pl_zayif = kos(np.full(pile.n, float(y_het.min())))
+        pl_het = kos(y_het)
+        pl_guclu = kos(np.full(pile.n, float(y_het.max())))
+
+        # 1) MONOTONLUK: plastik is yield gerilmesiyle artar
+        assert pl_zayif < pl_het < pl_guclu, (
+            f"plastik is Y0 ile monoton artmali: zayif={pl_zayif:.6e}, "
+            f"heterojen={pl_het:.6e}, guclu={pl_guclu:.6e}")
+        # 2) KUSATMA: heterojen SINIRLARA OTURMAMALI — otururdu ise cekirdek
+        #    parcacik basina diziyi degil bir skaleri kullaniyor demektir
+        assert pl_het > 1.5 * pl_zayif, "heterojen, hepsi-zayif sinirina oturdu"
+        assert pl_het < 0.67 * pl_guclu, "heterojen, hepsi-guclu sinirina oturdu"
+        # 3) ETKI BUYUKLUGU: Y0 1000 kat degisince is en az 100 kat degismeli
+        #    (olculen 866; esik brittle olmasin diye genis)
+        assert pl_guclu / pl_zayif > 100.0, (
+            f"Y0'in 1000 kat degismesi isi yalnizca "
+            f"{pl_guclu / pl_zayif:.1f} kat degistirdi")
 
     def test_agac_suruklenmesi_yalnizca_K1_disinda_izlenir(self):
         """K=1'de yaklasiklik yok -> izleme de yok (her adim v kopyalamak bos
