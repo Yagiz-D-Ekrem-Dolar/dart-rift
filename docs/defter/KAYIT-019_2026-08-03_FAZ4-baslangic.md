@@ -74,7 +74,73 @@ Alanın gerçekten düzgün olduğu ayrıca doğrulanıyor (`field_is_uniform`).
 
 ---
 
-## 4. Ölçüm sonucu
+## 3b. DÜZELTME — ilk ölçümün maskesi de bozuktu (4 Ağustos)
+
+§4'teki tablo **geçersizdir**. Silinmiyor, üstü çiziliyor ve nedeni yazılıyor.
+
+### Ne yanlıştı
+Bölge maskeleri dış yüzeyden **2,5·aralık** pay bırakıyordu. Ama `h = 2·aralık`
+olduğu için Wendland C2'nin desteği **`2h` = 4·aralık**tır. Yani yüzeye
+`4·aralık`tan yakın parçacıkların komşuluğu **kesikti** ve orada yapay kuvvet
+doğuyordu — kütle oranıyla **ilgisiz** bir yüzey artığı.
+
+### Ölçüldü (tek popülasyon, düzgün basınç — doğru cevap **tam sıfır**)
+
+| kenar payı | n | a_maks | a/ölçek |
+|---|---|---|---|
+| 2,5·s | 683 | 5,4813e+02 | 0,0878 |
+| 3,0·s | 555 | 8,5467e+01 | 0,0137 |
+| **4,0·s** | 249 | **5,8938e-12** | **0,0000** |
+| 5,0·s | 87 | 4,1911e-12 | 0,0000 |
+
+**"Taban 0,0397" diye raporladığım şey tamamen maskemin artığıydı.** Doğru
+payla taban makine hassasiyetinde sıfır — mükemmel FCC kafes düzgün basınçta
+hiç yapay kuvvet üretmiyor, üretmemesi gerektiği gibi.
+
+### İkinci sorun: geometri yetersizdi
+Pay `2h + s/2 = 36 m` iken `r_inner = 25 m` idi; yani **"derin dış" bölge
+tamamen boş kalıyordu** ve ölçüm sessizce yalnızca iç bölgeyi ölçüyordu.
+Düzeltme: geometri `r_outer = 70`, `h/s = 1,3` (projenin kendi değeri) ve
+**bölge boş kalırsa artık hata veriliyor**.
+
+### Düzeltilmiş ölçüm
+
+`r_outer = 70`, `r_inner = 25`, `s = 8`, `h/s = 1,3`, pay `= 2h + s/2`:
+
+| λ | kütle oranı | N | n_arayüz | birim bölünmesi | a_arayüz | **a/ölçek** |
+|---|---|---|---|---|---|---|
+| 1,00 | 1,00 | 3997 | 488 | 0,00381 | 1,3013e-11 | **0,0000** |
+| 1,26 | 2,00 | 4189 | 644 | 0,04009 | 1,2349e+03 | **0,1286** |
+| 1,44 | 2,99 | 4375 | 822 | 0,08814 | 2,7995e+03 | **0,2915** |
+| 1,59 | 4,02 | 4503 | 896 | 0,08619 | 2,0837e+03 | 0,2170 |
+| 2,00 | 8,00 | 5301 | 1514 | 0,08787 | 2,0240e+03 | 0,2108 |
+| 2,52 | 16,00 | 6719 | 2650 | 0,08296 | 1,8798e+03 | 0,1957 |
+
+**Taban artık gerçekten sıfır** (`1,355e-15`), yani arayüz katkısı **yalnız**.
+
+### Bu tablo ne diyor — ve öncekinden farkı
+
+| | önceki (kirli) | düzeltilmiş |
+|---|---|---|
+| taban | 0,0397 | **1,4e-15** |
+| 2:1 katkısı | +0,023 | **0,129** |
+| 3:1 katkısı | +0,032 | **0,292** |
+| en büyük | 0,049 | **0,292** |
+
+Yapay kuvvet **beş kat daha büyük** ve **2:1'de bile** ortaya çıkıyor.
+Üstelik oranla **monoton büyümüyor**: 3:1'de tepe yapıp ~%20'de duruyor.
+
+**Yorum:** arayüz hatasını belirleyen şey süreksizliğin *büyüklüğü* değil,
+**varlığı**. Bu, tasarım kararı için doğrudan anlamlıdır: ani kütle
+sıçramasıyla bölgeleme **her oranda** sorunlu görünüyor.
+
+> Bu, K18'in dersinin bir kez daha doğrulanmasıdır: ölçüm = taban + sinyal.
+> Ama bu kez taban **ölçüm düzeneğinden** geliyordu, fizikten değil — ve o
+> yüzden sinyali beş kat küçük gösteriyordu.
+
+---
+
+## 4. Ölçüm sonucu ~~(GEÇERSİZ — bkz. §3b)~~
 
 Uygulanan düzgün basınç: `P = 2,6967e+08 Pa` (her yerde aynı, doğrulandı).
 
@@ -109,10 +175,10 @@ Bu yüzden **fazlalık** raporlanıyor.
 
 ### Söylemediği — ve bu yüzden karar verilmedi
 
-1. **Derin bölge arayüzden daha kötü.** Ölçülen: `a_derin = 5,48e2` vs
-   `a_arayüz = 2,48e2` (1:1'de). Yani baskın hata kaynağı **arayüz değil**,
-   kafesin küre sınırıyla kesilmesi. Arayüz katkısı bu gürültünün içinde.
-   Daha temiz bir düzenek (periyodik kutu, yüzeysiz) gerekiyor.
+1. ~~**Derin bölge arayüzden daha kötü.**~~ **ÇÖZÜLDÜ (§3b).** O gözlem
+   maskenin artığıydı; kenar payı çekirdek desteğine çıkarılınca taban
+   `1,4e-15`'e düştü ve arayüz katkısı yalnız kaldı. Periyodik kutuya gerek
+   kalmadı — yeterli pay yetti.
 
 2. **`t = 0` anlık bir ölçümdür.** Asıl soru yapay kuvvetin **birikip
    birikmediği**. ADR-0028'de ölçüldüğü gibi, sabit kalan bir hata ile
@@ -127,7 +193,7 @@ Bu yüzden **fazlalık** raporlanıyor.
 
 | # | iş | neden |
 |---|---|---|
-| 4.1b | **Periyodik kutu** düzeneği — yüzey etkisini tamamen kaldır | tabanı 0'a indirip arayüz katkısını yalnız bırakmak |
+| ~~4.1b~~ | ~~periyodik kutu~~ | **TAMAMLANDI (§3b)** — yeterli kenar payı yetti, taban `1,4e-15` |
 | 4.1c | **Dinamik koşu**: N adım, enerji/momentum defteri | hata birikiyor mu? |
 | 4.1d | **Şok geçişi**: arayüzden şok geçir, yansıma ve iletim ölç | çarpma probleminin gerçek sorusu |
 | 4.2 | ADR-0041: yaklaşımın seçimi | ancak yukarıdakiler ölçüldükten sonra |

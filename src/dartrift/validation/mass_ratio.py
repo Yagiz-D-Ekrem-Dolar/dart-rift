@@ -94,6 +94,47 @@ def build_two_zone(
     }
 
 
+def _masks(z: dict, h: float) -> dict:
+    """Bölge maskeleri. Kenar payı **çekirdek desteğinden** türetilir.
+
+    Wendland C2'nin desteği `2h`'dir. Dış yüzeye `2h`'den yakın bir parçacığın
+    komşuluğu **kesiktir** ve orada yapay kuvvet doğar — bu, kütle oranıyla
+    ilgisiz bir yüzey artığıdır.
+
+    İLK YAZDIĞIM HÂLİ 2,5·aralık pay bırakıyordu; `h = 2·aralık` olduğu için
+    destek `4·aralık`tır, yani pay **yetersizdi**. Ölçüldü (tek popülasyon,
+    düzgün basınç — doğru cevap tam sıfır):
+
+        kenar payı   n     a_maks       a/ölçek
+          2,5·s     683   5,4813e+02    0,0878
+          3,0·s     555   8,5467e+01    0,0137
+          4,0·s     249   5,8938e-12    0,0000   <-- destek sınırı
+          5,0·s      87   4,1911e-12    0,0000
+
+    Yani "taban 0,0397" diye raporladığım şey **tamamen** maskemin artığıydı.
+    Doğru pay ile taban makine hassasiyetinde sıfır çıkıyor ve arayüz katkısı
+    **yalnız kalıyor**.
+    """
+    r = np.linalg.norm(z["x"], axis=1)
+    s_out = z["spacing_outer"]
+    pay = 2.0 * h + 0.5 * s_out           # destek + yarim aralik guvenlik
+    ri = z["r_inner"]
+    # GEOMETRI YETERLI MI: pay disaridan, h de arayuzden yer yiyor. "Derin dis"
+    # bolgesi bos kalirsa olcum sessizce yalnizca ic bolgeyi olcer.
+    if z["r_outer"] - pay <= ri + h:
+        raise ValueError(
+            f"geometri yetersiz: r_outer={z['r_outer']:.1f} ama kenar payi "
+            f"{pay:.1f} + arayuz {h:.1f} + r_inner {ri:.1f} = "
+            f"{pay + h + ri:.1f} gerekiyor. Derin DIS bolge bos kalirdi.")
+    kenar = r < z["r_outer"] - pay
+    return {
+        "r": r, "kenar": kenar, "margin": pay,
+        "arayuz": kenar & (np.abs(r - ri) < h),
+        "derin_ic": kenar & (r < ri - h),
+        "derin_dis": kenar & (r > ri + h),
+    }
+
+
 def measure_partition_of_unity(z: dict, h_over_spacing: float = 2.0) -> dict:
     """`Σ_j (m_j/ρ_j) W_ij` — 1'den sapma, ayrıklaştırmanın tutarsızlığıdır.
 
@@ -108,12 +149,8 @@ def measure_partition_of_unity(z: dict, h_over_spacing: float = 2.0) -> dict:
     d = np.linalg.norm(x[:, None, :] - x[None, :, :], axis=2)
     S = kernel_w(d / h, h, 3) @ (m / rho)
 
-    r = np.linalg.norm(x, axis=1)
-    kenar = r < z["r_outer"] - 2.5 * z["spacing_outer"]       # yuzeyden uzak
-    ri = z["r_inner"]
-    arayuz = kenar & (np.abs(r - ri) < 1.5 * z["spacing_outer"])
-    derin_ic = kenar & (r < ri - 1.5 * z["spacing_outer"])
-    derin_dis = kenar & (r > ri + 1.5 * z["spacing_outer"])
+    mk = _masks(z, h)
+    arayuz, derin_ic, derin_dis = mk["arayuz"], mk["derin_ic"], mk["derin_dis"]
 
     def _ozet(mask):
         if not np.any(mask):
@@ -123,14 +160,15 @@ def measure_partition_of_unity(z: dict, h_over_spacing: float = 2.0) -> dict:
                 "max_dev": float(np.max(np.abs(v - 1.0)))}
 
     return {"interface": _ozet(arayuz), "deep_inner": _ozet(derin_ic),
-            "deep_outer": _ozet(derin_dis), "h": h}
+            "deep_outer": _ozet(derin_dis), "h": h, "margin": mk["margin"]}
 
 
 def run_mass_ratio_scan(
     lams: tuple[float, ...] = (1.0, 1.26, 1.44, 1.59, 2.0, 2.52),
-    r_outer: float = 60.0,
+    r_outer: float = 70.0,
     r_inner: float = 25.0,
     spacing: float = 8.0,
+    h_over_spacing: float = 1.3,
 ) -> dict:
     """Kütle oranını tara ve bozulmanın nerede başladığını raporla.
 
@@ -144,8 +182,8 @@ def run_mass_ratio_scan(
     satirlar = []
     for lam in lams:
         z = build_two_zone(r_outer, r_inner, spacing, lam)
-        pu = measure_partition_of_unity(z)
-        sa = measure_spurious_acceleration(z)
+        pu = measure_partition_of_unity(z, h_over_spacing)
+        sa = measure_spurious_acceleration(z, h_over_spacing)
         satirlar.append({
             "lam": float(lam),
             "mass_ratio": z["mass_ratio"],
@@ -162,10 +200,14 @@ def run_mass_ratio_scan(
         })
 
     taban = satirlar[0]
+    # Taban tek populasyondur: DUZGUN basincta yapay kuvvet MAKINE
+    # HASSASIYETINDE sifir olmali. Olculdu: 9,263e-16.
+    # Bolgelerin DOLU olmasi da sart — bos bolge sessizce olcum kaybettirir.
     taban_temiz = bool(
         abs(taban["mass_ratio"] - 1.0) < 1e-9
-        and taban["interface_max_dev"] < 0.02
-        and taban["deep_outer_max_dev"] < 0.02)
+        and taban["a_interface_over_ref"] < 1.0e-9
+        and taban["interface_n"] > 20
+        and np.isfinite(taban["deep_outer_max_dev"]))
     # ADR-0039'un dersi: olcum = TABAN + sinyal. Taban, kafesin kureyle
     # kesilmesinden gelen ayriklastirma hatasidir ve KUTLE ORANIYLA ILGISIZDIR.
     # Kriter FAZLALIGA bakmali.
@@ -235,11 +277,9 @@ def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
     p_yayilim = float(np.ptp(st.P))
 
     a = np.linalg.norm(st.a, axis=1)
-    r = np.linalg.norm(x, axis=1)
-    kenar = r < z["r_outer"] - 2.5 * z["spacing_outer"]
-    ri = z["r_inner"]
-    arayuz = kenar & (np.abs(r - ri) < 1.5 * z["spacing_outer"])
-    derin = kenar & (np.abs(r - ri) >= 1.5 * z["spacing_outer"])
+    mk = _masks(z, h)
+    kenar, arayuz = mk["kenar"], mk["arayuz"]
+    derin = kenar & ~arayuz
 
     # Olcek: ayni kurulumda GERCEK bir basinctan dogacak ivme mertebesi.
     # Boylece "buyuk mu" sorusu mutlak degil, KIYASLI yanitlanir.
@@ -259,4 +299,6 @@ def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
         "a_interface_over_reference": (
             float(a[arayuz].max() / a_ref) if arayuz.any() else float("nan")),
         "n_interface": int(arayuz.sum()),
+        "n_deep": int(derin.sum()),
+        "margin": mk["margin"],
     }
