@@ -24,6 +24,7 @@ koşulardan gelir; iş numaraları yazılıdır.
 | **[016](KAYIT-016_2026-08-02_hata-ayiklama-turu.md)** | 02.08 | **1. tur** — hasar döngüsü, krater, β (K1–K6) |
 | **[018](KAYIT-018_2026-08-03_ikinci-tur-veri-tutarliligi.md)** | 03.08 | **2. tur** — veri tutarlılığı (K7–K12) |
 | **[017](KAYIT-017_2026-08-03_ucuncu-tur-olcut-denetimi.md)** | 03.08 | **3. tur** — denetim kodunun kendisi (K13–K20) |
+| **[019](KAYIT-019_2026-08-03_FAZ4-baslangic.md)** | 03.08 | **FAZ 4 başlangıç** — kütle oranı toleransı, ilk ölçüm |
 
 > 017/018 numaraları kronolojiyle ters: 018 (2. tur) 017'den (3. tur) **önce**
 > yaşandı ama sonra yazıldı. Numaralar yazım sırasını, tablo yaşanma sırasını
