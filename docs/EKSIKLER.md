@@ -207,6 +207,31 @@ hâlâ ortak.
 gerekir ve o parametrelerin literatür değerleri bu proje için seçilmedi.
 FAZ 4'te hasarın β'ya duyarlılığı taranırken karara bağlanacak.
 
+### G. `units.py` üretimde bağlı değil · **AÇIK — bağlanmamış güvence**
+
+Proje bir birim/boyut modülü içeriyor (`dartrift/units.py`: `to_si`,
+`from_si`, `convert`, boyut sabitleri) ama **üretim kodunda hiç
+kullanılmıyor** — yalnızca kendi testi ve sabit-kaynağı testi import ediyor.
+
+Bu, gerçekleşmiş bir hata sınıfının açık kapısıdır: PDS şekil modelleri
+kilometre cinsindendir ve metre saymak Dimorphos'u **7,5 cm** yarıçaplı bir
+cisme çevirmişti (§7). O yol `units="km"` ile kapatıldı, ama şema her fiziksel
+büyüklüğü yalnızca `> 0` diye doğruluyor — km/s yerine m/s, g/cm³ yerine
+kg/m³, MPa yerine Pa yazan biri **1000 kat** yanlış fizik üretir ve hiçbir
+yerde hata almaz.
+
+**Kısmi önlem (bu turda eklendi):** `tests/test_config_physical_ranges.py` —
+üretim konfigürasyonlarındaki her fiziksel büyüklük için **geniş** ama 10³
+birim hatasını yakalayan aralıklar, artı sıra/tutarlılık şartları:
+`bulk_density ≤ rho0` (ADR-0030'un ön şartı), `Pe < Ps`, `Y0 < YM`,
+`r_min < r_max` ve `r_min ≥ spacing`.
+
+**Tam çözüm bu turda yapılmadı:** fizik kodunu boyut-denetimli hâle getirmek
+büyük bir yeniden yazımdır. Karar FAZ 4'e bırakıldı. Modülün bağlanmadığı
+gerçeği `test_units_modulu_uretimde_kullanilmiyor_KAYITLI` ile **kayıt
+altındadır** — biri bağlarsa test düşer ve bu madde güncellenir; "güvence var
+sanıyorduk" durumu oluşmaz.
+
 ### F. Krater çıkarıcıda `x_reference` isteğe bağlı · **AÇIK — tuzak**
 
 ADR-0029/K2 düzeltmesi `x_reference` (çarpma öncesi şekil) verilirse doğru
