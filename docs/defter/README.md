@@ -25,6 +25,7 @@ koşulardan gelir; iş numaraları yazılıdır.
 | **[018](KAYIT-018_2026-08-03_ikinci-tur-veri-tutarliligi.md)** | 03.08 | **2. tur** — veri tutarlılığı (K7–K12) |
 | **[017](KAYIT-017_2026-08-03_ucuncu-tur-olcut-denetimi.md)** | 03.08 | **3. tur** — denetim kodunun kendisi (K13–K20) |
 | **[019](KAYIT-019_2026-08-03_FAZ4-baslangic.md)** | 03.08 | **FAZ 4 başlangıç** — kütle oranı toleransı, ilk ölçüm |
+| **[020](KAYIT-020_2026-08-04_arayuz-hatasi-nicel.md)** | 04.08 | **FAZ 4.1** — arayüz hatası nicelendi: gürültü tabakası, `0,21·L/h`, %5 düzensizlik 8:1'den kötü |
 
 > 017/018 numaraları kronolojiyle ters: 018 (2. tur) 017'den (3. tur) **önce**
 > yaşandı ama sonra yazıldı. Numaralar yazım sırasını, tablo yaşanma sırasını
