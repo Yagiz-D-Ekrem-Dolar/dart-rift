@@ -69,7 +69,6 @@ scene:
     spacing: 4.0
     bulk_density: 1800.0          # ~%33 gozeneklilik, moloz yigini
     model_class: M1
-    matrix_alpha0: 1.6
     matrix_Y0: 1.0e+4
     boulder_alpha0: 1.05
     boulder_Y0: 1.0e+7

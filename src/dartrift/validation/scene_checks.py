@@ -268,17 +268,17 @@ def run_shape_pipeline() -> dict:
 def run_rubble_quality(spacing: float = 7.0, seed: int = 17) -> dict:
     """P3-FR-02/03/04: yigin yogunlugu, blok kesri ve komsuluk sayisi."""
     mesh = icosphere(4, 80.0)
-    plain = build_rubble_pile(mesh, spacing=spacing, bulk_density=1800.0,
-                              root_seed=seed, model_class="M0", matrix_alpha0=1.6)
-    boul = build_rubble_pile(mesh, spacing=spacing, bulk_density=1800.0,
-                             root_seed=seed, model_class="M1", matrix_alpha0=1.6,
+    plain = build_rubble_pile(mesh, spacing=spacing, bulk_density=1800.0, rho0_solid=2700.0,
+                              root_seed=seed, model_class="M0")
+    boul = build_rubble_pile(mesh, spacing=spacing, bulk_density=1800.0, rho0_solid=2700.0,
+                             root_seed=seed, model_class="M1",
                              f_boulder=0.30, q=3.0,
                              r_min=2.0 * spacing, r_max=6.0 * spacing)
     cn = coordination_number(plain.x, spacing)
     f_meas = float(np.sum(boul.m[boul.is_boulder]) / np.sum(boul.m))
     # determinizm: ayni tohum ayni yigin
-    rep = build_rubble_pile(mesh, spacing=spacing, bulk_density=1800.0,
-                            root_seed=seed, model_class="M1", matrix_alpha0=1.6,
+    rep = build_rubble_pile(mesh, spacing=spacing, bulk_density=1800.0, rho0_solid=2700.0,
+                            root_seed=seed, model_class="M1",
                             f_boulder=0.30, q=3.0,
                             r_min=2.0 * spacing, r_max=6.0 * spacing)
     return {
@@ -295,7 +295,7 @@ def run_rubble_quality(spacing: float = 7.0, seed: int = 17) -> dict:
         "n_boulders": int(0 if boul.boulders is None else len(boul.boulders.radii)),
         "deterministic": bool(np.array_equal(boul.x, rep.x)
                               and np.array_equal(boul.Y0, rep.Y0)),
-        "matrix_alpha0": 1.6,
+        "matrix_alpha0_solved": float(plain.diagnostics["matrix_alpha0_solved"]),
         "alpha0_distinct": bool(len(np.unique(boul.alpha0)) > 1),
         "Y0_distinct": bool(len(np.unique(boul.Y0)) > 1),
     }

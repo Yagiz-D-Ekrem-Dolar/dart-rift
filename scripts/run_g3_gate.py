@@ -228,7 +228,8 @@ def main() -> int:
             density_method="continuity",
         )
         pile = build_rubble_pile(icosphere(4, 80.0), spacing=7.0, bulk_density=1800.0,
-                                 root_seed=17, model_class="M0", matrix_alpha0=1.6)
+                                 rho0_solid=2700.0,
+                                 root_seed=17, model_class="M0")
         res = settle_pile(pile, mat, device=args.device, damping=0.02,
                           max_steps=100 if args.quick else 400, report_every=50)
         d = res.diagnostics

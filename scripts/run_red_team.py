@@ -206,6 +206,7 @@ def rt7_boulder_saturation_not_silent() -> Check:
     mesh = icosphere(3, 40.0)
     # fiziksel olarak sigmayacak bir kesir iste: doyma kacinilmaz
     pile = build_rubble_pile(mesh, spacing=6.0, bulk_density=1800.0, root_seed=5,
+                              rho0_solid=2700.0,
                              model_class="M1", f_boulder=0.9, q=3.0,
                              r_min=12.0, r_max=30.0)
     olculen = float(np.sum(pile.m[pile.is_boulder]) / np.sum(pile.m))

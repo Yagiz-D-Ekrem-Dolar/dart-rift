@@ -17,13 +17,17 @@
   "n_total": 6758,
   "n_target": 6359,
   "n_impactor": 399,
-  "sha256": "6d6f1d10eaff64e2b3987df1119e4391a08fe8d48eb1874728d1e4984b2c28fa",
+  "sha256": "ca730c2c8fa666b1683b2fd49bc2a1a175eb904a565c6292a6dd6e8feaafdfcb",
   "verified_on": [
-    "Linux/CPython 3.10.15/numpy 1.26.4",
-    "Windows/CPython 3.12.10/numpy 2.5.1"
+    "Windows/CPython 3.12.10/numpy 2.4.6"
   ],
-  "note": "FAZ 3 sahne karmasi. Bu altin dosya iki ayri kusur yuzunden eklendi: (1) isin-yuzey kesisimi mesh kosesinde dejenereydi ve yuzey normali makineye gore ~2.5 derece degisiyordu; (2) TriMesh.centroid np.sum kullaniyordu, toplama sirasi numpy surumune gore oynuyordu. Ikisi de duzeltildi (ADR-0025) ve karma iki platformda birebir ayni.",
+  "note": "FAZ 3 sahne karmasi. ADR-0030 ile yenilendi: kutle gozeneklilikten tureiyor ve matrix_alpha0 hedef yigin yogunlugundan cozuluyor. Altin dosya mekanizmasi (ADR-0025) bu degisikligi DURDURDU — amacina uygun calisti. Ikinci platform (Linux/TRUBA) dogrulamasi bekleniyor; o eklenene kadar test_iki_platformda_dogrulanmis KALIR ve bu BILINEN, GECICI bir durumdur.",
   "history": [
+    {
+      "sha256": "6d6f1d10eaff64e2b3987df1119e4391a08fe8d48eb1874728d1e4984b2c28fa",
+      "superseded": "2026-08-03",
+      "reason": "Parcacik kutlesi artik GOZENEKLILIKTEN tureiyor: m_i = (rho0_solid/alpha0_i) * V_p. Onceki hali `m = bulk_density * V_p` ile TEKDUZE kutle atiyordu, oysa cozucu rho = rho0/alpha0 atiyor (ADR-0022); ikisi tutarsizdi. Olculen: SPH birim bolunmesi matriste 1.067 (+%6,7), bloklarda 0.803 (-%19,7); ayni dizilim toplam yogunlukla bloklarda -7,624e+09 Pa yapay cekme veriyordu. matrix_alpha0 artik hedef bulk_density'den COZULUYOR (M0 icin 1.5000, M1 icin 1.7273; eskiden sabit 1.6). ADR-0030."
+    },
     {
       "sha256": "1c6f2a100ae4a8668556c9798d9bf4436a57ce2bb792cde4811554002347827d",
       "superseded": "2026-08-01",

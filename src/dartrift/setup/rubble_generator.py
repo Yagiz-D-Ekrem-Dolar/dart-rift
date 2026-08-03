@@ -266,13 +266,49 @@ def assign_material(x: np.ndarray, boulders: BoulderField | None,
 # ---------------------------------------------------------------------------
 # Ust duzey: tam yigin
 # ---------------------------------------------------------------------------
+def matrix_alpha0_for_bulk_density(
+    bulk_density: float, rho0_solid: float, boulder_alpha0: float,
+    boulder_particle_fraction: float,
+) -> float:
+    """Hedef yigin yogunlugunu tutturan matris distansiyonunu coz.
+
+    Yigin yogunlugu, parcacik yogunluklarinin hacim agirlikli ortalamasidir
+    (parcacik hacimleri esit oldugundan duz ortalama):
+
+        rho_yigin = f * (rho0/alpha_blok) + (1-f) * (rho0/alpha_matris)
+
+    Bunu alpha_matris icin cozer. `f` bloklarin PARCACIK kesridir ve ancak
+    yerlestirmeden SONRA bilinir; bu yuzden cozum yerlestirme sonrasi yapilir.
+    """
+    if not (0.0 <= boulder_particle_fraction < 1.0):
+        raise ValueError(f"blok kesri [0,1) olmali, {boulder_particle_fraction} geldi")
+    f = boulder_particle_fraction
+    kalan = bulk_density - f * (rho0_solid / boulder_alpha0)
+    if kalan <= 0.0:
+        raise ValueError(
+            f"hedef yigin yogunlugu {bulk_density} kg/m^3 ulasilamaz: bloklar "
+            f"(alpha={boulder_alpha0}, rho={rho0_solid / boulder_alpha0:.1f}) "
+            f"tek basina parcaciklarin %{100 * f:.1f}'ini kapliyor ve zaten "
+            f"{f * rho0_solid / boulder_alpha0:.1f} kg/m^3 getiriyor. Blok "
+            "kesrini ya da blok gozenekligini degistirin.")
+    alpha_m = rho0_solid * (1.0 - f) / kalan
+    if alpha_m < 1.0:
+        raise ValueError(
+            f"cozulen matris distansiyonu {alpha_m:.4f} < 1: hedef yigin "
+            f"yogunlugu {bulk_density} kg/m^3, kati yogunluk {rho0_solid} "
+            "kg/m^3'ten yogun bir matris ister — fiziksel degil.")
+    return float(alpha_m)
+
+
 def build_rubble_pile(
     mesh: TriMesh,
     spacing: float,
     bulk_density: float,
     root_seed: int,
+    *,
+    rho0_solid: float,
     model_class: str = "M0",
-    matrix_alpha0: float = 1.6,
+    matrix_alpha0: float | None = None,
     matrix_Y0: float = 1.0e4,
     boulder_alpha0: float = 1.05,
     boulder_Y0: float = 1.0e7,
@@ -284,9 +320,32 @@ def build_rubble_pile(
 ) -> RubblePile:
     """Mesh'ten tam bir moloz yigini uret (P3-FR-02/03/04).
 
-    `bulk_density` YIGIN yogunlugudur (gozenekler dahil). Parcacik kutlesi
-    `rho_bulk * V_p` ile atanir; boylece toplam kutle mesh hacmi carpi hedef
-    yogunluga esittir — testte geri olculur.
+    KUTLE GOZENEKLILIKTEN TUREIR — bagimsiz verilmez (ADR-0030):
+
+        rho_i = rho0_solid / alpha0_i        (parcacigin YIGIN yogunlugu)
+        m_i   = rho_i * V_p
+
+    Bu zorunludur, tercih degil. Cozucu baslangic yogunlugunu `rho0/alpha0`
+    olarak atar (gerilmesiz baslangic, ADR-0022). Kutle bundan bagimsiz
+    verilirse `m/rho` parcacigin kafeste kapladigi hacme esit OLMAZ ve SPH'in
+    birim bolunmesi (`sum_j (m_j/rho_j) W_ij = 1`) bozulur.
+
+    OLCULEN (eski hali: `m = bulk_density * V_p`, tekduze):
+
+        birim bolunmesi   matris 1.067 (+%6,7)   blok 0.803 (-%19,7)
+        atanan vs toplam yogunluk:
+            matris  1687.5 vs 1800.4   (+%6,7)   -> P farki  1.117e+09 Pa
+            blok    2571.4 vs 1800.4   (-%30,0)  -> P farki -7.624e+09 Pa
+
+    Yani AYNI parcacik dizilimi, sureklilik ve toplam yogunluk yontemleriyle
+    gigapaskal mertebesinde ayrisiyordu (ADR-0015 ikisini de destekliyor).
+
+    `bulk_density` HEDEF yigin yogunlugudur:
+      * `matrix_alpha0=None` (varsayilan): blok yerlestirmesinden SONRA hedefi
+        TUTTURAN matris distansiyonu cozulur — insaat geregi tutarli.
+      * acikca verilirse kullanilir, ama elde edilen yigin yogunlugu hedeften
+        saparsa HATA verilir. Sessizce farkli bir cisim uretmek, gozeneklilik
+        cikariminin girdisini gorunmeden kaydirirdi.
 
     `model_class`:
       "M0" homojen — tek malzeme.
@@ -294,9 +353,12 @@ def build_rubble_pile(
     """
     if model_class not in ("M0", "M1"):
         raise ValueError(f"desteklenmeyen sinif: {model_class!r} (M0|M1)")
+    if rho0_solid <= 0.0:
+        raise ValueError(f"rho0_solid pozitif olmali, {rho0_solid} geldi")
+    if boulder_alpha0 < 1.0:
+        raise ValueError(f"boulder_alpha0 >= 1 olmali, {boulder_alpha0} geldi")
     x = fill_particles(mesh, spacing, packing=packing)
     v_p = particle_volume(spacing, packing)
-    m = np.full(len(x), bulk_density * v_p)
 
     boulders = None
     if model_class == "M1":
@@ -306,8 +368,31 @@ def build_rubble_pile(
         rmax = r_max if r_max is not None else 8.0 * spacing
         boulders = place_boulders(mesh, f_boulder, q, rmin, rmax, root_seed)
 
+    # Blok kesri ancak yerlestirmeden SONRA bilinir; matris distansiyonu da
+    # ona bagli oldugu icin cozum burada.
+    _, _, is_b_on = assign_material(x, boulders, 1.0, 0.0, 1.0, 0.0)
+    f_parcacik = float(np.count_nonzero(is_b_on) / max(len(x), 1))
+    alpha_m_cozulen = matrix_alpha0_for_bulk_density(
+        bulk_density, rho0_solid, boulder_alpha0, f_parcacik)
+    alpha_m = alpha_m_cozulen if matrix_alpha0 is None else float(matrix_alpha0)
+    if alpha_m < 1.0:
+        raise ValueError(f"matrix_alpha0 >= 1 olmali, {alpha_m} geldi")
+
     alpha0, y0, is_b = assign_material(
-        x, boulders, matrix_alpha0, matrix_Y0, boulder_alpha0, boulder_Y0)
+        x, boulders, alpha_m, matrix_Y0, boulder_alpha0, boulder_Y0)
+    # KUTLE GOZENEKLILIKTEN TUREIR — birim bolunmesi boylece tam saglanir.
+    m = (rho0_solid / alpha0) * v_p
+
+    rho_yigin = float(np.sum(m) / (len(x) * v_p))
+    if matrix_alpha0 is not None:
+        sapma = abs(rho_yigin - bulk_density) / bulk_density
+        if sapma > 1.0e-9:
+            raise ValueError(
+                f"matrix_alpha0={alpha_m} ile elde edilen yigin yogunlugu "
+                f"{rho_yigin:.2f} kg/m^3, hedef {bulk_density:.2f} kg/m^3'ten "
+                f"%{100 * sapma:.2f} sapiyor. Hedefi tutturan deger "
+                f"{alpha_m_cozulen:.6f}. `matrix_alpha0=None` birakirsaniz "
+                "otomatik cozulur. Sessizce farkli bir cisim uretilmez.")
 
     diag = {
         "n_particles": int(len(x)),
@@ -320,6 +405,17 @@ def build_rubble_pile(
         "boulder_volume_placed": float(boulders.volume) if boulders is not None else 0.0,
         "boulder_fraction_measured": float(np.count_nonzero(is_b) / max(len(x), 1)),
         "model_class": model_class,
+        # Tutarlilik kaydi (ADR-0030): kutle gozeneklilikten turedi mi?
+        "rho0_solid": float(rho0_solid),
+        "bulk_density_target": float(bulk_density),
+        "bulk_density_achieved": rho_yigin,
+        "matrix_alpha0_used": float(alpha_m),
+        "matrix_alpha0_solved": float(alpha_m_cozulen),
+        "matrix_alpha0_was_solved": bool(matrix_alpha0 is None),
+        # m/rho parcacigin kafeste kapladigi hacme ESIT olmali; oran 1'den
+        # saparsa SPH birim bolunmesi bozulur (eski kusur tam buydu).
+        "volume_consistency_min": float(np.min(m / (rho0_solid / alpha0)) / v_p),
+        "volume_consistency_max": float(np.max(m / (rho0_solid / alpha0)) / v_p),
     }
     # Doyma SESSIZ kalmamali: hedefe ulasilamadiysa cagiran taraf gormeli.
     v_t = diag["boulder_volume_target"]

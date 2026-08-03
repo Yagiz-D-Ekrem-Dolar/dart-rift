@@ -116,7 +116,10 @@ def build_scene(
     bulk_density: float = 1800.0,
     root_seed: int = 0,
     model_class: str = "M0",
-    matrix_alpha0: float = 1.6,
+    # ADR-0030: None -> hedef yigin yogunlugunu tutturan deger COZULUR.
+    # Sabit bir deger vermek, `bulk_density` ile celisirse HATA verir.
+    rho0_solid: float = 2700.0,
+    matrix_alpha0: float | None = None,
     matrix_Y0: float = 1.0e4,
     boulder_alpha0: float = 1.05,
     boulder_Y0: float = 1.0e7,
@@ -148,6 +151,7 @@ def build_scene(
 
     pile = build_rubble_pile(
         mesh, spacing=spacing, bulk_density=bulk_density, root_seed=root_seed,
+        rho0_solid=rho0_solid,
         model_class=model_class, matrix_alpha0=matrix_alpha0, matrix_Y0=matrix_Y0,
         boulder_alpha0=boulder_alpha0, boulder_Y0=boulder_Y0,
         f_boulder=f_boulder, q=q, r_min=r_min, r_max=r_max,

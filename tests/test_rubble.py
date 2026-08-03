@@ -21,6 +21,7 @@ from dartrift.setup.rubble_generator import (
 )
 from dartrift.setup.shape_mesh import ellipsoid, icosphere, inside_points
 
+RHO0_SOLID = 2700.0
 RHO_BULK = 1800.0          # gozenekli yigin yogunlugu [kg/m^3]
 
 
@@ -142,7 +143,7 @@ class TestRubblePile:
     def m0(self):
         return build_rubble_pile(icosphere(4, 100.0), spacing=9.0,
                                  bulk_density=RHO_BULK, root_seed=42,
-                                 model_class="M0")
+                                 rho0_solid=RHO0_SOLID, model_class="M0")
 
     def test_bulk_density_recovered(self, m0):
         """P3-FR-02 kabulu: toplam kutle / mesh hacmi = HEDEF yogunluk."""
@@ -156,10 +157,10 @@ class TestRubblePile:
     def test_deterministic_same_seed(self):
         """ADR-0004: ayni tohum -> BIT-ESIT yigin (ensemble'in on kosulu)."""
         a = build_rubble_pile(icosphere(3, 100.0), 15.0, RHO_BULK, 5,
-                              model_class="M1", f_boulder=0.12,
+                              rho0_solid=RHO0_SOLID, model_class="M1", f_boulder=0.12,
                               r_min=18.0, r_max=40.0)
         b = build_rubble_pile(icosphere(3, 100.0), 15.0, RHO_BULK, 5,
-                              model_class="M1", f_boulder=0.12,
+                              rho0_solid=RHO0_SOLID, model_class="M1", f_boulder=0.12,
                               r_min=18.0, r_max=40.0)
         assert np.array_equal(a.x, b.x)
         assert np.array_equal(a.is_boulder, b.is_boulder)
@@ -167,7 +168,8 @@ class TestRubblePile:
 
     def test_different_seed_gives_different_boulders(self):
         """Bosluk kontrolu: tohum GERCEKTEN kullaniliyor mu?"""
-        kw = dict(spacing=15.0, bulk_density=RHO_BULK, model_class="M1",
+        kw = dict(spacing=15.0, bulk_density=RHO_BULK, rho0_solid=RHO0_SOLID,
+                  model_class="M1",
                   f_boulder=0.12, r_min=18.0, r_max=40.0)
         a = build_rubble_pile(icosphere(3, 100.0), root_seed=1, **kw)
         b = build_rubble_pile(icosphere(3, 100.0), root_seed=2, **kw)
@@ -176,12 +178,12 @@ class TestRubblePile:
     def test_m1_requires_f_boulder(self):
         with pytest.raises(ValueError, match="f_boulder"):
             build_rubble_pile(icosphere(2, 100.0), 25.0, RHO_BULK, 1,
-                              model_class="M1", f_boulder=0.0)
+                              rho0_solid=RHO0_SOLID, model_class="M1", f_boulder=0.0)
 
     def test_unknown_class_rejected(self):
         with pytest.raises(ValueError, match="sinif"):
             build_rubble_pile(icosphere(2, 100.0), 25.0, RHO_BULK, 1,
-                              model_class="M9")
+                              rho0_solid=RHO0_SOLID, model_class="M9")
 
 
 class TestBoulderFractionRecovery:
@@ -192,7 +194,7 @@ class TestBoulderFractionRecovery:
         """Makul hedeflerde geri-olculen oran hedefi vermeli."""
         pile = build_rubble_pile(
             ellipsoid(120.0, 100.0, 85.0, subdiv=4), spacing=7.0,
-            bulk_density=RHO_BULK, root_seed=3, model_class="M1",
+            bulk_density=RHO_BULK, rho0_solid=RHO0_SOLID, root_seed=3, model_class="M1",
             f_boulder=f_target, q=3.0, r_min=14.0, r_max=35.0)
         olculen = pile.boulder_volume_fraction
         assert not pile.diagnostics["boulder_saturated"], pile.diagnostics
@@ -207,7 +209,7 @@ class TestBoulderFractionRecovery:
         """
         pile = build_rubble_pile(
             ellipsoid(120.0, 100.0, 85.0, subdiv=4), spacing=6.0,
-            bulk_density=RHO_BULK, root_seed=8, model_class="M1",
+            bulk_density=RHO_BULK, rho0_solid=RHO0_SOLID, root_seed=8, model_class="M1",
             f_boulder=0.30, q=3.0, r_min=14.0, r_max=35.0)
         d = pile.diagnostics
         yerlesen_oran = d["boulder_volume_placed"] / d["mesh_volume"]
@@ -223,7 +225,7 @@ class TestBoulderFractionRecovery:
         """
         pile = build_rubble_pile(
             icosphere(3, 100.0), spacing=10.0, bulk_density=RHO_BULK,
-            root_seed=13, model_class="M1", f_boulder=0.75, q=3.0,
+            rho0_solid=RHO0_SOLID, root_seed=13, model_class="M1", f_boulder=0.75, q=3.0,
             r_min=15.0, r_max=30.0)
         d = pile.diagnostics
         assert d["boulder_volume_placed"] < d["boulder_volume_target"]
@@ -231,7 +233,7 @@ class TestBoulderFractionRecovery:
 
     def test_more_boulders_means_higher_fraction(self):
         """Monotonluk: hedef artarsa olculen de artmali."""
-        kw = dict(spacing=8.0, bulk_density=RHO_BULK, root_seed=9,
+        kw = dict(spacing=8.0, bulk_density=RHO_BULK, rho0_solid=RHO0_SOLID, root_seed=9,
                   model_class="M1", q=3.0, r_min=14.0, r_max=32.0)
         lo = build_rubble_pile(icosphere(4, 100.0), f_boulder=0.08, **kw)
         hi = build_rubble_pile(icosphere(4, 100.0), f_boulder=0.28, **kw)
@@ -240,10 +242,10 @@ class TestBoulderFractionRecovery:
     def test_boulder_particles_get_boulder_material(self):
         """Malzeme alani (P3-FR-04): blok parcaciklari DUSUK gozeneklilik,
         YUKSEK kohezyon almali."""
-        pile = build_rubble_pile(icosphere(4, 100.0), 8.0, RHO_BULK, 4,
+        pile = build_rubble_pile(icosphere(4, 100.0), 8.0, RHO_BULK, 4, rho0_solid=RHO0_SOLID,
                                  model_class="M1", f_boulder=0.2,
                                  r_min=14.0, r_max=30.0,
-                                 matrix_alpha0=1.6, boulder_alpha0=1.05,
+                                 boulder_alpha0=1.05,
                                  matrix_Y0=1.0e4, boulder_Y0=1.0e7)
         b, mtx = pile.is_boulder, ~pile.is_boulder
         assert b.any() and mtx.any()
@@ -251,7 +253,7 @@ class TestBoulderFractionRecovery:
         assert np.all(pile.Y0[b] > pile.Y0[mtx].max())
 
     def test_diagnostics_are_consistent(self):
-        pile = build_rubble_pile(icosphere(4, 100.0), 8.0, RHO_BULK, 6,
+        pile = build_rubble_pile(icosphere(4, 100.0), 8.0, RHO_BULK, 6, rho0_solid=RHO0_SOLID,
                                  model_class="M1", f_boulder=0.15,
                                  r_min=14.0, r_max=30.0)
         d = pile.diagnostics

@@ -226,7 +226,12 @@ class TargetConfig(_StrictModel):
     spacing: float = Field(gt=0.0)
     bulk_density: float = Field(gt=0.0)
     model_class: Literal["M0", "M1"] = "M0"
-    matrix_alpha0: float = Field(default=1.6, ge=1.0)
+    # ADR-0030: VARSAYILAN None -> hedef `bulk_density`'yi tutturan deger
+    # cozulur. Sabit bir sayi vermek `bulk_density` ile CELISEBILIR ve eskiden
+    # celisiyordu: rho0=2700 + matrix_alpha0=1.6 yigin yogunlugu 1687.5 demek,
+    # ama `bulk_density: 1800` yaziliydi ve kutle ondan uretiliyordu. Deger
+    # verilirse uretici tutarsizligi HATA olarak bildirir.
+    matrix_alpha0: float | None = Field(default=None, ge=1.0)
     matrix_Y0: float = Field(default=1.0e4, gt=0.0)
     boulder_alpha0: float = Field(default=1.05, ge=1.0)
     boulder_Y0: float = Field(default=1.0e7, gt=0.0)

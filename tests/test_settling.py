@@ -95,7 +95,7 @@ class TestSettlingGPU:
         )
         pile = build_rubble_pile(
             icosphere(3, 60.0), spacing=8.0, bulk_density=1800.0, root_seed=5,
-            model_class="M1", matrix_alpha0=1.6, f_boulder=0.2, q=3.0,
+            rho0_solid=2700.0, model_class="M1", f_boulder=0.2, q=3.0,
             r_min=16.0, r_max=32.0)
         return mat, pile
 
