@@ -236,7 +236,8 @@ def run_mass_ratio_scan(
 
 def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
                                   rho0: float = 2700.0,
-                                  eps: float = 0.01) -> dict:
+                                  eps: float = 0.01,
+                                  rho_base: np.ndarray | None = None) -> dict:
     """DÜZGÜN (sabit) bir basınç alanında `a_SPH` — **sıfır** olmalı.
 
     SPH'in sıfırıncı mertebe tutarlılık sınavı: **sabit bir alanın gradyanı
@@ -275,9 +276,22 @@ def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
         damage=DamageParams(enabled=False),
         density_method="continuity")
     # DUZGUN sikistirma: P her yerde AYNI ve sifirdan farkli.
+    #
+    # `rho_base`: ADR-0030'un degismezi `m_i = rho_i * V_p` KORUNMALIDIR.
+    # Iki bolgeli duzenekte kutleler zaten `rho0 * V_p` ile uretildigi icin
+    # skaler `rho0` TAM dogrudur. Ama GERCEK bir yigina (yigin yogunlugu
+    # 2400, katı yogunlugu 2700) skaler `rho0` uygulamak `m/rho != V_p`
+    # yapardi — K7'nin ta kendisi, bu kez ucuncu kez. O yuzden cagiran taraf
+    # parcacik basina taban yogunlugunu (`m / V_p`) VEREBILIR.
+    if rho_base is None:
+        rho_taban = np.full(n, float(rho0))
+    else:
+        rho_taban = np.ascontiguousarray(rho_base, np.float64)
+        if rho_taban.shape != (n,):
+            raise ValueError(f"rho_base sekli {rho_taban.shape}, ({n},) olmali")
     st = SolidState(x=x.copy(), v=np.zeros_like(x), m=m, u=np.zeros(n), h=h,
                     active=np.ones(n, bool), alpha=np.ones(n),
-                    rho=np.full(n, rho0 * (1.0 + eps)))
+                    rho=rho_taban * (1.0 + eps))
     evaluate_solid(st, mat, RefParams(cfl=0.2))
     # Alan gercekten DUZGUN mu? Degilse bu olcum baska bir seyi olcer.
     p_yayilim = float(np.ptp(st.P))
@@ -308,7 +322,7 @@ def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
     # Olcek: uygulanan DUZGUN basincin kendisinden dogacak ivme mertebesi
     # (P / (rho * h)). Boylece "buyuk mu" sorusu mutlak degil, KIYASLI.
     p_uygulanan = float(np.mean(st.P))
-    a_ref = abs(p_uygulanan) / (rho0 * h)
+    a_ref = abs(p_uygulanan) / (float(np.mean(rho_taban)) * h)
     return {
         "a_max_interface": float(a[arayuz].max()) if arayuz.any() else float("nan"),
         "a_max_deep": float(a[derin].max()) if derin.any() else float("nan"),
@@ -317,6 +331,9 @@ def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
         "P_applied": p_uygulanan,
         "P_spread": p_yayilim,
         "field_is_uniform": bool(p_yayilim < 1.0e-6 * max(abs(p_uygulanan), 1.0)),
+        # Taban yogunlugu parcacik basina degisiyorsa P de degisir; o zaman
+        # "duzgun alan" sinavi ANLAMSIZDIR ve bunu susarak gecmemek gerekir.
+        "rho_base_is_uniform": bool(float(np.ptp(rho_taban)) < 1.0e-9),
         "a_reference_scale": float(a_ref),
         "a_interface_over_reference": (
             float(a[arayuz].max() / a_ref) if arayuz.any() else float("nan")),
