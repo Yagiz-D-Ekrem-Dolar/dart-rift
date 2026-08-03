@@ -30,6 +30,7 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | K12 | `setup/rubble_generator` | **Ayni ad iki buyukluk**: yigin yogunlugu mesh mi dolu hacim mi | fark = dolum orani, **-%1,19 … +%0,44**; `rel=0.05` bandi yutuyordu | 0033 | ✅ |
 | K13 | `validation/scene_checks` | Blok kesri **kütle** olarak ölçülüp **hacim** hedefiyle karşılaştırılıyordu | hacim 0,3034 (+%1,1) ama kütle **0,4335** (+%44,5) → G3 C2 **kalıyordu** | 0034 | ✅ |
 | K14 | `validation/scene_checks` | "Mermi dışarıda mı" **eşdeğer küre yarıçapı vekiliyle** ölçülüyordu | elipsoit kısa eksende **yanlış negatif**: gerçekte 0/207 içeride ama kriter False | 0035 | ✅ |
+| K15 | `validation/scene_checks` | Komşuluk "iç bölge"si **ölçülen büyüklükle** seçiliyordu | %25 bozuk kafes **11,19** ile bant [11,0–12,01]'den **geçiyordu**; gerçek **10,25** | 0036 | ✅ |
 | S1 | `tests/test_settling` | *Turun kendi hatası:* Y0 testinin **tahmini ters** | ölçülen 130 kat **ters yönde** | — | ✅ |
 | S2 | `docs/KUSUR-KAYDI.md` | *Turun ikinci hatası:* kaydın kendisi **sessizce eksik kaldı** | `str.replace` çapası tutmadı → **3 bölüm birden** kayboldu (K10/K11/K12) | — | ✅ |
 
@@ -588,6 +589,50 @@ G3 C6 artık `irregular_all_outside` şartını koşuyor.
 ### Yapısal önlem
 Üç test; sonuncusu **boşluk kontrolü**: vekil gerçekten yanılıyor mu?
 Yanılmıyorsa düzeltmenin gerekçesi kaybolmuş demektir.
+
+---
+
+## K15 — Komşuluk "iç bölge"si ölçülen büyüklüğün kendisiyle seçiliyordu
+
+**Modül:** `src/dartrift/validation/scene_checks.py` · **Şiddet:** orta-yüksek
+**ADR:** 0036
+
+### Nasıl bulundu
+ADR-0035'in sorusu ("ölçüt asıl soruyu mu ölçüyor?") bir adım ileri
+götürüldü: *ölçüt, doğru büyüklüğü yanlı bir örneklem üzerinde mi ölçüyor?*
+
+`coordination_interior_mean = np.mean(cn[cn >= np.median(cn)])` — parçacıklar
+**ölçülen büyüklüğe göre** seçilip sonra o büyüklük ortalanıyor.
+
+### Ölçülen etki (ikosfer r=100, aralık 10)
+| durum | eski ölçüt | gerçek iç ortalama |
+|---|---|---|
+| bozulmamış FCC | 12,00 | 12,00 |
+| **%25 bozuk kafes** | **11,19** | **10,25** |
+| %50 bozuk kafes | 9,73 | 9,05 |
+| %75 bozuk kafes | 9,35 | 8,45 |
+| tamamen rastgele | 15,20 | 13,31 |
+
+Kapının bandı `[11,0 ; 12,01]`. **Parçacıkların dörtte biri 0,35·aralık
+kaydırılmış bir yığın GEÇİYORDU**; gerçek değeri 10,25, bandın dışında.
+
+Ölçüt sistematik iyimser: bozulma arttıkça fark +0,7 … +0,9. Rastgele bulut
+15,20 verdiği için **üst** sınır işini görüyordu; **alt** sınır bozulmuş
+kafesi yakalayamıyordu.
+
+### Düzeltme
+"İç bölge" geometrik: yüzeyden en az `2,5 × aralık` içeride — ölçülen
+büyüklükten **bağımsız**. Eski ölçüt `coordination_selfselected_mean` adıyla
+ayrıca raporlanır; ikisi arasındaki fark kafes düzgünlüğünün göstergesidir
+(bozulmamış FCC'de tam **0,0**). İç bölge boş kalırsa **hata**.
+
+### Yapısal önlem
+`TestCoordinationInteriorIsGeometric` — **boşluk kontrolü** dahil: %25 bozuk
+kafeste iki ölçüt ayrışmalı ve eski ölçüt eşiği geçerken gerçek geçmemeli.
+
+### Ders
+> **Bir alt kümeyi, ölçmek istediğin büyüklüğe göre seçme.** Seçim ölçütü ile
+> ölçülen büyüklük aynı şeyse, sonuç kendini doğrular.
 
 ---
 

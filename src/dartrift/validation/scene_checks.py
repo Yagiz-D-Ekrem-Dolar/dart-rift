@@ -330,6 +330,23 @@ def run_rubble_quality(spacing: float = 7.0, seed: int = 17) -> dict:
                              f_boulder=0.30, q=3.0,
                              r_min=2.0 * spacing, r_max=6.0 * spacing)
     cn = coordination_number(plain.x, spacing)
+    # "IC BOLGE" GEOMETRIK tanimlanir (ADR-0036): yuzeyden en az 2.5 aralik
+    # iceride. Onceki tanim `cn >= median(cn)` idi — yani parcaciklar OLCULEN
+    # BUYUKLUGE gore secilip sonra o buyukluk ortalaniyordu. Bu, kendi cevabini
+    # seciyor ve sistematik IYIMSER: olculdu (ikosfer r=100, s=10),
+    #     durum                 eski olcut   gercek ic ortalama
+    #     bozulmamis FCC          12.00           12.00
+    #     %25 bozuk kafes         11.19           10.25   <-- 11.0 esigini GECIYOR
+    #     %50 bozuk kafes          9.73            9.05
+    #     tamamen rastgele        15.20           13.31
+    # Yani parcaciklarin dortte biri 0.35*aralik kaydirilmis bir yigin,
+    # kapinin [11.0, 12.01] bandindan GECIYORDU.
+    r_dis = float(np.max(np.linalg.norm(plain.x, axis=1)))
+    ic_maske = np.linalg.norm(plain.x, axis=1) < r_dis - 2.5 * spacing
+    if not np.any(ic_maske):          # cozunurluk cok kabaysa sessizce sapma
+        raise ValueError(
+            f"ic bolge bos: r_dis={r_dis:.1f}, aralik={spacing}; "
+            "komsuluk olcumu icin daha ince aralik gerekir")
     # HACIM kesri — hedef `f_boulder` HACIM olarak tanimlidir
     # (`boulder_volume_target = f_boulder * mesh.volume`). Onceki hali KUTLE
     # kesrini olcup HACIM hedefiyle karsilastiriyordu; tekduze kutlede ikisi
@@ -354,7 +371,13 @@ def run_rubble_quality(spacing: float = 7.0, seed: int = 17) -> dict:
         "bulk_density_target": 1800.0,
         "bulk_density_rel_err": float(abs(plain.bulk_density - 1800.0) / 1800.0),
         "coordination_mean": float(np.mean(cn)),
-        "coordination_interior_mean": float(np.mean(cn[cn >= np.median(cn)])),
+        # GEOMETRIK ic bolge — olculen buyuklukten BAGIMSIZ secim.
+        "coordination_interior_mean": float(np.mean(cn[ic_maske])),
+        "coordination_interior_n": int(np.count_nonzero(ic_maske)),
+        # Eski, kendi cevabini secen olcut de raporlanir: ikisi arasindaki
+        # fark, kafesin ne kadar duzgun oldugunun dogrudan gostergesidir
+        # (bozulmamis FCC'de tam 0).
+        "coordination_selfselected_mean": float(np.mean(cn[cn >= np.median(cn)])),
         "boulder_fraction_target": 0.30,
         "boulder_fraction_measured": f_meas,
         "boulder_fraction_rel_err": abs(f_meas - 0.30) / 0.30,

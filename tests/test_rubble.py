@@ -487,3 +487,73 @@ class TestBoulderFractionIsVolumeNotMass:
         assert r["boulder_fraction_rel_err"] < 0.15, r["boulder_fraction_measured"]
         assert r["boulder_mass_fraction"] > r["boulder_fraction_measured"]
         assert r["boulder_mass_over_volume_fraction"] > 1.0
+
+
+class TestCoordinationInteriorIsGeometric:
+    """ADR-0036: 'ic bolge' GEOMETRIK tanimlanir, komsulugun kendisiyle degil.
+
+    Bulunan kusur: `coordination_interior_mean` su sekilde hesaplaniyordu:
+
+        np.mean(cn[cn >= np.median(cn)])
+
+    Yani parcaciklar OLCULEN BUYUKLUGE gore secilip sonra o buyukluk
+    ortalaniyordu — olcut kendi cevabini seciyor. Sonuc sistematik IYIMSER.
+
+    Olculdu (ikosfer r=100, aralik 10):
+        durum                 eski olcut   gercek ic ortalama
+        bozulmamis FCC          12.00           12.00
+        %25 bozuk kafes         11.19           10.25   <-- esigi GECIYOR
+        %50 bozuk kafes          9.73            9.05
+        tamamen rastgele        15.20           13.31
+
+    Yani parcaciklarin dortte biri 0.35*aralik kaydirilmis bir yigin, kapinin
+    [11.0, 12.01] bandindan GECIYORDU; gercek degeri 10.25, yani bandin
+    disinda.
+    """
+
+    @staticmethod
+    def _kafes():
+        from dartrift.setup.rubble_generator import fill_particles
+        mesh, s = icosphere(4, 100.0), 10.0
+        return fill_particles(mesh, spacing=s), s
+
+    @staticmethod
+    def _olcutler(x, s):
+        cn = coordination_number(x, s)
+        kendi = float(np.mean(cn[cn >= np.median(cn)]))
+        r_dis = float(np.max(np.linalg.norm(x, axis=1)))
+        ic = np.linalg.norm(x, axis=1) < r_dis - 2.5 * s
+        return kendi, float(np.mean(cn[ic])), int(ic.sum())
+
+    def test_bozulmamis_FCC_ikisi_de_12(self):
+        x, s = self._kafes()
+        kendi, geom, n = self._olcutler(x, s)
+        assert n > 1000
+        assert geom == pytest.approx(12.0, abs=0.01)
+        assert kendi == pytest.approx(12.0, abs=0.01)
+
+    def test_bozuk_kafeste_eski_olcut_IYIMSER(self):
+        """Kusurun olcusu: bozuk kafeste iki olcut AYRISMALI.
+
+        Ayrismiyorsa bu duzeltmenin gerekcesi kaybolmus demektir.
+        """
+        x, s = self._kafes()
+        rng = np.random.default_rng(0)
+        k = rng.random(len(x)) < 0.25
+        xx = x.copy()
+        xx[k] += rng.normal(scale=0.35 * s, size=(int(k.sum()), 3))
+        kendi, geom, _ = self._olcutler(xx, s)
+        assert kendi > geom + 0.5, (kendi, geom)
+        # ve tam olarak sorun bu: eski olcut esigi geciyor, gercek gecmiyor
+        assert kendi >= 11.0, kendi
+        assert geom < 11.0, geom
+
+    def test_denetim_GEOMETRIK_olcutu_raporluyor(self):
+        from dartrift.validation.scene_checks import run_rubble_quality
+
+        r = run_rubble_quality()
+        assert r["coordination_interior_n"] > 500
+        assert 11.0 <= r["coordination_interior_mean"] <= 12.01
+        # eski olcut de raporlanir; bozulmamis yiginda ikisi AYNI olmali
+        assert r["coordination_selfselected_mean"] == pytest.approx(
+            r["coordination_interior_mean"], abs=0.01)
