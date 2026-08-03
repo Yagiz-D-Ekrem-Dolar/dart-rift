@@ -45,10 +45,13 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | K18 | `validation/scene_checks` | Krater ölçütü **yanlılık + sinyal** toplamına elle yazılmış eşik uyguluyordu | yanlılık **−1,5335 m**; eşik 5,0 ikisini ayırmıyordu, pozitif kontrol yoktu | 0039 | ✅ |
 | K19 | `scripts/run_red_team` | Kırmızı takımın **kendi** ölçütlerinde iki kusur: RT7 kütle kesri, RT11 **kendini doğrulayan** koşul | RT11'in üçüncü anahtarı `"X" if "X" in doc else "Y"` — **asla düşemez** | — | ✅ |
 | K20 | `scripts/run_g1_gate` | G1 C7 bir **özdeşliği** sınıyordu — asla düşemez | iki yüzde `100·n_cfl/n` ve `100·(n−n_cfl)/n`; toplamları **inşaat gereği 100** | 0040 | ✅ |
+| K21 | `eos_tillotson`, `materials` | Genleşmiş-**sıcak** kolda `ρ ≤ 0` → **NaN**; GPU'da **sessiz** | `u = 2·u_cv`, `ρ = −0,27` → `P = nan`; `ρ = −27` → sonlu (**dar bir bant**) | — | ✅ |
 | B1 | `warp_core/timestep` | **Kapsam boşluğu:** `dt` hesabı CPU referansıyla hiç karşılaştırılmamış | çapraz kontroller **sabit** `DT=5e-7` kullanıyordu; `dt` doğrudan `O(dt)` enerji kaymasına giriyor | — | ✅ |
 | S1 | `tests/test_settling` | *Turun kendi hatası:* Y0 testinin **tahmini ters** | ölçülen 130 kat **ters yönde** | — | ✅ |
 | S2 | `docs/KUSUR-KAYDI.md` | *Turun ikinci hatası:* kaydın kendisi **sessizce eksik kaldı** | `str.replace` çapası tutmadı → **3 bölüm birden** kayboldu (K10/K11/K12) | — | ✅ |
 | S3 | `tests/test_solid_cross` | *Turun üçüncü hatası:* `dt`'nin **hızla** değişeceği varsayımı | ölçülen yayılım **%1,9** — boşluk kontrolü haklı olarak düştü; CFL **ses hızına** bağlı | — | ✅ |
+| S4 | FAZ 4 E2 ölçümü | *Turun dördüncü hatası:* ses hızı için **kaba vekil** (`√(P/ρ)`) | 316 m/s dedim, gerçeği **10150**; `dt` **32,1 kat** büyük → koşu patladı (ve K21'i açığa çıkardı) | — | ✅ |
+| S5 | FAZ 4 E2 ölçümü | *Turun beşinci hatası:* nedensel pencere **komşu bölgeden** hesaplandı | pencere 2,44 ms, koştuğum 2,46 ms — son adımlar **fiziksel dalgayı** ölçüyordu | — | ✅ |
 
 ---
 
@@ -872,6 +875,106 @@ büyüklük kendi tanımından türüyordu.
 
 ---
 
+## K21 — Tillotson genleşmiş-sıcak kolda `ρ ≤ 0` → NaN, ve GPU'da **sessiz**
+
+**Nerede:** `src/dartrift/warp_core/eos_tillotson.py` (`_till_hot`),
+`src/dartrift/cpu_reference/materials.py` (`tillotson_pressure`)
+**Nasıl bulundu:** FAZ 4 E2 ölçümünde `RuntimeWarning: overflow encountered
+in exp`. Uyarı **atlanabilirdi** — üstelik GPU'da hiç görünmezdi.
+
+### Kök neden
+
+Genleşmiş-sıcak kolun üssü:
+
+```
+ex = exp(−β·(1/η − 1)),      η = ρ/ρ₀
+```
+
+`η` küçük **negatif** iken `1/η` büyük negatif olur, üs büyük **pozitif**
+olur, `exp` **taşar** → `inf`. Hemen ardından:
+
+```
+p_hot = a·ρ·u + (b·ρ·u/ω + A·μ·ex)·ex2 ,   ex2 = exp(−α·(1/η−1)²) = 0
+```
+
+`inf · 0` → **NaN**. NaN oradan **her komşu toplamına** yayılır.
+
+### Ölçüldü (`u = 2·u_cv`)
+
+| ρ | P | sonlu mu |
+|---|---|---|
+| +0,27 | 4,914000e+06 | ✔ |
+| 0,00 | 0,000000e+00 | ✔ |
+| **−0,27** | **nan** | **✘** |
+| −27,0 | −4,914000e+08 | ✔ |
+
+Dikkat: kusur **aralıksız değil**, yalnızca `ρ`'nin sıfıra yakın negatif
+olduğu **dar bir bantta**. Yani rastgele bir sınamayla kolayca kaçırılır.
+
+### Neden ciddi
+
+1. **GPU'da sessizdir.** `wp.exp` uyarı vermez. Bir üretim koşusu baştan
+   sona NaN üretip *"bitti"* diyebilirdi.
+2. **Yayılır.** Tek bir NaN parçacık, komşuluğu üzerinden her toplamı
+   NaN yapar; birkaç adımda tüm alan.
+3. **Tam da ejekta rejiminde.** `ρ → 0` **ve** `u ≥ u_cv` koşulu, seyrelmiş
+   sıcak ejektanın ta kendisidir — FAZ 4'ün ölçmek istediği şey.
+
+### Neden bir kusurdur, "geçersiz girdi" değil
+
+`ρ ≤ 0` **asla fizik değildir**: süreklilikte `dρ/dt = −ρ·∇·v` üstel azalır,
+sıfırı **ancak `dt` fazla büyükse** geçer. Yani her zaman bir **sayısal
+başarısızlıktır**. Doğru tepki onu *maskelemek* değil, **görünür kılmaktır**.
+
+### Düzeltme — iki parçalı
+
+**(1) EOS toplam yapıldı.** Sonlu girdi → sonlu çıktı. `ρ ≤ 0` için soğuk kol
+(polinom, her zaman sonlu). CPU'da ayrıca sıcak kol **güvenli `η`** ile
+hesaplanıyor ki üs hiç oluşmasın. `ω`'nın tekil noktasında (`ρ = 0`) doğru
+**limit** yazıldı: `u > 0` ise `ω → ∞` (ve `b/ω → 0`).
+
+**(2) Maskelenmiyor.** Hem GPU çözücüsünün hem CPU referansının defteri artık
+`nonpositive_density_count`, `rho_min` ve `state_is_finite` raporluyor.
+**Sayaç sıfırdan büyükse o koşu geçersizdir.**
+
+### Determinizm korundu — ve ilk denemem bunu bozmuştu
+
+İlk düzeltmemde `ω`'yı `u/(u0·(η·η))` diye yazdım. Eski ifade
+`u/((u0·η)·η)` idi. **Farklı yuvarlıyorlar** — 8000 örnekte göreli `~1e-14`
+fark ölçüldü ve geri alındı. Determinizm kilitli bir özelliktir (ADR-0004),
+`1e-14` bile kabul edilemez.
+
+Doğrulandı: geçerli girdide **bit aynı** (8000 örnek; sıkışmış 4000, sıcak
+3049, ara 951 — üç kolun da gezildiği **ayrıca** sınanıyor).
+
+### Yapısal kapatma
+
+`tests/test_eos_totality.py` — 9 test, `-W error::RuntimeWarning` ile geçiyor:
+
+- `ρ ∈ {−1e-9, −0,27, −27, −2700, 0}` × sıcak enerji → **sonlu**
+- beş enerji seviyesinde, yedi yoğunlukta → **sonlu**
+- geçerli girdide **bit aynı** (gerileme)
+- **boşluk kontrolü**: gerileme örneklemi gerçekten üç kolu da geziyor mu
+- defter `ρ ≤ 0`'ı **sayıyor** ve `rho_min`'i yazıyor
+
+
+Genellenebilir kural:
+
+> **Bir kriter geçtiğinde, geçme SEBEBİNİN de ölçülmüş olması gerekir.**
+
+*"Sonuç değişti"*, *"yayılım pozitif"*, *"derinlik makul"* — hepsi doğru
+sebeple **ve** yanlış sebeple sağlanabilir.
+
+Ayrıca **kapsama işe yaramaz**: dokuz kusurun hepsi **kapsanan satırlardaydı**
+(kapsam %96,5–%100).
+
+Bu yüzden eklenen her kriter artık **neyin iş gördüğünü** ayrı ayrı raporluyor:
+`radius_axis_active`, `speed_axis_active`, `reference_is_spherical`,
+`target_radius_estimated`, `volume_consistency_min/max`,
+`matrix_alpha0_was_solved`, ve `_eval()` saflık değişmezi.
+
+---
+
 ## B1 — Kapsam boşluğu: `dt` hesabı hiç çapraz kontrol edilmemiş
 
 **Modül:** `src/dartrift/warp_core/timestep.py`, `WarpSolid3D.compute_dt`
@@ -1021,6 +1124,81 @@ Bu, S1 ile **aynı** hata: bir GPU testinin tahminini ölçmeden yazmak. İkinci
 kez oldu. Kural artık kayıtlı: **boşluk kontrolünün kendisi de bir tahmindir
 ve ölçülmelidir.**
 
+---
+
+## S4 — Turun dördüncü hatası: ses hızı için kaba bir vekil kullandım
+
+**Nerede:** FAZ 4 E2 (dinamik birikim) ölçümümde.
+**Ne yaptım:** `dt`'yi kendim hesapladım: `dt = 0,2·h/c`, `c = √(P/ρ)`.
+
+`√(2,6967e8 / 2700) = 316 m/s`. Gerçek Tillotson ses hızı (kodun kendi
+`compute_timestep_solid`'i): **10150 m/s**. Yani `dt`'m **32,1 kat**
+büyüktü — CFL ihlali.
+
+**Sonuç:** koşu patladı.
+
+```
+adim   t (ms)    v_rms (m/s)     KE_ic (J)   rho sapma
+   1    6.582    4.3054e-02    9.5581e+05   6.805e-04
+   4   26.326    2.7414e+02    3.8750e+13   1.730e-01
+   8   52.652    9.5555e+06    4.7081e+22   3.425e+02
+  12   78.979    9.5555e+06    4.7081e+22   3.425e+02   <-- donmus: NaN
+```
+
+Son iki satırın **aynı** olması NaN'ın işaretiydi. Yoğunluk `ρ₀`'ın 342
+katı sapmıştı; bu sırada **K21 de ortaya çıktı** — yani hatalı ölçümüm
+gerçek bir kusuru açığa çıkardı, ama bu bir savunma değil.
+
+**Ders:** `√(P/ρ)` bir **şok** ses hızı kestirimidir. Tillotson'ın küçük
+sıkışmadaki ses hızını **hacim modülü** `A` belirler:
+`√(A/ρ₀) = √(2,67e10/2700) ≈ 3145 m/s` — o bile 3 kat düşüktü, çünkü asıl
+ifade `c² = ∂P/∂ρ|_u + (P/ρ²)·∂P/∂u|_ρ`.
+
+> **Kural:** kodun kendi hesabı varken **elle vekil yazma.**
+> `compute_timestep_solid` zaten oradaydı.
+
+Bu, S3'ün ikizidir: orada da `dt` hakkında **ölçmeden** varsayım yapmıştım.
+
+---
+
+## S5 — Turun beşinci hatası: nedensel pencereyi yanlış bölgeden hesapladım
+
+**Nerede:** aynı E2 ölçümü, `dt` düzeltildikten sonra.
+
+Ölçümün mantığı şuydu: düzgün basınçlı bir küre, **serbest yüzeyinden**
+içeri bir seyrelme dalgası gönderir. Dalga varana kadar iç bölge **tam
+durgun** kalmalıdır, dolayısıyla o pencerede görülen her hareket **yapaydır**.
+
+**Hata:** hareketi `kenar` maskesinde (yüzeye **24,8 m**) ölçtüm ama
+pencereyi `arayüz` geometrisinden (yüzeye **34,6 m**) hesapladım:
+
+```
+iddia ettigim  : (70 − 35,4)/10150 = 3,41 ms
+gercek         : (70 − 45,2)/10150 = 2,44 ms
+kostugum       : 12 adim x 0,2049 ms = 2,46 ms   <-- DISARIDA
+```
+
+Yani son adımlar **fiziksel** dalgayı ölçüyordu, yapay kuvveti değil. Bu,
+1:1 durumundaki `v ~ t^4,55` gibi tuhaf bir üssü açıklar: sabit bir yapay
+kuvvet `t¹` verir, gelen bir dalga çok daha dik.
+
+**Düzeltme:** pencere artık **ölçülen bölgenin kendi dış kenarından**
+türetiliyor ve kaç adımın güvenli olduğu **koşudan önce yazdırılıyor**:
+
+```python
+r_dis = float(mk["r"][bolge].max())        # bolgenin YUZEYE en yakin noktasi
+t_nedensel = (r_outer - r_dis) / c
+n_guvenli = int(np.floor(t_nedensel / dt))
+n_adim = min(n_guvenli, 16)
+```
+
+> **Kural:** *"bu ölçüm hangi süre boyunca geçerli?"* sorusunun yanıtı
+> **ölçülen bölgeden** türetilmeli, komşu bir bölgeden değil.
+
+Bu, K18'in dersinin bir başka yüzüdür: ölçüm = sinyal + (bu kez) **fiziksel
+bir katkı**. Katkının ne zaman devreye girdiğini bilmiyorsan sinyali
+okuyamazsın.
+
 ## Ortak kök neden — dokuz kusurun tamamı
 
 **Testler parçaların doğruluğunu sınıyordu, bütünün davranışını değil.**
@@ -1030,18 +1208,3 @@ ve ölçülmelidir.**
 - Tarama iki eksenli görünüyordu; **eksenlerin iş görüp görmediği** (K3).
 - Yarıçap kestirimi vardı; **varsayılan yol hiç koşulmamıştı** (K4).
 - C2 kütleyi, C3 yoğunluğu ölçüyordu; **tutarlılığı** kimse ölçmüyordu (K7).
-
-Genellenebilir kural:
-
-> **Bir kriter geçtiğinde, geçme SEBEBİNİN de ölçülmüş olması gerekir.**
-
-*"Sonuç değişti"*, *"yayılım pozitif"*, *"derinlik makul"* — hepsi doğru
-sebeple **ve** yanlış sebeple sağlanabilir.
-
-Ayrıca **kapsama işe yaramaz**: dokuz kusurun hepsi **kapsanan satırlardaydı**
-(kapsam %96,5–%100).
-
-Bu yüzden eklenen her kriter artık **neyin iş gördüğünü** ayrı ayrı raporluyor:
-`radius_axis_active`, `speed_axis_active`, `reference_is_spherical`,
-`target_radius_estimated`, `volume_consistency_min/max`,
-`matrix_alpha0_was_solved`, ve `_eval()` saflık değişmezi.
