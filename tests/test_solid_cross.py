@@ -271,39 +271,60 @@ class TestTimestepCross:
 
     @staticmethod
     def _durumlar():
-        """Farkli kisitlarin baglayici oldugu birkac durum."""
+        """`dt`yi GERCEKTEN oynatani degistir.
+
+        ILK YAZDIGIM HALI YANLIS VARSAYIYORDU: hizi 0.05x..5x aralikta
+        degistirip `dt`nin oynayacagini sanmistim. OLCULDU (TRUBA is 1450286):
+
+            hiz carpani   0.05      1        1        5
+            dt          5.320e-06 5.402e-06 5.402e-06 5.421e-06
+            yayilim     %1,9  -> bosluk kontrolu HAKLI OLARAK dustu
+
+        Sebep fiziksel: CFL kisiti SES HIZINA baglidir (Tillotson bazaltta
+        ~5000 m/s) ve denenen parcacik hizlari (1,5-150 m/s) onun yaninda
+        ihmal edilebilir. Yani hiz `dt`yi bu rejimde SURMUYOR.
+
+        `dt` gercekten `h` ve `cfl` ile oynar: dt_cfl = cfl * h / visc.
+        Sinav onlarla kurulur; boylece esitlik GENIS bir aralikta sinanir.
+        """
         x, v, m, h, mat, num, pp = _full_physics_setup()
         return [
-            ("ice cokme", v),                    # taban (CFL baglayici)
-            ("genlesme", -v),
-            ("yavas", 0.05 * v),                 # ivme kisiti one cikar
-            ("hizli", 5.0 * v),
-        ], (x, m, h, mat, num, pp)
+            ("h/2, cfl=0.2", 0.5 * h, 0.2),
+            ("h,   cfl=0.2", 1.0 * h, 0.2),
+            ("2h,  cfl=0.2", 2.0 * h, 0.2),
+            ("h,   cfl=0.05", 1.0 * h, 0.05),
+        ], (x, v, m, mat, num, pp)
 
-    def _cpu_dt(self, x, v, m, h, mat, num, pp):
+    def _cpu_dt(self, x, v, m, h, mat, num, pp, cfl):
+        import dataclasses as _dc
+
         from dartrift.cpu_reference.solid_ref import compute_timestep_solid
 
+        n2 = _dc.replace(num, cfl=cfl)
         st = SolidState(x=x.copy(), v=v.copy(), m=m, u=np.zeros(len(m)), h=h,
                         active=np.ones(len(m), bool),
                         alpha=np.full(len(m), pp.alpha0))
-        evaluate_solid(st, mat, num)
-        return float(compute_timestep_solid(st, mat, num))
+        evaluate_solid(st, mat, n2)
+        return float(compute_timestep_solid(st, mat, n2))
 
-    def _gpu_dt(self, x, v, m, h, mat, num, pp, device):
+    def _gpu_dt(self, x, v, m, h, mat, num, pp, cfl, device):
+        import dataclasses as _dc
+
         from dartrift.warp_core.solver_solid import WarpSolid3D
 
-        sol = WarpSolid3D(x.copy(), v.copy(), m, np.zeros(len(m)), h, mat, num,
+        n2 = _dc.replace(num, cfl=cfl)
+        sol = WarpSolid3D(x.copy(), v.copy(), m, np.zeros(len(m)), h, mat, n2,
                           alpha0=np.full(len(m), pp.alpha0), device=device,
                           check_every=10**9)
         sol._eval()
         return float(sol.compute_dt())
 
     def _kos(self, device):
-        durumlar, (x, m, h, mat, num, pp) = self._durumlar()
+        durumlar, (x, v, m, mat, num, pp) = self._durumlar()
         satir = []
-        for ad, v in durumlar:
-            c = self._cpu_dt(x, v, m, h, mat, num, pp)
-            g = self._gpu_dt(x, v, m, h, mat, num, pp, device)
+        for ad, h, cfl in durumlar:
+            c = self._cpu_dt(x, v, m, h, mat, num, pp, cfl)
+            g = self._gpu_dt(x, v, m, h, mat, num, pp, cfl, device)
             satir.append((ad, c, g))
         return satir
 
