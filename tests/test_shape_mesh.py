@@ -265,3 +265,56 @@ class TestSignedDistance:
         d = signed_distance(m, pts)
         beklenen = np.array([-1.0, -0.5, 0.5, 2.0])
         assert np.allclose(d, beklenen, atol=0.02), (d, beklenen)
+
+
+class TestNonConvexMembership:
+    """ICBUKEY cisimde `inside_points` — kapsam bosluguydu.
+
+    Butun mesh testleri DISBUKEY sekiller kullaniyordu (ikosfer, elipsoit).
+    Isin-atma tabanli uyelik testi icbukeylikte parite sayimina baglidir;
+    "en uzak kesisim" mantigi kullanan bir uygulama disbukeyde dogru, icbukeyde
+    YANLIS olurdu ve hicbir test bunu gormezdi. Gercek Dimorphos sekil modeli
+    duzgun bir elipsoit degil.
+
+    Sinav YILDIZSI bir cisimle kurulur (yon basina tek yaricap): boylece
+    uyelik ANALITIK olarak bilinir ve karsilastirma kesindir. Olculdu:
+    32007 nokta, **0** yanlis siniflandirma.
+    """
+
+    @staticmethod
+    def _cukurlu(aci_deg=40.0, olcek=0.55, R=100.0):
+        """Ikosferin +z kutbunda cukur; kapali ve manifold kalir."""
+        base = icosphere(4, R)
+        nrm = base.v / np.linalg.norm(base.v, axis=1)[:, None]
+        ic = nrm[:, 2] > np.cos(np.radians(aci_deg))
+        v = nrm * (R * np.where(ic, olcek, 1.0))[:, None]
+        return TriMesh(v=v, f=base.f), aci_deg, olcek * R, R
+
+    def test_icbukey_uyelik_dogru(self):
+        mesh, aci, r_ic, r_dis = self._cukurlu()
+        rng = np.random.default_rng(0)
+        n = 40000
+        u = rng.normal(size=(n, 3))
+        u /= np.linalg.norm(u, axis=1)[:, None]
+        r = rng.uniform(5.0, 1.3 * r_dis, n)
+        x = u * r[:, None]
+        R = np.where(u[:, 2] > np.cos(np.radians(aci)), r_ic, r_dis)
+        # sinira ve koni kenarina yakin noktalar ayriklastirma bolgesidir
+        uzak = (np.abs(r - R) > 8.0) & (
+            np.abs(u[:, 2] - np.cos(np.radians(aci))) > 0.08)
+        assert uzak.sum() > 20000
+        yanlis = int(np.count_nonzero(inside_points(mesh, x)[uzak] != (r < R)[uzak]))
+        assert yanlis == 0, f"{yanlis}/{int(uzak.sum())} yanlis siniflandirma"
+
+    def test_cukur_hacmi_dusuruyor(self):
+        """Bosluk kontrolu: cisim GERCEKTEN icbukey mi?
+
+        Cukur hacmi dusurmuyorsa deformasyon uygulanmamis demektir ve
+        yukaridaki test disbukey bir cismi sinardi.
+        """
+        mesh, *_ = self._cukurlu()
+        kure = icosphere(4, 100.0)
+        assert mesh.volume < 0.95 * kure.volume, (mesh.volume, kure.volume)
+        # ve merkez-yon yaricapi yone gore DEGISIYOR (yildizsi ama kure degil)
+        d = np.linalg.norm(mesh.v, axis=1)
+        assert d.max() / d.min() > 1.5
