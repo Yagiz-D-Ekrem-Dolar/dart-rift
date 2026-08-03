@@ -394,9 +394,11 @@ class WarpSolid3D:
         # ustel azalir, sifiri ancak dt fazla buyukse gecer). EOS artik orada
         # NaN yerine sonlu bir deger dondurur — ama bu, sorunu MASKELEMEK
         # olmamali. Sayac sifirdan buyukse o kosu GECERSIZDIR.
+        akt = self.active.numpy().astype(bool)
         row["nonpositive_density_count"] = int(
-            np.count_nonzero(s["rho"][s["active"].astype(bool)] <= 0.0))
-        row["rho_min"] = float(np.min(s["rho"][s["active"].astype(bool)]))
+            np.count_nonzero(s["rho"][akt] <= 0.0))
+        row["rho_min"] = (float(np.min(s["rho"][akt])) if akt.any()
+                          else float("nan"))
         # Sessiz NaN'a karsi ikinci koruma: defterin kendisi sonlu mu?
         row["state_is_finite"] = bool(
             np.all(np.isfinite(s["rho"])) and np.all(np.isfinite(s["v"]))
