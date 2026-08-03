@@ -4,11 +4,11 @@ Bu belge projenin **bilinen eksiklerini** tek yerde tutar. Amaç: bir eksiğin
 "unutuldu" mu yoksa "bilinçli bırakıldı" mı olduğu hiçbir zaman belirsiz
 kalmasın.
 
-**Son güncelleme:** 2026-08-02
+**Son güncelleme:** 2026-08-03
 
 ---
 
-## 0. Hata ayıklama turunda bulunan dört sessiz kusur — KAPANDI (2026-08-02)
+## 0. Hata ayıklama turu — YİRMİ kusur, üç turda (2026-08-02/03)
 
 FAZ 3 "0 hata" diye sunulmuştu (627 test, G3 7/7, 14 kırmızı-takım maddesi
 temiz). Bu sunum **yanlıştı** ve not düşülerek düzeltiliyor, silinmiyor.
@@ -21,6 +21,16 @@ mertebede bozuyordu. Tam kayıt: **ADR-0029**.
 | 2 | Krater çıkarıcı referansı tek sayı alıyor, cismi **küre** sanıyordu (Dimorphos 88×87×65 m) | **kratersiz** elipsoitte 9,04 m hayali krater; bilinen 8 m'lik çukur 17,43 m | ✅ çarpma öncesi şekil referans; 0,000 m / 8,66-9,04 m |
 | 3 | β duyarlılık taramasının **hız ekseni tamamen ölüydü** | `beta_spread_speed_axis = 0,0` — kriter yine geçiyordu | ✅ eksen başına rapor + ayrı senaryo (yayılım 0,3209, monoton) |
 | 4 | Varsayılan hedef yarıçapı `median(dist)` = **%21 küçük** | v_kaçış %12,3 büyük, r_kontrol 1,59 R (2,00 R sanılıyordu) | ✅ `estimate_target_radius` + `target_radius_estimated` tanısı |
+
+> **NOT — bu bölüm ilk turu anlatır (K1–K4).** Tur devam etti ve toplam
+> **20 kusur + 2 süreç hatası** bulundu. Tam döküm, her biri ölçülen
+> sayılarıyla: **`docs/KUSUR-KAYDI.md`**. Sonraki turların ADR'leri:
+> 0030–0040.
+>
+> İkinci tur (K7–K12) tek bir imzadan geldi: *aynı büyüklük iki yerde yazılı,
+> biri türetilmiyor* — üçü de üretim değerlerinde **tesadüfen** tutuyordu.
+> Üçüncü tur (K13–K20) **denetim kodunun kendisini** hedef aldı: ölçüt yanlış
+> büyüklüğü / vekili / yanlı örneklemi ölçüyor ya da **hiç düşemiyordu**.
 
 **Ortak kök neden:** testler *parçaların doğruluğunu* sınıyordu, *bütünün
 davranışını* değil. Hasarın formülleri doğruydu, **döngüsü** sınanmamıştı;
@@ -180,6 +190,35 @@ enerji korunuyor ama temas basıncı gerçek DART'ınki değil.
 
 **Bu soru FAZ 4'ün yerel incelme tasarımına bağlıdır** ve orada ölçülecektir.
 1,557 sayısı bir DART β'sı olarak sunulmaz.
+
+### E. Hasar modelinde Weibull parametreleri GLOBAL · **AÇIK — modelleme sınırı**
+
+`DamageParams` (`k_weibull`, `m_weibull`, `crack_speed_frac`) **tek bir
+malzeme** için tanımlıdır ve bütün parçacıklara aynı uygulanır. Oysa yığın
+heterojendir: bloklar sağlam kaya (α₀ = 1,05), matris gözenekli regolit
+(α₀ ≈ 1,5–1,8). İkisinin kusur yoğunluğu fiziksel olarak **aynı olamaz**.
+
+Kısmen giderildi (ADR-0030 eki / K9): kusur **sayısı** artık parçacığın
+**katı hacmiyle orantılı** dağıtılıyor, yani blok ve matris farklı sayıda
+kusur alıyor (ölçülen katı hacim yayılımı %56). Ama `k` ve `m`'nin kendisi
+hâlâ ortak.
+
+**Etkisi ölçülmedi.** Ölçmek için blok/matris için ayrı Weibull parametreleri
+gerekir ve o parametrelerin literatür değerleri bu proje için seçilmedi.
+FAZ 4'te hasarın β'ya duyarlılığı taranırken karara bağlanacak.
+
+### F. Krater çıkarıcıda `x_reference` isteğe bağlı · **AÇIK — tuzak**
+
+ADR-0029/K2 düzeltmesi `x_reference` (çarpma öncesi şekil) verilirse doğru
+çalışır; verilmezse cisim **küre** kabul edilir. `reference_is_spherical`
+tanısı bunu bildirir ve düzensiz cisim senaryosu G3 C5'te şart koşulur — ama
+üretim yolunda birinin `x_reference` vermeyi unutması hâlâ mümkündür.
+
+Ölçülen bedel: kratersiz Dimorphos elipsoidinde **9,04 m hayali krater**.
+
+FAZ 4'te krater çıkarımı gerçek koşuya bağlandığında `x_reference` **zorunlu**
+hâle getirilmelidir; şu an zorunlu yapmak, küre senaryolarını gereksiz yere
+kırardı.
 
 ---
 
