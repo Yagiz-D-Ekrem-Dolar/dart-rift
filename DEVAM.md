@@ -31,7 +31,14 @@ zaten öğrenildi.
 > 6. `2.5 < beta_dart < 4.5` testi hiçbir şey ayırt etmiyordu.
 >
 > Hepsi düzeltildi, ölçümleriyle birlikte: **ADR-0029**, `docs/EKSIKLER.md` §0,
-> **KAYIT-016**.
+> **KAYIT-016**. Düzeltmelerden sonra dört kapı da yeniden geçti
+> (iş 1448947, `c1ba7e0`).
+>
+> **"Kusursuz" bir daha iddia edilmeyecek.** Bu tur, aynı tabloya (627 test,
+> G3 7/7, kırmızı takım 14/14, kapsam %97) bakıp "0 hata" demenin yanlış
+> olduğunu gösterdi. Altı kusurun hepsi **kapsanan satırlardaydı** — ne
+> testler ne kapsama onları bulabilirdi. Kapı geçmek, kusursuzluğun değil,
+> **o kriterlerin** kanıtıdır.
 >
 > **Ders:** testler *parçaların doğruluğunu* sınıyordu, *bütünün davranışını*
 > değil. Bir kriter geçtiğinde **geçme sebebinin de ölçülmüş olması gerekir**.
@@ -55,13 +62,17 @@ doğruluğu, diğer her şeyden önce gelir.
 
 | Kapı | Sonuç | Kanıt |
 |---|---|---|
-| G0 | **GEÇTİ** | iş 1446129 (`0b88ae9`) |
-| G1 | **GEÇTİ** | iş 1446129 (`0b88ae9`) |
-| G2 | **GEÇTİ** | iş 1446129 (`0b88ae9`) |
-| **G3** | **GEÇTİ** 7/7 | iş 1446129 (`0b88ae9`) |
+| G0 | **GEÇTİ** | iş 1448947 (`c1ba7e0`) |
+| G1 | **GEÇTİ** | iş 1448947 (`c1ba7e0`) |
+| G2 | **GEÇTİ** | iş 1448947 (`c1ba7e0`) |
+| **G3** | **GEÇTİ** 7/7 | iş 1448947 (`c1ba7e0`) |
 
-Dördü de aynı commit üzerinde, TRUBA kolyoz3 / H100'de, temiz git ağacıyla.
-**620 test geçiyor / 0 kaldı**, kapsam **%97,0**, kırmızı takım **14/14 temiz**.
+Dördü de aynı commit üzerinde, TRUBA kolyoz12 / H100'de, hata ayıklama
+turunun **altı düzeltmesi uygulandıktan sonra**. **639 test geçiyor / 0
+kaldı**, kapsam **%96,5**, kırmızı takım **14/14 temiz**, 28 kriterin tamamı.
+İş COMPLETED, çıkış kodu 0:0, süre 01:30:55.
+
+Kanıt: [G0–G3 hata ayıklama sonrası](docs/evidence/G0-G3_HATA-AYIKLAMA-SONRASI_c1ba7e0.md)
 
 Sahne karması iki bağımsız ortamda birebir aynı: `6d6f1d10eaff64e2…`
 (Linux/numpy 1.26.4 ve Windows/numpy 2.5.1). Bu eşitlik önce tutmuyordu —
