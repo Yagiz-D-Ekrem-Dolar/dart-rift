@@ -978,41 +978,6 @@ Bu yüzden eklenen her kriter artık **neyin iş gördüğünü** ayrı ayrı ra
 
 ---
 
-## B2 — K21 sınıfı taraması: GPU çekirdeklerinde başka sessiz NaN var mı?
-
-**Ne zaman:** K21 kapatıldıktan hemen sonra (4 Ağustos).
-**Neden:** K21'in tehlikesi *NaN üretmesi* değil, **GPU'da sessiz** olmasıydı.
-Aynı kalıp başka çekirdeklerde de olabilir.
-
-**Nasıl:** her `wp.exp`, `wp.log`, `wp.sqrt`, `wp.pow`, `wp.acos` ve dizi
-bölmesi tarandı; her biri için *"hangi fiziksel olarak erişilebilir girdi
-bunu bozar?"* soruldu.
-
-| yer | riskli ifade | sonuç |
-|---|---|---|
-| `damage_gradykipp:74` | `wp.acos(r)` | **kelepçeli** — `r ≤ −1` / `r ≥ 1` ayrı kollarda |
-| `damage_gradykipp:58` | `1/p` (izotropik gerilmede `p = 0`) | **kelepçeli** — `p1 ≤ 0` ve `p ≤ 0` erken dönüşleri |
-| `damage_gradykipp:93` | `wp.pow(oran, m)` | güvenli — `oran > 1` garantili, sonuç `wp.min` ile sınırlı |
-| `eos_test:26` | `sqrt(γ·p/ρ)` | **kelepçeli** — `if p > 0` |
-| `gravity_tree:35,78` | `1/sqrt(r2)` | **yumuşatılmış** — `r2 = d·d + eps2` |
-| `timestep:42,64` | `sqrt(h/|a|)` | **kelepçeli** — `_TINY_C` tabanı |
-| `porosity_palpha:72` | `wp.pow(t, n)` | güvenli — `t ∈ (0,1)`, `Pe < P < Ps` kollarıyla |
-| `forces:61,172` | `div/ρ` | kelepçesiz; `ρ = 0`'da `inf` |
-| `forces:91,133` `solid_stress:160` | `P/ρ²` | kelepçesiz; `ρ < 0`'da **sonlu**, `ρ = 0`'da `inf` |
-
-**Sonuç: yeni kusur yok.** Son iki satır kelepçesizdir ama açığı `ρ ≤ 0`
-durumudur ve o durum K21'in düzeltmesiyle birlikte **deftere işlendi**
-(`nonpositive_density_count`, `rho_min`, `state_is_finite`). Yani artık
-sessiz değil.
-
-**Bu turda kapatılan boşluk:** `state_is_finite`'ın **düşme yolu** hiç
-sınanmıyordu — bayrak sabit `True` olsa test yine geçerdi. `rho`, `v` ve `u`
-alanlarına ayrı ayrı `NaN`/`inf` konup bayrağın düştüğü doğrulandı.
-
-> Bulgu çıkmayan bir tarama da bilgidir: riskin **sınırı** ölçülmüş olur.
-
----
-
 ## B1 — Kapsam boşluğu: `dt` hesabı hiç çapraz kontrol edilmemiş
 
 **Modül:** `src/dartrift/warp_core/timestep.py`, `WarpSolid3D.compute_dt`
@@ -1049,6 +1014,41 @@ karşılaştırılır (`rel=1e-12`), hem `cpu` hem `cuda:0` cihazında.
 ### Not
 Bu bir **kusur kaydı değil**, kapatılan bir kapsam boşluğudur — kodun doğru
 olup olmadığı TRUBA koşusunda görülecek.
+
+---
+
+## B2 — K21 sınıfı taraması: GPU çekirdeklerinde başka sessiz NaN var mı?
+
+**Ne zaman:** K21 kapatıldıktan hemen sonra (4 Ağustos).
+**Neden:** K21'in tehlikesi *NaN üretmesi* değil, **GPU'da sessiz** olmasıydı.
+Aynı kalıp başka çekirdeklerde de olabilir.
+
+**Nasıl:** her `wp.exp`, `wp.log`, `wp.sqrt`, `wp.pow`, `wp.acos` ve dizi
+bölmesi tarandı; her biri için *"hangi fiziksel olarak erişilebilir girdi
+bunu bozar?"* soruldu.
+
+| yer | riskli ifade | sonuç |
+|---|---|---|
+| `damage_gradykipp:74` | `wp.acos(r)` | **kelepçeli** — `r ≤ −1` / `r ≥ 1` ayrı kollarda |
+| `damage_gradykipp:58` | `1/p` (izotropik gerilmede `p = 0`) | **kelepçeli** — `p1 ≤ 0` ve `p ≤ 0` erken dönüşleri |
+| `damage_gradykipp:93` | `wp.pow(oran, m)` | güvenli — `oran > 1` garantili, sonuç `wp.min` ile sınırlı |
+| `eos_test:26` | `sqrt(γ·p/ρ)` | **kelepçeli** — `if p > 0` |
+| `gravity_tree:35,78` | `1/sqrt(r2)` | **yumuşatılmış** — `r2 = d·d + eps2` |
+| `timestep:42,64` | `sqrt(h/|a|)` | **kelepçeli** — `_TINY_C` tabanı |
+| `porosity_palpha:72` | `wp.pow(t, n)` | güvenli — `t ∈ (0,1)`, `Pe < P < Ps` kollarıyla |
+| `forces:61,172` | `div/ρ` | kelepçesiz; `ρ = 0`'da `inf` |
+| `forces:91,133` `solid_stress:160` | `P/ρ²` | kelepçesiz; `ρ < 0`'da **sonlu**, `ρ = 0`'da `inf` |
+
+**Sonuç: yeni kusur yok.** Son iki satır kelepçesizdir ama açığı `ρ ≤ 0`
+durumudur ve o durum K21'in düzeltmesiyle birlikte **deftere işlendi**
+(`nonpositive_density_count`, `rho_min`, `state_is_finite`). Yani artık
+sessiz değil.
+
+**Bu turda kapatılan boşluk:** `state_is_finite`'ın **düşme yolu** hiç
+sınanmıyordu — bayrak sabit `True` olsa test yine geçerdi. `rho`, `v` ve `u`
+alanlarına ayrı ayrı `NaN`/`inf` konup bayrağın düştüğü doğrulandı.
+
+> Bulgu çıkmayan bir tarama da bilgidir: riskin **sınırı** ölçülmüş olur.
 
 ---
 
