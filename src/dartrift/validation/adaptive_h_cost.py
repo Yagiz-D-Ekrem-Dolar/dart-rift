@@ -102,4 +102,35 @@ def measure_neighbour_waste(lam: float = 2.0, r_outer: float = 70.0,
         "expected_fine": float((h_max / (h_over_spacing * z["spacing_inner"])) ** 3),
         # BOSLUK KONTROLU: lam=1'de israf TAM 1.0 olmali.
         "is_identity_case": bool(abs(lam - 1.0) < 1e-12),
+        # ------------------------------------------------------------------
+        # ASIL SORU: parcacik TASARRUFU, arama ISRAFINI karsiliyor mu?
+        #
+        # A' her yeri inceltmemek icin secilir. Kazanci PARCACIK SAYISIDIR;
+        # bedeli tek izgarada ARAMA ISRAFIDIR. Net oran:
+        #
+        #   is(A')      = N(A') * ortalama_israf
+        #   is(tumu_ince) = N(tumu_ince) * 1.0
+        #
+        # Oran 1'e yakinsa A' TEK IZGARAYLA hicbir sey kazandirmiyor demektir
+        # ve seviye basina ayri izgara ZORUNLU hale gelir.
+        # ------------------------------------------------------------------
+        **_net_kazanc(z, lam, r_outer, spacing, float(np.mean(oran))),
+    }
+
+
+def _net_kazanc(z: dict, lam: float, r_outer: float, spacing: float,
+                israf: float) -> dict:
+    """A′'nın parçacık tasarrufu ile arama israfını **birlikte** değerlendir."""
+    from ..setup.rubble_generator import FCC_VOLUME_FACTOR
+
+    v_ince = (spacing / lam) ** 3 * FCC_VOLUME_FACTOR
+    n_tumu_ince = (4.0 / 3.0) * np.pi * r_outer ** 3 / v_ince
+    n_a = float(len(z["m"]))
+    tasarruf = float(n_tumu_ince / n_a)
+    return {
+        "n_all_fine_equivalent": float(n_tumu_ince),
+        "particle_saving": tasarruf,
+        # <1 ise A' TEK IZGARAYLA daha ucuz; >1 ise DAHA PAHALI.
+        "net_cost_vs_all_fine": float(israf / tasarruf),
+        "single_grid_worthwhile": bool(israf / tasarruf < 0.5),
     }

@@ -36,6 +36,7 @@ koşulardan gelir; iş numaraları yazılıdır.
 | **[028](KAYIT-028_2026-08-04_D1-kaynak-terimi-model-form.md)** | 04.08 | **D-1: kaynak terimi** — hata biriktirme yarıçapına **duyarsız** (2,4 kat → 1,2 puan); ~%4 taban `h`-sınırlı çıktı |
 | **[029](KAYIT-029_2026-08-04_D1b-duzeltme-kaynak-terimi-duyarli.md)** | 04.08 | **DÜZELTME** — KAYIT-028'in "duyarsız" yargısı **dar aralığın artefaktı**; DART bandında model-form **%5–7** |
 | **[030](KAYIT-030_2026-08-04_D2-tek-parametreli-kalibrasyon-yetmiyor.md)** | 04.08 | **D-2: kalibrasyon yetmiyor** — şok yarıçapı eşlenirken `KE/E` **%14,5–18,0** ayrışıyor; **A′ öne geçti** |
+| **[031](KAYIT-031_2026-08-04_A-prime-tek-izgara-ise-yaramiyor.md)** | 04.08 | **A′-1: tek ızgara yetmiyor** — israf küpsel; 16:1'de A′ her yeri inceltmekten **pahalı** |
 
 > 017/018 numaraları kronolojiyle ters: 018 (2. tur) 017'den (3. tur) **önce**
 > yaşandı ama sonra yazıldı. Numaralar yazım sırasını, tablo yaşanma sırasını

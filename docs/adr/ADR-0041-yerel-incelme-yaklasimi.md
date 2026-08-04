@@ -1,9 +1,9 @@
-# ADR-0041 — Yerel incelme yaklaşımı: **A′ öne geçti** (D'nin kalibrasyonu yetmedi)
+# ADR-0041 — Yerel incelme yaklaşımı: **her seçeneğin ölçülmüş bir bedeli var**
 
 - **Durum:** **ÖNERİLDİ — kilitlenmedi.** Kilitleme kararı proje sahibinindir.
 - **Tarih:** 2026-08-04
 - **Bağlam:** ADR-0026 (mermi çözünürlüğü tekdüze ağda imkânsız), FAZ 4.1/4.2
-- **Kanıt:** KAYIT-019 … KAYIT-030 (on iki kayıt, on üç TRUBA koşusu)
+- **Kanıt:** KAYIT-019 … KAYIT-031 (on üç kayıt, on üç TRUBA koşusu + iki CPU ölçümü)
 - **İlgili:** ADR-0011, ADR-0013, ADR-0022, ADR-0028, ADR-0030, ADR-0040
 
 ---
@@ -197,6 +197,33 @@ farklı kalıyor. **Bir tek sayı iki bağımsız büyüklüğü ayarlayamaz.**
 > **kelepçeleyip** uydurma oranlar üretmişti. Düzeltildi; aralık dışında
 > oran `NaN`, ve eşik `≥ 3` nokta oldu.
 
+### 3.9 A′'nın mimari bedeli: **çok seviyeli komşu arama zorunlu** (KAYIT-031)
+
+Kalan tek ölçülmemiş kefe dolduruldu — ve **terazi devrildi**.
+
+`hash_grid.build(x, support)` **tek bir** destek yarıçapı alır
+(`hash_grid.py:42,47`; `density.py:26`; `forces.py:54`). Parçacık başına
+`h` ile ızgara **en büyük** desteğe göre kurulmak zorundadır; ince
+parçacıklar gereğinden çok aday tarar.
+
+**Ölçüldü** (boşluk kontrolü: `λ=1` → israf **tam 1,000**):
+
+| λ | kütle oranı | tasarruf | israf | **NET** |
+|---|---|---|---|---|
+| 1,26 | 2:1 | 1,90× | 1,32× | 0,694 |
+| 1,59 | 4:1 | 3,54× | 2,30× | 0,650 |
+| 2,00 | 8:1 | 5,99× | 5,13× | 0,857 |
+| **2,52** | **16:1** | 9,45× | **10,06×** | **1,065** |
+
+**Tasarruf doğrusal, israf küpsel.** 8:1'de kazanç yalnızca %14;
+**16:1'de A′ her yeri inceltmekten %6,5 daha pahalı.** ADR-0026 ise DART
+için **153×** istiyor.
+
+> **Tek ızgarayla A′, DART'ın ihtiyaç duyduğu oranlarda kazandırmıyor;
+> kaybettiriyor.** A′'nın bedeli, parçacık başına `h` (68 site) ve `Ω`'nın
+> yanında **çok seviyeli komşu aramayı** da içerir — bu bir iyileştirme
+> değil, **ön koşuldur**.
+
 ---
 
 ## 4. Karar tablosu
@@ -204,7 +231,7 @@ farklı kalıyor. **Bir tek sayı iki bağımsız büyüklüğü ayarlayamaz.**
 | # | mermiyi çözer | yapay kuvvet | şok geçişi | **momentum** | model-form | mimari bedel |
 |---|---|---|---|---|---|---|
 | ~~A~~ | **hayır** | 0,168 | zararsız ✔ | 1e-16 ✔ | — | yok |
-| **A′** | evet | **0,55–1,10** | (A'da zararsız) | 1e-16 ✔ | yok | çekirdek + hash-grid + CFL + Ω |
+| **A′** | evet | **0,55–1,10** | (A'da zararsız) | 1e-16 ✔ | yok | çekirdek + CFL + Ω + **çok seviyeli ızgara** (§3.9) |
 | ~~B~~ | A′ ile | = A′ | = A′ | = A′ | = A′ | = A′ |
 | **C** | evet | yok | ölçülmedi | **7,5e-03 ✘ sistematik** | ara değerleme `O(h²)` | iki çözücü + örtüşme + MLS + korunum düzeltmesi |
 | **D** | **atlar** | yok | — | ✔ (tek çözücü) | **%5–7**, **kalibre edilemiyor** (§3.7, §3.8) | ılımlı |
@@ -251,8 +278,18 @@ farklı kalıyor. **Bir tek sayı iki bağımsız büyüklüğü ayarlayamaz.**
 > **yalnızca mimaridir**, ve arayüz gürültüsü şok geçişinde **ölçülemez**
 > (§3.5: taşma %0,000).
 >
-> **Kalan tek ölçülmemiş kefe: A′'nın mimari iş yükü.** Bu ADR onsuz
-> kilitlenmemelidir.
+> **KAYIT-031 sonrası: her seçeneğin ölçülmüş bir bedeli var.**
+>
+> | # | ölçülmüş bedel |
+> |---|---|
+> | **A′** | arayüz 3,2–6,5× gürültü + **çok seviyeli ızgara zorunlu** (tek ızgarada 16:1'de net **kayıp**) |
+> | **C** | momentum **7,5e-03 sistematik** + MLS + korunum düzeltmesi |
+> | **D** | model-form **%5–7**, tek parametreyle **kalibre edilemiyor** (`KE/E` %14,5–18,0) |
+>
+> **Hiçbir seçenek ucuz değil.** Karar artık *"hangisi doğru"* değil,
+> *"hangi hatayı kabul ediyoruz ve neyi ödemeye razıyız"* sorusudur.
+> Bu **proje sahibinin** kararıdır; ADR bu yüzden **ÖNERİLDİ** durumunda
+> kalır.
 
 ### Bu öneriyi **kilitlemeden önce** kapatılması gereken üç boşluk
 
