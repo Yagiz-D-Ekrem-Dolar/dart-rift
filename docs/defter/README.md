@@ -33,6 +33,7 @@ koşulardan gelir; iş numaraları yazılıdır.
 | **[025](KAYIT-025_2026-08-04_C-eslemenin-bedeli.md)** | 04.08 | **C'nin bedeli ara değerlemede** — sabit/doğrusal makine sıfırı, karesel `O(h²)`; **korunum ölçülmedi** |
 | **[026](KAYIT-026_2026-08-04_E3-sok-arayuzden-gecerken.md)** | 04.08 | **E3: şok arayüzü bedelsiz geçiyor** — 8:1 arayüz, ince koşuyla %0,125 fark; `interface_harmless` |
 | **[027](KAYIT-027_2026-08-04_C2-esleme-momentumu-kaybediyor.md)** | 04.08 | **C-2: eşleme momentumu kaybediyor** — `7,5e-03`, **tamamen sistematik** (birikir); A/A′ `1e-16` |
+| **[028](KAYIT-028_2026-08-04_D1-kaynak-terimi-model-form.md)** | 04.08 | **D-1: kaynak terimi** — hata biriktirme yarıçapına **duyarsız** (2,4 kat → 1,2 puan); ~%4 taban `h`-sınırlı çıktı |
 
 > 017/018 numaraları kronolojiyle ters: 018 (2. tur) 017'den (3. tur) **önce**
 > yaşandı ama sonra yazıldı. Numaralar yazım sırasını, tablo yaşanma sırasını

@@ -94,23 +94,49 @@ def run_deposit_radius_scan(
     oranlar = np.array([s["deposit_over_shock"] for s in satirlar])
     ayirt = bool(hatalar.max() - hatalar.min() > 0.01)
 
-    # Olcekleme yasasi: hata ~ (r_enj/r_sok)^p. Sifir-olmayan noktalarla fit.
-    gecerli = hatalar > 1.0e-6
-    p = (float(np.polyfit(np.log(oranlar[gecerli]), np.log(hatalar[gecerli]), 1)[0])
-         if int(gecerli.sum()) >= 3 else float("nan"))
+    # AYRIKLASTIRMA KIRLENMESI. Enjeksiyon bolgesinde parcacik sayisi azsa
+    # hata model-form degil ORNEKLEME hatasidir. Ilk esigim (>= 20) COK
+    # GEVSEKTI: olculdu (n_side=64) —
+    #   n_enj= 32 -> hata %7,11
+    #   n_enj= 56 -> hata %9,61      <-- az orneklenen rejim
+    #   n_enj=136 -> hata %4,03
+    #   n_enj=208 -> hata %4,44
+    #   n_enj=552 -> hata %4,46
+    #   n_enj=1904 -> hata %3,26     <-- iyi orneklenen rejim, ~%4'te DUZ
+    # Tum noktalarla uydurulan us +0,647; yalniz iyi orneklenenlerle +0,264.
+    # Ilki KIRLENMISTIR ve yasa diye raporlanmamalidir.
+    n_dizi = np.array([s["n_injected"] for s in satirlar])
+    n_min = int(n_dizi.min())
+    iyi = n_dizi >= 100
 
-    # Enjeksiyon bolgesindeki parcacik sayisi da raporlanir: cok azsa hata
-    # model-form degil AYRIKLASTIRMA hatasi olur ve yasa kirilir.
-    n_min = min(s["n_injected"] for s in satirlar)
+    def _us(mask) -> float:
+        m = mask & (hatalar > 1.0e-6)
+        if int(m.sum()) < 3:
+            return float("nan")
+        return float(np.polyfit(np.log(oranlar[m]), np.log(hatalar[m]), 1)[0])
+
+    p = _us(iyi)                       # YALNIZCA iyi orneklenen rejim
+    p_ham = _us(np.ones_like(iyi))     # kirlenmis — kiyas icin
 
     return {
         "rows": satirlar, "n_side": n_side, "dx": dx, "t_end": t_end,
         "r_exact": float(shock_radius_exact(t_end)),
         "scan_discriminates": ayirt,
+        # Us YALNIZCA iyi orneklenen noktalardan; ham hali kiyas icin.
         "error_exponent": p,
+        "error_exponent_contaminated": p_ham,
+        "n_well_sampled": int(iyi.sum()),
         "min_injected_particles": n_min,
+        # Iyi rejimde hatanin YAYILIMI: kucukse gozlenebilir biriktirme
+        # yaricapina DUYARSIZDIR (D icin iyi haber).
+        "well_sampled_err_range": [float(hatalar[iyi].min()),
+                                   float(hatalar[iyi].max())] if iyi.any()
+        else [float("nan"), float("nan")],
         # Ayriklastirma kirlenmesi denetimi: en kucuk enjeksiyon bolgesinde
         # bile YETERLI parcacik olmali (yoksa yasa model-formu degil,
         # ornekleme hatasini olcer).
-        "injection_well_sampled": bool(n_min >= 20),
+        # Esik 20 DEGIL 100: olculdu ki 32 ve 56 parcacikli noktalar hala
+        # ornekleme hatasi tasiyor (bkz. yukaridaki tablo).
+        "injection_well_sampled": bool(n_min >= 100),
+        "enough_well_sampled_points": bool(int(iyi.sum()) >= 3),
     }
