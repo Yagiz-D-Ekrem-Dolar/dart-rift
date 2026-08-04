@@ -116,3 +116,25 @@ def test_defter_negatif_yogunlugu_rapor_ediyor() -> None:
     bozuk = budgets_solid(st)
     assert bozuk["nonpositive_density_count"] == 2, bozuk
     assert bozuk["rho_min"] == -1.0
+
+
+def test_state_is_finite_gercekten_dusebiliyor() -> None:
+    """BOŞLUK KONTROLÜ: bayrak sabit `True` olsa fark etmezdi.
+
+    `state_is_finite` K21'in **ikinci** korumasıdır: EOS artık NaN üretmiyor
+    ama başka bir yol üretirse defter görmeli. Bunu sınamanın tek yolu
+    durumu **bozup** bayrağın düştüğünü görmektir.
+    """
+    from dartrift.cpu_reference.solid_ref import SolidState, budgets_solid
+
+    n = 8
+    for alan, deger in (("rho", np.nan), ("v", np.inf), ("u", np.nan)):
+        st = SolidState(x=np.zeros((n, 3)), v=np.zeros((n, 3)), m=np.ones(n),
+                        u=np.zeros(n), h=1.0, active=np.ones(n, bool),
+                        alpha=np.ones(n), rho=np.full(n, 2700.0))
+        assert budgets_solid(st)["state_is_finite"] is True, alan
+        if alan == "v":
+            st.v[2, 1] = deger
+        else:
+            getattr(st, alan)[2] = deger
+        assert budgets_solid(st)["state_is_finite"] is False, alan
