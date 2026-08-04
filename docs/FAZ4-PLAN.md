@@ -1,6 +1,7 @@
 # FAZ 4 planı — Doğrulama V4 ve Sentetik Kurtarma
 
-**Durum:** başlangıç · **Önkoşul:** G3 geçti (`9561864`, iş 1450156)
+**Durum:** 4.1 tamamlandı, **4.2 karar uzayı ölçümle daraltıldı** (4 Ağustos)
+**Önkoşul:** G3 geçti (`9561864`, iş 1450156)
 **Taşınan borç:** ADR-0026 (mermi çözünürlüğü), EKSIKLER §B, §D
 
 ---
@@ -41,6 +42,25 @@ ADR-0026 §2 açıkça diyor ki: *"Yerel incelmenin nasıl yapılacağı FAZ 4't
 | **B** | **Parçacık bölme** (adaptif) | bölme kuralı kütle/momentum/enerjiyi koruyor mu; bölme anında defter ne kadar kayıyor? |
 | **C** | **İki alan eşlemesi** (ince + kaba, örtüşme bölgesi) | arayüzden geçen momentum akısı doğru mu? |
 | **D** | **Mermiyi hiç çözme** — momentum/enerji kaynak terimi | kaynak teriminin krater ve β üzerindeki etkisi, çözülmüş referansla ne kadar örtüşüyor? |
+
+> ## GÜNCELLEME (4 Ağustos) — ölçümler bu tabloyu değiştirdi
+>
+> | # | yaklaşım | mermiyi çözer mi? | arayüz hatası | mimari bedel | kaynak |
+> |---|---|---|---|---|---|
+> | ~~A~~ | global `h`, değişken kütle | **HAYIR** | 0,168 *(en iyi)* | yok | [KAYIT-023](defter/KAYIT-023_2026-08-04_cozunurlugu-h-belirliyor.md) |
+> | **A′** | parçacık başına `h` | evet | **0,55–1,10** | çekirdek+grid+CFL+Ω | [KAYIT-024](defter/KAYIT-024_2026-08-04_degisken-h-arayuzu-kotulestiriyor.md) |
+> | **B** | parçacık bölme | yalnızca A′ ile | = A′ | = A′ | KAYIT-023 §6 |
+> | **C** | iki alan eşlemesi | evet | **ölçülmedi** | iki çözücü + eşleme | — |
+> | **D** | kaynak terimi | çözmez, **atlar** | yok | ılımlı | — |
+>
+> **A elendi:** çözülen ölçeği `h` belirliyor (`h` skaler; sabit `h`'de plato
+> `h → 0` limitinden %6,84 uzakta ve parçacık eklemekle kapanmıyor).
+> **B bağımsız bir seçenek değil:** bölme `dx`'i küçültür, `h` skaler
+> kaldıkça faydasız.
+> **A′ pahalı:** çözünürlüğü verir ama arayüzü 3,2–6,5 kat gürültülendirir;
+> `Ω` düzeltmesi kurtarmıyor.
+>
+> Aşağıdaki özgün metin **silinmedi**: o zamanki bilgiyle doğru yazılmıştı.
 
 **Sıra ölçümle belirlenir, tercihle değil.** İlk ölçüm **A** içindir çünkü:
 
@@ -88,7 +108,7 @@ kütle oranını değiştiriyor.**
 
 | # | görev | çıktı |
 |---|---|---|
-| 4.1 | **Kütle oranı toleransı** ölçümü | sayı: temiz kalan en büyük oran |
+| ~~4.1~~ | ~~**Kütle oranı toleransı** ölçümü~~ | **TAMAMLANDI** — KAYIT-019…024; A elendi |
 | 4.2 | Yerel incelme yaklaşımının **seçimi** | **ADR-0041** |
 | 4.3 | Seçilen yaklaşımın uygulanması | kod + çapraz kontrol |
 | 4.4 | DART kurulumunda **çözünürlük yakınsaması** | krater çapı ve β'nın N'e duyarlılığı |
