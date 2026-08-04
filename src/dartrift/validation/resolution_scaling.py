@@ -51,7 +51,7 @@ from ..cpu_reference.sph_ref import RefParams
 from .sedov import (GAMMA, H_OVER_DX, T_END_DEFAULT, build_sedov_ic,
                     measure_shock_radius, shock_radius_exact)
 
-__all__ = ["run_single", "run_arm", "run_resolution_scaling"]
+__all__ = ["run_single", "run_arm", "judge", "run_resolution_scaling"]
 
 
 def run_single(n_side: int, h_absolute: float | None, device: str,
@@ -105,6 +105,42 @@ def run_arm(sides: tuple[int, ...], h_absolute: float | None, device: str,
     }
 
 
+def judge(a: dict, b: dict, c: dict, h_coarse: float, h_fine: float,
+          t_end: float = T_END_DEFAULT) -> dict:
+    """Üç kolun platolarını yorumla — **saf fonksiyon**, GPU gerekmez.
+
+    Yargı koşudan ayrıldı ki **her dalı** sınanabilsin: oturmamış bir kol
+    `inconclusive` vermeli; platolar ayrışmıyorsa `dx` de katkı veriyor
+    demektir.
+    """
+    fark_b = abs(b["plateau"] - a["plateau"]) / abs(a["plateau"])
+    fark_c = abs(c["plateau"] - a["plateau"]) / abs(a["plateau"])
+    kayiyor = abs(c["plateau"] - b["plateau"]) / abs(b["plateau"])
+
+    hepsi_oturdu = bool(a["settled"] and b["settled"] and c["settled"])
+    if not hepsi_oturdu:
+        yargi = "inconclusive"
+    elif kayiyor > 0.01 and fark_b > 0.01:
+        # Sabit-h platosu h ile kayiyor ve h->0 limitinden uzak: `h` belirliyor.
+        yargi = "h_sets_resolution"
+    else:
+        yargi = "dx_also_contributes"
+
+    return {
+        "standard": a, "fixed_h_coarse": b, "fixed_h_fine": c,
+        "h_coarse": h_coarse, "h_fine": h_fine,
+        "r_exact": float(shock_radius_exact(t_end)), "t_end": t_end,
+        "all_settled": hepsi_oturdu,
+        "gap_coarse_vs_limit": float(fark_b),
+        "gap_fine_vs_limit": float(fark_c),
+        "plateau_shifts_with_h": float(kayiyor),
+        # Ince sabit-h platosu, kaba olandan limite DAHA YAKIN olmali:
+        # `h` kuculdukce limite yaklasiliyorsa aciklama tutarlidir.
+        "finer_h_is_closer": bool(fark_c < fark_b),
+        "verdict": yargi,
+    }
+
+
 def run_resolution_scaling(
     standard_sides: tuple[int, ...] = (48, 64, 80, 96, 112),
     fixed_h_sides: tuple[int, ...] = (32, 40, 48, 56, 64),
@@ -129,30 +165,4 @@ def run_resolution_scaling(
     b = run_arm(fixed_h_sides, h_kaba, device, t_end)
     c = run_arm(fixed_h_sides_2, h_ince, device, t_end)
 
-    # Platolar BIRBIRINDEN farkli mi? Ve sabit-h platolari h ile KAYIYOR mu?
-    fark_b = abs(b["plateau"] - a["plateau"]) / a["plateau"]
-    fark_c = abs(c["plateau"] - a["plateau"]) / a["plateau"]
-    kayiyor = abs(c["plateau"] - b["plateau"]) / b["plateau"]
-
-    hepsi_oturdu = bool(a["settled"] and b["settled"] and c["settled"])
-    if not hepsi_oturdu:
-        yargi = "inconclusive"
-    elif kayiyor > 0.01 and fark_b > 0.01:
-        # Sabit-h platosu h ile kayiyor ve h->0 limitinden uzak: `h` belirliyor.
-        yargi = "h_sets_resolution"
-    else:
-        yargi = "dx_also_contributes"
-
-    return {
-        "standard": a, "fixed_h_coarse": b, "fixed_h_fine": c,
-        "h_coarse": h_kaba, "h_fine": h_ince,
-        "r_exact": float(shock_radius_exact(t_end)), "t_end": t_end,
-        "all_settled": hepsi_oturdu,
-        "gap_coarse_vs_limit": float(fark_b),
-        "gap_fine_vs_limit": float(fark_c),
-        "plateau_shifts_with_h": float(kayiyor),
-        # Ince sabit-h platosu, kaba olandan limite DAHA YAKIN olmali:
-        # `h` kuculdukce limite yaklasiliyorsa aciklama tutarlidir.
-        "finer_h_is_closer": bool(fark_c < fark_b),
-        "verdict": yargi,
-    }
+    return judge(a, b, c, h_kaba, h_ince, t_end)

@@ -39,7 +39,7 @@ from ..cpu_reference.sph_ref import RefParams
 from .sedov import (E_INJECT, GAMMA, H_INJECT, H_OVER_DX, RHO0, T_END_DEFAULT,
                     U_BACKGROUND, measure_shock_radius, shock_radius_exact)
 
-__all__ = ["build_two_zone_sedov_ic", "run_shock_interface"]
+__all__ = ["build_two_zone_sedov_ic", "judge", "run_shock_interface"]
 
 
 def _lattice(n_side: int, lo: float = -0.5, hi: float = 0.5) -> tuple:
@@ -124,18 +124,15 @@ def _run(ic: dict, device: str, t_end: float) -> dict:
             "n_steps": int(diag["n_steps"])}
 
 
-def run_shock_interface(n_coarse: int = 64, lam: int = 2,
-                        r_inner: float = 0.15, device: str = "cuda:0",
-                        t_end: float = T_END_DEFAULT) -> dict:
-    """Üç kolu **aynı** `h` ile koştur ve arayüzün bedelini oku."""
-    h = H_OVER_DX / float(n_coarse)          # KABA kafesin h'si, uc kolda AYNI
+def judge(a: dict, b: dict, c: dict, lam: int, r_inner: float,
+          h: float, t_end: float) -> dict:
+    """Üç kolu yorumla — **saf fonksiyon**, GPU gerekmez, ayrıca sınanır.
 
-    a = _run(build_two_zone_sedov_ic(n_coarse, 1, r_inner, h), device, t_end)
-    b = _run(build_two_zone_sedov_ic(n_coarse, lam, r_inner, h), device, t_end)
-    c = _run(build_two_zone_sedov_ic(n_coarse * lam, 1, r_inner, h), device, t_end)
-
-    lo, hi = min(a["r_measured"], c["r_measured"]), max(a["r_measured"],
-                                                       c["r_measured"])
+    Yargı mantığı koşudan ayrıldı: üç ön koşuldan biri düşerse
+    `inconclusive` dönmeli ve bunun **her dalı** test edilebilmeli.
+    """
+    lo = min(a["r_measured"], c["r_measured"])
+    hi = max(a["r_measured"], c["r_measured"])
     aralik = hi - lo
     # BOSLUK KONTROLU: a ile c AYIRT EDILEBILIR olmali.
     ayirt_ediyor = bool(aralik / max(abs(lo), 1e-300) > 2.0e-3)
@@ -143,15 +140,13 @@ def run_shock_interface(n_coarse: int = 64, lam: int = 2,
     # Enjekte enerji uc kolda ayni mi? Degilse farkli PROBLEM cozulmus olur.
     e = [k["energy_injected"] for k in (a, b, c)]
     enerji_ayni = bool((max(e) - min(e)) / max(e) < 1.0e-3)
-    # Kutle uyumsuzlugu: `r ~ (E/rho)^(1/5)` -> yaricaba etkisi BESTE BIRI.
+    # Kutle uyusmazligi: `r ~ (E/rho)^(1/5)` -> yaricaba etkisi BESTE BIRI.
     kutle = [k["total_mass"] for k in (a, b, c)]
     kutle_sapmasi = float((max(kutle) - min(kutle)) / max(kutle))
     yaricap_etkisi = kutle_sapmasi / 5.0
-    # Bu etki, olculmek istenen ARALIKTAN kucuk olmali; degilse sinyal
-    # kutle artiginin icinde kaybolur.
-    kutle_ihmal_edilebilir = bool(yaricap_etkisi < 0.2 * aralik / abs(lo))
+    kutle_ihmal = bool(yaricap_etkisi < 0.2 * aralik / max(abs(lo), 1e-300))
 
-    if not ayirt_ediyor or not enerji_ayni or not kutle_ihmal_edilebilir:
+    if not ayirt_ediyor or not enerji_ayni or not kutle_ihmal:
         yargi = "inconclusive"
     elif icinde:
         yargi = "interface_harmless"
@@ -162,15 +157,29 @@ def run_shock_interface(n_coarse: int = 64, lam: int = 2,
         "uniform_coarse": a, "two_zone": b, "uniform_fine": c,
         "lam": int(lam), "mass_ratio": float(lam ** 3), "r_inner": r_inner,
         "h": h, "t_end": t_end, "r_exact": float(shock_radius_exact(t_end)),
-        "bracket": [lo, hi], "bracket_width_rel": float(aralik / abs(lo)),
+        "bracket": [lo, hi],
+        "bracket_width_rel": float(aralik / max(abs(lo), 1e-300)),
         "arms_distinguishable": ayirt_ediyor,
         "energy_injection_matches": enerji_ayni,
         "mass_mismatch_rel": kutle_sapmasi,
         "mass_effect_on_radius_rel": yaricap_etkisi,
-        "mass_effect_negligible": kutle_ihmal_edilebilir,
+        "mass_effect_negligible": kutle_ihmal,
         "two_zone_within_bracket": icinde,
-        # Arayuzun bedeli: b, [a,c] aralinin DISINA ne kadar tasti?
+        # Arayuzun bedeli: b, [a,c] araliginin DISINA ne kadar tasti?
         "excess_rel": float(max(0.0, lo - b["r_measured"],
-                                b["r_measured"] - hi) / abs(lo)),
+                                b["r_measured"] - hi) / max(abs(lo), 1e-300)),
         "verdict": yargi,
     }
+
+
+def run_shock_interface(n_coarse: int = 64, lam: int = 2,
+                        r_inner: float = 0.15, device: str = "cuda:0",
+                        t_end: float = T_END_DEFAULT) -> dict:
+    """Üç kolu **aynı** `h` ile koştur ve arayüzün bedelini oku."""
+    h = H_OVER_DX / float(n_coarse)          # KABA kafesin h'si, uc kolda AYNI
+
+    a = _run(build_two_zone_sedov_ic(n_coarse, 1, r_inner, h), device, t_end)
+    b = _run(build_two_zone_sedov_ic(n_coarse, lam, r_inner, h), device, t_end)
+    c = _run(build_two_zone_sedov_ic(n_coarse * lam, 1, r_inner, h), device, t_end)
+
+    return judge(a, b, c, lam, r_inner, h, t_end)
