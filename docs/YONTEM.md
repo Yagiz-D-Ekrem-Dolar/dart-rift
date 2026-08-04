@@ -319,6 +319,33 @@ C, A′'dan daha iyi *görünüyordu* çünkü ölçülmemişti. Ölçüldüğü
 doğrulandı (arayüz kaynaklı yapay kuvvet mekanizması yok) ama **asıl riski**
 (korunum kayması) hâlâ ölçülmedi — ve bu yazıldı.
 
+### D9 — Bir oran **geometriye bağlıysa**, geometri **taranır**
+
+Bu turda **iki kez** aynı hata yapıldı:
+
+| # | ölçülen | taranmayan eksen | yanlış yargı |
+|---|---|---|---|
+| KAYIT-028 → 029 | model-form hatası | `r_dep/r_şok` (DART noktası aralığın **dışındaydı**) | *"biriktirme yarıçapına duyarsız"* |
+| KAYIT-031 → 033 | komşu arama israfı | `r_iç/r_dış` (tek değerde ölçüldü) | *"çok seviyeli arama ön koşuldur"* |
+
+İkisinde de **tek bir çalışma noktasında** ölçüp **her noktaya**
+genelledim. İkisinde de düzeltme yargıyı **tersine** çevirdi.
+
+```
+israf_genel ≈ f_ince · λ³ + (1 − f_ince) · 1
+```
+
+İkinci vakada bu formül **baştan yazılabilirdi** ve tarama gereğini hemen
+gösterirdi.
+
+> **Kural:** bir sayı raporlanmadan önce sor — *"bu, hangi eksende
+> değişebilir ve o ekseni taradım mı?"* Özellikle **ilgilenilen çalışma
+> noktası** taranan aralığın içinde mi?
+>
+> Ve ölçülen sayı bir **formülle** açıklanabiliyorsa formül yazılır; formül,
+> hangi eksenlerin önemli olduğunu **kendisi** söyler.
+
+
 ---
 
 ## Kapanış kuralı
