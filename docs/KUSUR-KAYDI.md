@@ -56,6 +56,7 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | S6 | `tests/test_mass_ratio_probe` | *Turun altıncı hatası:* eşiği **ölçmeden** yazdım — **iki kez** | *(a)* "yanlış taban kuvveti büyütür" → ölçülen `1,29e-15`; *(b)* "basıncın işaretini çevirir" → **ters yönde** | — | ✅ |
 | S7 | `validation/resolution_scaling` | *Turun yedinci hatası:* boşluk kontrolünü **ADR'yi okumadan** tasarladım | "hata küçülmeli" dedim; ADR-0011 zaten **%3,9 model-form tabanı** ölçmüştü | — | ✅ |
 | S8 | `validation/coupling_conservation` | *Turun sekizinci hatası:* eşleme kaymasını **sıfıra** kıyasladım | ölçülen `0,9789` — ama **λ=2 ile λ=4 birebir aynı**; sayılmayan dış kabuk tepkisiymiş | — | ✅ |
+| S9 | `tests/test_solver_idempotence` | *Turun dokuzuncu hatası:* koşulsuz kapsam doğrulaması **bir kolda düşerdi** | `damage=False`'da `D`/`D_cbrt` yok; yerelde CUDA olmadığı için görünmedi, **G3 C6'yı düşürdü** | — | ✅ |
 
 ---
 
@@ -1405,6 +1406,68 @@ Ve: bir sayının **iki farklı koşulda birebir aynı çıkması**, o sayının
 koşullardan bağımsız bir şeyi ölçtüğünün en güçlü işaretidir. Bu turda
 **iki kez** bu işaret hatayı yakaladı (S4'te donmuş `9,5555e+06`, burada
 `0,9789`).
+
+---
+
+## S9 — Turun dokuzuncu hatası: kapsam doğrulaması bir kolda düşüyordu
+
+**Nerede:** `tests/test_solver_idempotence.py`, `_eval()` saflık kapsamını
+çözücüden **türetilir** hâle getirirken.
+
+Türetilen kümenin, elle yazılan `DURUM`'u kapsadığını doğrulamak için şunu
+yazdım:
+
+```python
+assert set(DURUM) <= set(izlenen)
+```
+
+**`DURUM` `D` ve `D_cbrt`'yi içeriyor, ama `damage=False` kolunda o diziler
+hiç oluşturulmuyor.** O kolda doğrulama düşer.
+
+### Yerelde görünmedi — GPU yok
+
+Bu dosyanın **tüm** testleri CUDA ister; yerel makinede **6/6 atlanıyor
+(%100)**. `pytest -q` yeşil göründü ve commit'lendi.
+
+Ölçülen fark: yerel paket **702** test geçiyor, TRUBA'da **827** — yani
+**125** test (%17,8) yalnızca GPU'da koşuyor. Bu dosyanın altısı da o
+dilimde.
+
+### G3 yakaladı
+
+TRUBA doğrulaması (iş **1451277**, commit `52896ec`):
+
+```
+tests/test_solver_idempotence.py::test_eval_durumu_degistirmez[False-False-False] FAILED
+E   assert {'D', 'D_cbrt', ...} <= {'S', 'Y0', ...}
+1 failed, 827 passed, 7 skipped in 1100.83s
+
+| C6 | Determinizm + tam test paketi | **KALDI** | pytest cikis=1 |
+## SONUC: G3 GECEMEDI
+```
+
+### Düzeltme
+
+```python
+var_olan = {d for d in DURUM if hasattr(s, d)}
+assert var_olan <= set(izlenen)
+assert len(var_olan) >= 6      # hasattr hepsini eleyip testi BOSALTAMASIN
+```
+
+İkinci satır zorunlu: `hasattr` hepsini elerse `var_olan` boşalır ve
+`set() <= X` **her zaman doğrudur** — doğrulama sessizce boşalırdı.
+
+### Ders — ve kabul
+
+Düzeltmeyi kanıt koşusu gelmeden **önce** yaptım; sorunu koddan tahmin
+etmiştim. Ama **bozuk commit'i push'lamıştım** ve kapıyı düşüren o oldu.
+
+> **Yerelde atlanan bir test "geçti" değildir.** `pytest -q` çıktısındaki
+> `s` harfleri sayılmalı; bir dosyanın **tamamı** atlanıyorsa o dosyada
+> yapılan değişiklik **hiç çalıştırılmamış** demektir.
+
+Kapı sistemi tasarlandığı gibi çalıştı: kanıtlanamayan kriter geçmiş
+sayılmadı.
 
 ## Ortak kök neden — dokuz kusurun tamamı
 
