@@ -129,22 +129,45 @@ def calibrate(piston_rows: list[dict], deposit_rows: list[dict]) -> dict:
     # BOSLUK KONTROLU 1: biriktirme kolu gercekten AYIRT EDIYOR mu?
     ayirt = bool(rb.max() - rb.min() > 1.0e-3)
 
+    # Biriktirme kolunun KE/E'si de (varsa) ara degerlenir: tek parametreli
+    # kalibrasyonun IKI gozlenebiliri ayni anda esleyip eslemedigi sorusu.
+    kf = None
+    if all("kinetic_fraction" in d for d in deposit_rows):
+        kf = np.array([d["kinetic_fraction"] for d in deposit_rows],
+                      dtype=np.float64)[sira]
+
     satirlar = []
     for p in piston_rows:
         rp = float(p["r_measured"])
         icinde = bool(rb.min() <= rp <= rb.max())
-        r_esdeger = float(np.interp(rp, rb, rd))
-        satirlar.append({
+        # `np.interp` aralik disinda UC DEGERE KELEPCELER. O sayi bir olcum
+        # DEGILDIR; oran olarak raporlanirsa yanlis bir "eslesme" gorunur
+        # (olculdu: R=0.050 ve 0.070 icin ikisi de 0.0800'e kelepcelendi ve
+        # 1.60 / 1.14 gibi UYDURMA oranlar uretti). Aralik disinda NaN.
+        r_esdeger = float(np.interp(rp, rb, rd)) if icinde else float("nan")
+        satir = {
             "r_piston": float(p["r_piston"]),
             "r_shock_piston": rp,
             "r_deposit_equivalent": r_esdeger,
-            "ratio": r_esdeger / float(p["r_piston"]),
-            # Ortusme yoksa bu bir EKSTRAPOLASYONDUR ve oyle isaretlenir.
+            "ratio": (r_esdeger / float(p["r_piston"]) if icinde
+                      else float("nan")),
             "in_bracket": icinde,
-        })
+        }
+        # IKINCI GOZLENEBILIR: sok yaricapi eslesirken KE/E de esleiyor mu?
+        if icinde and kf is not None and "kinetic_fraction" in p:
+            kb = float(np.interp(r_esdeger, rd, kf))
+            satir["kinetic_deposit_at_match"] = kb
+            satir["kinetic_piston"] = float(p["kinetic_fraction"])
+            satir["kinetic_mismatch_rel"] = float(
+                (p["kinetic_fraction"] - kb) / max(abs(kb), 1e-300))
+        satirlar.append(satir)
 
-    oranlar = np.array([s["ratio"] for s in satirlar], dtype=np.float64)
     ic_olan = np.array([s["in_bracket"] for s in satirlar], dtype=bool)
+    oranlar = np.array([s["ratio"] for s in satirlar], dtype=np.float64)
+    # Ikinci gozlenebilirin uyusmazligi (varsa)
+    uyus = [s["kinetic_mismatch_rel"] for s in satirlar
+            if "kinetic_mismatch_rel" in s]
+    kin_maks = float(max(abs(u) for u in uyus)) if uyus else float("nan")
     # BOSLUK KONTROLU 2: piston kolu R ile GERCEKTEN degisiyor mu?
     rp_dizi = np.array([s["r_shock_piston"] for s in satirlar])
     piston_ayirt = bool(rp_dizi.max() - rp_dizi.min() > 1.0e-3)
@@ -161,9 +184,17 @@ def calibrate(piston_rows: list[dict], deposit_rows: list[dict]) -> dict:
             float((oranlar[ic_olan].max() - oranlar[ic_olan].min())
                   / max(abs(np.mean(oranlar[ic_olan])), 1e-300))
             if int(ic_olan.sum()) >= 2 else float("nan")),
+        # IKI nokta bir SABITLIK iddiasini tasiyamaz: iki noktayla "yayilim"
+        # zaten tek bir farktir. En az UC nokta aralikta olmali.
+        "enough_points": bool(int(ic_olan.sum()) >= 3),
+        # Tek parametreli kalibrasyon IKI gozlenebiliri ayni anda esliyor mu?
+        "kinetic_mismatch_max": kin_maks,
+        "second_observable_matches": bool(kin_maks < 0.05) if uyus else False,
+        "second_observable_available": bool(bool(uyus)),
         "transferable": bool(
-            piston_ayirt and ayirt and int(ic_olan.sum()) >= 2
+            piston_ayirt and ayirt and int(ic_olan.sum()) >= 3
             and all(p.get("well_sampled", True) for p in piston_rows)
+            and bool(uyus) and kin_maks < 0.05
             and float((oranlar[ic_olan].max() - oranlar[ic_olan].min())
                       / max(abs(np.mean(oranlar[ic_olan])), 1e-300)) < 0.20),
     }

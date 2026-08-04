@@ -12,9 +12,18 @@ import pytest
 from dartrift.validation.deposit_calibration import build_piston_ic, calibrate
 from dartrift.validation.sedov import E_INJECT
 
-DEP = [{"r_deposit": d, "r_measured": r} for d, r in
-       [(0.025, 0.22389), (0.030, 0.22585), (0.040, 0.23053),
-        (0.050, 0.23499), (0.060, 0.23755), (0.080, 0.24023)]]
+# TRUBA is 1451309 (D-2, n_side=128) GERCEK olculen biriktirme kolu.
+DEP = [{"r_deposit": d, "r_measured": r, "kinetic_fraction": k}
+       for d, r, k in
+       [(0.025, 0.22389, 0.13175), (0.030, 0.22585, 0.13606),
+        (0.040, 0.23053, 0.14684), (0.050, 0.23499, 0.15688),
+        (0.060, 0.23755, 0.16755), (0.080, 0.24023, 0.18908)]]
+
+# Ayni kosunun piston kolu.
+PIS = [{"r_piston": R, "r_measured": rs, "kinetic_fraction": kp,
+        "well_sampled": True}
+       for R, rs, kp in [(0.0250, 0.23247, 0.17313), (0.0350, 0.23559, 0.18814),
+                         (0.0500, 0.24354, 0.20930), (0.0700, 0.25088, 0.21813)]]
 
 
 def test_piston_enerjisi_biriktirmeyle_AYNI() -> None:
@@ -53,27 +62,66 @@ def test_ornekleme_bayragi_KAYIT029_dersini_uyguluyor() -> None:
     assert cok["n_piston"] >= 100 and cok["piston_well_sampled"] is True
 
 
+def test_gercek_olcum_TASINABILIR_DEGIL() -> None:
+    """D-2'nin gerçek sonucu (KAYIT-030): **taşınabilir değil**, iki sebeple.
+
+    1. Dört pistonun **ikisi** biriktirme aralığının **dışında** kaldı;
+       `np.interp` onları uç değere **kelepçeler** ve `1,60` / `1,14` gibi
+       **uydurma** oranlar üretirdi. Aralık dışında oran artık `NaN`.
+    2. Şok yarıçapı eşleşirken **kinetik enerji kesri %14,5–18,0 ayrışıyor** —
+       tek parametreli kalibrasyon iki gözlenebiliri **aynı anda eşlemiyor**.
+    """
+    c = calibrate(PIS, DEP)
+    assert c["n_in_bracket"] == 2
+    assert c["enough_points"] is False
+    # Aralik disi noktalar KELEPCELENMIS oran uretmemeli.
+    disarida = [s for s in c["rows"] if not s["in_bracket"]]
+    assert len(disarida) == 2
+    assert all(np.isnan(s["ratio"]) for s in disarida)
+    # Ikinci gozlenebilir esleimiyor.
+    assert c["second_observable_available"] is True
+    assert c["second_observable_matches"] is False
+    assert c["kinetic_mismatch_max"] == pytest.approx(0.180, abs=0.01)
+    assert c["transferable"] is False
+
+
 def test_az_orneklenmis_piston_TASINABILIR_dedirtemez() -> None:
-    """Eşleme mükemmel olsa bile az örneklenmişse `transferable` **False**."""
-    iyi = [{"r_piston": 0.030, "r_measured": 0.2270, "well_sampled": True},
-           {"r_piston": 0.060, "r_measured": 0.2370, "well_sampled": True}]
+    """Eşleme kusursuz olsa bile az örneklenmişse `transferable` **False**."""
+    iyi = [{"r_piston": R, "r_measured": rs, "kinetic_fraction": kf,
+            "well_sampled": True}
+           for R, rs, kf in [(0.030, 0.2270, 0.1400), (0.045, 0.2310, 0.1480),
+                             (0.060, 0.2360, 0.1600)]]
     az = [dict(p, well_sampled=False) for p in iyi]
     assert calibrate(iyi, DEP)["transferable"] is True
     assert calibrate(az, DEP)["transferable"] is False
 
 
+def test_iki_nokta_SABITLIK_iddiasi_tasiyamaz() -> None:
+    """İki noktayla "yayılım" tek bir farktır — sabitlik kanıtı değil."""
+    iki = [{"r_piston": 0.030, "r_measured": 0.2270, "kinetic_fraction": 0.1400,
+            "well_sampled": True},
+           {"r_piston": 0.060, "r_measured": 0.2360, "kinetic_fraction": 0.1600,
+            "well_sampled": True}]
+    c = calibrate(iki, DEP)
+    assert c["n_in_bracket"] == 2
+    assert c["enough_points"] is False
+    assert c["transferable"] is False
+
+
 def test_ayirt_etmeyen_kollar_TASINABILIR_dedirtemez() -> None:
     """BOŞLUK KONTROLÜ: piston `R` ile değişmiyorsa eşleme anlamsızdır."""
-    duz = [{"r_piston": 0.030, "r_measured": 0.2300, "well_sampled": True},
-           {"r_piston": 0.060, "r_measured": 0.2300, "well_sampled": True}]
+    duz = [{"r_piston": R, "r_measured": 0.2300, "kinetic_fraction": 0.1450,
+            "well_sampled": True} for R in (0.030, 0.045, 0.060)]
     c = calibrate(duz, DEP)
     assert c["piston_discriminates"] is False
     assert c["transferable"] is False
 
 
 def test_aralik_disi_EKSTRAPOLASYON_isaretleniyor() -> None:
-    disarida = [{"r_piston": 0.030, "r_measured": 0.2000, "well_sampled": True},
-                {"r_piston": 0.060, "r_measured": 0.2370, "well_sampled": True}]
+    disarida = [{"r_piston": 0.030, "r_measured": 0.2000,
+                 "kinetic_fraction": 0.1400, "well_sampled": True},
+                {"r_piston": 0.060, "r_measured": 0.2370,
+                 "kinetic_fraction": 0.1600, "well_sampled": True}]
     c = calibrate(disarida, DEP)
     assert c["rows"][0]["in_bracket"] is False
     assert c["rows"][1]["in_bracket"] is True

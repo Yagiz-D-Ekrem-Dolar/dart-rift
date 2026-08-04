@@ -1,9 +1,9 @@
-# ADR-0041 — Yerel incelme yaklaşımı: **D önerilir, kalibrasyon şartıyla**
+# ADR-0041 — Yerel incelme yaklaşımı: **A′ öne geçti** (D'nin kalibrasyonu yetmedi)
 
 - **Durum:** **ÖNERİLDİ — kilitlenmedi.** Kilitleme kararı proje sahibinindir.
 - **Tarih:** 2026-08-04
 - **Bağlam:** ADR-0026 (mermi çözünürlüğü tekdüze ağda imkânsız), FAZ 4.1/4.2
-- **Kanıt:** KAYIT-019 … KAYIT-029 (on bir kayıt, on iki TRUBA koşusu)
+- **Kanıt:** KAYIT-019 … KAYIT-030 (on iki kayıt, on üç TRUBA koşusu)
 - **İlgili:** ADR-0011, ADR-0013, ADR-0022, ADR-0028, ADR-0030, ADR-0040
 
 ---
@@ -171,6 +171,32 @@ Hata **monoton**; yarıçap 3,2 kat küçülünce hata **2,7 kat** büyüyor.
 > §3.6 silinmiyor: ölçümü ve iki rejim ayrımı doğruydu; **aralığı**
 > DART çalışma noktasını içermiyordu ve yargısı o yüzden yanlıştı.
 
+### 3.8 D'nin serbest parametresi **bağlanamadı** (KAYIT-030)
+
+KAYIT-029, `r_dep`'in **kalibre edilmesi gereken serbest bir parametre**
+olduğunu söylemişti. **KAYIT-030** (iş 1451309) o kalibrasyonu denedi:
+enerjiyi *ısı* yerine **toplu hareket** olarak taşıyan bir **piston**
+kuruldu (gerçek merminin yaptığı) ve eşleşen `r_dep` arandı.
+
+**Sonuç: eşleme tek parametreyle yapılamıyor.**
+
+| `R` | `r_dep` eşdeğer | `KE/E` piston | `KE/E` biriktirme | uyuşmazlık |
+|---|---|---|---|---|
+| 0,0250 | 0,04435 | 0,17313 | 0,15121 | **%14,5** |
+| 0,0350 | 0,05235 | 0,18814 | 0,15939 | **%18,0** |
+
+Şok yarıçapı eşleşirken kinetik enerji kesri **%14,5–18,0** ayrışıyor.
+Piston enerjiyi hareket olarak taşıyıp şokta ısıya çevirir; biriktirme onu
+baştan ısı koyar — geç zamandaki kinetik/termal bölüşüm yapısal olarak
+farklı kalıyor. **Bir tek sayı iki bağımsız büyüklüğü ayarlayamaz.**
+
+β momentum-türevidir ve bu bölüşüme **doğrudan** bağlıdır.
+
+> Betiğin ilk çıktısı `TASINABILIR: True` idi ve **yanlıştı**: dört
+> pistonun ikisi aralık dışındaydı ve `np.interp` onları uç değere
+> **kelepçeleyip** uydurma oranlar üretmişti. Düzeltildi; aralık dışında
+> oran `NaN`, ve eşik `≥ 3` nokta oldu.
+
 ---
 
 ## 4. Karar tablosu
@@ -181,11 +207,11 @@ Hata **monoton**; yarıçap 3,2 kat küçülünce hata **2,7 kat** büyüyor.
 | **A′** | evet | **0,55–1,10** | (A'da zararsız) | 1e-16 ✔ | yok | çekirdek + hash-grid + CFL + Ω |
 | ~~B~~ | A′ ile | = A′ | = A′ | = A′ | = A′ | = A′ |
 | **C** | evet | yok | ölçülmedi | **7,5e-03 ✘ sistematik** | ara değerleme `O(h²)` | iki çözücü + örtüşme + MLS + korunum düzeltmesi |
-| **D** | **atlar** | yok | — | ✔ (tek çözücü) | **%5–7** (DART bandı, §3.7) | ılımlı + **kalibrasyon** |
+| **D** | **atlar** | yok | — | ✔ (tek çözücü) | **%5–7**, **kalibre edilemiyor** (§3.7, §3.8) | ılımlı |
 
 ---
 
-## 5. Öneri: **D**, A′ yedekte
+## 5. Öneri: ~~**D**, A′ yedekte~~ → **A′ öne geçti** (bkz. §3.8 ve aşağıdaki not)
 
 ### Gerekçe
 
@@ -214,11 +240,19 @@ Hata **monoton**; yarıçap 3,2 kat küçülünce hata **2,7 kat** büyüyor.
    Bedeli mimari; arayüz gürültüsü ise (§3.5) şok geçişinde ölçülebilir
    etki yaratmıyor.
 
-> **KAYIT-029 sonrası denge:** A′ ile D arasındaki fark **D'nin aleyhine
-> kaydı.** A′'nın model-form hatası **yoktur** (mermiyi gerçekten çözer);
-> D'ninki DART bandında %5–7. D hâlâ savunulabilir — ama ancak biriktirme
-> yarıçapı **çözülmüş bir referansla kalibre edilirse** (D-2, ölçülmedi).
-> Öneri bu yüzden **kilitlenmemiştir**.
+> **KAYIT-029 + KAYIT-030 sonrası denge: A′ ÖNE GEÇTİ.**
+>
+> D'nin son savunması *"biriktirme yarıçapı kalibre edilebilir"* idi.
+> **D-2 onu ölçtü ve yapılamadı** (§3.8): şok yarıçapı eşlenirken kinetik
+> enerji kesri %14,5–18,0 ayrışıyor; tek parametre iki gözlenebiliri aynı
+> anda eşlemiyor.
+>
+> A′'nın model-form hatası **yoktur** — mermiyi gerçekten çözer. Bedeli
+> **yalnızca mimaridir**, ve arayüz gürültüsü şok geçişinde **ölçülemez**
+> (§3.5: taşma %0,000).
+>
+> **Kalan tek ölçülmemiş kefe: A′'nın mimari iş yükü.** Bu ADR onsuz
+> kilitlenmemelidir.
 
 ### Bu öneriyi **kilitlemeden önce** kapatılması gereken üç boşluk
 
