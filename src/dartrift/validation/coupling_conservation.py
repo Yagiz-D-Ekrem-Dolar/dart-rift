@@ -122,21 +122,33 @@ def measure_coupling_conservation(lam: float = 2.0, spacing_coarse: float = 1.0,
     # cevabina**dir:
     #     kayma = |F_eslenmis − F_tekparca| / olcek
     # ------------------------------------------------------------------
-    x1 = _lattice(s_i, half)                       # tek parca, INCE (referans)
-    m1 = np.full(len(x1), RHO * s_i ** 3)
+    # BOSLUK KONTROLU (araci kalibre eder): tek parcada TUM parcaciklarda
+    # `Σ m a = 0` TAM olmali (antisimetri).
+    x1 = _lattice(s_k, half)
+    m1 = np.full(len(x1), RHO * s_k ** 3)
     P1 = dP_dx * x1[:, 0]
-    r1 = np.linalg.norm(x1, axis=1)
-    # Olcum bolgesi IKI parcada da AYNI olmali: ic kure + dis kabuk (pay icinde)
-    a1 = r1 < r_split
-    b1 = (r1 > r_split) & np.all(np.abs(x1) < half - 2.0 * h_k, axis=1)
-    net_tek = net_force(x1, m1, P1, h_i, a1 | b1)
-    olcek = float(np.sum(m1[a1 | b1])) * abs(dP_dx) / RHO
-
-    # Bosluk kontrolu: TUM parcaciklarda toplam TAM SIFIR olmali.
-    net_hepsi = net_force(x1, m1, P1, h_i)
+    net_hepsi = net_force(x1, m1, P1, h_k)
     olcek_hepsi = float(np.sum(m1)) * abs(dP_dx) / RHO
 
-    # --- ESLENMIS: A = ince alan, B = kaba alan; ortusme bandi HAYALET
+    # ------------------------------------------------------------------
+    # IKINCI DUZELTME (S8'in devami). Tek parca INCE referansi, esleme
+    # hatasinin YANINDA bir COZUNURLUK farki da tasiyordu: kaba alanin
+    # kuvvetleri kaba `h` ile, referansinki ince `h` ile hesaplaniyordu.
+    # Olculdu: lam=2 -> 0,15231 ama lam=3 -> 0,00583 (TERS yonde) — yani
+    # olculen sey eslemenin kendisi degildi.
+    #
+    # KORUNUM SORUSU REFERANSSIZ SORULABILIR. Eslenmis sistemin toplam
+    # momentum degisimi:
+    #     Σ_A_gercek m a^A + Σ_B_gercek m a^B
+    # Her alanin GERCEK-GERCEK etkilesimleri kendi icinde ANTISIMETRIKTIR
+    # ve toplamda sadelesir. Geriye YALNIZCA hayalet kuvvetleri kalir:
+    #     = F(A_gercek <- A_hayalet)  +  F(B_gercek <- B_hayalet)
+    # Momentum korunuyorsa bu TAM SIFIRDIR. Referans gerekmez.
+    #
+    # SART: `B_gercek` B'nin TUM hayalet-olmayan parcaciklarini icermeli.
+    # Ilk surumde dis kabugu dislamistim ve o yuzden ic toplam sadelesmiyordu
+    # (S8'in kok nedeni).
+    # ------------------------------------------------------------------
     xa_t = _lattice(s_i, half)
     ra = np.linalg.norm(xa_t, axis=1)
     xa = xa_t[ra < r_split + ort]
@@ -149,15 +161,15 @@ def measure_coupling_conservation(lam: float = 2.0, spacing_coarse: float = 1.0,
     xb = xb_t[rb > r_split - ort]
     mb = np.full(len(xb), RHO * s_k ** 3)
     Pb = dP_dx * xb[:, 0]
-    b_gercek = (np.linalg.norm(xb, axis=1) > r_split) & np.all(
-        np.abs(xb) < half - 2.0 * h_k, axis=1)
+    b_gercek = np.linalg.norm(xb, axis=1) > r_split       # TUMU (dis kabuk dahil)
     if int(a_gercek.sum()) < 20 or int(b_gercek.sum()) < 20:
         raise ValueError(
             f"bölge boş: A={int(a_gercek.sum())}, B={int(b_gercek.sum())}")
 
     net_es = net_force(xa, ma, Pa, h_i, a_gercek) + net_force(xb, mb, Pb, h_k,
                                                               b_gercek)
-    kayma = float(np.linalg.norm(net_es - net_tek)) / olcek
+    olcek = float(np.sum(ma[a_gercek]) + np.sum(mb[b_gercek])) * abs(dP_dx) / RHO
+    kayma = float(np.linalg.norm(net_es)) / olcek
 
     return {
         "lam": float(lam), "r_split": float(r_split), "overlap": ort,
@@ -168,10 +180,7 @@ def measure_coupling_conservation(lam: float = 2.0, spacing_coarse: float = 1.0,
         "monolithic_all_net_rel": float(np.linalg.norm(net_hepsi) / olcek_hepsi),
         "monolithic_is_exact": bool(
             float(np.linalg.norm(net_hepsi) / olcek_hepsi) < 1.0e-12),
-        # Referans: tek parcada AYNI bolgenin net kuvveti — sifir DEGILDIR.
-        "monolithic_region_net_rel": float(np.linalg.norm(net_tek) / olcek),
-        "coupled_region_net_rel": float(np.linalg.norm(net_es) / olcek),
-        # ASIL SAYI: eslemenin tek parcadan SAPMASI.
+        # ASIL SAYI: eslenmis sistemin toplam net kuvveti — SIFIR olmali.
         "conservation_drift_rel": kayma,
-        "drift_vec": (net_es - net_tek).tolist(),
+        "drift_vec": net_es.tolist(),
     }

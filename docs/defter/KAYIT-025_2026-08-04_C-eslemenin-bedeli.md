@@ -158,7 +158,7 @@ Bu, bu kayıtta **ölçülmedi**. Ölçülmeden C "temiz" sayılamaz — KAYIT-0
 
 | # | ölçüm | neden belirleyici |
 |---|---|---|
-| **C-2** | eşlenmiş sistemde momentum/enerji kayması | C'nin *asıl* riski |
+| ~~C-2~~ | ~~eşlenmiş sistemde momentum kayması~~ | **ÖLÇÜLDÜ ([KAYIT-027](KAYIT-027_2026-08-04_C2-esleme-momentumu-kaybediyor.md)): `7,5e-03` ve TAMAMEN SİSTEMATİK** — A/A′ `1e-16`. Risk gerçek. |
 | **D-1** | kaynak teriminin model-form hatası | çözülmüş referans 1,72e9 parçacık ister → **dolaylı** kıyas tasarlanmalı |
 
 ---

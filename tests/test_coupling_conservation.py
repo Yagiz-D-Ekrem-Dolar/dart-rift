@@ -50,15 +50,37 @@ def test_alt_kumede_net_kuvvet_sifirdan_FARKLI() -> None:
     assert float(np.linalg.norm(net)) / olcek > 1.0e-3, net
 
 
-def test_duzgun_basincta_kuvvet_sifir() -> None:
-    """Düzgün alan **boş bir sınavdır** — bu yüzden doğrusal rampa seçildi."""
+def test_duzgun_basincta_IC_bolgede_kuvvet_sifir() -> None:
+    """Düzgün alanda kuvvet **yalnızca iç bölgede** sıfırdır.
+
+    İlk yazdığım test `x > 0` alt kümesini kullanıyordu ve düştü. **Ölçtüm:**
+
+    ```
+    x>0 (kenar dahil)  n=324  |net|/olcek = 2,8821e-01
+    IC bolge (pay 2h)  n= 27  |net|/olcek = 1,2539e-16
+    ```
+
+    Kenar parçacıklarının komşuluğu **kesiktir**; oradaki dengesizlik düzgün
+    alanla ilgili değil, kafesin bitmesiyle ilgilidir (D1 kuralı). Bu, düzgün
+    alanın neden **boş bir sınav** olduğunun da kanıtıdır — C-2'de doğrusal
+    rampa tam bu yüzden seçildi.
+    """
     x = _kafes(S, 4.0)
     m = np.full(len(x), RHO * S ** 3)
     P = np.full(len(x), 5.0e8)                # DUZGUN
-    alt = x[:, 0] > 0.0
-    net = net_force(x, m, P, HOS * S, alt)
-    olcek = float(np.sum(m[alt]) * 5.0e8 / (RHO * HOS * S))
+    h = HOS * S
+    ic = np.all(np.abs(x) < 4.0 - 2.0 * h, axis=1)
+    assert int(ic.sum()) > 20, int(ic.sum())
+    net = net_force(x, m, P, h, ic)
+    olcek = float(np.sum(m[ic]) * 5.0e8 / (RHO * h))
     assert float(np.linalg.norm(net)) / olcek < 1.0e-12, net
+
+    # BOSLUK KONTROLU: kenar DAHIL edilirse GERCEKTEN bozulmali, yoksa
+    # yukaridaki "ic bolge" kosulu bir sey korumuyor demektir.
+    kenar = x[:, 0] > 0.0
+    net_k = net_force(x, m, P, h, kenar)
+    olcek_k = float(np.sum(m[kenar]) * 5.0e8 / (RHO * h))
+    assert float(np.linalg.norm(net_k)) / olcek_k > 1.0e-2, net_k
 
 
 def test_ortusme_sigmazsa_hata() -> None:
