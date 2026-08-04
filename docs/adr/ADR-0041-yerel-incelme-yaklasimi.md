@@ -1,6 +1,7 @@
-# ADR-0041 — Yerel incelme yaklaşımı: **A′ öne geçti**, bedeli ölçüldükçe küçüldü
+# ADR-0041 — Yerel incelme: **A′ seçildi** (parçacık başına `h`)
 
-- **Durum:** **ÖNERİLDİ — kilitlenmedi.** Kilitleme kararı proje sahibinindir.
+- **Durum:** **KABUL EDİLDİ (kilitli)** — 4 Ağustos 2026, proje sahibinin talimatıyla.
+- **Seçim:** **A′** — değişken kütle + **parçacık başına `h`** + `Ω` (grad-h) düzeltmesi.
 - **Tarih:** 2026-08-04
 - **Bağlam:** ADR-0026 (mermi çözünürlüğü tekdüze ağda imkânsız), FAZ 4.1/4.2
 - **Kanıt:** KAYIT-019 … KAYIT-033 (on beş kayıt, on üç TRUBA koşusu + dört CPU ölçümü)
@@ -371,7 +372,58 @@ israf_genel ≈ f_ince · λ³ + (1 − f_ince) · 1
 
 ---
 
-## 6. Sonuçlar
+## 5b. KARAR — **A′ seçildi**
+
+Öneri kilitlendi. Gerekçe, §3'ün ölçümlerinden **doğrudan** çıkıyor:
+
+| ölçüt | A′ | C | D |
+|---|---|---|---|
+| mermiyi çözer | **evet** | evet | **hayır** |
+| **model-form hatası** | **yok** | yok | **%5–7, kalibre edilemiyor** |
+| momentum korunumu | **1e-16** (cebirsel) | **7,5e-03 sistematik** | ✔ |
+| arayüz yapay kuvveti | 3,2–6,5× gürültü | yok | — |
+| şok geçişine etkisi | **ölçülemez** (%0,000) | ölçülmedi | — |
+| maliyet | DART rejiminde **19,6× ucuz** | iki çözücü + MLS + korunum düzeltmesi | en ucuz |
+
+**Belirleyici olan üç ölçüm:**
+
+1. **D elendi** (§3.8): biriktirme yarıçapı **kalibre edilemiyor** — şok
+   yarıçapı eşlenirken `KE/E` **%14,5–18,0** ayrışıyor. β momentum-türevi
+   olduğu için bu doğrudan ana ürünü etkiler.
+2. **C elendi** (§3.4): momentumu **sistematik** kaybediyor
+   (`|x|/|v| = 1,000000` → adım sayısıyla **doğrusal** birikir). A/A′ onu
+   **cebirsel olarak** korur.
+3. **A′'nın bedeli küçüldü** (§3.11): çok seviyeli komşu arama **ön koşul
+   değil**; DART rejiminde tek ızgara kazancın %76–93'ünü veriyor.
+
+### Açıkça kabul edilen bedel
+
+- **Arayüzde 3,2–6,5 kat yapay kuvvet.** `Ω` düzeltmesi kurtarmıyor (§3.3).
+  Kabul edilebilir çünkü §3.5 ölçtü: şok geçişine **ölçülebilir etkisi yok**
+  (taşma %0,000, iki kütle oranında, iki çözünürlükte).
+- **92 site + `Ω`** kadar kod değişikliği (68 GPU + 24 CPU referans).
+- **Çok seviyeli ızgara** ileride bir **iyileştirme** olarak kalır;
+  DART geometrisinde %7–24 ek kazanç.
+
+### Kilitlenen sözleşme
+
+1. `h` **parçacık başına** taşınır; çift etkileşimi **simetrik**
+   `h_ij = ½(h_i + h_j)` biçimindedir (§3.3'te ölçülen en iyi şema).
+2. `Ω` (grad-h) düzeltmesi **uygulanır** — enerji tutarlılığı için.
+3. **CPU referansı ve çapraz kontrol aynı commit'te gelir** (K1'in kök
+   nedeni bu boşluktu).
+4. Skaler `h` yolu **bit düzeyinde korunur** — determinizm kilitli
+   (ADR-0004); gerileme testi zorunludur.
+
+### Açık kalan
+
+**§5 boşluk 3** — Sedov gerilmesiz ve tek malzemeli; mukavemet, gözeneklilik
+ve hasarla etkileşim ölçülmedi. Bu, **hangi seçenek seçilirse seçilsin**
+açıktı ve A′ için de açık kalır. FAZ 4.4'te ölçülecek.
+
+---
+
+## 6. Sonuçlar## 6. Sonuçlar
 
 - (+) Karar uzayı **ölçümle** beşten ikiye indi; elemelerin her biri bir
   ölçüme dayanıyor, tercihe değil.
