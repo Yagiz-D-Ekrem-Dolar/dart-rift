@@ -1,6 +1,7 @@
 # KAYIT-026 — E3: şok arayüzden geçerken ne oluyor? (2026-08-04)
 
 **Kapsam:** FAZ 4.1-E3 · **Durum:** ölçüldü — **arayüz zararsız**
+**Doğrulama:** iki kütle oranı (8:1, 27:1), iki çözünürlük; taşma %0,000
 **Öncül:** [KAYIT-020](KAYIT-020_2026-08-04_arayuz-hatasi-nicel.md),
 [KAYIT-022](KAYIT-022_2026-08-04_E1-E2-karar-verisi.md) §6
 
@@ -63,6 +64,47 @@ iki bolgeli aralikta mi   : True     tasma %0,125
 
 YARGI: interface_harmless
 ```
+
+---
+
+## 2b. Doğrulama: **iki** kütle oranı, **daha yüksek** çözünürlük
+
+Ağır koşu (iş **1450837**, H100, 1:42:47) aynı sınavı `n_kaba = 48` yerine
+**64** ile ve **iki** kütle oranıyla tekrarladı.
+
+### 8:1 (`λ = 2`)
+
+| kol | N | toplam kütle | E_enjekte | r_ölçülen | adım |
+|---|---|---|---|---|---|
+| tek / kaba | 262 144 | 1,000000 | 1,000000 | 0,23874 | 287 |
+| **iki bölgeli** | 287 960 | 1,000134 | 1,000000 | **0,24337** | 314 |
+| tek / ince | 2 097 152 | 1,000000 | 1,000000 | 0,24404 | 313 |
+
+`aralık [0,23874 ; 0,24404]` genişlik **%2,218** · **taşma %0,000**
+
+### 27:1 (`λ = 3`)
+
+| kol | N | toplam kütle | E_enjekte | r_ölçülen | adım |
+|---|---|---|---|---|---|
+| tek / kaba | 262 144 | 1,000000 | 1,000000 | 0,23874 | 287 |
+| **iki bölgeli** | 358 520 | 1,000216 | 1,000000 | **0,24346** | 322 |
+| tek / ince | **7 077 888** | 1,000000 | 1,000000 | 0,24435 | 322 |
+
+`aralık [0,23874 ; 0,24435]` genişlik **%2,347** · **taşma %0,000**
+
+Her iki koşuda da üç ön koşul geçti ve yargı **`interface_harmless`**.
+
+### Bu, hafif koşudan **daha güçlü** bir sonuç
+
+| | hafif (n=48) | ağır (n=64) |
+|---|---|---|
+| taşma, 8:1 | %0,125 | **%0,000** |
+| taşma, 27:1 | — | **%0,000** |
+| kütle etkisi | %0,0005 | %0,0027 / %0,0043 |
+
+Çözünürlük arttıkça taşma **küçüldü** — arayüzün katkısı bir ayrıklaştırma
+artığıydı ve o da yakınsıyor. Ve kütle oranını **8:1'den 27:1'e** çıkarmak
+sonucu **değiştirmedi**.
 
 ---
 
