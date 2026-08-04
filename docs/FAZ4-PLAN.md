@@ -45,13 +45,19 @@ ADR-0026 §2 açıkça diyor ki: *"Yerel incelmenin nasıl yapılacağı FAZ 4't
 
 > ## GÜNCELLEME (4 Ağustos) — ölçümler bu tabloyu değiştirdi
 >
-> | # | yaklaşım | mermiyi çözer mi? | arayüz hatası | mimari bedel | kaynak |
-> |---|---|---|---|---|---|
-> | ~~A~~ | global `h`, değişken kütle | **HAYIR** | 0,168 *(en iyi)* | yok | [KAYIT-023](defter/KAYIT-023_2026-08-04_cozunurlugu-h-belirliyor.md) |
-> | **A′** | parçacık başına `h` | evet | **0,55–1,10** | çekirdek+grid+CFL+Ω | [KAYIT-024](defter/KAYIT-024_2026-08-04_degisken-h-arayuzu-kotulestiriyor.md) |
-> | **B** | parçacık bölme | yalnızca A′ ile | = A′ | = A′ | KAYIT-023 §6 |
-> | **C** | iki alan eşlemesi | evet | **ölçülmedi** | iki çözücü + eşleme | — |
-> | **D** | kaynak terimi | çözmez, **atlar** | yok | ılımlı | — |
+> | # | yaklaşım | mermiyi çözer | arayüz hatası | şok geçişi | **momentum** | mimari bedel |
+> |---|---|---|---|---|---|---|
+> | ~~A~~ | global `h`, değişken kütle | **HAYIR** | 0,168 *(en iyi)* | **zararsız** ✔ | **1e-16** ✔ | yok |
+> | **A′** | parçacık başına `h` | evet | **0,55–1,10** | (A'da zararsız) | **1e-16** ✔ | çekirdek+grid+CFL+Ω |
+> | **B** | parçacık bölme | yalnızca A′ ile | = A′ | = A′ | = A′ | = A′ |
+> | **C** | iki alan eşlemesi | evet | **yok** (ara değerleme `O(h²)`) | ölçülmedi | **7,5e-03 ✘ sistematik** | iki çözücü + örtüşme + MLS **+ korunum düzeltmesi** |
+> | **D** | kaynak terimi | çözmez, **atlar** | yok | — | ✔ (tek çözücü) | ılımlı |
+>
+> Kaynaklar: [023](defter/KAYIT-023_2026-08-04_cozunurlugu-h-belirliyor.md) ·
+> [024](defter/KAYIT-024_2026-08-04_degisken-h-arayuzu-kotulestiriyor.md) ·
+> [025](defter/KAYIT-025_2026-08-04_C-eslemenin-bedeli.md) ·
+> [026](defter/KAYIT-026_2026-08-04_E3-sok-arayuzden-gecerken.md) ·
+> [027](defter/KAYIT-027_2026-08-04_C2-esleme-momentumu-kaybediyor.md)
 >
 > **A elendi:** çözülen ölçeği `h` belirliyor (`h` skaler; sabit `h`'de plato
 > `h → 0` limitinden %6,84 uzakta ve parçacık eklemekle kapanmıyor).
@@ -59,6 +65,14 @@ ADR-0026 §2 açıkça diyor ki: *"Yerel incelmenin nasıl yapılacağı FAZ 4't
 > kaldıkça faydasız.
 > **A′ pahalı:** çözünürlüğü verir ama arayüzü 3,2–6,5 kat gürültülendirir;
 > `Ω` düzeltmesi kurtarmıyor.
+> **Arayüz, şok geçişi açısından zararsız** (E3: 8:1'de %0,125 fark) — yani
+> karar arayüz kalitesine değil **çözünürlük** ve **korunum** eksenlerine
+> bakmalı.
+> **C momentumu korumuyor:** `7,5e-03`, ve kayma **tamamen sistematik**
+> (`|x|/|v| = 1,000000`) → adım sayısıyla **doğrusal birikir**. A/A′ `1e-16`.
+>
+> **Kalan tek ölçüm: D-1** (kaynak teriminin model-form hatası, dolaylı
+> kıyasla). ADR-0041 ondan sonra yazılır.
 >
 > Aşağıdaki özgün metin **silinmedi**: o zamanki bilgiyle doğru yazılmıştı.
 
