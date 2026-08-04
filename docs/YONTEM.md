@@ -237,6 +237,90 @@ Verim ile önem aynı şey değil.
 
 ---
 
+## İkinci tur dersleri (FAZ 4 ölçümleri, 3–4 Ağustos)
+
+Bu bölüm, yukarıdaki üç soruya **ölçüm tasarlarken** eklenen kuralları
+toplar. Hepsi bir hatadan çıktı ve hepsinin ölçülmüş bir bedeli var.
+
+### D1 — Ölçüm düzeneğinin **payı** fizikten türetilir
+
+Bir bölge maskesi "yeterince içeride" derken **neye göre** içeride?
+
+```
+h = 2*aralik  ->  Wendland C2 destegi 2h = 4*aralik
+pay 2,5*aralik kondu  ->  taban 0,0878   (YUZEY ARTIGI)
+pay 4,0*aralik kondu  ->  taban 5,9e-12  (TEMIZ)
+```
+
+Yanlış pay, ölçülen sinyali **beş kat küçük** gösterdi (KAYIT-019 §3b).
+
+**Ve pay her zaman `2h` değildir.** grad-h kuvveti komşunun `Ω_j`'sini
+kullanır; `Ω_j` o komşunun kendi komşuluğundan gelir. Yüzeyin kestiği bilgi
+**bir çekirdek daha** içeri sızar → pay `4h` olmalı. Ölçülen fark: `7,69e-06`
+vs `1,86e-15` (KAYIT-024 §2).
+
+> **Kural:** payı yazmadan önce sor — *bu parçacığın sonucu **kaç adım**
+> komşuluk üzerinden bilgi taşıyor?* Cevap `k` ise pay `k·2h`.
+
+### D2 — Ölçüm tasarlamadan önce **ilgili ADR okunur**
+
+Boşluk kontrolü olarak *"olağan yakınsamada hata küçülmeli"* yazdım.
+**ADR-0011 zaten ölçmüştü** ki bu kurulumda hata `%3,9`'luk bir **model-form
+tabanına** oturur ve sıfıra gitmez.
+
+Betik doğru davrandı (`inconclusive` dedi) ama iki koşu boşa gitti. → **S7**
+
+### D3 — Eşiği yazmadan **önce ölç**
+
+Bu turda **beş kez** aynı hata: S1, S3, S4, S6 ve grad-h payı testi.
+
+| tahmin | ölçülen |
+|---|---|
+| "zayıf kohezyon daha çok plastik iş üretir" | **866× ters** |
+| "`dt` hızla değişir" | yayılım **%1,9** |
+| "`c = √(P/ρ)` yeter" | **32,1 kat** küçük |
+| "yanlış taban kuvveti büyütür" | `1,29e-15` — **değişmedi** |
+| "grad-h'nin bölgesi daha küçük olur" | `440 < 440` — **eşit** |
+
+> **Kural:** boşluk kontrolünün **kendisi de bir iddiadır** ve o da ölçülmelidir.
+
+### D4 — Düşen bir boşluk kontrolü **bilgi verir**
+
+C-1'de `λ=1` (aynı kafes) durumunda hata `9,5e-03` çıktı — makine sıfırı
+değil. Bu bir başarısızlık değil, **tabanın keşfiydi**: `h/dx = 1,3`'te SPH
+toplamının birim bölünmesi açığı. Ve çözünürlük sıçraması buna **hiçbir şey
+eklemiyordu** — asıl sonuç buydu (KAYIT-025 §2).
+
+### D5 — İki bağımsız yol aynı sayıyı vermeli
+
+A′ prototipinin `global_h` şeması 8:1'de `0,2150` verdi; **tam çözücüyle**
+ölçülen `mass_ratio` sonucu `0,2108`. **%2** — prototip doğrulandı.
+
+Vermeseydi hangisinin bozuk olduğu ayrı bir iş olurdu; ama bunu **ölçmeden**
+prototipin sayılarına güvenmek yanlış olurdu.
+
+### D6 — Normalizasyon tartışmalıysa **ham** değer de verilir
+
+Değişken-`h` şemalarında `a/ölçek` kaba `h` ile normalize ediliyordu; ince
+bölgenin yerel ölçeği farklı olduğu için kıyas haksız görünebilirdi. **Ham
+`a_rms` de verildi** ve aynı sonucu söyledi (5,8–7,3 kat). Sonuç
+normalizasyon seçimine bağlı değil.
+
+### D7 — Bulgu çıkmayan bir tarama da **bilgidir**
+
+K21'den sonra tüm GPU çekirdeklerindeki `exp`/`log`/`sqrt`/`pow`/`acos` ve
+bölmeler tarandı: 9 aday, 7'si kelepçeli, 2'si `ρ ≤ 0`'a açık ama artık
+deftere işleniyor. **Yeni kusur yok** — ve bu, riskin **sınırının** ölçülmüş
+olması demektir (B2).
+
+### D8 — Ölçülmemiş bir seçenek **iyi** varsayılmaz
+
+C, A′'dan daha iyi *görünüyordu* çünkü ölçülmemişti. Ölçüldüğünde bir kısmı
+doğrulandı (arayüz kaynaklı yapay kuvvet mekanizması yok) ama **asıl riski**
+(korunum kayması) hâlâ ölçülmedi — ve bu yazıldı.
+
+---
+
 ## Kapanış kuralı
 
 > Bir kriter geçtiğinde, **geçme sebebinin** de ölçülmüş olması gerekir.
