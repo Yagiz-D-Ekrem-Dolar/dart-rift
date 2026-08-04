@@ -48,6 +48,7 @@ from __future__ import annotations
 import numpy as np
 
 from ..cpu_reference.sph_ref import kernel_w
+from .kernel_margin import support_margin
 
 __all__ = ["sph_interpolate", "measure_coupling_error"]
 
@@ -121,7 +122,7 @@ def measure_coupling_error(lam: float = 2.0, spacing_coarse: float = 1.0,
         h = h_over_spacing * s_kay
         m = np.full(len(x_kay), RHO0 * s_kay ** 3)
         rho = np.full(len(x_kay), RHO0)
-        pay = 2.0 * h
+        pay = support_margin(h, s_kay)     # TEK KAYNAK: kernel_margin
         ic = np.all(np.abs(x_hed) < half - pay, axis=1)
         if int(ic.sum()) < 20:
             raise ValueError(f"{ad}: iç bölge çok küçük ({int(ic.sum())})")

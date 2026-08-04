@@ -48,6 +48,7 @@ from __future__ import annotations
 import numpy as np
 
 from ..cpu_reference.sph_ref import kernel_dwdq, kernel_w
+from .kernel_margin import support_margin
 
 __all__ = ["evaluate_uniform_pressure", "compare_h_schemes"]
 
@@ -169,7 +170,9 @@ def gradh_margin_factor(h_over_spacing: float) -> float:
     (yayılım `6,7e-16`) ama grad-h ivmesi `7,69e-06` — diğer üç şema
     `1,86e-15`. Fark tamamen bu sızıntıdandı.
     """
-    return 4.0 * h_over_spacing + 0.5
+    from .kernel_margin import margin_factor
+
+    return margin_factor(h_over_spacing, depth=2)
 
 
 def evaluate_uniform_pressure(x: np.ndarray, m: np.ndarray, h: np.ndarray,
@@ -245,8 +248,10 @@ def compare_h_schemes(
         h_max = float(np.max(z["h"]))
         # grad-h komsunun Omega_j'sini de kullanir -> bilgi BIR CEKIRDEK DAHA
         # iceri sizar; pay 4h olmali (bkz. `gradh_margin_factor`).
-        paylar = {"gradh": 4.0 * h_max + 0.5 * spacing}
-        pay_std = 2.0 * h_max + 0.5 * spacing
+        # TEK KAYNAK: kernel_margin. grad-h komsunun Omega_j'sini kullanir,
+        # yani bilgi IKI komsuluk uzerinden tasinir -> depth=2.
+        paylar = {"gradh": support_margin(h_max, spacing, depth=2)}
+        pay_std = support_margin(h_max, spacing)
         pay_max = max(pay_std, paylar["gradh"])
         if r_outer - pay_max <= r_inner + h_max:
             raise ValueError(

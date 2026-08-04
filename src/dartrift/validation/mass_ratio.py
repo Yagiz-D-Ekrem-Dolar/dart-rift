@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import numpy as np
 from ..cpu_reference.materials import TillotsonParams
+from .kernel_margin import support_margin
 
 # TEK KAYNAK: kati yogunlugu Tillotson parametrelerinden gelir. Elle 2700
 # yazmak K7'nin kalibidir: iki yer tesaduf eseri tutar ve biri degisince
@@ -124,7 +125,7 @@ def _masks(z: dict, h: float) -> dict:
     """
     r = np.linalg.norm(z["x"], axis=1)
     s_out = z["spacing_outer"]
-    pay = 2.0 * h + 0.5 * s_out           # destek + yarim aralik guvenlik
+    pay = support_margin(h, s_out)         # TEK KAYNAK: kernel_margin
     ri = z["r_inner"]
     # GEOMETRI YETERLI MI: pay disaridan, h de arayuzden yer yiyor. "Derin dis"
     # bolgesi bos kalirsa olcum sessizce yalnizca ic bolgeyi olcer.
