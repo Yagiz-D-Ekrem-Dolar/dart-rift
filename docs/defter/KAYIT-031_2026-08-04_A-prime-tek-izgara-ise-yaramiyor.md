@@ -1,7 +1,25 @@
 # KAYIT-031 — A′-1: tek ızgarayla A′ **işe yaramıyor** (2026-08-04)
 
-**Kapsam:** FAZ 4.2 son kefe · **Durum:** ölçüldü — **A′ çok seviyeli komşu
-arama gerektiriyor**
+**Kapsam:** FAZ 4.2 · **Durum:** §4'ün *"ön koşul"* yargısı **GEÇERSİZ**
+(bkz. [KAYIT-033](KAYIT-033_2026-08-04_A-prime-3-ince-bolge-orani-belirleyici.md))
+
+> ## ⚠ DÜZELTME
+>
+> Bu kayıt **tek bir geometride** ölçtü: `r_iç/r_dış = 0,357`, yani ince
+> parçacıklar toplamın **%63'ü**. İsraf **yalnızca ince parçacıklara**
+> uygulanır; genel israf ince kesirle **ağırlıklı** bir ortalamadır:
+>
+> ```
+> israf_genel ≈ f_ince · λ³ + (1 − f_ince) · 1
+> ```
+>
+> **DART'ın ince bölgesi küçüktür** (`r_iç/r_dış` ~ 0,02–0,1). Orada
+> ölçülen (KAYIT-033): tek ızgara, çok seviyelinin **%76–93**'ünü veriyor;
+> `27:1`'de bile `net = 0,051` (**19,6× ucuz**).
+>
+> **Yani çok seviyeli komşu arama bir ön koşul DEĞİL, bir iyileştirmedir.**
+>
+> Aşağısı silinmiyor: ölçümler doğruydu, **genelleme** yanlıştı.
 **Öncül:** [KAYIT-030](KAYIT-030_2026-08-04_D2-tek-parametreli-kalibrasyon-yetmiyor.md),
 ADR-0041 §5
 

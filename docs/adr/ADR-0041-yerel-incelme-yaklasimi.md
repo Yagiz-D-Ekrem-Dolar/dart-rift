@@ -1,9 +1,9 @@
-# ADR-0041 — Yerel incelme yaklaşımı: **her seçeneğin ölçülmüş bir bedeli var**
+# ADR-0041 — Yerel incelme yaklaşımı: **A′ öne geçti**, bedeli ölçüldükçe küçüldü
 
 - **Durum:** **ÖNERİLDİ — kilitlenmedi.** Kilitleme kararı proje sahibinindir.
 - **Tarih:** 2026-08-04
 - **Bağlam:** ADR-0026 (mermi çözünürlüğü tekdüze ağda imkânsız), FAZ 4.1/4.2
-- **Kanıt:** KAYIT-019 … KAYIT-032 (on dört kayıt, on üç TRUBA koşusu + üç CPU ölçümü)
+- **Kanıt:** KAYIT-019 … KAYIT-033 (on beş kayıt, on üç TRUBA koşusu + dört CPU ölçümü)
 - **İlgili:** ADR-0011, ADR-0013, ADR-0022, ADR-0028, ADR-0030, ADR-0040
 
 ---
@@ -260,6 +260,37 @@ parçacık `i` **her seviye** `L`'yi `h_i + h_L` ile sorgular.
 > bir miktar **düşürür** (16:1'de net `1,065 → 0,953`). Yargı nitelik
 > olarak aynı, nicelik olarak yumuşadı.
 
+### 3.11 DÜZELTME — belirleyici olan **ince bölgenin oranı** (KAYIT-033)
+
+§3.9 ve §3.10 **tek bir geometride** ölçtü: `r_iç/r_dış = 0,357`, yani ince
+parçacıklar toplamın **%63'ü**. İsraf **yalnızca ince parçacıklara**
+uygulanır; genel israf ince kesirle **ağırlıklıdır**:
+
+```
+israf_genel ≈ f_ince · λ³ + (1 − f_ince) · 1
+```
+
+**DART'ın ince bölgesi küçüktür** (~1,3 m mermi, ~160 m cisim →
+`r_iç/r_dış` ~ 0,02–0,1). O rejimde ölçüldü:
+
+| λ | oran | `r_iç/r_dış` | ince kesir | tasarruf | **net (tek ızgara)** | net (çok seviye) | tek/çok |
+|---|---|---|---|---|---|---|---|
+| 2,00 | 8:1 | 0,114 | 0,039 | 7,86× | **0,136** | 0,127 | **%93** |
+| 2,52 | 16:1 | 0,114 | 0,077 | 15,60× | **0,077** | 0,064 | **%83** |
+| 3,00 | 27:1 | 0,114 | 0,126 | 25,75× | **0,051** | 0,039 | **%76** |
+
+> **Küçük ince bölgede tek ızgara, çok seviyelinin `%76–93`'ünü veriyor.**
+> §3.9'un *"çok seviyeli arama ön koşuldur"* yargısı **geçersizdir**; o bir
+> **iyileştirmedir**.
+>
+> `27:1`'de tek ızgarayla bile `net = 0,051` — **19,6 kat daha ucuz.**
+
+**A′'nın mimari bedeli bu ölçümle küçüldü:** yeni bir komşu arama mimarisi
+**gerekmiyor**; parçacık başına `h` (68+24 site) ve `Ω` yeterli.
+
+> §3.9/§3.10 silinmiyor: ölçümleri doğruydu, **genellemesi** yanlıştı — tek
+> bir `r_iç/r_dış` değerinde ölçülüp "her oranda" diye yazılmıştı.
+
 ---
 
 ## 4. Karar tablosu
@@ -267,7 +298,7 @@ parçacık `i` **her seviye** `L`'yi `h_i + h_L` ile sorgular.
 | # | mermiyi çözer | yapay kuvvet | şok geçişi | **momentum** | model-form | mimari bedel |
 |---|---|---|---|---|---|---|
 | ~~A~~ | **hayır** | 0,168 | zararsız ✔ | 1e-16 ✔ | — | yok |
-| **A′** | evet | **0,55–1,10** | (A'da zararsız) | 1e-16 ✔ | **yok** | çekirdek + CFL + Ω + çok seviyeli ızgara → **16:1'de 9,45× ucuz** (§3.10) |
+| **A′** | evet | **0,55–1,10** | (A'da zararsız) | 1e-16 ✔ | **yok** | 92 site + `Ω` (çok seviyeli ızgara **isteğe bağlı**, §3.11) → DART rejiminde **19,6× ucuz** |
 | ~~B~~ | A′ ile | = A′ | = A′ | = A′ | = A′ | = A′ |
 | **C** | evet | yok | ölçülmedi | **7,5e-03 ✘ sistematik** | ara değerleme `O(h²)` | iki çözücü + örtüşme + MLS + korunum düzeltmesi |
 | **D** | **atlar** | yok | — | ✔ (tek çözücü) | **%5–7**, **kalibre edilemiyor** (§3.7, §3.8) | ılımlı |
@@ -318,7 +349,7 @@ parçacık `i` **her seviye** `L`'yi `h_i + h_L` ile sorgular.
 >
 > | # | ölçülmüş bedel |
 > |---|---|
-> | **A′** | arayüz 3,2–6,5× gürültü + çok seviyeli ızgara (68+24 site) — **karşılığı ölçüldü: 16:1'de 9,45× ucuz**, ve model-form hatası **yok** |
+> | **A′** | arayüz 3,2–6,5× gürültü (şoka etkisi **yok**) + 92 site + `Ω` — **karşılığı: DART rejiminde 19,6× ucuz**, ve model-form hatası **yok** |
 > | **C** | momentum **7,5e-03 sistematik** + MLS + korunum düzeltmesi |
 > | **D** | model-form **%5–7**, tek parametreyle **kalibre edilemiyor** (`KE/E` %14,5–18,0) |
 >

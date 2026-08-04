@@ -38,6 +38,7 @@ koşulardan gelir; iş numaraları yazılıdır.
 | **[030](KAYIT-030_2026-08-04_D2-tek-parametreli-kalibrasyon-yetmiyor.md)** | 04.08 | **D-2: kalibrasyon yetmiyor** — şok yarıçapı eşlenirken `KE/E` **%14,5–18,0** ayrışıyor; **A′ öne geçti** |
 | **[031](KAYIT-031_2026-08-04_A-prime-tek-izgara-ise-yaramiyor.md)** | 04.08 | **A′-1: tek ızgara yetmiyor** — israf küpsel; 16:1'de A′ her yeri inceltmekten **pahalı** |
 | **[032](KAYIT-032_2026-08-04_A-prime-2-cok-seviyeli-izgara.md)** | 04.08 | **A′-2: çok seviyeli ızgara** israfı **tam** kaldırıyor; 16:1'de `9,45×` ucuz |
+| **[033](KAYIT-033_2026-08-04_A-prime-3-ince-bolge-orani-belirleyici.md)** | 04.08 | **A′-3: DÜZELTME** — belirleyici olan **ince bölge oranı**; DART rejiminde tek ızgara **yeterli** |
 
 > 017/018 numaraları kronolojiyle ters: 018 (2. tur) 017'den (3. tur) **önce**
 > yaşandı ama sonra yazıldı. Numaralar yazım sırasını, tablo yaşanma sırasını
