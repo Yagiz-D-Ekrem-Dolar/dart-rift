@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import numpy as np
 from ..cpu_reference.materials import TillotsonParams
+from ..setup.rubble_generator import FCC_VOLUME_FACTOR
 from .kernel_margin import support_margin
 
 # TEK KAYNAK: kati yogunlugu Tillotson parametrelerinden gelir. Elle 2700
@@ -84,8 +85,11 @@ def build_two_zone(
     kaba = kaba[np.linalg.norm(kaba, axis=1) > r_inner]      # ic bolgeyi bosalt
     ince = _fcc(s_in, r_inner)
 
-    v_kaba = spacing**3 / np.sqrt(2.0)
-    v_ince = s_in**3 / np.sqrt(2.0)
+    # TEK KAYNAK: FCC parcacik hacmi `s^3/sqrt(2)` — `rubble_generator`'da
+    # zaten adlandirilmis (FCC_VOLUME_FACTOR). Burada yeniden yazmak K7'nin
+    # kalibidir: iki yer bugun ayni, ama hicbir sey onlari ayni tutmaz.
+    v_kaba = spacing**3 * FCC_VOLUME_FACTOR
+    v_ince = s_in**3 * FCC_VOLUME_FACTOR
     x = np.vstack([ince, kaba])
     m = np.concatenate([np.full(len(ince), rho * v_ince),
                         np.full(len(kaba), rho * v_kaba)])

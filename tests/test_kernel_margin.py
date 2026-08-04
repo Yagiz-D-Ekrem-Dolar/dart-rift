@@ -76,3 +76,29 @@ def test_pay_formulu_ELLE_yazilmamis() -> None:
 def test_tarama_bos_degil() -> None:
     """BOŞLUK KONTROLÜ: taranan dosya yoksa yukarıdaki test boş bir doğrudur."""
     assert len(list(VAL.glob("*.py"))) >= 10
+
+
+def test_FCC_hacmi_ELLE_yazilmamis() -> None:
+    """`s³/√2` de tek kaynaktan gelmeli (`FCC_VOLUME_FACTOR`).
+
+    `rubble_generator` bu sabiti **zaten adlandırmıştı**; `mass_ratio` onu
+    kullanmayıp formülü yeniden yazmıştı. Aynı K7 kalıbı.
+    """
+    kalip = re.compile(r"\*\*\s*3\s*/\s*np\.sqrt\(\s*2")
+    hatali = []
+    for f in sorted(VAL.glob("*.py")):
+        for no, satir in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            if kalip.search(satir.split("#", 1)[0]):
+                hatali.append(f"{f.name}:{no}: {satir.strip()}")
+    assert not hatali, (
+        "FCC hacmi ELLE yazilmis — FCC_VOLUME_FACTOR kullanilmali:\n"
+        + "\n".join(hatali))
+
+
+def test_FCC_carpani_dogru_deger() -> None:
+    """KALIBRASYON: sabit gercekten `1/sqrt(2)` mi?"""
+    import numpy as np
+
+    from dartrift.setup.rubble_generator import FCC_VOLUME_FACTOR
+
+    assert FCC_VOLUME_FACTOR == pytest.approx(1.0 / np.sqrt(2.0))
