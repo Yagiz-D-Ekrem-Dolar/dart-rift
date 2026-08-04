@@ -16,15 +16,18 @@ from ..cpu_reference.materials import (
     GravityParams,
     MaterialParams,
     PorosityParams,
-    StrengthParams,
-)
+    StrengthParams, TillotsonParams)
 from ..cpu_reference.solid_ref import SolidState, budgets_solid, run_solid
 from ..cpu_reference.sph_ref import RefParams
 from .gravity import _uniform_sphere
 
 
 def _base_ic(n: int = 350):
-    rho0 = 2700.0
+    # TEK KAYNAK: kutle `rho0`'dan kuruluyor ve EOS de `tillotson`. Ikisi ayri
+    # yazilirsa (once oyleydi: burada 2700, TillotsonParams'ta da 2700) tesaduf
+    # eseri tutarlar ve `TillotsonParams.rho0` degisince bu kurulum SESSIZCE
+    # on-gerilmeli bir baslangic durumu olcer. K7'nin tam kalibi.
+    rho0 = TillotsonParams().rho0
     R = 1.0
     x = _uniform_sphere(n, R, seed=515151)
     v = -50.0 * x  # radyal ice cokme (v ~ 50 m/s kabukta)

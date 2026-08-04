@@ -29,6 +29,13 @@ bu, döndürülen sözlükte `baseline_clean` olarak raporlanır.
 from __future__ import annotations
 
 import numpy as np
+from ..cpu_reference.materials import TillotsonParams
+
+# TEK KAYNAK: kati yogunlugu Tillotson parametrelerinden gelir. Elle 2700
+# yazmak K7'nin kalibidir: iki yer tesaduf eseri tutar ve biri degisince
+# otekini SESSIZCE bozar (bkz. tests/test_no_hardcoded_rho0.py).
+RHO0_SOLID = TillotsonParams().rho0
+
 
 from ..cpu_reference.sph_ref import kernel_w
 
@@ -40,7 +47,7 @@ def build_two_zone(
     r_inner: float = 25.0,
     spacing: float = 8.0,
     lam: float = 2.0,
-    rho: float = 2700.0,
+    rho: float = RHO0_SOLID,
 ) -> dict:
     """İki bölgeli küre: iç bölge `lam` kat daha ince.
 
@@ -235,7 +242,7 @@ def run_mass_ratio_scan(
 
 
 def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
-                                  rho0: float = 2700.0,
+                                  rho0: float = RHO0_SOLID,
                                   eps: float = 0.01,
                                   rho_base: np.ndarray | None = None,
                                   interior_mask: np.ndarray | None = None) -> dict:

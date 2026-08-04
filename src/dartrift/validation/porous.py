@@ -15,8 +15,7 @@ from ..cpu_reference.materials import (
     MaterialParams,
     PorosityParams,
     StrengthParams,
-    porosity_update,
-)
+    porosity_update, TillotsonParams)
 from ..cpu_reference.solid_ref import SolidState, run_solid
 from ..cpu_reference.sph_ref import RefParams
 
@@ -65,7 +64,9 @@ def run_porous_plate(resolution: int = 200, porous: bool = True) -> dict:
     Beklenen: porozite ACIKKEN sok arkasi tepe basinci DUSER (ezilme enerji
     yutar) ve sok gecen bolgede alpha < alpha0.
     """
-    rho0 = 2700.0
+    # TEK KAYNAK (bkz. ablation.py'deki ayni not): kutle ile EOS ayni
+    # `rho0`'i kullanmali, iki yerde yazilmamali.
+    rho0 = TillotsonParams().rho0
     dxl = 1.0 / resolution
     x = np.arange(-0.75 + 0.5 * dxl, 0.75, dxl)
     n = x.size
