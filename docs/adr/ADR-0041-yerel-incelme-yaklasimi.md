@@ -1,9 +1,9 @@
-# ADR-0041 — Yerel incelme yaklaşımı: mermi **çözülmez**, kaynak terimiyle temsil edilir
+# ADR-0041 — Yerel incelme yaklaşımı: **D önerilir, kalibrasyon şartıyla**
 
 - **Durum:** **ÖNERİLDİ — kilitlenmedi.** Kilitleme kararı proje sahibinindir.
 - **Tarih:** 2026-08-04
 - **Bağlam:** ADR-0026 (mermi çözünürlüğü tekdüze ağda imkânsız), FAZ 4.1/4.2
-- **Kanıt:** KAYIT-019 … KAYIT-028 (on kayıt, dokuz TRUBA koşusu)
+- **Kanıt:** KAYIT-019 … KAYIT-029 (on bir kayıt, on iki TRUBA koşusu)
 - **İlgili:** ADR-0011, ADR-0013, ADR-0022, ADR-0028, ADR-0030, ADR-0040
 
 ---
@@ -128,7 +128,7 @@ yarayıp yaramadığı **ayrıca ölçülmelidir**.
 > Bu, karar eksenini **arayüz kalitesinden** çıkarıp **çözünürlük** ve
 > **korunum** eksenlerine taşır.
 
-### 3.6 D'nin model-form duyarlılığı **düşük**
+### 3.6 D'nin model-form duyarlılığı ~~düşük~~ — **DÜZELTİLDİ, bkz. §3.7**
 
 **KAYIT-028** (iş 1451137): kaynak terimi *"aynı enerji, yapısız"* demektir;
 sorusu **gözlenebilirin biriktirme yarıçapına duyarlılığıdır**. Sedov'un tam
@@ -148,6 +148,29 @@ Yarıçap **2,4 kat** değişiyor, hata **1,21 puan** oynuyor.
 Ve ~%4'lük taban **biriktirme yarıçapından gelmiyor**: KAYIT-023'ün `n = 64`
 ayrıklaştırma platosu (`0,23874`) ile **birebir aynı**.
 
+### 3.7 DÜZELTME — §3.6'nın aralığı **DART bandını içermiyordu**
+
+**KAYIT-029** (işler 1451183, 1451261): `n_side = 128` ile DART bandına
+inildi ve **altı noktanın hepsi** iyi örneklendi (`n_enj ≥ 136`).
+
+| `r_dep/r_şok` | `n_enj` | hata | **taban üstü fazlalık** |
+|---|---|---|---|
+| 0,3201 | 4632 | %3,87 | ~0 *(taban)* |
+| 0,2401 | 1904 | %4,94 | %1,1 |
+| 0,2001 | 1088 | %5,97 | %2,1 |
+| 0,1601 | 552 | %7,75 | %3,9 |
+| 0,1200 | 208 | %9,62 | %5,7 |
+| **0,1000** | 136 | **%10,41** | **%6,5** |
+
+Hata **monoton**; yarıçap 3,2 kat küçülünce hata **2,7 kat** büyüyor.
+**DART bandında (`0,065–0,13`) model-form hatası ~%5–7.**
+
+İkinci gözlenebilir de duyarlı: kinetik enerji kesri `0,210 → 0,127`
+(nokta patlaması değeri `0,28`'den **%25–55** uzak).
+
+> §3.6 silinmiyor: ölçümü ve iki rejim ayrımı doğruydu; **aralığı**
+> DART çalışma noktasını içermiyordu ve yargısı o yüzden yanlıştı.
+
 ---
 
 ## 4. Karar tablosu
@@ -158,7 +181,7 @@ ayrıklaştırma platosu (`0,23874`) ile **birebir aynı**.
 | **A′** | evet | **0,55–1,10** | (A'da zararsız) | 1e-16 ✔ | yok | çekirdek + hash-grid + CFL + Ω |
 | ~~B~~ | A′ ile | = A′ | = A′ | = A′ | = A′ | = A′ |
 | **C** | evet | yok | ölçülmedi | **7,5e-03 ✘ sistematik** | ara değerleme `O(h²)` | iki çözücü + örtüşme + MLS + korunum düzeltmesi |
-| **D** | **atlar** | yok | — | ✔ (tek çözücü) | **≤1,2 puan** (ölçülen aralıkta) | ılımlı |
+| **D** | **atlar** | yok | — | ✔ (tek çözücü) | **%5–7** (DART bandı, §3.7) | ılımlı + **kalibrasyon** |
 
 ---
 
@@ -177,19 +200,32 @@ ayrıklaştırma platosu (`0,23874`) ile **birebir aynı**.
    ejekta değil. D'de mermi parçacığı **yoktur**; geri sıçrayacak bir şey de
    yoktur.
 
-3. **D'nin ölçülen model-form duyarlılığı düşük** (§3.6) ve korunumu
-   bozmuyor.
+3. ~~**D'nin ölçülen model-form duyarlılığı düşük** (§3.6)~~ —
+   **BU MADDE GEÇERSİZ** ([KAYIT-029](../defter/KAYIT-029_2026-08-04_D1b-duzeltme-kaynak-terimi-duyarli.md)).
+   §3.6'nın dayandığı tarama DART çalışma noktasının **üstündeydi**.
+   `n_side = 128` ile banda inildiğinde hata **monoton ve güçlü**:
+   `%3,87 → %10,41`; taban üstü fazlalık DART bandında **%5–7**. Kinetik
+   enerji kesri de duyarlı (`0,210 → 0,127`, nokta değerinden %25–55 uzak).
+   **Doğrusu:** D korunumu bozmuyor, ama **model-form duyarlılığı düşük
+   değil** ve biriktirme yarıçapı **kalibre edilmesi gereken serbest bir
+   parametredir**.
 
 4. **A′ yedek olarak durmalı**, elenmemeli: çözer ve momentumu korur.
    Bedeli mimari; arayüz gürültüsü ise (§3.5) şok geçişinde ölçülebilir
    etki yaratmıyor.
 
+> **KAYIT-029 sonrası denge:** A′ ile D arasındaki fark **D'nin aleyhine
+> kaydı.** A′'nın model-form hatası **yoktur** (mermiyi gerçekten çözer);
+> D'ninki DART bandında %5–7. D hâlâ savunulabilir — ama ancak biriktirme
+> yarıçapı **çözülmüş bir referansla kalibre edilirse** (D-2, ölçülmedi).
+> Öneri bu yüzden **kilitlenmemiştir**.
+
 ### Bu öneriyi **kilitlemeden önce** kapatılması gereken üç boşluk
 
 | # | boşluk | neden |
 |---|---|---|
-| **1** | D'nin DART çalışma noktası (`r_dep/r_krater ≈ 0,065–0,13`) taranan aralığın (0,20–0,48) **altında** | daha ince kafes (`n_side ≥ 128`) gerekir; yoksa az örneklenen rejime düşülür |
-| **2** | ölçülen gözlenebilir **yalnızca şok yarıçapı** | **β** ve krater şekli daha duyarlı olabilir |
+| ~~1~~ | ~~D'nin DART çalışma noktası taranan aralığın dışında~~ | **KAPATILDI (KAYIT-029):** `n_side=128` ile inildi; hata %5–7 çıktı ve §5 öneri gerekçesi düzeltildi |
+| ~~2~~ | ~~ölçülen gözlenebilir yalnızca şok yarıçapı~~ | **KISMEN KAPATILDI (KAYIT-029 §2):** kinetik enerji kesri de ölçüldü ve **duyarlı** (`0,210 → 0,127`). Gerçek β hâlâ ölçülmedi. |
 | **3** | Sedov **gerilmesiz ve tek malzemeli** | mukavemet, gözeneklilik ve hasarla etkileşim ölçülmedi |
 
 > **Bu üçü kapanmadan ADR kilitlenmemelidir.** Kanıtsız kilitlenmiş bir

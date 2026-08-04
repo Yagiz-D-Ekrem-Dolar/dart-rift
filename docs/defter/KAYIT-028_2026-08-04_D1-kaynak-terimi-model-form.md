@@ -1,7 +1,21 @@
 # KAYIT-028 — D-1: kaynak teriminin model-form hatası (2026-08-04)
 
-**Kapsam:** FAZ 4.2 karar verisi · **Durum:** ölçüldü — **D için iyi haber**,
-ama sınırlı bir aralıkta
+**Kapsam:** FAZ 4.2 karar verisi · **Durum:** §3'ün yargısı **GEÇERSİZ**
+(bkz. [KAYIT-029](KAYIT-029_2026-08-04_D1b-duzeltme-kaynak-terimi-duyarli.md))
+
+> ## ⚠ DÜZELTME
+>
+> Bu kaydın §3'teki *"hata biriktirme yarıçapına duyarsız"* yargısı
+> **geçersizdir**. §4'te kendi yazdığım sınır — *"taranan aralık DART
+> çalışma noktasının **altında** değil, **üstünde**"* — o yargıyı zaten
+> uyarıyordu; yine de kurmuştum.
+>
+> `n_side = 128` ile DART bandına inildiğinde (KAYIT-029, iş 1451183) hata
+> **monoton** ve **güçlü** çıktı: `%3,87 → %10,41`, taban üstü fazlalık
+> DART bandında **%5–7**.
+>
+> **Aşağısı silinmiyor:** ölçüm ve iki rejim ayrımı doğruydu; **yargı**
+> yanlıştı.
 **Öncül:** ADR-0011, ADR-0026, [KAYIT-023](KAYIT-023_2026-08-04_cozunurlugu-h-belirliyor.md)
 
 ---
