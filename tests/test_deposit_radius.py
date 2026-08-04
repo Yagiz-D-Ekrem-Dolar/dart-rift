@@ -76,3 +76,33 @@ def test_gecersiz_girdi_reddediliyor() -> None:
     kotu[0]["deposit_over_shock"] = 0.0
     with pytest.raises(ValueError, match="pozitif"):
         analyse_scan(kotu)
+
+
+def test_kinetik_kesir_eski_ciktilarla_uyumlu() -> None:
+    """Alan yoksa **sessizce atlanır** ama `kinetic_available` bunu söyler.
+
+    Eski koşu çıktıları (bu alan eklenmeden önce üretilmiş) hâlâ
+    yorumlanabilmeli — ama "ölçülmedi" ile "sıfır" karıştırılmamalı.
+    """
+    assert analyse_scan(OLCULEN)["kinetic_available"] is False
+
+
+def test_kinetik_kesir_sok_yaricapindan_DAHA_DUYARLI() -> None:
+    """ADR-0041 §5 boşluk 2: β'nın Sedov karşılığı daha duyarlı mı?
+
+    ADR-0011'in ölçtüğü değerlerle (n = 32…112: 0,224 / 0,191 / 0,182 /
+    0,200 / 0,189 / 0,187) sınanıyor. Nokta patlaması değeri **0,28**;
+    sonlu enjeksiyon **~0,19** — yani `%32` fark, şok yarıçapının `%4`'üne
+    karşı.
+    """
+    rows = [dict(r) for r in OLCULEN]
+    for r, k in zip(rows, [0.224, 0.210, 0.200, 0.195, 0.189, 0.182]):
+        r["kinetic_fraction"] = k
+    a = analyse_scan(rows)
+    assert a["kinetic_available"] is True
+    lo, hi = a["kinetic_well_sampled_range"]
+    assert lo == pytest.approx(0.182)
+    assert hi == pytest.approx(0.200)
+    # Kinetik kesrin GORELI yayilimi, sok yaricapi hatasinin yayilimindan
+    # daha buyuk olmali — yoksa bu ikinci gozlenebilir bir sey EKLEMIYOR.
+    assert a["kinetic_spread_rel"] > 0.05

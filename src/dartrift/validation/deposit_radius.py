@@ -39,7 +39,7 @@ from __future__ import annotations
 import numpy as np
 
 from ..cpu_reference.sph_ref import RefParams
-from .sedov import (GAMMA, H_OVER_DX, T_END_DEFAULT, build_sedov_ic,
+from .sedov import (E_INJECT, GAMMA, H_OVER_DX, T_END_DEFAULT, build_sedov_ic,
                     measure_shock_radius, shock_radius_exact)
 
 __all__ = ["analyse_scan", "run_deposit_radius_scan"]
@@ -57,7 +57,15 @@ def _tek(n_side: int, h_inject: float, device: str, t_end: float) -> dict:
     st = solver.state_numpy()
     r_olc = float(measure_shock_radius(st["x"], st["rho"]))
     r_tam = float(shock_radius_exact(t_end))
+    # IKINCI GOZLENEBILIR — ADR-0041 §5 boslugu 2 icin.
+    # Kinetik enerji kesri, Sedov'da beta'nin en yakin karsiligidir: enerjinin
+    # ne kadari HAREKETE gitti, ne kadari ISI olarak kaldi? ADR-0011 olctu ki
+    # nokta patlamasinda ~0,28, sonlu enjeksiyonda ~0,19 — yani sok
+    # yaricapindan (%4) COK DAHA duyarli (%32). O yuzden bu tarama sok
+    # yaricapiyla YETINMEZ.
+    ke = 0.5 * float(np.sum(st["m"] * np.sum(st["v"] * st["v"], axis=1)))
     return {"h_inject": float(h_inject),
+            "kinetic_fraction": ke / E_INJECT,
             "r_deposit": 2.0 * float(h_inject),      # cekirdek destegi
             "n_injected": int(ic["n_injected"]),
             "r_measured": r_olc, "r_exact": r_tam,
@@ -65,6 +73,28 @@ def _tek(n_side: int, h_inject: float, device: str, t_end: float) -> dict:
             "signed_err": (r_olc - r_tam) / r_tam,
             "deposit_over_shock": 2.0 * float(h_inject) / r_tam,
             "n_steps": int(diag["n_steps"])}
+
+
+def _kinetik_ozet(rows: list[dict], iyi: np.ndarray) -> dict:
+    """Kinetik enerji kesri özeti — anahtar yoksa sessizce atlanır.
+
+    Eski çıktılarla (bu alan eklenmeden önce üretilmiş) uyumlu kalır; ama
+    **var olduğunda** raporlanır ve `kinetic_available` bunu söyler.
+    """
+    if not all("kinetic_fraction" in r for r in rows):
+        return {"kinetic_available": False}
+    kf = np.array([r["kinetic_fraction"] for r in rows], dtype=np.float64)
+    if not iyi.any():
+        return {"kinetic_available": True, "kinetic_well_sampled_range":
+                [float("nan"), float("nan")], "kinetic_spread_rel": float("nan")}
+    lo, hi = float(kf[iyi].min()), float(kf[iyi].max())
+    return {
+        "kinetic_available": True,
+        "kinetic_all": [float(v) for v in kf],
+        "kinetic_well_sampled_range": [lo, hi],
+        # GORELI yayilim: sok yaricapi yayilimiyla kiyaslanabilsin diye.
+        "kinetic_spread_rel": float((hi - lo) / max(abs(lo), 1e-300)),
+    }
 
 
 def analyse_scan(rows: list[dict], well_sampled_min: int = 100) -> dict:
@@ -103,6 +133,9 @@ def analyse_scan(rows: list[dict], well_sampled_min: int = 100) -> dict:
         "well_sampled_spread": (
             float(hatalar[iyi].max() - hatalar[iyi].min()) if iyi.any()
             else float("nan")),
+        # Ikinci gozlenebilir: kinetik kesir. Sok yaricapindan DAHA DUYARLI
+        # oldugu icin D hakkindaki yargi buna da bakmali (ADR-0041 §5-2).
+        **_kinetik_ozet(rows, iyi),
         "injection_well_sampled": bool(int(n_dizi.min()) >= int(well_sampled_min)),
         "enough_well_sampled_points": bool(int(iyi.sum()) >= 3),
     }
