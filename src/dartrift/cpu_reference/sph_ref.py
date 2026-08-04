@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from .adaptive_h import pair_h, per_particle_h
+
 _PI = np.pi
 AV_EPS = 0.01  # mu_ij paydasindaki eps*h^2 katsayisi (sartname §2.5)
 BALSARA_EPS = 1.0e-4  # f_i paydasindaki eps*c/h olceklendirme katsayisi
@@ -102,7 +104,8 @@ class RefState:
     v: np.ndarray
     m: np.ndarray
     u: np.ndarray
-    h: float
+    # `h` SKALER ya da parcacik basina DIZI (ADR-0041).
+    h: float | np.ndarray
     active: np.ndarray  # bool: False -> donmus sinir parcacigi (integre edilmez)
     # eval() tarafindan doldurulanlar:
     rho: np.ndarray = field(default=None)  # type: ignore[assignment]
@@ -136,11 +139,12 @@ def _pair_geometry(state: RefState):
     """Cift matrisleri: dx (N,N,dim), r, q, gradW (N,N,dim)."""
     dx = state.x[:, None, :] - state.x[None, :, :]
     r = np.sqrt(np.sum(dx * dx, axis=2))
-    q = r / state.h
-    dwdq = kernel_dwdq(q, state.h, state.dim)
+    hij = pair_h(state.h, len(state.m))
+    q = r / hij
+    dwdq = kernel_dwdq(q, hij, state.dim)
     with np.errstate(invalid="ignore", divide="ignore"):
         inv_r = np.where(r > 1.0e-12, 1.0 / r, 0.0)
-    grad_w = (dwdq / state.h * inv_r)[:, :, None] * dx
+    grad_w = (dwdq / hij * inv_r)[:, :, None] * dx
     return dx, r, q, grad_w
 
 
@@ -158,7 +162,7 @@ def compute_eos(state: RefState, params: RefParams) -> None:
 def evaluate(state: RefState, params: RefParams) -> None:
     """Tam alan degerlendirmesi: rho, P, cs, div/curl, Balsara, a, du/dt."""
     dx, r, q, grad_w = _pair_geometry(state)
-    w = kernel_w(q, state.h, state.dim)
+    w = kernel_w(q, pair_h(state.h, len(state.m)), state.dim)
 
     # 1) summation yogunlugu (P1-FR-02)
     state.rho = w @ state.m

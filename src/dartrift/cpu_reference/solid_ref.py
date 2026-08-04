@@ -30,6 +30,7 @@ from .materials import (
     tillotson_pressure,
     tillotson_sound_speed,
 )
+from .adaptive_h import pair_h, per_particle_h
 from .sph_ref import AV_EPS, BALSARA_EPS, RefParams, kernel_dwdq, kernel_w
 
 _I3 = np.eye(3)
@@ -43,7 +44,9 @@ class SolidState:
     v: np.ndarray
     m: np.ndarray
     u: np.ndarray
-    h: float
+    # `h` SKALER ya da parcacik basina DIZI (ADR-0041). Skaler yol bit
+    # duzeyinde korunur.
+    h: float | np.ndarray
     active: np.ndarray
     S: np.ndarray = field(default=None)  # type: ignore[assignment]
     alpha: np.ndarray = field(default=None)  # type: ignore[assignment]
@@ -107,13 +110,20 @@ class SolidState:
 
 
 def _pair_geometry(state: SolidState):
+    """Cift geometrisi. `h` skalerse ifadeler AYNEN korunur (ADR-0041 §5b-4).
+
+    `h` dizi ise cift uzunlugu SIMETRIKTIR: `h_ij = (h_i + h_j)/2`. Bu bicim
+    momentumu TAM korur (`f_ij = -f_ji`) ve KAYIT-024'te olculen en dusuk
+    arayuz gurultusunu verir.
+    """
     dx = state.x[:, None, :] - state.x[None, :, :]
     r = np.sqrt(np.sum(dx * dx, axis=2))
-    q = r / state.h
-    dwdq = kernel_dwdq(q, state.h, state.dim)
+    hij = pair_h(state.h, len(state.m))
+    q = r / hij
+    dwdq = kernel_dwdq(q, hij, state.dim)
     with np.errstate(invalid="ignore", divide="ignore"):
         inv_r = np.where(r > 1.0e-12, 1.0 / r, 0.0)
-    grad_w = (dwdq / state.h * inv_r)[:, :, None] * dx
+    grad_w = (dwdq / hij * inv_r)[:, :, None] * dx
     return dx, r, q, grad_w
 
 
@@ -173,7 +183,7 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
 
     def _w() -> np.ndarray:
         if not w_cache:
-            w_cache.append(kernel_w(q, state.h, state.dim))
+            w_cache.append(kernel_w(q, pair_h(state.h, state.n), state.dim))
         return w_cache[0]
 
     if mat.density_method == "summation":
@@ -240,7 +250,8 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
     spin = 0.5 * (state.L - np.transpose(state.L, (0, 2, 1)))
     if num.use_balsara and state.dim == 3:
         fbal = np.abs(state.divv) / (
-            np.abs(state.divv) + curl_mag + BALSARA_EPS * state.cs / state.h
+            np.abs(state.divv) + curl_mag
+            + BALSARA_EPS * state.cs / per_particle_h(state.h, state.n)
         )
     else:
         fbal = np.ones(state.n)
@@ -300,7 +311,12 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
     # yapay viskozite (FAZ 1 ile ayni)
     vij3 = -vji
     vr = np.einsum("nja,nja->nj", vij3, _embed3(dx, state.dim))
-    mu = state.h * vr / (r * r + AV_EPS * state.h**2)
+    # CIFT buyuklugu: SIMETRIK h_ij kullanilmali. `state.h` dizi oldugunda
+    # dogrudan yazmak onu SATIR vektoru gibi yayar (h_j) ve mu ASIMETRIK olur;
+    # o zaman f_ij != -f_ji ve momentum korunmaz. Olculdu: net/olcek 4.0e5
+    # (test_degisken_h_momentum_koruyor bunu yakaladi).
+    h_av = pair_h(state.h, state.n)
+    mu = h_av * vr / (r * r + AV_EPS * h_av**2)
     c_bar = 0.5 * (state.cs[:, None] + state.cs[None, :])
     rho_bar = 0.5 * (state.rho[:, None] + state.rho[None, :])
     pi_av = np.where(
@@ -318,8 +334,11 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
         # kendisine verilen basinctan hesaplanir. Ham P kullanmak, hasarli
         # malzemede var olmayan bir cekmeyi bastirmaya calismak olurdu.
         r_i = np.where(state.P_eff < 0.0, -ast.eps * state.P_eff / state.rho**2, 0.0)
-        dp = ast.dp_over_h * state.h
-        w_dp = float(kernel_w(np.array([dp / state.h]), state.h, state.dim)[0])
+        # Referans uzunluk: PARCACIK basina degil, kafesin tipik araligi.
+        # Degisken h'de en KUCUK h alinir (en siki paketleme).
+        h_ref = float(np.min(per_particle_h(state.h, state.n)))
+        dp = ast.dp_over_h * h_ref
+        w_dp = float(kernel_w(np.array([dp / h_ref]), h_ref, state.dim)[0])
         f_ij = _w() / max(w_dp, 1.0e-300)   # summation modunda yeniden kullanilir
         r_pair = (r_i[:, None] + r_i[None, :]) * f_ij**ast.n_exp
     else:
@@ -466,10 +485,11 @@ def compute_timestep_solid(state: SolidState, mat: MaterialParams, num: RefParam
         c_long = np.sqrt(state.cs**2 + (4.0 / 3.0) * mat.strength.shear_G / state.rho)
     else:
         c_long = state.cs
-    visc = c_long + 1.2 * (num.alpha_av * c_long + num.beta_av * state.h * np.abs(state.divv))
-    dt_cfl = state.h / np.maximum(visc, 1.0e-300)
+    h_p = per_particle_h(state.h, len(state.m))
+    visc = c_long + 1.2 * (num.alpha_av * c_long + num.beta_av * h_p * np.abs(state.divv))
+    dt_cfl = h_p / np.maximum(visc, 1.0e-300)
     amag = np.sqrt(np.sum(state.a * state.a, axis=1))
-    dt_acc = np.sqrt(state.h / np.maximum(amag, 1.0e-300))
+    dt_acc = np.sqrt(h_p / np.maximum(amag, 1.0e-300))
     lnorm = np.sqrt(np.einsum("nab,nab->n", state.L, state.L))
     dt_strain = 0.5 / np.maximum(lnorm, 1.0e-300)
     act = state.active
