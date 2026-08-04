@@ -84,6 +84,20 @@ fizibil sınır **1,12e7** — **153 kat** fark. Fizibil sınırda mermi çapın
 **1,12 parçacık** düşer. FAZ 4 tekdüze ağla yapılamaz. *Bu bir kusur değil,
 ölçülmüş bir ölçek gerçeği* — ama β'yı doğrudan etkiler.
 
+> **GÜNCELLEME (4 Ağustos) — R1 üzerine dört ölçüm yapıldı, karar uzayı
+> daraldı ama R1 hâlâ AÇIK.**
+>
+> | bulgu | kaynak |
+> |---|---|
+> | Çözülen ölçeği **`h`** belirliyor; `h` skaler → **A elendi**, B de bağımsız seçenek değil | [KAYIT-023](defter/KAYIT-023_2026-08-04_cozunurlugu-h-belirliyor.md) |
+> | Parçacık başına `h` arayüzü **3,2–6,5 kat kötüleştiriyor**; `Ω` kurtarmıyor | [KAYIT-024](defter/KAYIT-024_2026-08-04_degisken-h-arayuzu-kotulestiriyor.md) |
+> | C'de arayüz kaynaklı yapay kuvvet **mekanizması yok**; bedel ara değerlemede (sabit/doğrusal **makine sıfırı**, karesel `O(h²)`) | [KAYIT-025](defter/KAYIT-025_2026-08-04_C-eslemenin-bedeli.md) |
+> | Arayüz hatası bir **gürültü tabakası**; dinamik olarak **doyuyor** (`v ~ t^0,72`) | [KAYIT-022](defter/KAYIT-022_2026-08-04_E1-E2-karar-verisi.md) |
+>
+> **Kalan iki ölçüm:** C-2 (eşlenmiş sistemde korunum kayması — C'nin asıl
+> riski) ve D-1 (kaynak teriminin model-form hatası, dolaylı kıyasla).
+> ADR-0041 bunlar olmadan yazılmaz.
+
 **R2. Gereken simüle süre ölçülemedi (ADR-0028, EKSIKLER §D).**
 Kararlılık koşusunda ejekta sayısı **tam 1009**'da dondu; bu merminin kendi
 parçacık sayısıdır — yani hedeften hiçbir parçacık kaçmadı, ölçülen şey
