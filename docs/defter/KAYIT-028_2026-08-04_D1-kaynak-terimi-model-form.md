@@ -67,10 +67,18 @@ Enerji birkaç parçacığa yığılınca başlangıç koşulu **kötü örnekle
 | **az örneklenen** (`n_enj < 100`) | 2 | %7,11 – %9,61 |
 | **iyi örneklenen** (`n_enj ≥ 100`) | 4 | **%3,26 – %4,46** |
 
-| uydurma | üs |
+| uydurma | üs `p` (`hata ∝ (r_dep/r_şok)^p`) |
 |---|---|
-| tüm noktalar | `+0,647` — **kirlenmiş, raporlanmaz** |
-| yalnız iyi örneklenenler | `+0,264` |
+| tüm noktalar | **`−0,647`** — **kirlenmiş, raporlanmaz** |
+| yalnız iyi örneklenenler | **`−0,264`** |
+
+`p < 0` demek *"yarıçap küçüldükçe hata **büyüyor**"* demektir — naif
+beklentinin tersi. Kirlenmiş uydurmada bu etki 2,4 kat daha güçlü görünüyor.
+
+> **İşaret düzeltmesi (aynı gün):** bu tabloyu önce `+0,647` / `+0,264` diye
+> yazmıştım. Sözel yorum doğruydu ama sayıların **işareti tersti**: ilk
+> hesabımda `-np.polyfit(...)` kullanmıştım, modül ise **ham eğimi**
+> döndürüyor. Sayılar modülün sözleşmesine uyduruldu; yorum değişmedi.
 
 > **Eşiğim çok gevşekti.** `injection_well_sampled` için `n ≥ 20` koymuştum;
 > `32` ve `56` parçacıklı noktalar onu geçiyordu ama hâlâ örnekleme hatası
@@ -144,9 +152,10 @@ da çıkmadı.
 - **D**: mermiyi atlar, korunumu bozmaz, ve model-form duyarlılığı
   **ölçülen aralıkta düşük**.
 
-**Karar hâlâ yazılmadı** — ama üç ölçülmemiş nokta artık **belirli** ve
-küçük: D'nin DART çalışma noktasındaki davranışı, β duyarlılığı ve
-mukavemetli malzemedeki etkileşim.
+**Karar yazıldı:** [ADR-0041](../adr/ADR-0041-yerel-incelme-yaklasimi.md),
+durumu **ÖNERİLDİ — kilitlenmedi**. Öneri **D**, **A′ yedekte**. Kilitlemeden
+önce §4'teki üç boşluk kapatılmalı; birincisi (`n_side = 128` ile DART
+bandına yaklaşma) **ölçülüyor**.
 
 ---
 

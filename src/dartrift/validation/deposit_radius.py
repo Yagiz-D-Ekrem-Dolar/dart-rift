@@ -42,7 +42,7 @@ from ..cpu_reference.sph_ref import RefParams
 from .sedov import (GAMMA, H_OVER_DX, T_END_DEFAULT, build_sedov_ic,
                     measure_shock_radius, shock_radius_exact)
 
-__all__ = ["run_deposit_radius_scan"]
+__all__ = ["analyse_scan", "run_deposit_radius_scan"]
 
 
 def _tek(n_side: int, h_inject: float, device: str, t_end: float) -> dict:
@@ -67,6 +67,47 @@ def _tek(n_side: int, h_inject: float, device: str, t_end: float) -> dict:
             "n_steps": int(diag["n_steps"])}
 
 
+def analyse_scan(rows: list[dict], well_sampled_min: int = 100) -> dict:
+    """Tarama satırlarını yorumla — **GPU gerekmez**, saf fonksiyon.
+
+    Koşudan ayrıldı ki **asıl mantık** (iki rejimin ayrılması) sınanabilsin.
+    Ölçülen veriyle doğrulandı: `n_side = 64` taramasında `n_enj = 32` ve
+    `56` noktaları hâlâ **örnekleme** hatası taşıyordu; eşik `20` değil
+    **100** olmalıydı.
+    """
+    if len(rows) < 3:
+        raise ValueError(f"en az 3 nokta gerekir, {len(rows)} geldi")
+    hatalar = np.array([r["rel_err"] for r in rows], dtype=np.float64)
+    oranlar = np.array([r["deposit_over_shock"] for r in rows], dtype=np.float64)
+    n_dizi = np.array([r["n_injected"] for r in rows], dtype=np.int64)
+    if np.any(oranlar <= 0.0):
+        raise ValueError("deposit_over_shock pozitif olmali")
+
+    iyi = n_dizi >= int(well_sampled_min)
+
+    def _us(mask: np.ndarray) -> float:
+        m = mask & (hatalar > 1.0e-6)
+        if int(m.sum()) < 3:
+            return float("nan")
+        return float(np.polyfit(np.log(oranlar[m]), np.log(hatalar[m]), 1)[0])
+
+    return {
+        "scan_discriminates": bool(hatalar.max() - hatalar.min() > 0.01),
+        "error_exponent": _us(iyi),
+        "error_exponent_contaminated": _us(np.ones_like(iyi)),
+        "n_well_sampled": int(iyi.sum()),
+        "min_injected_particles": int(n_dizi.min()),
+        "well_sampled_err_range": (
+            [float(hatalar[iyi].min()), float(hatalar[iyi].max())]
+            if iyi.any() else [float("nan"), float("nan")]),
+        "well_sampled_spread": (
+            float(hatalar[iyi].max() - hatalar[iyi].min()) if iyi.any()
+            else float("nan")),
+        "injection_well_sampled": bool(int(n_dizi.min()) >= int(well_sampled_min)),
+        "enough_well_sampled_points": bool(int(iyi.sum()) >= 3),
+    }
+
+
 def run_deposit_radius_scan(
     h_injects: tuple[float, ...] = (0.010, 0.015, 0.020, 0.030, 0.040, 0.060),
     n_side: int = 64,
@@ -89,54 +130,8 @@ def run_deposit_radius_scan(
 
     satirlar = [_tek(n_side, hi, device, t_end) for hi in h_injects]
 
-    # BOSLUK KONTROLU: tarama gercekten AYIRT EDIYOR mu?
-    hatalar = np.array([s["rel_err"] for s in satirlar])
-    oranlar = np.array([s["deposit_over_shock"] for s in satirlar])
-    ayirt = bool(hatalar.max() - hatalar.min() > 0.01)
-
-    # AYRIKLASTIRMA KIRLENMESI. Enjeksiyon bolgesinde parcacik sayisi azsa
-    # hata model-form degil ORNEKLEME hatasidir. Ilk esigim (>= 20) COK
-    # GEVSEKTI: olculdu (n_side=64) —
-    #   n_enj= 32 -> hata %7,11
-    #   n_enj= 56 -> hata %9,61      <-- az orneklenen rejim
-    #   n_enj=136 -> hata %4,03
-    #   n_enj=208 -> hata %4,44
-    #   n_enj=552 -> hata %4,46
-    #   n_enj=1904 -> hata %3,26     <-- iyi orneklenen rejim, ~%4'te DUZ
-    # Tum noktalarla uydurulan us +0,647; yalniz iyi orneklenenlerle +0,264.
-    # Ilki KIRLENMISTIR ve yasa diye raporlanmamalidir.
-    n_dizi = np.array([s["n_injected"] for s in satirlar])
-    n_min = int(n_dizi.min())
-    iyi = n_dizi >= 100
-
-    def _us(mask) -> float:
-        m = mask & (hatalar > 1.0e-6)
-        if int(m.sum()) < 3:
-            return float("nan")
-        return float(np.polyfit(np.log(oranlar[m]), np.log(hatalar[m]), 1)[0])
-
-    p = _us(iyi)                       # YALNIZCA iyi orneklenen rejim
-    p_ham = _us(np.ones_like(iyi))     # kirlenmis — kiyas icin
-
     return {
         "rows": satirlar, "n_side": n_side, "dx": dx, "t_end": t_end,
         "r_exact": float(shock_radius_exact(t_end)),
-        "scan_discriminates": ayirt,
-        # Us YALNIZCA iyi orneklenen noktalardan; ham hali kiyas icin.
-        "error_exponent": p,
-        "error_exponent_contaminated": p_ham,
-        "n_well_sampled": int(iyi.sum()),
-        "min_injected_particles": n_min,
-        # Iyi rejimde hatanin YAYILIMI: kucukse gozlenebilir biriktirme
-        # yaricapina DUYARSIZDIR (D icin iyi haber).
-        "well_sampled_err_range": [float(hatalar[iyi].min()),
-                                   float(hatalar[iyi].max())] if iyi.any()
-        else [float("nan"), float("nan")],
-        # Ayriklastirma kirlenmesi denetimi: en kucuk enjeksiyon bolgesinde
-        # bile YETERLI parcacik olmali (yoksa yasa model-formu degil,
-        # ornekleme hatasini olcer).
-        # Esik 20 DEGIL 100: olculdu ki 32 ve 56 parcacikli noktalar hala
-        # ornekleme hatasi tasiyor (bkz. yukaridaki tablo).
-        "injection_well_sampled": bool(n_min >= 100),
-        "enough_well_sampled_points": bool(int(iyi.sum()) >= 3),
+        **analyse_scan(satirlar),
     }
