@@ -48,14 +48,28 @@ def test_bolgeler_dolu(taban: dict) -> None:
         assert s[f"{sema}_n_interface"] >= 20, (sema, s[f"{sema}_n_interface"])
 
 
-def test_gradh_payi_daha_dar_bir_bolge_birakiyor(taban: dict) -> None:
-    """grad-h payı `4h`; ölçüm bölgesi diğerlerinden KÜÇÜK olmalı.
+def test_gradh_payi_geometri_denetimini_sikilastiriyor() -> None:
+    """grad-h payı `4h`; geometri denetimini **o** belirlemeli.
 
-    Eşit çıkarsa pay ayrımı uygulanmıyor demektir ve `λ=1` boşluk kontrolü
-    yine sessizce geçerdi (grad-h'de `7,69e-06` ölçülmüştü).
+    İlk yazdığım test şuydu: *"grad-h'nin ölçüm bölgesi daha küçük olmalı."*
+    **Ölçtüm, yanlıştı:** `440 < 440`. Arayüz bandı (`|r−r_in| < h`) her iki
+    payın da **içinde** kaldığı için sayılar eşit çıkıyor — pay ayrımı
+    uygulanıyor ama bu bandda görünmüyor.
+
+    Ayrımı **davranışsal** olarak sınamak gerekiyor: `r_out=70, r_in=25`
+    geometrisinde standart pay (`2h+s/2 = 24,8`) **sığar**
+    (`70−24,8 = 45,2 > 35,4`) ama grad-h payı (`4h+s/2 = 45,6`) **sığmaz**
+    (`70−45,6 = 24,4 < 35,4`). Hata **yalnızca** grad-h payı yüzünden gelir.
     """
-    s = taban["rows"][0]
-    assert s["gradh_n_interface"] < s["global_h_n_interface"]
+    h_max = HOS * S
+    assert gradh_margin_factor(HOS) * S > 2.0 * h_max + 0.5 * S
+
+    # Standart pay SIGAR ama grad-h payi SIGMAZ -> hata beklenir.
+    assert 70.0 - (2.0 * h_max + 0.5 * S) > 25.0 + h_max          # std sigar
+    assert 70.0 - (gradh_margin_factor(HOS) * S) < 25.0 + h_max   # gradh sigmaz
+    with pytest.raises(ValueError, match="grad-h payi"):
+        compare_h_schemes(lams=(1.0,), r_outer=70.0, r_inner=25.0,
+                          spacing=S, h_over_spacing=HOS)
 
 
 def test_momentum_tum_semalarda_korunuyor() -> None:
