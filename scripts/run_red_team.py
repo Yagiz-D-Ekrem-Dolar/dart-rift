@@ -6,6 +6,7 @@ karsilandi mi" diye sorar, kirmizi takim "bu sistemi nasil kandirabilirim"
 diye sorar.
 
 RT1-RT6 FAZ 0 maddeleridir (determinizm, config, manifest, sessiz yutma).
+RT15 FAZ 4 maddesidir (K21: EOS'ta sessiz NaN).
 RT7-RT12 FAZ 3 maddeleridir ve hepsi GERCEKTEN OLCULMUS bir kusurdan
 turemistir — varsayimsal senaryo degil:
   RT7  blok doyma bayragi      <- olculen: hedef 0.30, gerceklesen 0.263
@@ -489,6 +490,74 @@ def rt14_ray_degeneracy_normal_is_stable() -> Check:
     )
     return c
 
+def rt15_eos_sessiz_nan_uretmiyor() -> Check:
+    """K21: Tillotson genlesmis-sicak kolda rho <= 0 -> NaN, GPU'da SESSIZ.
+
+    Bulunus: FAZ 4 E2 olcumunde "overflow encountered in exp". Us
+    -beta*(1/eta - 1)'dir; eta kucuk NEGATIF iken us buyuk POZITIF olur,
+    exp TASAR ve inf*0 = NaN verir. NaN her komsu toplamina yayilir.
+    GPU'da RuntimeWarning YOKTUR — bir uretim kosusu bastan sona NaN uretip
+    "bitti" diyebilirdi.
+
+    Kusur ARALIKSIZ DEGILDI: yalnizca rho'nun sifira yakin NEGATIF oldugu
+    DAR bir bantta. Rastgele bir sinamayla kolayca kacirilirdi.
+
+    Bu madde iki seyi birden sorar:
+      1) EOS TOPLAM mi (sonlu girdi -> sonlu cikti)?
+      2) rho <= 0 MASKELENMIYOR mu (defter sayiyor mu)?
+    Ikincisi olmadan birincisi bir kusuru GIZLEMEK olurdu.
+    """
+    import numpy as np
+
+    from dartrift.cpu_reference.materials import (MaterialParams,
+                                                  tillotson_pressure)
+    from dartrift.cpu_reference.solid_ref import SolidState, budgets_solid
+
+    c = Check("RT15", "EOS sessiz NaN uretmiyor; rho<=0 deftere isleniyor")
+    tp = MaterialParams(eos="tillotson").tillotson
+
+    # 1) TOPLAM MI — kusurun bulundugu DAR BANT dahil
+    rho = np.array([-1.0e-12, -1.0e-9, -0.27, -27.0, -2700.0, 0.0, 1.0e-9])
+    sonlu = []
+    for carp in (0.0, 0.5, 1.0, 2.0, 10.0):
+        P = tillotson_pressure(rho, np.full(rho.shape, tp.u_cv * carp), tp)
+        sonlu.append(bool(np.all(np.isfinite(P))))
+    hepsi_sonlu = all(sonlu)
+
+    # 2) MASKELENMIYOR MU — defter sayiyor mu
+    n = 8
+    st = SolidState(x=np.zeros((n, 3)), v=np.zeros((n, 3)), m=np.ones(n),
+                    u=np.zeros(n), h=1.0, active=np.ones(n, bool),
+                    alpha=np.ones(n), rho=np.full(n, 2700.0))
+    temiz = budgets_solid(st)
+    st.rho[3] = -1.0
+    st.rho[5] = 0.0
+    bozuk = budgets_solid(st)
+    sayiyor = (temiz["nonpositive_density_count"] == 0
+               and bozuk["nonpositive_density_count"] == 2
+               and bozuk["rho_min"] == -1.0)
+
+    # 3) BOSLUK KONTROLU — bayrak SABIT True olmasin
+    st2 = SolidState(x=np.zeros((n, 3)), v=np.zeros((n, 3)), m=np.ones(n),
+                     u=np.zeros(n), h=1.0, active=np.ones(n, bool),
+                     alpha=np.ones(n), rho=np.full(n, 2700.0))
+    once = budgets_solid(st2)["state_is_finite"]
+    st2.rho[2] = np.nan
+    sonra = budgets_solid(st2)["state_is_finite"]
+    dusebiliyor = (once is True and sonra is False)
+
+    c.record(
+        hepsi_sonlu and sayiyor and dusebiliyor,
+        f"EOS toplam mi: {hepsi_sonlu} (5 enerji x 7 yogunluk, dar bant dahil); "
+        f"defter rho<=0 sayiyor: {sayiyor} "
+        f"(temiz {temiz['nonpositive_density_count']}, bozuk "
+        f"{bozuk['nonpositive_density_count']}, rho_min {bozuk['rho_min']}); "
+        f"state_is_finite DUSEBILIYOR: {dusebiliyor}",
+    )
+    return c
+
+
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -514,6 +583,7 @@ def main() -> int:
         rt12_data_manifest_gap_not_hidden(),
         rt13_scene_determinism_is_cross_machine(),
         rt14_ray_degeneracy_normal_is_stable(),
+        rt15_eos_sessiz_nan_uretmiyor(),
     ]
     all_clean = all(c.clean for c in checks)
 
