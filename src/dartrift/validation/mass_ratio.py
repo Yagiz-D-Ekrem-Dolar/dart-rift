@@ -290,8 +290,15 @@ def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
         rho_taban = np.ascontiguousarray(rho_base, np.float64)
         if rho_taban.shape != (n,):
             raise ValueError(f"rho_base sekli {rho_taban.shape}, ({n},) olmali")
+    # DISTANSIYON: gercek cozucude gozenekli malzeme icin `rho_kati = rho*alpha`
+    # ve `alpha = rho0_kati/rho_yigin` (ADR-0022/0031). Bunu atlarsak, yigin
+    # yogunlugu 2400 olan bir yigina `rho0 = 2700` uygulamak malzemeyi GERILMIS
+    # sayar: olculdu, P = +2,6967e+08 yerine **-2,4503e+09** — isaret bile ters.
+    # Olculen buyukluk bir ORAN oldugu ve `a ~ P` dogrusal oldugu icin (KAYIT-020
+    # §3) yargi degismez; ama basincin sahte olmasi icin bir sebep yok.
+    alpha = np.full(n, float(rho0)) / rho_taban
     st = SolidState(x=x.copy(), v=np.zeros_like(x), m=m, u=np.zeros(n), h=h,
-                    active=np.ones(n, bool), alpha=np.ones(n),
+                    active=np.ones(n, bool), alpha=alpha,
                     rho=rho_taban * (1.0 + eps))
     evaluate_solid(st, mat, RefParams(cfl=0.2))
     # Alan gercekten DUZGUN mu? Degilse bu olcum baska bir seyi olcer.
@@ -350,6 +357,7 @@ def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
         # Taban yogunlugu parcacik basina degisiyorsa P de degisir; o zaman
         # "duzgun alan" sinavi ANLAMSIZDIR ve bunu susarak gecmemek gerekir.
         "rho_base_is_uniform": bool(float(np.ptp(rho_taban)) < 1.0e-9),
+        "alpha_range": [float(alpha.min()), float(alpha.max())],
         "a_reference_scale": float(a_ref),
         "a_interface_over_reference": (
             float(a[arayuz].max() / a_ref) if arayuz.any() else float("nan")),
