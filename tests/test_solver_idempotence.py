@@ -135,8 +135,13 @@ def test_eval_durumu_degistirmez(damage, gravity, porosity):
     # Liste ELLE degil, cozucuden TURETILIYOR: yeni bir dizi eklendiginde
     # otomatik kapsanir (bkz. yukaridaki kapsam boslugu notu).
     izlenen = _degismemeli(s)
-    assert set(DURUM) <= set(izlenen), (
-        f"bilinen durum dizileri kapsam disi kaldi: {set(DURUM) - set(izlenen)}")
+    # `damage=False` kolunda `D`/`D_cbrt` HIC OLUSTURULMAZ; yalnizca VAR OLAN
+    # durum dizilerinin kapsandigini sinamak gerekir. (Bunu once yanlis
+    # yazdim: kosulsuz `set(DURUM) <= set(izlenen)` o kolda duserdi.)
+    var_olan = {d for d in DURUM if hasattr(s, d)}
+    assert var_olan <= set(izlenen), (
+        f"bilinen durum dizileri kapsam disi kaldi: {var_olan - set(izlenen)}")
+    assert len(var_olan) >= 6, f"cok az durum dizisi bulundu: {var_olan}"
     once = _oku(s, izlenen)
     s._eval()
     sonra = _oku(s, izlenen)
