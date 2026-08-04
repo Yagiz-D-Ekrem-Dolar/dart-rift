@@ -52,6 +52,8 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | S3 | `tests/test_solid_cross` | *Turun üçüncü hatası:* `dt`'nin **hızla** değişeceği varsayımı | ölçülen yayılım **%1,9** — boşluk kontrolü haklı olarak düştü; CFL **ses hızına** bağlı | — | ✅ |
 | S4 | FAZ 4 E2 ölçümü | *Turun dördüncü hatası:* ses hızı için **kaba vekil** (`√(P/ρ)`) | 316 m/s dedim, gerçeği **10150**; `dt` **32,1 kat** büyük → koşu patladı (ve K21'i açığa çıkardı) | — | ✅ |
 | S5 | FAZ 4 E2 ölçümü | *Turun beşinci hatası:* nedensel pencere **komşu bölgeden** hesaplandı | pencere 2,44 ms, koştuğum 2,46 ms — son adımlar **fiziksel dalgayı** ölçüyordu | — | ✅ |
+| S6 | `tests/test_mass_ratio_probe` | *Turun altıncı hatası:* eşiği **ölçmeden** yazdım — **iki kez** | *(a)* "yanlış taban kuvveti büyütür" → ölçülen `1,29e-15`; *(b)* "basıncın işaretini çevirir" → **ters yönde** | — | ✅ |
+| S7 | `validation/resolution_scaling` | *Turun yedinci hatası:* boşluk kontrolünü **ADR'yi okumadan** tasarladım | "hata küçülmeli" dedim; ADR-0011 zaten **%3,9 model-form tabanı** ölçmüştü | — | ✅ |
 
 ---
 
@@ -1198,6 +1200,117 @@ n_adim = min(n_guvenli, 16)
 Bu, K18'in dersinin bir başka yüzüdür: ölçüm = sinyal + (bu kez) **fiziksel
 bir katkı**. Katkının ne zaman devreye girdiğini bilmiyorsan sinyali
 okuyamazsın.
+
+---
+
+## S6 — Turun altıncı hatası: eşiği ölçmeden yazdım, iki kez üst üste
+
+**Nerede:** `tests/test_mass_ratio_probe.py`, `rho_base` parametresini
+koruyan boşluk kontrolünü yazarken.
+
+`rho_base`'in **ne işe yaradığını** iki kez tahmin ettim, ikisi de yanlıştı.
+
+### Birinci tahmin
+
+> *"Yanlış taban yoğunluğu kullanılırsa yapay kuvvet büyür."*
+
+**Ölçülen: `1,29e-15` — hâlâ makine sıfırı.** Test düştü.
+
+**Neden yanlıştı:** kütleleri **tekdüze** bir çarpanla ölçeklemek FCC kafesin
+simetrisini bozmaz. Düzgün bir alanda `Σ_j ∇W_ij = 0` kalır ve kuvvet doğmaz.
+K7'nin zararı **tekdüze olmayan** tutarsızlıktan geliyordu (kaya ile matris
+farklı `α₀` taşıyor); tekdüze bir kaymadan değil.
+
+### İkinci tahmin
+
+> *"Yanlış yol basıncın işaretini çevirir."*
+
+**Ölçülen: ters yönde.** Basınç `m`'den değil `ρ` ve `α`'dan gelir:
+
+```
+rho_base VERILMEZSE : rho = 2700*1,01, alpha = 1      -> P = +2,6967e+08
+```
+
+Normal bir sıkışma. İşareti çeviren şey **benim** `rho_base`'i
+**distansiyonsuz** eklememdi:
+
+```
+rho_base=2400, alpha=1  -> rho_kati = 2424 < rho0 -> P = -2,4503e+09  GERILME
+```
+
+Yani kendi düzeltmem bir kusur üretmişti ve tahminim onu yanlış yere
+atfediyordu.
+
+### Gerçek işlev
+
+`rho_base`, `α = ρ₀/ρ_taban` kurar; `ρ_katı = ρ₀` olur ve `eps` gerçek bir
+sıkışma verir — gerçek çözücünün gözenekli malzemede yaptığının aynısı
+(ADR-0022/0031). Verilmezse bozulan şey **kuvvet değil, ADR-0030'un
+değişmezidir**: `m/ρ = V_p` tutmaz.
+
+### Ders
+
+Bu, S1 ve S3'ün **aynı** hatasıdır: *sonucu ölçmeden iddia yazmak.* Bu turda
+**dördüncü** kez oldu (S1, S3, S4, S6). Kalıcı kural:
+
+> Bir eşik ya da yön iddiası yazmadan **önce** o sayıyı yazdır. Boşluk
+> kontrolünün kendisi de bir iddiadır ve **o da ölçülmelidir.**
+
+---
+
+## S7 — Turun yedinci hatası: boşluk kontrolünü ilgili ADR'yi okumadan tasarladım
+
+**Nerede:** `src/dartrift/validation/resolution_scaling.py`, ilk tasarım.
+
+Sınav şuydu: *"olağan yakınsamada hata **küçülmeli** (boşluk kontrolü), sabit
+`h`'de **düzleşmeli**."*
+
+Ama **ADR-0011 bunu zaten ölçmüştü**: bu kurulumda şok yarıçapı hatası
+**%3,9'luk bir tabana** oturur ve sıfıra gitmez. Sebebi ayrıklaştırma değil
+**model-form**: enerji noktasal değil, şok yarıçapının ~%32'si kadar bir
+bölgeye konuyor; analitik çözüm ise nokta patlaması varsayar.
+
+Yani boşluk kontrolüm, **küçülmeyeceği bilinen** bir şeyin küçülmesini
+bekliyordu.
+
+### Ölçüm (iş 1450756) — ve iyi haber
+
+```
+(a) olagan (h/dx = 2)
+     n=32  r=0.25278  hata 0.01153
+     n=40  r=0.24819  hata 0.00685
+     n=48  r=0.24336  hata 0.02618
+     n=56  r=0.24083  hata 0.03628
+     n=64  r=0.23874  hata 0.04464
+  BOSLUK KONTROLU  olagan kol kuculuyor mu : False
+  -> "SINAV AYIRT ETMIYOR: sonuc yorumlanamaz"
+```
+
+**Betik doğru davrandı**: boşluk kontrolü düştüğü için *"h belirliyor"*
+sonucunu **vermedi**, `inconclusive` dedi. ADR-0040'ın koyduğu kural burada
+beni kendi hatamdan korudu.
+
+Ayrıca ölçülen değerler ADR-0011'in tablosuyla **birebir aynı** (0,2528 /
+0,2434 / 0,2387) — yani gerileme yok, yalnızca tasarım yanlıştı.
+
+### Doğru ölçüt: **platonun yeri**
+
+Hata sıfıra gitmiyor ama yarıçap bir değere **oturuyor**. Soru hangi değere:
+
+| kol | plato |
+|---|---|
+| `h/dx = 2` sabit (yani `h → 0`) | **0,2400** |
+| `h = 0,0625` sabit | **0,2565** |
+
+**%6,85 uzakta.** Sabit `h`'de ne kadar parçacık eklenirse eklensin `h → 0`
+limitinin oturduğu yere ulaşılamıyor.
+
+### Ders
+
+> Bir ölçüm tasarlamadan önce, ölçtüğün büyüklük hakkında **projenin kendi
+> ADR'leri** okunur. ADR-0011 tam da bu büyüklüğün neden yakınsamadığını
+> anlatıyordu.
+
 
 ## Ortak kök neden — dokuz kusurun tamamı
 
