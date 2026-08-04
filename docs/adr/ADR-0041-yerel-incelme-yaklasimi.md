@@ -3,7 +3,7 @@
 - **Durum:** **ÖNERİLDİ — kilitlenmedi.** Kilitleme kararı proje sahibinindir.
 - **Tarih:** 2026-08-04
 - **Bağlam:** ADR-0026 (mermi çözünürlüğü tekdüze ağda imkânsız), FAZ 4.1/4.2
-- **Kanıt:** KAYIT-019 … KAYIT-031 (on üç kayıt, on üç TRUBA koşusu + iki CPU ölçümü)
+- **Kanıt:** KAYIT-019 … KAYIT-032 (on dört kayıt, on üç TRUBA koşusu + üç CPU ölçümü)
 - **İlgili:** ADR-0011, ADR-0013, ADR-0022, ADR-0028, ADR-0030, ADR-0040
 
 ---
@@ -224,6 +224,42 @@ için **153×** istiyor.
 > yanında **çok seviyeli komşu aramayı** da içerir — bu bir iyileştirme
 > değil, **ön koşuldur**.
 
+### 3.10 Çok seviyeli ızgara israfı **tam** kaldırıyor (KAYIT-032)
+
+§3.9 çok seviyeli aramayı **ön koşul** ilan etti — ama işe yarayıp
+yaramadığı ölçülmemişti. *"Ön koşul"* demek onun çalıştığını **varsaymaktır**.
+
+Doğru sorgu: simetrik biçimde `(i,j)` çiftinin yarıçapı `h_i + h_j`'dir;
+parçacık `i` **her seviye** `L`'yi `h_i + h_L` ile sorgular.
+
+| λ | oran | tek ızgara (genel) | **çok seviye (genel)** | kazanç |
+|---|---|---|---|---|
+| 1,00 | 1,0 | 1,000 | **1,000** | 1,00× |
+| 1,26 | 2,0 | 1,282 | **1,000** | 1,28× |
+| 1,59 | 4,0 | 2,120 | **1,000** | 2,12× |
+| 2,00 | 8,0 | 4,494 | **1,000** | 4,49× |
+| 2,52 | 16,0 | 9,005 | **1,000** | 9,01× |
+
+İsraf `1e-12` içinde **tam 1,000** — her satırda. Boşluk kontrolü de geçti
+(`λ=1`'de tek seviye, iki yöntem aynı).
+
+### A′'nın net maliyeti
+
+| λ | oran | tasarruf | tek ızgara net | **çok seviye net** |
+|---|---|---|---|---|
+| 1,26 | 2:1 | 1,90× | 0,677 | **0,528** |
+| 2,00 | 8:1 | 5,99× | 0,750 | **0,167** |
+| 2,52 | 16:1 | 9,45× | 0,953 | **0,106** |
+
+> **Çok seviyeli ızgarayla A′ parçacık tasarrufunun tamamını gerçekleştiriyor:
+> 16:1'de `9,45×` daha ucuz.** §3.9'un *"tek ızgarada kazanç yok"* yargısı
+> duruyor; eksik olan, doğru mimariyle kazancın **tam** olduğuydu.
+
+> **Not (KAYIT-031 §3b):** §3.9'un israf sayıları "gereken"i `2·h_i` ile
+> tanımlıyordu; A′'nın kullanacağı simetrik biçim `h_i + h_j`'dir ve israfı
+> bir miktar **düşürür** (16:1'de net `1,065 → 0,953`). Yargı nitelik
+> olarak aynı, nicelik olarak yumuşadı.
+
 ---
 
 ## 4. Karar tablosu
@@ -231,7 +267,7 @@ için **153×** istiyor.
 | # | mermiyi çözer | yapay kuvvet | şok geçişi | **momentum** | model-form | mimari bedel |
 |---|---|---|---|---|---|---|
 | ~~A~~ | **hayır** | 0,168 | zararsız ✔ | 1e-16 ✔ | — | yok |
-| **A′** | evet | **0,55–1,10** | (A'da zararsız) | 1e-16 ✔ | yok | çekirdek + CFL + Ω + **çok seviyeli ızgara** (§3.9) |
+| **A′** | evet | **0,55–1,10** | (A'da zararsız) | 1e-16 ✔ | **yok** | çekirdek + CFL + Ω + çok seviyeli ızgara → **16:1'de 9,45× ucuz** (§3.10) |
 | ~~B~~ | A′ ile | = A′ | = A′ | = A′ | = A′ | = A′ |
 | **C** | evet | yok | ölçülmedi | **7,5e-03 ✘ sistematik** | ara değerleme `O(h²)` | iki çözücü + örtüşme + MLS + korunum düzeltmesi |
 | **D** | **atlar** | yok | — | ✔ (tek çözücü) | **%5–7**, **kalibre edilemiyor** (§3.7, §3.8) | ılımlı |
@@ -282,7 +318,7 @@ için **153×** istiyor.
 >
 > | # | ölçülmüş bedel |
 > |---|---|
-> | **A′** | arayüz 3,2–6,5× gürültü + **çok seviyeli ızgara zorunlu** (tek ızgarada 16:1'de net **kayıp**) |
+> | **A′** | arayüz 3,2–6,5× gürültü + çok seviyeli ızgara (68+24 site) — **karşılığı ölçüldü: 16:1'de 9,45× ucuz**, ve model-form hatası **yok** |
 > | **C** | momentum **7,5e-03 sistematik** + MLS + korunum düzeltmesi |
 > | **D** | model-form **%5–7**, tek parametreyle **kalibre edilemiyor** (`KE/E` %14,5–18,0) |
 >

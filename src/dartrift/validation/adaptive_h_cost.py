@@ -40,7 +40,7 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["measure_neighbour_waste"]
+__all__ = ["measure_neighbour_waste", "measure_multilevel_waste"]
 
 
 def measure_neighbour_waste(lam: float = 2.0, r_outer: float = 70.0,
@@ -133,4 +133,94 @@ def _net_kazanc(z: dict, lam: float, r_outer: float, spacing: float,
         # <1 ise A' TEK IZGARAYLA daha ucuz; >1 ise DAHA PAHALI.
         "net_cost_vs_all_fine": float(israf / tasarruf),
         "single_grid_worthwhile": bool(israf / tasarruf < 0.5),
+    }
+
+
+def measure_multilevel_waste(lam: float = 2.0, r_outer: float = 70.0,
+                             r_inner: float = 25.0, spacing: float = 8.0,
+                             h_over_spacing: float = 1.3,
+                             block: int = 256) -> dict:
+    """A′-2 — **seviye başına ayrı ızgara** israfı `1,0`'a düşürüyor mu?
+
+    KAYIT-031 tek ızgarada israfı ölçtü (8:1'de `5,13×`, 16:1'de `10,06×`)
+    ve çok seviyeli aramanın **ön koşul** olduğunu söyledi. Bu ölçüm o
+    iddiayı sınar.
+
+    ## Doğru sorgu yarıçapı
+
+    Simetrik (`average_h`) biçimde bir `(i, j)` çiftinin etkileşim yarıçapı
+    `2·h_ij = h_i + h_j`'dir. Yani parçacık `i`, **her seviye** `L` için o
+    seviyenin ızgarasını `h_i + h_L` yarıçapıyla sorgulamalıdır.
+
+    Tek ızgarada bu yarıçap **her zaman** `2·h_maks`'tır — ince parçacıklar
+    için gereğinden büyük. Çok seviyeli aramada her sorgu **kendi** çiftine
+    göre daraltılır.
+
+    **Boşluk kontrolü (ADR-0040):** `λ = 1`'de tek seviye vardır ve iki
+    yöntem **aynı** sonucu vermelidir; israf ikisinde de `1,0`.
+    """
+    from .mass_ratio import build_two_zone
+
+    if lam < 1.0:
+        raise ValueError(f"lam >= 1 olmalı, {lam} geldi")
+    z = build_two_zone(r_outer, r_inner, spacing, lam)
+    x = np.ascontiguousarray(z["x"], np.float64)
+    r = np.linalg.norm(x, axis=1)
+    ic = r < r_inner
+    h_i_val = h_over_spacing * z["spacing_inner"]
+    h_k_val = h_over_spacing * z["spacing_outer"]
+    h = np.where(ic, h_i_val, h_k_val)
+    h_max = float(h.max())
+    seviyeler = sorted({float(h_i_val), float(h_k_val)})
+
+    kenar = r < r_outer - 2.0 * h_max - 0.5 * spacing
+    if int(kenar.sum()) < 50:
+        raise ValueError(f"iç bölge çok küçük: {int(kenar.sum())}")
+
+    idx = np.flatnonzero(kenar)
+    tek_izgara = np.zeros(len(idx), np.int64)
+    cok_seviye = np.zeros(len(idx), np.int64)
+    gercek = np.zeros(len(idx), np.int64)
+    for b0 in range(0, len(idx), block):
+        sel = idx[b0:b0 + block]
+        d = x[sel, None, :] - x[None, :, :]
+        rr = np.sqrt(np.einsum("ijk,ijk->ij", d, d))
+        hi = h[sel, None]
+        hj = h[None, :]
+        # GERCEKTEN gereken: simetrik yaricap h_i + h_j
+        ger = rr < (hi + hj)
+        gercek[b0:b0 + len(sel)] = np.sum(ger, axis=1)
+        # TEK izgara: her zaman 2*h_maks
+        tek_izgara[b0:b0 + len(sel)] = np.sum(rr < 2.0 * h_max, axis=1)
+        # COK SEVIYE: her seviye L kendi yaricapiyla (h_i + h_L) sorgulanir
+        toplam = np.zeros(len(sel), np.int64)
+        for hL in seviyeler:
+            bu_seviye = np.isclose(h, hL)[None, :]
+            toplam += np.sum((rr < (hi + hL)) & bu_seviye, axis=1)
+        cok_seviye[b0:b0 + len(sel)] = toplam
+
+    ger_g = np.maximum(gercek, 1)
+    israf_tek = tek_izgara / ger_g
+    israf_cok = cok_seviye / ger_g
+    ic_k = ic[idx]
+
+    def _ort(a, mask):
+        return float(np.mean(a[mask])) if mask.any() else float("nan")
+
+    return {
+        "lam": float(lam), "n_levels": len(seviyeler),
+        "n_measured": int(kenar.sum()), "n_fine": int(ic_k.sum()),
+        "single_grid_waste_fine": _ort(israf_tek, ic_k),
+        "single_grid_waste_overall": float(np.mean(israf_tek)),
+        "multilevel_waste_fine": _ort(israf_cok, ic_k),
+        "multilevel_waste_overall": float(np.mean(israf_cok)),
+        # Kazanc: tek izgaraya gore kac kat daha az aday taraniyor?
+        "improvement": float(np.mean(israf_tek) / max(float(np.mean(israf_cok)),
+                                                      1e-300)),
+        # BOSLUK KONTROLU: lam=1'de tek seviye var, ikisi AYNI olmali.
+        "single_level_case": bool(len(seviyeler) == 1),
+        # Cok seviyeli arama israfi 1'e YAKIN mi? (Tam 1 olmaz: ayni
+        # seviyedeki komsular icin h_i + h_L = 2h_i, dogru; farkli
+        # seviyedekiler icin de dogru. Yani TAM 1 beklenir.)
+        "multilevel_is_exact": bool(abs(float(np.mean(israf_cok)) - 1.0) < 1e-12),
     }

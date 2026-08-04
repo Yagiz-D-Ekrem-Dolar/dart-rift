@@ -101,12 +101,51 @@ is(tümü_ince)   = N(tümü_ince) × 1,0
 
 - 2:1 ve 4:1'de A′ ~%30–35 kazandırıyor — **mütevazı**.
 - 8:1'de kazanç yalnızca **%14**.
-- **16:1'de A′ her yeri inceltmekten `%6,5` DAHA PAHALI.**
+- **16:1'de A′ kazanç sağlamıyor** (`net 1,065`; simetrik tanımla `0,953` — bkz. §3b).
 
 Ve ADR-0026 DART için **153×** çözünürlük istiyor — 16:1'in çok ötesi.
 
 > **Tek ızgarayla A′, DART'ın ihtiyaç duyduğu oranlarda hiçbir şey
 > kazandırmıyor; tersine kaybettiriyor.**
+
+---
+
+## 3b. DÜZELTME — "gereken" tanımı **simetrik** olmalıydı (A′-2 sonrası)
+
+§2 ve §3'teki israf, "gereken komşu" sayısını `2·h_i` yarıçapıyla tanımladı.
+**A′'nın kullanacağı biçim bu değil.** KAYIT-024 ölçtü ki değişken `h`
+şemaları arasında en iyisi `average_h`'dir; orada bir `(i, j)` çiftinin
+etkileşim yarıçapı **simetriktir**:
+
+```
+2·h_ij = h_i + h_j        (2·h_i DEGIL)
+```
+
+`h_j > h_i` olan çiftlerde bu **daha büyüktür**, yani "gereken" sayı daha
+yüksektir ve israf oranı **daha düşük** çıkar. §2/§3 israfı bu yüzden
+**bir miktar abartıyordu**.
+
+### Düzeltilmiş tablo
+
+| λ | oran | tasarruf | israf `(2h_i)` | net | **israf `(h_i+h_j)`** | **net** |
+|---|---|---|---|---|---|---|
+| 1,26 | 2:1 | 1,90× | 1,315 | 0,694 | **1,282** | **0,677** |
+| 1,59 | 4:1 | 3,54× | 2,301 | 0,650 | **2,120** | **0,599** |
+| 2,00 | 8:1 | 5,99× | 5,132 | 0,857 | **4,494** | **0,750** |
+| 2,52 | 16:1 | 9,45× | 10,064 | **1,065** | **9,005** | **0,953** |
+
+**Yargı nitelik olarak aynı, nicelik olarak yumuşadı:**
+
+- ~~"16:1'de A′ her yeri inceltmekten %6,5 **daha pahalı**"~~ →
+  **doğrusu: %4,7 daha ucuz, yani pratikte kazanç yok.**
+- Tasarrufun küpsel israfla yenmesi ve 16:1'de **hiçbir şey kalmaması**
+  değişmiyor.
+
+§2/§3 silinmiyor: ölçüm doğruydu, **tanım** A′'nın kullanacağı biçim
+değildi.
+
+> **Ders:** bir maliyet oranında **payda** da modelin bir parçasıdır.
+> "Gereken" sayısını yanlış tanımlamak, israfı olduğundan büyük gösterir.
 
 ---
 
