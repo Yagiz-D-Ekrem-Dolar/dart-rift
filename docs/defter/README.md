@@ -30,6 +30,7 @@ koşulardan gelir; iş numaraları yazılıdır.
 | **[022](KAYIT-022_2026-08-04_E1-E2-karar-verisi.md)** | 04.08 | **E1+E2** — model kusursuz kafes (eşdeğer sarsıntı ~0) → arayüz hatası maskelenmiyor; ama 8:1'de **doyuyor** |
 | **[023](KAYIT-023_2026-08-04_cozunurlugu-h-belirliyor.md)** | 04.08 | **Çözünürlüğü `h` belirliyor** — sabit `h`'de plato %6,84 uzakta ve kapanmıyor; **A yaklaşımı elendi** |
 | **[024](KAYIT-024_2026-08-04_degisken-h-arayuzu-kotulestiriyor.md)** | 04.08 | **Parçacık başına `h` arayüzü kötüleştiriyor** — 3,2–6,5 kat; `Ω` düzeltmesi kurtarmıyor |
+| **[025](KAYIT-025_2026-08-04_C-eslemenin-bedeli.md)** | 04.08 | **C'nin bedeli ara değerlemede** — sabit/doğrusal makine sıfırı, karesel `O(h²)`; **korunum ölçülmedi** |
 
 > 017/018 numaraları kronolojiyle ters: 018 (2. tur) 017'den (3. tur) **önce**
 > yaşandı ama sonra yazıldı. Numaralar yazım sırasını, tablo yaşanma sırasını

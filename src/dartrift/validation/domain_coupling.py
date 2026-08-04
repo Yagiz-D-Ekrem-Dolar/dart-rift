@@ -113,6 +113,9 @@ def measure_coupling_error(lam: float = 2.0, spacing_coarse: float = 1.0,
     for ad, (x_kay, s_kay, x_hed) in (
             ("fine_to_coarse", (x_i, s_i, x_k)),
             ("coarse_to_fine", (x_k, s_k, x_i))):
+        # Gercek bir uyarlamada Shepard normalizasyonu (`/ Σ w`) kullanilir;
+        # birim bolunmesi acigini TANIM GEREGI kapatir. Ikisi de olculuyor:
+        # ham hali tabani gosterir, normalize hali gercek maliyeti.
         # `h` KAYNAGIN cozunurlugune baglidir: hayaleti ureten alan kendi
         # cekirdegiyle ara degerler.
         h = h_over_spacing * s_kay
@@ -132,9 +135,16 @@ def measure_coupling_error(lam: float = 2.0, spacing_coarse: float = 1.0,
             d = sph_interpolate(xh, x_kay, m, rho, f_kay, h)
             olcek = max(float(np.max(np.abs(f_dogru))), 1.0)
             blok[f"{alan}_max_err"] = float(np.max(np.abs(d["f"] - f_dogru)) / olcek)
+            # Shepard: `f / Σw`. Bolen sifira yakinsa deger anlamsizdir; o
+            # hedefler DISLANIR ve sayisi raporlanir (sessizce atlanmaz).
+            pu = d["partition_of_unity"]
+            gecerli = pu > 0.5
+            blok["shepard_dropped"] = int(np.count_nonzero(~gecerli))
+            f_sh = np.where(gecerli, d["f"] / np.where(gecerli, pu, 1.0), np.nan)
+            blok[f"{alan}_max_err_shepard"] = float(
+                np.max(np.abs(f_sh[gecerli] - f_dogru[gecerli])) / olcek)
             if alan == "constant":
-                blok["partition_max_dev"] = float(
-                    np.max(np.abs(d["partition_of_unity"] - 1.0)))
+                blok["partition_max_dev"] = float(np.max(np.abs(pu - 1.0)))
         sonuc[ad] = blok
 
     # BOSLUK KONTROLU: lam = 1'de iki yon de AYNI kafestir; dogrusal alan
