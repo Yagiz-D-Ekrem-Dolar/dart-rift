@@ -15,22 +15,33 @@ ile uygulanabilir — [`mass_ratio`][dartrift.validation.mass_ratio] modülünü
 ölçtüğü şey tam olarak budur.
 
 Eğer SPH'de çözülen ölçek `h` ise, bir bölgeye 8 kat parçacık koyup `h`'yi
-kaba tutmak **çözünürlüğü artırmaz**; yalnızca aynı çekirdek içindeki
-örnekleme sıklığını artırır. O zaman A, ADR-0026'nın sorununu (DART mermisini
-çapı boyunca 6 parçacıkla çözmek) **çözemez**.
+kaba tutmak **çözünürlüğü artırmaz**. O zaman A, ADR-0026'nın sorununu (DART
+mermisini çapı boyunca 6 parçacıkla çözmek) **çözemez**.
 
-Bu önemli bir iddiadır ve **ölçülmeden yazılmaz**. Sınav Sedov'un **tam
-analitik** çözümüne dayanır — iki koşuyu birbiriyle kıyaslamaktan güçlüdür:
+## Neden "tam çözüme göre hata" ölçütü kullanılmıyor
 
-- **(a) olağan yakınsama:** `h/dx` sabit → `h`, `dx` ile birlikte küçülür.
-  Hata **küçülmeli**.
-- **(b) bu sınav:** `h` **sabit** → yalnızca `dx` küçülür.
-  - çözünürlüğü `h` belirliyorsa hata bir **tabana oturur**
-  - çözünürlüğü `dx` belirliyorsa hata **küçülmeye devam eder**
+İlk tasarımım şuydu: *"olağan yakınsamada hata küçülmeli (boşluk kontrolü),
+sabit `h`'de düzleşmeli."* **Bu tasarım hatalıydı ve ADR-0011'i okumadan
+yazılmıştı.** ADR-0011 zaten ölçmüş ki bu kurulumda şok yarıçapı hatası
+**%3,9'luk bir tabana** oturur ve sıfıra gitmez — sebebi ayrıklaştırma değil,
+**model-form**: enerji noktasal değil, şok yarıçapının ~%32'si kadar bir
+bölgeye konuyor; analitik çözüm ise nokta patlaması varsayar.
 
-**Boşluk kontrolü (ADR-0040):** (a) kolunun gerçekten küçüldüğü görülmelidir.
-Küçülmüyorsa sınav hiçbir şey ayırt etmiyordur ve (b)'nin düzleşmesi
-anlamsızdır.
+Dolayısıyla "hata küçülüyor mu" boş bir boşluk kontrolüdür — **küçülmeyeceği
+biliniyordu.**
+
+## Doğru ölçüt: öz-yakınsama ve **platonun yeri**
+
+Her kol bir değere **oturur**. Soru hangi değere oturduğudur:
+
+- `h/dx` sabit (yani `h → 0`): plato **0,2400** (ADR-0011, n = 96…112)
+- `h = 0,0625` sabit: plato **0,2565** (n = 56…64, son adımda değişim %0,13)
+
+**%6,85 uzakta.** Sabit `h`'de ne kadar parçacık eklenirse eklensin, `h → 0`
+limitinin oturduğu yere **ulaşılamıyor**.
+
+Kesin kanıt üçüncü koldadır: **başka bir sabit `h`** başka bir platoya
+oturmalıdır. Oturuyorsa platonun yerini `h` belirliyor demektir.
 """
 from __future__ import annotations
 
@@ -40,7 +51,7 @@ from ..cpu_reference.sph_ref import RefParams
 from .sedov import (GAMMA, H_OVER_DX, T_END_DEFAULT, build_sedov_ic,
                     measure_shock_radius, shock_radius_exact)
 
-__all__ = ["run_single", "run_resolution_scaling"]
+__all__ = ["run_single", "run_arm", "run_resolution_scaling"]
 
 
 def run_single(n_side: int, h_absolute: float | None, device: str,
@@ -53,69 +64,95 @@ def run_single(n_side: int, h_absolute: float | None, device: str,
     solver = WarpSPH3D(ic["x"], ic["v"], ic["m"], ic["u"], h,
                        RefParams(gamma=GAMMA), device=device)
     diag = solver.run(t_end, max_steps=500_000)
-    # Kismi kosu SESSIZCE gecerli sayilmaz (ADR-0011): t_end'e ulasilmadan
-    # olculen yaricap sistematik olarak KUCUK cikar ve "cozunurlukle kotulesen
-    # hata" gibi gorunur.
+    # Kismi kosu SESSIZCE gecerli sayilmaz (ADR-0011 §3): t_end'e ulasilmadan
+    # olculen yaricap sistematik olarak KUCUK cikar ve tam da "cozunurlukle
+    # kotulesen hata" gibi gorunur.
     if diag["t_end"] < t_end * (1.0 - 1.0e-9):
         raise RuntimeError(
             f"Sedov t_end'e ULASILAMADI: {diag['t_end']:.6g} < {t_end:.6g} "
             f"({diag['n_steps']} adim). Olcum gecersiz.")
     st = solver.state_numpy()
     r_olc = measure_shock_radius(st["x"], st["rho"])
-    r_tam = shock_radius_exact(t_end)
     return {"n_side": n_side, "N": int(len(ic["m"])), "dx": float(ic["dx"]),
             "h": h, "h_over_dx": h / float(ic["dx"]),
-            "r_measured": float(r_olc), "r_exact": float(r_tam),
-            "rel_err": float(abs(r_olc - r_tam) / r_tam),
+            "r_measured": float(r_olc),
+            "r_exact": float(shock_radius_exact(t_end)),
             "n_steps": int(diag["n_steps"])}
 
 
-def run_resolution_scaling(
-    sides: tuple[int, ...] = (32, 40, 48, 56, 64),
-    device: str = "cuda:0",
-    t_end: float = T_END_DEFAULT,
-) -> dict:
-    """İki kolu da koştur ve yargıyı ver.
+def run_arm(sides: tuple[int, ...], h_absolute: float | None, device: str,
+            t_end: float = T_END_DEFAULT) -> dict:
+    """Bir kolu koştur ve **nereye oturduğunu** ölç.
 
-    Sabit `h` kolu, **en kaba** kafesin `h`'sini kullanır: böylece o kafeste
-    iki kol **birebir aynı** koşudur ve fark yalnızca `dx`'ten gelir.
+    Plato, en ince iki çözünürlüğün ortalamasıdır; oturmuşluk ölçüsü son iki
+    noktanın **göreli** farkıdır. Oturmamış bir kolun platosu anlamsızdır ve
+    `settled` alanı bunu açıkça söyler — sessizce plato diye kullanılmaz.
     """
     if len(sides) < 3:
         raise ValueError(f"en az 3 çözünürlük gerekir, {len(sides)} geldi")
     if sorted(sides) != list(sides):
         raise ValueError(f"çözünürlükler artan olmalı: {sides}")
+    satirlar = [run_single(n, h_absolute, device, t_end) for n in sides]
+    r = np.array([d["r_measured"] for d in satirlar])
+    son_degisim = float(abs(r[-1] - r[-2]) / abs(r[-2]))
+    return {
+        "rows": satirlar,
+        "h_absolute": None if h_absolute is None else float(h_absolute),
+        "plateau": float(np.mean(r[-2:])),
+        "last_rel_change": son_degisim,
+        "settled": bool(son_degisim < 0.005),
+        "n_steps_max": int(max(d["n_steps"] for d in satirlar)),
+    }
 
-    h_sabit = H_OVER_DX / float(sides[0])
-    olagan = [run_single(n, None, device, t_end) for n in sides]
-    sabit = [run_single(n, h_sabit, device, t_end) for n in sides]
 
-    hs = np.array([d["rel_err"] for d in olagan])
-    hf = np.array([d["rel_err"] for d in sabit])
-    ns = np.array(sides, dtype=np.float64)
+def run_resolution_scaling(
+    standard_sides: tuple[int, ...] = (48, 64, 80, 96, 112),
+    fixed_h_sides: tuple[int, ...] = (32, 40, 48, 56, 64),
+    fixed_h_sides_2: tuple[int, ...] = (64, 72, 80, 88, 96),
+    device: str = "cuda:0",
+    t_end: float = T_END_DEFAULT,
+) -> dict:
+    """Üç kol: `h → 0`, `h` sabit (kaba), `h` sabit (ince).
 
-    # BOSLUK KONTROLU: olagan kol gercekten kuculuyor mu? Kuculmuyorsa sinav
-    # hicbir sey ayirt etmiyordur ve sabit-h kolunun duzlesmesi anlamsizdir.
-    olagan_yakinsiyor = bool(hs[-1] < 0.5 * hs[0])
-    sabit_duzlesiyor = bool(hf[-1] > 0.7 * hf[0])
+    Yargı **platoların yerine** bakar, tam çözüme göre hataya değil
+    (modül başlığındaki gerekçe).
 
-    p_std = float(-np.polyfit(np.log(ns), np.log(hs), 1)[0])
-    p_fix = float(-np.polyfit(np.log(ns), np.log(hf), 1)[0])
+    Boşluk kontrolü (ADR-0040): her üç kol da **oturmuş** olmalı. Oturmamış
+    bir koldan plato okumak, olmayan bir yakınsamayı varsaymaktır.
+    """
+    h_kaba = H_OVER_DX / float(fixed_h_sides[0])
+    h_ince = H_OVER_DX / float(fixed_h_sides_2[0])
+    if not h_ince < h_kaba:
+        raise ValueError(f"ikinci sabit h daha KÜÇÜK olmalı: {h_ince} !< {h_kaba}")
 
-    if not olagan_yakinsiyor:
+    a = run_arm(standard_sides, None, device, t_end)
+    b = run_arm(fixed_h_sides, h_kaba, device, t_end)
+    c = run_arm(fixed_h_sides_2, h_ince, device, t_end)
+
+    # Platolar BIRBIRINDEN farkli mi? Ve sabit-h platolari h ile KAYIYOR mu?
+    fark_b = abs(b["plateau"] - a["plateau"]) / a["plateau"]
+    fark_c = abs(c["plateau"] - a["plateau"]) / a["plateau"]
+    kayiyor = abs(c["plateau"] - b["plateau"]) / b["plateau"]
+
+    hepsi_oturdu = bool(a["settled"] and b["settled"] and c["settled"])
+    if not hepsi_oturdu:
         yargi = "inconclusive"
-    elif sabit_duzlesiyor:
+    elif kayiyor > 0.01 and fark_b > 0.01:
+        # Sabit-h platosu h ile kayiyor ve h->0 limitinden uzak: `h` belirliyor.
         yargi = "h_sets_resolution"
     else:
         yargi = "dx_also_contributes"
 
     return {
-        "standard": olagan, "fixed_h": sabit,
-        "h_fixed_value": h_sabit, "h_over_dx_ref": H_OVER_DX, "t_end": t_end,
-        "standard_converges": olagan_yakinsiyor,
-        "fixed_h_plateaus": sabit_duzlesiyor,
-        "order_standard": p_std, "order_fixed_h": p_fix,
-        # En kaba kafeste iki kol AYNI kosu olmali — duzenegin kendi denetimi.
-        "coarsest_arms_identical": bool(
-            abs(olagan[0]["rel_err"] - sabit[0]["rel_err"]) < 1.0e-12),
+        "standard": a, "fixed_h_coarse": b, "fixed_h_fine": c,
+        "h_coarse": h_kaba, "h_fine": h_ince,
+        "r_exact": float(shock_radius_exact(t_end)), "t_end": t_end,
+        "all_settled": hepsi_oturdu,
+        "gap_coarse_vs_limit": float(fark_b),
+        "gap_fine_vs_limit": float(fark_c),
+        "plateau_shifts_with_h": float(kayiyor),
+        # Ince sabit-h platosu, kaba olandan limite DAHA YAKIN olmali:
+        # `h` kuculdukce limite yaklasiliyorsa aciklama tutarlidir.
+        "finer_h_is_closer": bool(fark_c < fark_b),
         "verdict": yargi,
     }
