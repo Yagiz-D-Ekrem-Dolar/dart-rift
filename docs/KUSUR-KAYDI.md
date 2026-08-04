@@ -55,6 +55,7 @@ gelir ve iş numarası ile commit'i yazılıdır.
 | S5 | FAZ 4 E2 ölçümü | *Turun beşinci hatası:* nedensel pencere **komşu bölgeden** hesaplandı | pencere 2,44 ms, koştuğum 2,46 ms — son adımlar **fiziksel dalgayı** ölçüyordu | — | ✅ |
 | S6 | `tests/test_mass_ratio_probe` | *Turun altıncı hatası:* eşiği **ölçmeden** yazdım — **iki kez** | *(a)* "yanlış taban kuvveti büyütür" → ölçülen `1,29e-15`; *(b)* "basıncın işaretini çevirir" → **ters yönde** | — | ✅ |
 | S7 | `validation/resolution_scaling` | *Turun yedinci hatası:* boşluk kontrolünü **ADR'yi okumadan** tasarladım | "hata küçülmeli" dedim; ADR-0011 zaten **%3,9 model-form tabanı** ölçmüştü | — | ✅ |
+| S8 | `validation/coupling_conservation` | *Turun sekizinci hatası:* eşleme kaymasını **sıfıra** kıyasladım | ölçülen `0,9789` — ama **λ=2 ile λ=4 birebir aynı**; sayılmayan dış kabuk tepkisiymiş | — | ✅ |
 
 ---
 
@@ -1347,6 +1348,63 @@ limitinin oturduğu yere ulaşılamıyor.
 > ADR'leri** okunur. ADR-0011 tam da bu büyüklüğün neden yakınsamadığını
 > anlatıyordu.
 
+
+---
+
+## S8 — Turun sekizinci hatası: eşleme kaymasını sıfıra kıyasladım
+
+**Nerede:** `src/dartrift/validation/coupling_conservation.py` (C-2), ilk
+tasarım.
+
+**İddiam:** *"Tek parçada `Σ m a = 0`. Öyleyse eşlenmiş sistemde
+`Σ_A + Σ_B` de sıfır olmalı; sapma **eşlemenin** momentum kaymasıdır."*
+
+**Ölçtüm:**
+
+```
+lam  ortusme    n_A    n_B |    tekparca    ESLENMIS       oran
+2.0     2.60   2969   1808 |   2.670e-15   9.789e-01   3.67e+14
+4.0     2.60  24303   1808 |   2.670e-15   9.789e-01   3.67e+14
+```
+
+Sayı `0,9789` — devasa. **Ama λ=2 ile λ=4 için birebir aynı.**
+
+### Aynı çıkması kurtardı
+
+Eşleme kaymasının kütle oranından **bağımsız** olması fiziksel olarak
+anlamsızdır. Demek ki ölçülen şey eşleme değildi.
+
+**Kök neden — iki katmanlı:**
+
+1. Bir **alt küme** için `Σ m a` zaten sıfır değildir; çevresindeki madde
+   onu iter. Bu **fizikseldir**, kayma değil.
+2. `B_gerçek`ten dış kabuğu (kesik komşuluklu, D1 kuralı gereği) dışlamıştım
+   ve o kabuğun tepkisi **hiç sayılmıyordu**. Ölçülen `0,9789` tamamen oydu.
+
+### Düzeltme
+
+Doğru kıyas **sıfıra değil, tek parça cevabına**:
+
+```
+kayma = |F_eşlenmiş − F_tekparça| / ölçek
+```
+
+`F_tekparça`, **aynı bölgenin** tek çözünürlüklü ince kafeste ölçülen net
+kuvvetidir. Dış kabuk etkisi **iki tarafta da** vardır ve sadeleşir.
+
+Boşluk kontrolü de değişti: artık **tüm** parçacıklarda `Σ m a = 0` tam
+olmalı — bu, aracın kalibrasyonudur, ölçülen büyüklük değil.
+
+### Ders
+
+> **Bir referansın sıfır olduğunu varsayma; sıfır olduğunu ölç.**
+> "Tek parçada toplam sıfırdır" doğruydu — ama **hangi toplam** olduğunu
+> yanlış aldım.
+
+Ve: bir sayının **iki farklı koşulda birebir aynı çıkması**, o sayının o
+koşullardan bağımsız bir şeyi ölçtüğünün en güçlü işaretidir. Bu turda
+**iki kez** bu işaret hatayı yakaladı (S4'te donmuş `9,5555e+06`, burada
+`0,9789`).
 
 ## Ortak kök neden — dokuz kusurun tamamı
 
