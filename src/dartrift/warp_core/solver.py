@@ -176,9 +176,23 @@ class WarpSPH3D(_WarpSPHBase):
         super().__init__(params, device, check_every)
         n = len(m)
         self.n = n
-        self.h = float(h)
+        # ADR-0041: `h` PARCACIK BASINA olabilir (bkz. solver_solid'deki
+        # ayni not). Skaler yol bit duzeyinde korunur.
+        _h = np.asarray(h, dtype=np.float64)
+        if _h.ndim == 0:
+            self.h = float(_h)
+            _h = np.full(len(m), self.h)
+        else:
+            if _h.shape != (len(m),):
+                raise ValueError(f"h sekli {_h.shape}, ({len(m)},) olmali")
+            if np.any(_h <= 0.0):
+                raise ValueError(f"h pozitif olmali; en kucuk {float(_h.min())}")
+            self.h = float(_h.max())
+        self._h_np = _h
+        self.h_min = float(_h.min())
         self.support = 2.0 * self.h
         dev = device
+        self.h_arr = wp.array(self._h_np, dtype=F, device=device)
         self.x = wp.array(np.asarray(x, np.float64), dtype=V3, device=dev)
         self.v = wp.array(np.asarray(v, np.float64), dtype=V3, device=dev)
         self.m = wp.array(np.asarray(m, np.float64), dtype=F, device=dev)
@@ -204,7 +218,7 @@ class WarpSPH3D(_WarpSPHBase):
         self._radius32 = self.gridman.build(self.x, self.support)
         gid = self.gridman.id
         r32 = wp.float32(self._radius32)
-        h = F(self.h)
+        h = self.h_arr
         self._launch(D.density_3d, [gid, self.gridman.x32, self.x, self.m, h, r32, self.rho])
         if self.rho_cont is not None and not self._cont_initialized:
             wp.copy(self.rho_cont, self.rho)
@@ -233,7 +247,7 @@ class WarpSPH3D(_WarpSPHBase):
     def _dt_candidates(self) -> None:
         self._launch(
             T.dt_candidates_3d,
-            [self.cs, self.divv, self.a, F(self.h), F(self.params.alpha_av),
+            [self.cs, self.divv, self.a, self.h_arr, F(self.params.alpha_av),
              F(self.params.beta_av), self.dt_cfl, self.dt_acc],
         )
 
@@ -254,7 +268,7 @@ class WarpSPH3D(_WarpSPHBase):
         gid = self.gridman.id
         self._launch(
             D.continuity_rate_3d,
-            [gid, self.gridman.x32, self.x, self.v, self.m, F(self.h),
+            [gid, self.gridman.x32, self.x, self.v, self.m, self.h_arr,
              wp.float32(self._radius32), self._cont_rate],
         )
         self._launch(I.accumulate_scalar_3d, [self.rho_cont, self._cont_rate, self.active, F(dt)])
@@ -315,6 +329,8 @@ class WarpSPH1D(_WarpSPHBase):
         wp.launch(kernel, dim=self.n, inputs=inputs, device=self.device)
 
     def _eval(self) -> None:
+        # 1B yol SKALER `h` kullanir: uyarlamali incelme 3B icindir
+        # (ADR-0041). 1B cekirdekler `h: F` bekler.
         h = F(self.h)
         self._launch(D.density_1d, [self.x, self.m, self.n, h, self.rho])
         if self.rho_cont is not None and not self._cont_initialized:
@@ -355,7 +371,7 @@ class WarpSPH1D(_WarpSPHBase):
     def _accumulate_continuity(self, dt: float) -> None:
         self._launch(
             D.continuity_rate_1d,
-            [self.x, self.v, self.m, self.n, F(self.h), self._cont_rate],
+            [self.x, self.v, self.m, self.n, self.h_arr, self._cont_rate],
         )
         self._launch(I.accumulate_1d, [self.rho_cont, self._cont_rate, self.active, F(dt)])
 

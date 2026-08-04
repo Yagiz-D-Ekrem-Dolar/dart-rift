@@ -34,7 +34,7 @@ def velocity_gradient_3d(
     m: wp.array(dtype=F),
     rho: wp.array(dtype=F),
     cs: wp.array(dtype=F),
-    h: F,
+    h: wp.array(dtype=F),
     radius32: wp.float32,
     use_balsara: int,
     L: wp.array(dtype=M3),
@@ -51,8 +51,11 @@ def velocity_gradient_3d(
         Duzeltme lineer hiz alanlarini tam yeniden urettirir (rijit donme
         objektifligi; ADR-0009). B tekilse duzeltmesiz forma dusulur.
     """
+    # ADR-0041: `h` parcacik basina; cift uzunlugu (h_i+h_j)/2. Tum h
+    # esitken TAM OLARAK h verir -> bit uyumu korunur.
     i = wp.tid()
     xi = x[i]
+    hi = h[i]
     vi = v[i]
     zero = M3(F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0))
     l_raw = zero
@@ -62,7 +65,8 @@ def velocity_gradient_3d(
     q = wp.hash_grid_query(grid, x32[i], radius32)
     j = int(0)
     while wp.hash_grid_query_next(q, j):
-        gw = grad_w3d(xi - x[j], h)
+        hij = F(0.5) * (hi + h[j])
+        gw = grad_w3d(xi - x[j], hij)
         vj_i = v[j] - vi
         xj_i = x[j] - xi
         vol_j = m[j] / rho[j]
@@ -78,7 +82,7 @@ def velocity_gradient_3d(
     else:
         L[i] = l_raw
     if use_balsara != 0:
-        fbal[i] = wp.abs(div) / (wp.abs(div) + curl_mag + BALSARA_EPS_C * cs[i] / h)
+        fbal[i] = wp.abs(div) / (wp.abs(div) + curl_mag + BALSARA_EPS_C * cs[i] / hi)
     else:
         fbal[i] = F(1.0)
 
@@ -136,7 +140,7 @@ def forces_solid_3d(
     cs: wp.array(dtype=F),
     fbal: wp.array(dtype=F),
     g_ext: wp.array(dtype=V3),
-    h: F,
+    h: wp.array(dtype=F),
     radius32: wp.float32,
     alpha_av: F,
     beta_av: F,
@@ -153,8 +157,11 @@ def forces_solid_3d(
     (P<0) parcacik kumelenmesini onler (ADR-0014). Yaptigi is enerji
     defterine ayni tutarlilikla girer.
     """
+    # ADR-0041: `h` parcacik basina; cift uzunlugu (h_i+h_j)/2. Tum h
+    # esitken TAM OLARAK h verir -> bit uyumu korunur.
     i = wp.tid()
     xi = x[i]
+    hi = h[i]
     vi = v[i]
     ident = M3(F(1.0), F(0.0), F(0.0), F(0.0), F(1.0), F(0.0), F(0.0), F(0.0), F(1.0))
     t_i = (S[i] - P[i] * ident) / (rho[i] * rho[i])
@@ -168,22 +175,24 @@ def forces_solid_3d(
     while wp.hash_grid_query_next(q, j):
         rij = xi - x[j]
         r = wp.length(rij)
-        qq = r / h
+        hij = F(0.5) * (hi + h[j])
+        qq = r / hij
         if qq < F(2.0) and r > F(1.0e-12):
-            gw = grad_w3d(rij, h)
+            gw = grad_w3d(rij, hij)
             vij = vi - v[j]
             vr = wp.dot(vij, rij)
             c_bar = F(0.5) * (cs[i] + cs[j])
             rho_bar = F(0.5) * (rho[i] + rho[j])
             f_bar = F(0.5) * (fbal[i] + fbal[j])
-            pi_ij = artificial_visc(vr, r * r, h, c_bar, rho_bar, f_bar, alpha_av, beta_av)
+            pi_ij = artificial_visc(vr, r * r, hij, c_bar, rho_bar, f_bar,
+                                    alpha_av, beta_av)
             t_j = (S[j] - P[j] * ident) / (rho[j] * rho[j])
             tgw = (t_i + t_j) * gw
             acc += m[j] * tgw - (m[j] * pi_ij) * gw
             du += F(-0.5) * m[j] * wp.dot(vij, tgw) + F(0.5) * m[j] * pi_ij * wp.dot(vij, gw)
             if ast_on != 0:
                 r_pair = (r_i + tensile_R(P[j], rho[j], ast_eps)) * wp.pow(
-                    w3d(qq, h) / ast_w_dp, ast_n
+                    w3d(qq, hij) / ast_w_dp, ast_n
                 )
                 acc += (-m[j] * r_pair) * gw
                 du += F(0.5) * m[j] * r_pair * wp.dot(vij, gw)

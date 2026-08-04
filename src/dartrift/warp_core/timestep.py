@@ -25,21 +25,23 @@ def dt_candidates_3d(
     cs: wp.array(dtype=F),
     divv: wp.array(dtype=F),
     a: wp.array(dtype=V3),
-    h: F,
+    h: wp.array(dtype=F),
     alpha_av: F,
     beta_av: F,
     dt_cfl: wp.array(dtype=F),
     dt_acc: wp.array(dtype=F),
 ):
+    # ADR-0041: `dt` PARCACIK basina h ile; cift buyuklugu degil.
     i = wp.tid()
-    visc = cs[i] + F(1.2) * (alpha_av * cs[i] + beta_av * h * wp.abs(divv[i]))
+    hi = h[i]
+    visc = cs[i] + F(1.2) * (alpha_av * cs[i] + beta_av * hi * wp.abs(divv[i]))
     if visc < _TINY_C:
         visc = _TINY_C
-    dt_cfl[i] = h / visc
+    dt_cfl[i] = hi / visc
     amag = wp.length(a[i])
     if amag < _TINY_C:
         amag = _TINY_C
-    dt_acc[i] = wp.sqrt(h / amag)
+    dt_acc[i] = wp.sqrt(hi / amag)
 
 
 @wp.kernel

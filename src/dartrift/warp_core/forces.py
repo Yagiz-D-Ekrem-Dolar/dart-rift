@@ -40,21 +40,25 @@ def divcurl_3d(
     m: wp.array(dtype=F),
     rho: wp.array(dtype=F),
     cs: wp.array(dtype=F),
-    h: F,
+    h: wp.array(dtype=F),
     radius32: wp.float32,
     use_balsara: int,
     divv: wp.array(dtype=F),
     fbal: wp.array(dtype=F),
 ):
+    # ADR-0041: `h` parcacik basina; cift uzunlugu (h_i+h_j)/2. Tum h
+    # esitken TAM OLARAK h verir -> bit uyumu korunur.
     i = wp.tid()
     xi = x[i]
+    hi = h[i]
     vi = v[i]
     div = F(0.0)
     curl = V3(F(0.0), F(0.0), F(0.0))
     q = wp.hash_grid_query(grid, x32[i], radius32)
     j = int(0)
     while wp.hash_grid_query_next(q, j):
-        gw = grad_w3d(xi - x[j], h)
+        hij = F(0.5) * (hi + h[j])
+        gw = grad_w3d(xi - x[j], hij)
         vji = v[j] - vi
         div += m[j] * wp.dot(vji, gw)
         curl += m[j] * wp.cross(vji, gw)
@@ -62,7 +66,7 @@ def divcurl_3d(
     curl_mag = wp.length(curl) / rho[i]
     divv[i] = div
     if use_balsara != 0:
-        fbal[i] = wp.abs(div) / (wp.abs(div) + curl_mag + BALSARA_EPS_C * cs[i] / h)
+        fbal[i] = wp.abs(div) / (wp.abs(div) + curl_mag + BALSARA_EPS_C * cs[i] / hi)
     else:
         fbal[i] = F(1.0)
 
@@ -78,15 +82,18 @@ def forces_3d(
     P: wp.array(dtype=F),
     cs: wp.array(dtype=F),
     fbal: wp.array(dtype=F),
-    h: F,
+    h: wp.array(dtype=F),
     radius32: wp.float32,
     alpha_av: F,
     beta_av: F,
     a: wp.array(dtype=V3),
     dudt: wp.array(dtype=F),
 ):
+    # ADR-0041: `h` parcacik basina; cift uzunlugu (h_i+h_j)/2. Tum h
+    # esitken TAM OLARAK h verir -> bit uyumu korunur.
     i = wp.tid()
     xi = x[i]
+    hi = h[i]
     vi = v[i]
     p_over_i = P[i] / (rho[i] * rho[i])
     acc = V3(F(0.0), F(0.0), F(0.0))
@@ -96,15 +103,17 @@ def forces_3d(
     while wp.hash_grid_query_next(q, j):
         rij = xi - x[j]
         r = wp.length(rij)
-        qq = r / h
+        hij = F(0.5) * (hi + h[j])
+        qq = r / hij
         if qq < F(2.0) and r > F(1.0e-12):
-            gw = grad_w3d(rij, h)
+            gw = grad_w3d(rij, hij)
             vij = vi - v[j]
             vr = wp.dot(vij, rij)
             c_bar = F(0.5) * (cs[i] + cs[j])
             rho_bar = F(0.5) * (rho[i] + rho[j])
             f_bar = F(0.5) * (fbal[i] + fbal[j])
-            pi_ij = artificial_visc(vr, r * r, h, c_bar, rho_bar, f_bar, alpha_av, beta_av)
+            pi_ij = artificial_visc(vr, r * r, hij, c_bar, rho_bar, f_bar,
+                                    alpha_av, beta_av)
             term = p_over_i + P[j] / (rho[j] * rho[j]) + pi_ij
             acc += (-m[j] * term) * gw
             du += F(0.5) * m[j] * term * wp.dot(vij, gw)

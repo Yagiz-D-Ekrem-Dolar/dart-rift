@@ -61,9 +61,25 @@ class WarpSolid3D:
         self.check_every = check_every
         n = len(m)
         self.n = n
-        self.h = float(h)
+        # ADR-0041: `h` PARCACIK BASINA. Skaler verilirse yayilir ve
+        # `h_ij = (h_i+h_j)/2` TAM OLARAK skaleri verir -> bit uyumu korunur.
+        # `self.h` skaler ozeti tutar (dt/tani/API icin); cekirdekler DIZIYI
+        # alir. Komsu arama yaricapi EN BUYUK h'ye gore (KAYIT-031/033).
+        _h = np.asarray(h, dtype=np.float64)
+        if _h.ndim == 0:
+            self.h = float(_h)
+            _h = np.full(len(m), self.h)
+        else:
+            if _h.shape != (len(m),):
+                raise ValueError(f"h sekli {_h.shape}, ({len(m)},) olmali")
+            if np.any(_h <= 0.0):
+                raise ValueError(f"h pozitif olmali; en kucuk {float(_h.min())}")
+            self.h = float(_h.max())
+        self.h_min = float(_h.min())
+        self._h_np = _h
         self.support = 2.0 * self.h
         dev = device
+        self.h_arr = wp.array(_h, dtype=F, device=dev)
         self.x = wp.array(np.asarray(x, np.float64), dtype=V3, device=dev)
         self.v = wp.array(np.asarray(v, np.float64), dtype=V3, device=dev)
         self.m = wp.array(np.asarray(m, np.float64), dtype=F, device=dev)
@@ -188,8 +204,10 @@ class WarpSolid3D:
         # yapay gerilme normalizasyonu W(dp): CPU referansiyla ayni deger
         from ..cpu_reference.sph_ref import kernel_w as _kw
 
-        _dp = mat.artificial_stress.dp_over_h * self.h
-        self._ast_w_dp = max(float(_kw(np.array([_dp / self.h]), self.h, 3)[0]), 1.0e-300)
+        # Kafes referansi: degisken h'de EN KUCUK h (en siki paketleme).
+        _dp = mat.artificial_stress.dp_over_h * self.h_min
+        self._ast_w_dp = max(
+            float(_kw(np.array([_dp / self.h_min]), self.h_min, 3)[0]), 1.0e-300)
         self._evaluated = False
         self._step_count = 0
         self._x_version = 0
@@ -223,7 +241,7 @@ class WarpSolid3D:
         self._radius32 = self.gridman.build(self.x, self.support)
         gid = self.gridman.id
         r32 = wp.float32(self._radius32)
-        h = F(self.h)
+        h = self.h_arr
         if not self._continuity:
             self._launch(D.density_3d, [gid, self.gridman.x32, self.x, self.m, h, r32, self.rho])
         if self.mat.eos == "tillotson":
@@ -370,12 +388,13 @@ class WarpSolid3D:
             c_long = cs
         divv = self.divv.numpy()
         visc = c_long + 1.2 * (
-            self.num.alpha_av * c_long + self.num.beta_av * self.h * np.abs(divv)
+            self.num.alpha_av * c_long
+            + self.num.beta_av * self._h_np * np.abs(divv)
         )
-        dt_cfl = self.h / np.maximum(visc, 1e-300)
+        dt_cfl = self._h_np / np.maximum(visc, 1e-300)
         a = self.a.numpy().astype(np.float64)
         amag = np.sqrt(np.sum(a * a, axis=1))
-        dt_acc = np.sqrt(self.h / np.maximum(amag, 1e-300))
+        dt_acc = np.sqrt(self._h_np / np.maximum(amag, 1e-300))
         lm = self.L.numpy().astype(np.float64).reshape(self.n, 9)
         lnorm = np.sqrt(np.sum(lm * lm, axis=1))
         dt_strain = 0.5 / np.maximum(lnorm, 1e-300)
