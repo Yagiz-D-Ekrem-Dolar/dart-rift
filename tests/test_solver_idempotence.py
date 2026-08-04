@@ -33,6 +33,40 @@ DURUM = ("x", "v", "rho", "u", "S", "alpha", "D", "D_cbrt")
 TURETILMIS = ("P", "cs", "L", "divv", "a", "dudt", "dSdt", "drhodt",
               "g", "phi", "strain", "dDdt_cbrt", "P_eff", "S_eff")
 
+# ---------------------------------------------------------------------------
+# KAPSAM BOSLUGU (4 Agustos): yukaridaki iki liste ELLE yazilmisti ve
+# cozucudeki TUM dizileri kapsamiyordu. Sinanmayanlar:
+#
+#   alpha_ref  crush TAVANI, parcacik basina (ADR-0031) — K10'un tam konusu
+#   Y0         parcacik basina akma mukavemeti
+#   eps_min    Weibull kusur esigi
+#   n_flaws    parcacik basina kusur sayisi
+#   m, active  sabitler
+#
+# Bunlardan biri `_eval()` icinde yazilsaydi test SESSIZCE gecerdi. `alpha_ref`
+# ozellikle tehlikeli: crush tavani kayarsa porozite sinirsiz eziliyor demektir
+# ve K10'da olculen sey tam olarak buydu (-1,14 GPa, KE/E_bag 2,9 milyon).
+#
+# Cozum: listeyi ELLE tutmak yerine cozucuden TURET. Yeni bir dizi eklendiginde
+# varsayilan olarak "degismemeli" kumesine duser — guvenli taraf. Bilincli
+# olarak turetilmis olan bir dizi TURETILMIS'e yazilmali; unutulursa test
+# duser ve karar VERILMEYE ZORLANIR.
+# ---------------------------------------------------------------------------
+
+
+def _tum_diziler(s) -> tuple[str, ...]:
+    """Cozucudeki tum warp dizilerinin adlari — calisma zamaninda kesfedilir."""
+    import warp as wp
+
+    return tuple(sorted(
+        ad for ad in vars(s)
+        if not ad.startswith("_") and isinstance(getattr(s, ad), wp.array)))
+
+
+def _degismemeli(s) -> tuple[str, ...]:
+    """Turetilmis olmayan her dizi `_eval()` boyunca DEGISMEMELI."""
+    return tuple(a for a in _tum_diziler(s) if a not in TURETILMIS)
+
 
 def _needs_cuda():
     from dartrift.particles import warp_available, warp_devices
@@ -98,9 +132,14 @@ def test_eval_durumu_degistirmez(damage, gravity, porosity):
     _needs_cuda()
     s = _kur(damage, gravity, porosity)
     s._eval()
-    once = _oku(s, DURUM)
+    # Liste ELLE degil, cozucuden TURETILIYOR: yeni bir dizi eklendiginde
+    # otomatik kapsanir (bkz. yukaridaki kapsam boslugu notu).
+    izlenen = _degismemeli(s)
+    assert set(DURUM) <= set(izlenen), (
+        f"bilinen durum dizileri kapsam disi kaldi: {set(DURUM) - set(izlenen)}")
+    once = _oku(s, izlenen)
     s._eval()
-    sonra = _oku(s, DURUM)
+    sonra = _oku(s, izlenen)
     for ad in once:
         assert np.array_equal(once[ad], sonra[ad]), (
             f"`_eval()` DURUMU degistirdi: {ad!r} "
@@ -125,3 +164,22 @@ def test_eval_turetilmisleri_tekrarlanabilir(damage):
     for ad in once:
         assert np.array_equal(once[ad], sonra[ad]), (
             f"turetilmis {ad!r} ikinci evalde degisti — girdisi bozuluyor")
+
+
+def test_kapsam_elle_yazilan_listeden_GENIS(damage=True):
+    """KAPSAM DENETİMİ: türetilen liste, elle yazılan `DURUM`'dan **geniş**.
+
+    Eşit çıkarsa türetme bir şey eklemiyor demektir ve bu testin koruduğu
+    boşluk yeniden açılmış olur. Ölçüldü (4 Ağustos): `DURUM` 8 dizi
+    sayıyordu, çözücüde 12 dizi vardı; `alpha_ref`, `Y0`, `eps_min`,
+    `n_flaws`, `m`, `active` **hiç sınanmıyordu**.
+    """
+    _needs_cuda()
+    s = _kur(True, True, True)
+    izlenen = set(_degismemeli(s))
+    assert set(DURUM) < izlenen, (
+        f"türetilen küme elle yazılandan geniş değil: {izlenen}")
+    # `alpha_ref` (ADR-0031, crush tavanı) MUTLAKA kapsanmalı — K10'un konusu.
+    assert "alpha_ref" in izlenen
+    # Ve türetilmiş diziler ISIMLENDIRILMIS olmalı, izlenen kümeye sızmamalı.
+    assert not (izlenen & set(TURETILMIS))
