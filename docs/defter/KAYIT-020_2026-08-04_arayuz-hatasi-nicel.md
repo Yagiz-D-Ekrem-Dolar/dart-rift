@@ -198,7 +198,7 @@ ince sarsılıyor) — yoksa iki bölge farklı düzensizlikte olurdu.
 |---|---|---|
 | ~~E1~~ | ~~Gerçek oturmuş yığının sarsıntısı kaç?~~ | **ÖLÇÜLDÜ (KAYIT-022 §1): ~0.** Model kusursuz kafes; arayüz hatası maskelenmiyor. |
 | ~~E2~~ | ~~Dinamik birikim~~ | **ÖLÇÜLDÜ (KAYIT-022 §3): 8:1'de DOYUYOR** (`v ~ t^0,72`, sabit kuvvet `t¹` verirdi). Birikmiyor. |
-| E3 | Şok geçişi | ölçüm yumuşak alanda yapıldı; çarpmanın asıl sorusu arayüzden geçen şoktur. |
+| ~~E3~~ | ~~Şok geçişi~~ | **ÖLÇÜLDÜ (KAYIT-026): ZARARSIZ.** 8:1 arayüzden geçen şok, tümüyle ince çözülmüş koşuyla **%0,125** farkla aynı yarıçapa varıyor. |
 
 ~~**E1 bir sonraki iştir**~~ — **E1 ve E2 tamamlandı**, bkz.
 [KAYIT-022](KAYIT-022_2026-08-04_E1-E2-karar-verisi.md). Kalan tek eksik
