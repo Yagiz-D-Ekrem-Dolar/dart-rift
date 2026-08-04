@@ -112,8 +112,9 @@ sonucu **değiştirmedi**.
 
 ### (a) Şok, arayüzü **bedelsiz** geçiyor
 
-İki bölgeli kol `0,24732`; tek popülasyonlu **ince** kol `0,24701`. Fark
-**%0,125** — ölçüm aralığının (%1,503) **on ikide biri**.
+Hafif koşuda (n=48) iki bölgeli kol `0,24732`, ince kol `0,24701` — fark
+**%0,125**, ölçüm aralığının on ikide biri. **Ağır koşuda (n=64) taşma
+tam `%0,000`**, üstelik hem 8:1 hem 27:1'de.
 
 > **8:1 kütle oranlı bir arayüzden geçen şok, tümüyle ince çözülmüş bir
 > koşuyla aynı yarıçapa varıyor.**
@@ -125,8 +126,8 @@ yörüngesini belirleyen kısım — orada geçer; arayüze vardığında zaten
 kendine-benzer rejime girmiştir.
 
 Adım sayısı da bunu doğruluyor: iki bölgeli **258**, ince kol **258**, kaba
-kol **221**. İki bölgeli koşu, zaman adımı açısından ince koşu gibi
-davranıyor.
+kol **221** (ağır koşuda 314/313/287 ve 322/322/287). İki bölgeli koşu,
+zaman adımı açısından **ince** koşu gibi davranıyor.
 
 ### (c) Statik ölçümle çelişmiyor — **tamamlıyor**
 
@@ -162,16 +163,17 @@ odaklanabilir.
 
 ## 5. Karar tablosu — dördüncü güncelleme
 
-| # | yaklaşım | mermiyi çözer | yapay kuvvet | **şok geçişi** | mimari bedel |
-|---|---|---|---|---|---|
-| ~~A~~ | global `h` | **hayır** | 0,168 | **zararsız** ✔ | yok |
-| **A′** | parçacık başına `h` | evet | 0,55–1,10 | ölçülmedi (A'da zararsız) | çekirdek+grid+CFL+Ω |
-| **B** | bölme | A′ ile | = A′ | = A′ | = A′ |
-| **C** | iki alan eşlemesi | evet | **yok** | ölçülmedi | iki çözücü + örtüşme + MLS |
-| **D** | kaynak terimi | **atlar** | yok | — | ılımlı |
+| # | yaklaşım | mermiyi çözer | yapay kuvvet | **şok geçişi** | **momentum** | mimari bedel |
+|---|---|---|---|---|---|---|
+| ~~A~~ | global `h` | **hayır** | 0,168 | **zararsız** ✔ | 1e-16 ✔ | yok |
+| **A′** | parçacık başına `h` | evet | 0,55–1,10 | (A'da zararsız) | 1e-16 ✔ | çekirdek+grid+CFL+Ω |
+| **B** | bölme | A′ ile | = A′ | = A′ | = A′ | = A′ |
+| **C** | iki alan eşlemesi | evet | **yok** | ölçülmedi | **7,5e-03 ✘** | iki çözücü + örtüşme + MLS + korunum düzeltmesi |
+| **D** | kaynak terimi | **atlar** | yok | — | ✔ | ılımlı |
 
-**Kalan tek belirleyici ölçüm: C-2** (eşlenmiş sistemde korunum kayması) ve
-**D-1** (kaynak teriminin model-form hatası).
+C-2 ölçüldü ([KAYIT-027](KAYIT-027_2026-08-04_C2-esleme-momentumu-kaybediyor.md)):
+eşleme momentumu **korumuyor** ve kayma **tamamen sistematik**.
+**Kalan tek ölçüm: D-1.**
 
 ---
 
