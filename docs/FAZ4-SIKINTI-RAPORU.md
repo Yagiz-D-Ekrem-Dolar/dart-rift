@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-08 · **Kapanan:** 21 · **Açık:** 4
+**Son güncelleme:** 2026-08-08 · **Kapanan:** 22 · **Açık:** 4
 
 ---
 
@@ -128,12 +128,18 @@ kararsızlık **birikerek** gelirdi — hemen patlamaz.
 `ensemble_cost`'un `dt_kaba/λ` varsayımı **bu** ölçümden geliyor;
 değişmez düşerse maliyet tablosu da yanlış olur.
 
-### Dayanıklılık (19–20)
+### Dayanıklılık (19–20, 22)
 
 | # | sıkıntı | risk | ne yapıldı |
 |---|---|---|---|
 | 19 | beş koşucuda **sabit TRUBA yolu** | iş nihayet koşarken yol hatası → 12 saat yanar | `REPO = Path(__file__)...` |
 | 20 | UTF-8 koruması **dört koşucuda yoktu** | `faz47` **gerçekten çöktü** ve raporu yok etti | altı koşucuya eklendi |
+| 22 | ensemble **kesintide her şeyi kaybediyordu** | iş 1460700 zaman aşımından kesildi (**yaşandı**) | JSONL, satır satır, devam edebilir |
+
+> **22 numaralı** sıkıntı bir kod hatası değil, bir **eksiklik**ti.
+> `~300` koşu `~10` GPU-günü (KAYIT-040) ve bir SLURM işi `12` saat —
+> yani kesinti **kaçınılmaz**, olası değil. Tek seferlik bir çağrı her
+> kesintide baştan başlardı.
 
 ---
 
@@ -143,12 +149,12 @@ değişmez düşerse maliyet tablosu da yanlış olur.
 |---|---|---|
 | ölçüm tasarımı (kendi düzeneğim) | 8 | dar tarama, yanlış eşik, yanlış payda |
 | sözleşme / tip | 4 | `None` çökmesi, numpy tipleri |
-| dayanıklılık / portabilite | 3 | sabit yol, UTF-8, JSON |
+| dayanıklılık / portabilite | 4 | sabit yol, UTF-8, JSON |
 | fizik kurulumu | 3 | enerji mertebesi, yığın yoğunluğu |
 | süreç | 2 | doğrulanmayan değiştirme, atlanan test |
 | sınanmamış değişmez | 1 | `dt` en küçük `h` ile mi |
 
-> **Yirmi bir kusurun tamamı benim ölçüm düzeneğimde ya da yeni yazdığım
+> **Yirmi iki kusurun tamamı benim ölçüm düzeneğimde ya da yeni yazdığım
 > kodda.** Hiçbiri SPH çözücüsünde değil.
 
 ---
@@ -190,9 +196,9 @@ yaradığı görünmez:
 
 | büyüklük | değer |
 |---|---|
-| hata ayıklama turu | **13** |
-| kapanan sıkıntı | **21** |
+| hata ayıklama turu | **14** |
+| kapanan sıkıntı | **22** |
 | açık sıkıntı | **4** (üçü kotaya bağlı) |
 | **testlerin kör olduğu kusur** | **4** |
-| eklenen gerileme testi | **57** |
+| eklenen gerileme testi | **67** |
 | yerel test takımı | **954 geçti, 96 atlandı** (öncesi 912, ondan önce 898) |

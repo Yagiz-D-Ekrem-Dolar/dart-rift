@@ -24,11 +24,13 @@ gider.
 > çıktısı beslenecek.
 """
 from .design import ParamSpace, factorial_design, lhs_design
+from .ensemble import EnsembleDurum, ensemble_kos, oku_tamamlananlar
 from .posterior import GridPosterior, grid_posterior
 from .recovery import G4C, recovery_verdict
 from .surrogate import Surrogate, fit_surrogate
 
 __all__ = ["ParamSpace", "factorial_design", "lhs_design",
+           "EnsembleDurum", "ensemble_kos", "oku_tamamlananlar",
            "Surrogate", "fit_surrogate",
            "GridPosterior", "grid_posterior",
            "G4C", "recovery_verdict"]

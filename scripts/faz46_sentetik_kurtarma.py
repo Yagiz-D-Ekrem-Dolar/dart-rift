@@ -133,7 +133,39 @@ def main() -> int:
               flush=True)
     else:
         print(f"\n[2] ileri model: GERCEK — {len(x)} GPU kosusu", flush=True)
-        Y = ileri_kosu(x, a.device, a.steps, a.r_ince, a.spacing, a.lam)
+        # KALDIGI YERDEN DEVAM: her nokta hemen JSONL'e yaziliyor. Bir SLURM
+        # isi 12 saatte kesiliyor ve 300 kosuluk ensemble ~10 GPU-gunu
+        # (KAYIT-040) -- yani kesinti KACINILMAZ, olasi degil.
+        from dartrift.inference.ensemble import (ensemble_kos,
+                                                oku_tamamlananlar)
+        from dartrift.inference.forward import ileri_kosu as _tek_nokta
+
+        sys.path.insert(0, str(REPO / "scripts"))
+        from faz44_dart_yakinsama import SAHNE, _malzeme
+
+        jsonl = Path(a.out).with_suffix(".jsonl")
+        _mat = _malzeme()
+
+        def _bir(th):
+            return _tek_nokta(th[None, :], material=_mat, device=a.device,
+                              steps=a.steps, r_ince=a.r_ince,
+                              spacing=a.spacing, lam=a.lam,
+                              sahne_taban=SAHNE)[0]
+
+        def _ilerleme(i, n, mesaj):
+            print(f"    [{i + 1}/{n}] {mesaj}", flush=True)
+
+        durum = ensemble_kos(x, _bir, jsonl, root_seed=a.root_seed,
+                             ilerleme=_ilerleme)
+        print(f"    ensemble: tamamlanan={durum.tamamlanan} "
+              f"dusen={durum.dusen} atlanan={durum.atlanan} "
+              f"bozuk_satir={durum.bozuk_satir}", flush=True)
+        print(f"    devam dosyasi: {jsonl}", flush=True)
+        tamam, _ = oku_tamamlananlar(jsonl, root_seed=a.root_seed)
+        Y = np.full((len(x), len(GOZLENEBILIRLER)), np.nan)
+        for _i, _v in tamam.items():
+            if _v is not None and _i < len(Y):
+                Y[_i] = _v
         dusen = int(np.count_nonzero(~np.all(np.isfinite(Y), axis=1)))
         if dusen:
             # SEYRELME GIZLENMEZ: dusen nokta tasarimin kapsamasini bozar
