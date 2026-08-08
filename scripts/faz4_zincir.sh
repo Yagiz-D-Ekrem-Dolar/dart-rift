@@ -19,9 +19,10 @@ python -u "$REPO/scripts/faz45_durulma.py" \
 echo "rc45=$?"
 
 echo; echo "##### FAZ 4.6 — sentetik kurtarma #####"
-# NOT: `ileri_kosu` henuz uygulanmadi (bkz. betigin docstring'i). Kota
-# gelince once o baglanacak; simdilik bu adim NotImplementedError verir
-# ve kapi G4-C'yi "kosulmadi" sayar -- dogru davranis.
+# NOT: `ileri_kosu` UYGULANDI ama GPU kismi HIC KOSULMADI (kota). Ilk
+# gercek kosuda burasi duserse sasirtici degil; kapi G4-C'yi "kosulmadi"
+# sayar ve zincir devam eder. Once `--kuru` ile hattin calistigi
+# dogrulanmisti (C1 %100, C2 0.142, C3 4.81x).
 python -u "$REPO/scripts/faz46_sentetik_kurtarma.py" \
     --out "$CIK/faz46_sonuc.json"
 echo "rc46=$?"

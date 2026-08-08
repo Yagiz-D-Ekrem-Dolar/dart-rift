@@ -111,7 +111,9 @@ def _kos(rs, mat, device: str, steps: int, every: int, etiket: str,
                 mt = momentum_transfer(
                     st["x"], st["v"], st["m"], impactor_momentum=p_imp,
                     center=np.zeros(3), target_mass=m_hedef,
-                    escape_speed_value=v_kacis)
+                    target_radius=rs.target_radius,
+                    control_radius=2.0 * rs.target_radius,
+                    speed_threshold=v_kacis)
                 beta = float(mt.beta)
             except Exception as e:                       # noqa: BLE001
                 beta = float("nan")

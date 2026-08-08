@@ -106,7 +106,9 @@ def main() -> int:
                 mt = momentum_transfer(
                     st["x"], st["v"], st["m"], impactor_momentum=p_imp,
                     center=np.zeros(3), target_mass=m_hedef,
-                    escape_speed_value=v_kacis)
+                    target_radius=rs.target_radius,
+                    control_radius=2.0 * rs.target_radius,
+                    speed_threshold=v_kacis)
                 beta_b = float(mt.beta_from_bound)
             except Exception:                              # noqa: BLE001
                 beta_b = float("nan")

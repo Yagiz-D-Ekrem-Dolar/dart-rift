@@ -35,12 +35,11 @@ sys.path.insert(0, str(REPO / "src"))
 
 from dartrift.inference.design import (DART_UZAYI, factorial_design,  # noqa: E402
                                        lhs_design)
+from dartrift.inference.forward import GOZLENEBILIRLER  # noqa: E402
+from dartrift.inference.forward import ileri_kosu as _gercek_ileri  # noqa: E402
 from dartrift.inference.posterior import grid_posterior  # noqa: E402
 from dartrift.inference.recovery import recovery_verdict  # noqa: E402
 from dartrift.inference.surrogate import fit_surrogate  # noqa: E402
-
-#: Gözlenebilir adları — `ileri_kosu` bu sırada dönmeli.
-GOZLENEBILIRLER = ("beta", "krater_capi", "ejekta_kutle_kesri")
 
 #: Nominal gözlem gürültüsü. **Uydurulmadı**: `beta` için ADR-0026'nın
 #: hedeflediği `±0,1`; diğer ikisi FAZ 3'ün çıkarıcı duyarlılık
@@ -66,23 +65,24 @@ def _analitik_harita(x: np.ndarray) -> np.ndarray:
     ])
 
 
-def ileri_kosu(x: np.ndarray, device: str, steps: int) -> np.ndarray:
-    """Gerçek ileri model — her satır bir parametre noktası.
+def ileri_kosu(x: np.ndarray, device: str, steps: int,
+               r_ince: float, spacing: float, lam: int) -> np.ndarray:
+    """Gerçek ileri model — `inference.forward.ileri_kosu`'ya bağlanır.
 
-    Şu an **uygulanmadı**: TRUBA kotası dolu olduğu için tek bir gerçek
-    koşu bile yapılamadı ve doğrulanmamış bir uygulama yazmak, S9'un
-    dersine aykırı olurdu (*"atlanan test geçti değildir"*).
-
-    Yapılacak iş açıktır ve `scripts/faz44_dart_yakinsama.py`'de aynısı
-    zaten yazılı: sahne kur → `WarpSolid3D` ile koştur →
-    `observables.momentum_transfer` ve `observables.crater_shape` ile
-    gözlenebilirleri çıkar.
+    .. warning::
+       GPU kısmı **koşulmadı** (TRUBA kotası dolu). Ayrıntısı
+       `inference/forward.py`'nin başlığında. Düşen noktalar `nan` kalır
+       ve çağıran tarafta **sayılır** — sessizce atılmaz.
     """
-    raise NotImplementedError(
-        "ileri kosu HENUZ UYGULANMADI -- TRUBA kotasi dolu (7.200.096 / "
-        "7.200.000 cpu-dk), tek bir gercek kosu bile dogrulanamadi. "
-        "Kota yenilenince `faz44_dart_yakinsama.py`'nin kosu dongusu "
-        "buraya baglanacak. Simdilik `--kuru` kullanin.")
+    sys.path.insert(0, str(REPO / "scripts"))
+    from faz44_dart_yakinsama import SAHNE, _malzeme
+
+    def _ilerleme(i, n, mesaj):
+        print(f"    [{i + 1}/{n}] {mesaj}", flush=True)
+
+    return _gercek_ileri(x, material=_malzeme(), device=device, steps=steps,
+                         r_ince=r_ince, spacing=spacing, lam=lam,
+                         sahne_taban=SAHNE, ilerleme=_ilerleme)
 
 
 def main() -> int:
@@ -94,6 +94,9 @@ def main() -> int:
     ap.add_argument("--n-lhs", type=int, default=40)
     ap.add_argument("--root-seed", type=int, default=20260808)
     ap.add_argument("--n-grid", type=int, default=48)
+    ap.add_argument("--r-ince", type=float, default=25.0)
+    ap.add_argument("--spacing", type=float, default=7.0)
+    ap.add_argument("--lam", type=int, default=2)
     ap.add_argument("--out", default=str(REPO.parent / "faz46_sonuc.json"))
     a = ap.parse_args()
 
@@ -120,7 +123,15 @@ def main() -> int:
               flush=True)
     else:
         print(f"\n[2] ileri model: GERCEK — {len(x)} GPU kosusu", flush=True)
-        Y = ileri_kosu(x, a.device, a.steps)
+        Y = ileri_kosu(x, a.device, a.steps, a.r_ince, a.spacing, a.lam)
+        dusen = int(np.count_nonzero(~np.all(np.isfinite(Y), axis=1)))
+        if dusen:
+            # SEYRELME GIZLENMEZ: dusen nokta tasarimin kapsamasini bozar
+            # ve vekilin q2'si sessizce kotulesir.
+            print(f"    DUSEN NOKTA: {dusen}/{len(x)} -- tasarim seyreldi",
+                  flush=True)
+            tut = np.all(np.isfinite(Y), axis=1)
+            x, Y = x[tut], Y[tut]
     print(f"    {time.perf_counter() - t0:.1f} s", flush=True)
 
     # --- 3) vekiller
