@@ -52,6 +52,8 @@ class G4C:
     c2_en_dar: float = float("nan")
     c2_gecti: bool = False
     c2_genislikler: list = field(default_factory=list)
+    #: Eksen başına "kenara çakılmış mı" — çakılı eksen bilgilendirici sayılmaz.
+    c2_cakili: list = field(default_factory=list)
 
     c3_gecti: bool = False
     c3_ayrinti: dict = field(default_factory=dict)
@@ -116,7 +118,13 @@ def recovery_verdict(post, gercek, gurultu_taramasi=None) -> G4C:
     gen = _bant_genislikleri(post)
     onsel = space.prior_width()
     oran = gen / onsel
-    c2 = bool(np.min(oran) < C2_DARALMA)
+    # KENARA CAKILMIS eksen "bilgilendirici" SAYILMAZ. Gercek deger onsel
+    # araligin disindaysa posterior sinira dayanir ve COK DAR bir bant
+    # uretir -- yani en bilgilendirici eksen gibi gorunur. Dogru okuma
+    # tersidir: parametre araligi yanlis secilmis. (KAYIT-030 sinifi.)
+    cakili = np.array([post.pinned(j) for j in range(space.ndim)], dtype=bool)
+    oran_gecerli = np.where(cakili, np.inf, oran)
+    c2 = bool(np.min(oran_gecerli) < C2_DARALMA)
 
     # --- C3: gurultu artinca bant GENISLEMELI
     c3_kosuldu = gurultu_taramasi is not None and len(gurultu_taramasi) >= 2
@@ -131,7 +139,8 @@ def recovery_verdict(post, gercek, gurultu_taramasi=None) -> G4C:
         # En bilgilendirici eksende (en dar bant) bakilir: bilgi tasimayan
         # bir eksende bant zaten onsel genisligindedir ve GENISLEYEMEZ --
         # orada monotonluk aramak olcutu bos birakirdi.
-        j = int(np.argmin(oran))
+        j = int(np.argmin(oran_gecerli if np.isfinite(oran_gecerli).any()
+                          else oran))
         seri = genislikler[:, j]
         adimlar = np.diff(seri)
         # Genislemeli: her adim >= -tolerans*ilk_genislik
@@ -147,6 +156,7 @@ def recovery_verdict(post, gercek, gurultu_taramasi=None) -> G4C:
                       "buyume_orani": float(seri[-1] / max(seri[0], 1e-300))}
 
     return G4C(c1_kapsama=kapsama, c1_gecti=c1, c1_ayrinti=ayrinti,
-               c2_en_dar=float(np.min(oran)), c2_gecti=c2,
+               c2_en_dar=float(np.min(oran_gecerli)), c2_gecti=c2,
+               c2_cakili=[bool(v) for v in cakili],
                c2_genislikler=[float(v) for v in oran],
                c3_gecti=c3, c3_ayrinti=c3_ayrinti, c3_kosuldu=c3_kosuldu)

@@ -86,8 +86,25 @@ class ParamSpace:
         return x
 
     def prior_width(self) -> np.ndarray:
-        """Önsel genişliği — **birim küpte** `1,0`. G4-C2'nin paydası."""
-        return np.ones(self.ndim, dtype=np.float64)
+        """Önselin **`%68` aralığı** — G4-C2'nin paydası.
+
+        ## Bu `1,0` değildir
+
+        İlk yazdığımda `1,0` döndürüyordum: *"birim küpte önsel bir
+        birim geniştir."* **Yanlış payda.** C2 posteriorun `%68`
+        aralığını ölçüyor; onu önselin **tam genişliğiyle** kıyaslamak
+        elmayla armut kıyaslamaktır.
+
+        Düzgün dağılımın `16–84` yüzdelikleri arası **tam `0,68`**'dir.
+        Ölçüldü: bilgisiz bir posteriorda (`predict ≡ 0`, `n_grid = 200`)
+        `width_u = 0,68342` — ayrıklaştırma payıyla birlikte.
+
+        Hatanın yönü önemli: eski payda C2'yi **belgede yazandan zayıf**
+        yapıyordu. `%50` eşiği `0,50` yerine `0,34` demeliydi; yani
+        bilgisiz bir posterior `0,683` ile eşiğe `%37` yaklaşıyordu,
+        oysa `%100` uzak olmalıydı.
+        """
+        return np.full(self.ndim, 0.68, dtype=np.float64)
 
 
 #: FAZ 4.6'nın parametre uzayı. Sınırlar ADR-0009 (malzeme) ve FAZ 3'ün

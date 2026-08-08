@@ -73,6 +73,40 @@ class GridPosterior:
         """Birim küpte `%68` aralık genişliği — G4-C2'nin payı."""
         return self.hdi_u[:, 1] - self.hdi_u[:, 0]
 
+    def pinned(self, j: int) -> bool:
+        """`j`. eksende posterior **kenara çakılmış** mı?
+
+        ## Neden bu tanı zorunlu
+
+        Gerçek değer önsel aralığın **dışındaysa** posterior sınıra
+        dayanır ve **çok dar** bir bant üretir — yani *"son derece
+        bilgilendirici"* görünür. Oysa doğru okuma tam tersidir:
+        **parametre aralığı yanlış seçilmiş**.
+
+        Ölçüldü (`n_grid = 100`, tek gözlenebilir, `σ = 0,02`):
+
+        | gerçek `u` | mod bini | kenarda mı | `%68` genişlik |
+        |---|---|---|---|
+        | 0,50 | 49 | hayır | 0,03955 |
+        | 0,90 | 89 | hayır | 0,04059 |
+        | 0,98 | 97 | hayır | 0,03545 |
+        | **1,00** | **99** | **evet** | 0,02624 |
+        | **1,50** | **99** | **evet** | **0,00687** |
+        | **−0,30** | **0** | **evet** | **0,00000** |
+
+        Genişliğin dışarı çıkıldıkça **daralması** sahte kesinliğin
+        imzasıdır. Ayrım keskin ve **parametresiz**: mod en dış kutuda mı?
+
+        > Bu, KAYIT-030'un hata sınıfıdır: çıktı makul görünür
+        > (*"dar bant = iyi kurtarma"*), üreten mekanizma bozuktur.
+        """
+        m = self.marginal(j)
+        return bool(int(np.argmax(m)) in (0, len(m) - 1))
+
+    @property
+    def pinned_any(self) -> bool:
+        return any(self.pinned(j) for j in range(self.space.ndim))
+
 
 def grid_posterior(space: ParamSpace, surrogates, data, sigma,
                    n_grid: int = 60) -> GridPosterior:

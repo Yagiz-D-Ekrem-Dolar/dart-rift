@@ -93,8 +93,16 @@ def faz44_ozet(ham: dict) -> dict:
         # Referans: EN INCE kurulumun A' sonucu (en cok cozulmus olan).
         sirali = sorted(ap, key=lambda t: t[1]["N"])
         ref = sirali[-1][1]["beta_son"]
-        # En kaba kurulumda A' ve tek h'yi referansa uzakliklariyla kiyasla.
-        kok, b_ap, b_tek = eslesen[0]
+        # EN KABA kurulumda A' ve tek h'yi referansa uzakliklariyla kiyasla.
+        #
+        # KUSUR: burada `eslesen[0]` yaziyordu, yani SOZLUK SIRASINDAKI ilk
+        # kol. Yorum "en kaba kurulumda" diyordu ama kod onu secmiyordu.
+        # Python 3.7+'da sozluk sirasi EKLEME sirasidir; kosucu kollari
+        # kaba->ince ekledigi icin SU AN dogru sonucu veriyordu, ama
+        # kosucunun dongu sirasi degistigi anda SESSIZCE yanlis kola
+        # bakardi. Bagimlilik acikca yaziliyor.
+        N_kok = {ad[: -len("_Aprime")]: y["N"] for ad, y in ap}
+        kok, b_ap, b_tek = min(eslesen, key=lambda t: N_kok[t[0]])
         d_ap, d_tek = abs(b_ap - ref), abs(b_tek - ref)
         out["B3_Aprime_daha_yakin"] = 1.0 if d_ap < d_tek else 0.0
         out["B3_ayrinti"] = {"kurulum": kok, "referans_beta": float(ref),

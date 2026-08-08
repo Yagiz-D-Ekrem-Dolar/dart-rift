@@ -130,3 +130,28 @@ def test_UCTAN_UCA_A1_dususu_kapiya_ULASIYOR() -> None:
                      "c3_gecti": True, "kuru": False})
     assert "A1" in r.dusenler
     assert r.gecti is False
+
+
+def test_B3_SOZLUK_SIRASINDAN_bagimsiz() -> None:
+    """B3 **en kaba** kurulumu seçmeli, sözlük sırasındaki ilkini değil.
+
+    Bulunan kusur: kod `eslesen[0]` alıyordu. Python 3.7+'da sözlük
+    sırası ekleme sırasıdır ve koşucu kolları kaba→ince eklediği için
+    **şu an** doğru sonuç çıkıyordu — ama koşucunun döngü sırası
+    değiştiği anda sessizce yanlış kola bakardı.
+
+    Bu test sırayı **tersine çevirip** aynı yanıtı bekliyor.
+    """
+    duz = _ham()
+    ters = _ham(sonuclar={k: duz["sonuclar"][k]
+                          for k in reversed(list(duz["sonuclar"]))})
+    a, b = faz44_ozet(duz), faz44_ozet(ters)
+    assert a["B3_Aprime_daha_yakin"] == b["B3_Aprime_daha_yakin"]
+    assert a["B3_ayrinti"]["kurulum"] == b["B3_ayrinti"]["kurulum"] == "s7_lam2"
+
+
+def test_B3_EN_KABA_kurulumu_seciyor() -> None:
+    """Doğrudan: seçilen kurulum en küçük `N`'li olan mı?"""
+    o = faz44_ozet(_ham())
+    assert o["B3_ayrinti"]["kurulum"] == "s7_lam2"      # N=11164 < 28000
+    assert o["B3_ayrinti"]["referans_beta"] == pytest.approx(3.18)

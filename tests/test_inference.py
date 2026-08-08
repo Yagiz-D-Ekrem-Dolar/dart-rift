@@ -308,3 +308,95 @@ def test_G4C_ozet_UCUNU_de_yaziyor() -> None:
     for p in ("C1", "C2", "C3"):
         assert p in v.ozet
     assert isinstance(v, G4C)
+
+
+def test_onsel_genisligi_BILGISIZ_POSTERIORLA_ayni() -> None:
+    """`prior_width` **ölçülen** bilgisiz genişlikle uyuşmalı.
+
+    Bulunan kusur: `prior_width` `1,0` döndürüyordu ama C2 posteriorun
+    `%68` aralığını ölçüyor. Düzgün dağılımın `16–84` yüzdelikleri arası
+    `0,68`'dir. Yanlış payda C2'yi **belgede yazandan zayıf** yapıyordu.
+
+    Mevcut testlerin hiçbiri bunu yakalamamıştı — payda hiçbir yerde
+    ölçülen bir şeyle karşılaştırılmıyordu.
+    """
+    class _Duz:
+        sigma = 0.0
+
+        def predict(self, x):
+            return np.zeros(len(x))
+
+    p = grid_posterior(DART_UZAYI, [_Duz()], [0.0], sigma=1.0, n_grid=200)
+    olculen = float(np.mean(p.width_u))
+    assert olculen == pytest.approx(0.68, abs=0.01), olculen
+    assert np.allclose(DART_UZAYI.prior_width(), 0.68)
+    # Ve bilgisiz posterior C2'yi GECMEMELI (oran ~1.0, esik 0.50).
+    oran = p.width_u / DART_UZAYI.prior_width()
+    assert float(np.min(oran)) > C2_DARALMA, oran
+
+
+def test_C2_bilgisiz_posteriorda_ESIGE_UZAK() -> None:
+    """Eski paydayla bilgisiz posterior eşiğe `%37` yaklaşıyordu.
+
+    Doğru paydayla `%100` uzak olmalı — ölçütün ayırt gücü buradan gelir.
+    """
+    class _Duz:
+        sigma = 0.0
+
+        def predict(self, x):
+            return np.zeros(len(x))
+
+    p = grid_posterior(DART_UZAYI, [_Duz()], [0.0], sigma=1.0, n_grid=120)
+    eski_oran = float(np.min(p.width_u / 1.0))          # KUSURLU payda
+    yeni_oran = float(np.min(p.width_u / 0.68))         # DUZELTILMIS
+    assert eski_oran < 0.7 and yeni_oran > 0.95, (eski_oran, yeni_oran)
+
+
+class _Eksen:
+    """Tek eksene bağlı vekil — kenara çakılma sınamak için."""
+
+    sigma = 0.0
+
+    def __init__(self, j):
+        self.j = j
+
+    def predict(self, x):
+        return DART_UZAYI.to_unit(x)[:, self.j]
+
+
+def test_KENARA_CAKILMA_yakalaniyor() -> None:
+    """Gerçek değer önsel aralığın **dışındaysa** posterior sınıra dayanır.
+
+    Bulunan kusur: o durumda bant **çok dar** çıkıyor ve C2 onu "son
+    derece bilgilendirici" sayıyordu. Doğru okuma tersidir — parametre
+    aralığı yanlış seçilmiş.
+
+    Ayrım keskin ve parametresiz: mod en dış kutuda mı?
+    """
+    ic = grid_posterior(DART_UZAYI, [_Eksen(0)], [0.5], sigma=0.02, n_grid=100)
+    dis = grid_posterior(DART_UZAYI, [_Eksen(0)], [1.5], sigma=0.02, n_grid=100)
+    assert ic.pinned(0) is False
+    assert dis.pinned(0) is True
+    # SAHTE KESINLIK: disaridaki bant ICERIDEKINDEN DAR
+    assert dis.width_u[0] < ic.width_u[0]
+
+
+def test_cakili_eksen_C2_yi_GECIREMEZ() -> None:
+    """Çakılı eksenin dar bandı "bilgilendirici" sayılmamalı."""
+    dis = grid_posterior(DART_UZAYI, [_Eksen(0)], [1.5], sigma=0.02, n_grid=80)
+    v = recovery_verdict(dis, np.array([1.5, 1.0e5, 0.25]),
+                         [(1.0, dis), (4.0, dis)])
+    assert v.c2_cakili[0] is True
+    assert v.c2_gecti is False, v.c2_en_dar
+    assert v.gecti is False
+
+
+def test_ic_bolgedeki_dar_bant_C2_yi_GECIRIYOR() -> None:
+    """Pozitif kontrol: koruma **meşru** dar bantları engellememeli."""
+    vek = _vekiller()
+    gercek = np.array([1.5, 1.0e5, 0.25])
+    veri = [float(s.predict(gercek[None, :])[0]) for s in vek]
+    post = grid_posterior(DART_UZAYI, vek, veri, sigma=0.02, n_grid=44)
+    v = recovery_verdict(post, gercek, [(1.0, post), (4.0, post)])
+    assert not any(v.c2_cakili), v.c2_cakili
+    assert v.c2_gecti is True
