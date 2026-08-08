@@ -280,3 +280,29 @@ def test_cephe_esik_gecilemezse_PATLIYOR() -> None:
     v = np.array([[0.001, 0.0, 0.0]])
     with pytest.raises(RuntimeError, match="cephe yok"):
         cephe_yaricapi(x, v, 0.5, v_ref=500.0)
+
+
+def test_esik_ayrinti_AYIRT_ETME_GUCUNU_raporluyor() -> None:
+    """Parantez, ölçülen taşmadan geniş değilse ölçütün orada **gücü yoktur**.
+
+    Gerçek ölçümde (job 1460698, `mukavemet`) `0,05` eşiğinde parantez
+    `%2,31`, taşma ise `%2,17` — yani ölçüt kendi çözünürlüğü kadar bir
+    farkı "dışarıda" ilan ediyor. Yargı **ayarlanmıyor**; gücü yanına
+    yazılıyor ki yorumlanabilsin.
+    """
+    def _k(rd):
+        d = _kol(rd["0.02"])
+        d["r_esikler"] = rd
+        return d
+    a = _k({"0.01": 0.280, "0.02": 0.255, "0.05": 0.21396})
+    b = _k({"0.01": 0.273, "0.02": 0.247, "0.05": 0.20931})
+    c = _k({"0.01": 0.262, "0.02": 0.244, "0.05": 0.21825})
+    y = judge(a, b, c, 2, 0.15, 1.0)
+    d5 = y["esik_ayrinti"]["0.05"]
+    assert d5["parantez_genisligi_rel"] == pytest.approx(0.0200, abs=1e-3)
+    assert d5["tasma_rel"] == pytest.approx(0.0217, abs=1e-3)
+    # Tasma parantezle AYNI mertebede -> olcut orada ayirt edemiyor
+    assert 0.5 < d5["tasma_parantez_orani"] < 2.0
+    # Ve siralama TERS donmus: dusuk esikte kaba > ince, yuksekte degil
+    assert y["esik_ayrinti"]["0.01"]["kaba_incenin_ustunde"] is True
+    assert d5["kaba_incenin_ustunde"] is False

@@ -333,6 +333,7 @@ def judge(a: dict, b: dict, c: dict, lam: int, r_inner: float,
     # ESIGE BAGIMLILIK: ayni yargi ucu esikte de cikiyor mu? Cikmiyorsa
     # sonuc bir olcum degil, bir esik tercihidir -- ve oyle raporlanir.
     esik_yargilari = {}
+    esik_ayrinti = {}
     if all("r_esikler" in k for k in (a, b, c)):
         for anahtar in a["r_esikler"]:
             l2 = min(a["r_esikler"][anahtar], c["r_esikler"][anahtar])
@@ -340,11 +341,30 @@ def judge(a: dict, b: dict, c: dict, lam: int, r_inner: float,
             g2 = h2 - l2
             esik_yargilari[anahtar] = bool(
                 l2 - 0.1 * g2 <= b["r_esikler"][anahtar] <= h2 + 0.1 * g2)
+            # AYIRT ETME GUCU: parantez, olculen tasmadan belirgin genis mi?
+            # Degilse o esikte olcut zaten karar veremez -- bu bir ayar
+            # degil, bir SINIR bildirimi. Yargi yine de degistirilmiyor;
+            # yalnizca yanina gucu yaziliyor ki yorumlanabilsin.
+            tasma2 = max(0.0, l2 - b["r_esikler"][anahtar],
+                         b["r_esikler"][anahtar] - h2)
+            esik_ayrinti[anahtar] = {
+                "parantez": [l2, h2],
+                "parantez_genisligi_rel": float(g2 / max(abs(l2), 1e-300)),
+                "iki_bolgeli": b["r_esikler"][anahtar],
+                "tasma_rel": float(tasma2 / max(abs(l2), 1e-300)),
+                "tasma_parantez_orani": float(tasma2 / g2) if g2 > 0 else
+                                        float("inf"),
+                # Sıralama ters donduyse esikler farkli FIZIKSEL ozelligi
+                # olcuyor demektir (oncu dalga vs siddetli cekirdek).
+                "kaba_incenin_ustunde": bool(
+                    a["r_esikler"][anahtar] > c["r_esikler"][anahtar]),
+            }
         if yargi != "belirsiz" and len(set(esik_yargilari.values())) > 1:
             yargi = "esige_bagimli"
 
     return {
         "esik_yargilari": esik_yargilari,
+        "esik_ayrinti": esik_ayrinti,
         "etiket": etiket, "tekduze_kaba": a, "iki_bolgeli": b,
         "tekduze_ince": c, "lam": int(lam), "kutle_orani": float(lam ** 3),
         "r_inner": float(r_inner), "t_end": float(t_end),
