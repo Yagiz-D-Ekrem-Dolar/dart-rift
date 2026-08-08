@@ -1,12 +1,9 @@
 """FAZ 4.4 SONDA — kurulum çalışıyor mu, hangi `t`'de hangi yarıçap?
 
-Tam ölçüm 5 kol × birkaç koşu. Önce **tek** kol birkaç `t` değerinde
-koşuluyor: şok gerçekten yayılıyor mu, patlıyor mu, `r_inner = 0,15`'i
-geçip kutu kenarına çarpmadan nerede duruyor?
-
-İlk denemede `E = 5,0e9 J` yazılmıştı ve koşu patladı (özgül enerji
-`6,6e7 J/kg`, buharlaşmanın üç katı). Bu sonda o düzeltmenin **çalıştığını**
-doğrulamak için.
+Bu betik **tanılayıcıdır**, geçer/kalır değil: her `t` için ne olduğunu
+yazar ve devam eder. İlk sürümü ilk hatada `break` ediyordu ve `t = 1e-5`
+sonucundan sonrasını hiç görmedim — oysa basaltta ses `r = 0,3`'e
+`0,3/3162 ≈ 9,5e-5 s`'de varır, yani ilgilenilen ölçek **on kat** ötedeydi.
 """
 from __future__ import annotations
 
@@ -16,38 +13,60 @@ import numpy as np
 
 sys.path.insert(0, "/arf/scratch/egitimg16/driftclaude/dart-rift/src")
 
+from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
 from dartrift.validation.solid_interface import (  # noqa: E402
-    BASALT_SOLID, E_ENJEKTE, H_OVER_DX, KUTU, RHO0, _kos,
-    build_two_zone_solid_ic)
+    BASALT_SOLID, E_ENJEKTE, H_OVER_DX, KUTU, RHO0, build_two_zone_solid_ic)
 
 DEV = "cuda:0"
 N = 32
 R_IC = 0.15
+ESIKLER = (1.01, 1.02, 1.05, 1.10)
 
 
 def main() -> int:
+    from dartrift.warp_core.solver_solid import WarpSolid3D
+
     h = H_OVER_DX * KUTU / N
     ic = build_two_zone_solid_ic(N, 1, R_IC, h)
-    kutle_enj = float(np.sum(ic["m"][ic["u"] > 1.0e3 * 1.000001]))
+    sicak = ic["u"] > 1.0e3 * 1.000001
     print(f"N = {len(ic['m'])}, h = {h}, E = {E_ENJEKTE:.3e} J", flush=True)
-    print(f"enjeksiyon bolgesi: {ic['n_injected']} parcacik, "
-          f"{kutle_enj:.2f} kg", flush=True)
-    print(f"ozgul enerji      : {E_ENJEKTE / max(kutle_enj, 1e-30):.3e} J/kg "
-          f"(E_iv=4.72e6, E_cv=1.82e7)", flush=True)
-    print(f"u_max             : {float(np.max(ic['u'])):.3e} J/kg\n", flush=True)
+    print(f"enjeksiyon: {ic['n_injected']} parcacik, "
+          f"{float(np.sum(ic['m'][sicak])):.2f} kg, "
+          f"ozgul {E_ENJEKTE / float(np.sum(ic['m'][sicak])):.3e} J/kg", flush=True)
+    print(f"basaltta ses ~3162 m/s -> r=0.3'e ~9.5e-5 s\n", flush=True)
 
-    print(f"{'t (s)':>12s} {'r_sok':>10s} {'rho_max':>10s} {'adim':>8s} "
-          f"{'durum':>10s}", flush=True)
-    for t in (1.0e-5, 2.0e-5, 5.0e-5, 1.0e-4, 2.0e-4):
-        try:
-            s = _kos(ic, BASALT_SOLID, DEV, t)
-            im = "TAMAM" if s["r_measured"] < 0.45 * KUTU else "KENARDA"
-            print(f"{t:>12.3e} {s['r_measured']:>10.6f} {s['rho_max']:>10.1f} "
-                  f"{s['n_steps']:>8d} {im:>10s}", flush=True)
-        except RuntimeError as e:
-            print(f"{t:>12.3e} {'--':>10s} {'--':>10s} {'--':>8s} "
-                  f"{'HATA':>10s}  {e}", flush=True)
+    sol = WarpSolid3D(ic["x"], ic["v"], ic["m"], ic["u"], ic["h"],
+                      BASALT_SOLID, RefParams(cfl=0.2), device=DEV)
+    sol._eval()
+    st0 = sol.state_numpy()
+    print(f"BASLANGIC: rho ortanca={float(np.median(st0['rho'])):.2f} "
+          f"(rho0={RHO0}), en buyuk={float(np.max(st0['rho'])):.2f}, "
+          f"P en buyuk={float(np.max(st0['P'])):.3e}", flush=True)
+
+    bas = "  ".join(f"r@{e:.2f}" for e in ESIKLER)
+    print(f"\n{'t (s)':>11s} {'rho_max':>9s} {'rho/rho0':>9s} {'adim':>7s}  {bas}",
+          flush=True)
+    for t in (2.0e-5, 5.0e-5, 1.0e-4, 2.0e-4, 4.0e-4):
+        sol = WarpSolid3D(ic["x"], ic["v"], ic["m"], ic["u"], ic["h"],
+                          BASALT_SOLID, RefParams(cfl=0.2), device=DEV)
+        tani = sol.run(t, max_steps=500_000)
+        st = sol.state_numpy()
+        if not np.all(np.isfinite(st["rho"])):
+            print(f"{t:>11.3e}  PATLADI (rho sonlu degil)", flush=True)
             break
+        rmax = float(np.max(st["rho"]))
+        r = np.linalg.norm(st["x"], axis=1)
+        yaricaplar = []
+        for e in ESIKLER:
+            mask = st["rho"] > e * RHO0
+            yaricaplar.append(f"{float(np.max(r[mask])):.4f}" if np.any(mask)
+                              else "  --  ")
+        print(f"{t:>11.3e} {rmax:>9.1f} {rmax / RHO0:>9.4f} "
+              f"{tani['n_steps']:>7d}  " + "  ".join(f"{v:>6s}" for v in yaricaplar),
+              flush=True)
+        if tani["t_end"] < t * (1.0 - 1e-9):
+            print(f"            (t_end'e ulasilamadi: {tani['t_end']:.3e})",
+                  flush=True)
     return 0
 
 
