@@ -34,6 +34,11 @@ STREAMS: dict[str, int] = {
     # sey var olan bir akisin kimligini/sirasini oynatmaktir, listeye yeni bir
     # ad eklemek degil. Yeni akislar DAIMA sona eklenir.
     "damage_flaws": 3,
+    # SONA EKLEME (2026-08-08, FAZ 4.6 cikarim katmani). Ayni gerekce:
+    # 0..3 DEGISMEDI, dolayisiyla hicbir altin hash etkilenmez. Deney
+    # tasariminin (Latin hiperkup) kendi akisi olmali; `realization`i
+    # paylasirsa tasarim degistiginde kosu tohumlari da kayardi.
+    "inference_design": 4,
 }
 
 
