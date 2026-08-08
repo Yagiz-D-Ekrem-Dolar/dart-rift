@@ -15,7 +15,7 @@ import sys
 sys.path.insert(0, "/arf/scratch/egitimg16/driftclaude/dart-rift/src")
 
 from dartrift.validation.h_policy import (  # noqa: E402
-    judge, measure_density_swing, run_fixed_h_sweep)
+    judge, measure_density_swing, n_sides_for_swing, run_fixed_h_sweep)
 
 DEV = "cuda:0"
 
@@ -36,13 +36,11 @@ def main() -> int:
     # N_komsu ~ (2h/dx)^3 ve dx ~ 2/n  =>  N_komsu ~ (h*n)^3
     h_sabit = float(sal["h"])
     print(f"\n[2] h = {h_sabit:.6g} SABIT, dx taraniyor", flush=True)
-    # Taramanin OLCULEN salinimi (268 -> 551) KAPSAMASI gerekiyor.
-    # Nominal kurulumda h/dx = 2 sabittir, yani calisma noktasi her n'de
-    # N_komsu = (4/3)pi(2*2)^3 = 268. Ust ucu 551'e tasimak icin
-    # h/dx >= (551*3/4pi)^(1/3)/2 = 2.543  =>  n >= 64*1.27 = 81.4.
-    # Ilk kosuda ust uc n=80'de 524'te kaldi ve judge() dogru bicimde
-    # "belirsiz" dondu. n=84 ile kapaniyor.
-    n_listesi = [40, 48, 56, 64, 72, 84]
+    # `n` listesi OLCULEN salinimdan turetiliyor -- elle hesaplayip iki kez
+    # yanildim: once kapsamadi (ust uc 524 < 551), sonra kapsadi ama
+    # calisma araliginda tek nokta kaldi. Aritmetik artik kodda.
+    n_listesi = n_sides_for_swing(sal, h_sabit)
+    print(f"    n listesi (salinimdan turetildi) = {n_listesi}", flush=True)
     satirlar = run_fixed_h_sweep(h_sabit, n_listesi, DEV)
     print(f"    {'n':>4s} {'N':>8s} {'N_komsu':>10s} {'r_olc':>10s} "
           f"{'hata':>9s}", flush=True)

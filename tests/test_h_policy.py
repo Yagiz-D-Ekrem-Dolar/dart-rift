@@ -94,3 +94,42 @@ def test_yargi_ARALIK_DISI_noktalar_yargiya_GIRMEZ() -> None:
     assert y_temiz["r_yayilim"] == pytest.approx(y_sapkin["r_yayilim"])
     # Ama TUM yayilim ikisinde FARKLI -- yani veri gercekten degisti.
     assert y_sapkin["tum_yayilim"] > 10.0 * y_temiz["tum_yayilim"]
+
+
+def test_n_listesi_KAPSIYOR_ve_IC_NOKTA_veriyor() -> None:
+    """Elle aritmetikle iki kez yanıldım; şart artık kodda ve sınanıyor.
+
+    İki şart **aynı anda** sağlanmalı ve birbiriyle çakışıyor: uç noktalar
+    aralığın **dışında** olmalı (kapsama), iç noktalar **içinde** olmalı
+    (yargı). İlk denememde üst uç `524 < 551` kaldı; ikincisinde kapsadı
+    ama çalışma aralığında tek nokta kaldı.
+    """
+    from dartrift.validation.h_policy import n_sides_for_swing
+
+    sw = {"N_komsu_p01": 268.2296476037067, "N_komsu_p99": 551.5188858997691}
+    h = 0.03125
+    ns = n_sides_for_swing(sw, h)
+    nk = np.array([neighbour_count(1.0, h, 1.0 / n ** 3) for n in ns])
+    assert nk.min() <= sw["N_komsu_p01"], f"kapsamiyor (alt): {nk.min()}"
+    assert nk.max() >= sw["N_komsu_p99"], f"kapsamiyor (ust): {nk.max()}"
+    ic = int(np.sum((nk >= sw["N_komsu_p01"]) & (nk <= sw["N_komsu_p99"])))
+    assert ic >= 2, f"calisma araliginda {ic} nokta var, en az 2 gerekir"
+
+
+def test_n_listesi_uretilen_liste_JUDGE_ile_UYUMLU() -> None:
+    """Uçtan uca: türetilen liste `judge`'ı **belirsiz** bırakmamalı."""
+    from dartrift.validation.h_policy import n_sides_for_swing
+
+    sw = {"N_komsu_p01": 268.2296476037067, "N_komsu_p99": 551.5188858997691}
+    h = 0.03125
+    satirlar = [{"r_measured": 0.24, "N_komsu": neighbour_count(1.0, h, 1.0 / n ** 3)}
+                for n in n_sides_for_swing(sw, h)]
+    y = judge(satirlar, swing=sw)
+    assert y["karar"] != "belirsiz", y
+
+
+def test_n_listesi_gecersiz_salinimda_PATLIYOR() -> None:
+    from dartrift.validation.h_policy import n_sides_for_swing
+
+    with pytest.raises(ValueError):
+        n_sides_for_swing({"N_komsu_p01": 500.0, "N_komsu_p99": 100.0}, 0.03125)

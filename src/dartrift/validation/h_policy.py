@@ -86,7 +86,7 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["neighbour_count", "OMEGA_IS_UNITY_WHEN_H_FIXED",
+__all__ = ["neighbour_count", "OMEGA_IS_UNITY_WHEN_H_FIXED", "n_sides_for_swing",
            "measure_density_swing", "run_fixed_h_sweep", "judge"]
 
 #: `h` sabitken `Ω ≡ 1` **tam olarak** — türetim gereği, ölçüm gereği değil.
@@ -185,6 +185,41 @@ def run_fixed_h_sweep(h_absolute: float, n_sides, device: str,
         r["hata"] = abs(r["r_measured"] - r["r_exact"]) / r["r_exact"]
         satirlar.append(r)
     return satirlar
+
+
+def n_sides_for_swing(swing: dict, h: float, ic_nokta: int = 3,
+                      pay: float = 1.05) -> list[int]:
+    """Taramanın `n` listesini **ölçülen salınımdan** türet.
+
+    İki şart aynı anda sağlanmalı ve elle aritmetikle üç kez yanıldım:
+
+    1. **Kapsama**: en küçük `N_komşu` salınımın altına, en büyüğü üstüne
+       düşmeli — yoksa `judge` "belirsiz" döner.
+    2. **İç noktalar**: yargı yalnızca aralık **içindeki** noktalardan
+       kurulduğu için orada en az 2 (tercihen 3) nokta olmalı.
+
+    İkisi çakışır: uç noktalar aralığın **dışında** olmak zorundadır,
+    dolayısıyla liste hem dışarı taşmalı hem içeriyi doldurmalıdır.
+    Bunu her seferinde elle hesaplamak yerine burada bir kez yazılıyor.
+
+    `N_komşu = (4/3)π(2h/dx)³` ve `dx = KUTU/n` ⇒ `n = (N·3/4π)^{1/3}/(2h)`
+    (birim kutuda).
+    """
+    def _n(nk: float) -> float:
+        return (nk * 3.0 / (4.0 * np.pi)) ** (1.0 / 3.0) / (SUPPORT_OVER_H * h)
+
+    alt, ust = float(swing["N_komsu_p01"]), float(swing["N_komsu_p99"])
+    n_alt, n_ust = _n(alt), _n(ust)
+    if not (n_ust > n_alt > 1.0):
+        raise ValueError(f"salınımdan geçerli n aralığı çıkmadı: "
+                         f"[{n_alt:.2f}, {n_ust:.2f}]")
+    # Ic noktalar: (n_alt, n_ust) ACIK araliginda, uclardan pay kadar iceride.
+    ic = np.linspace(n_alt * pay, n_ust / pay, ic_nokta)
+    liste = sorted({int(np.floor(n_alt / pay)), *[int(round(v)) for v in ic],
+                    int(np.ceil(n_ust * pay))})
+    # Egriyi gormek icin bir de cok altta bir nokta.
+    liste = sorted({max(8, int(round(n_alt * 0.6))), *liste})
+    return liste
 
 
 def judge(satirlar: list[dict], swing: dict | None = None,
