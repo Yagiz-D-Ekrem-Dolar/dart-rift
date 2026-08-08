@@ -1,0 +1,181 @@
+"""FAZ 4.4 (asıl) — DART kurulumunda **çözünürlük yakınsaması**
+
+Plan şunu istiyor:
+
+> 4.4 | DART kurulumunda **çözünürlük yakınsaması** | krater çapı ve β'nın
+> `N`'e duyarlılığı
+
+Bu betik A′'yı (ADR-0041, KAYIT-037) **gerçek DART sahnesine** bağlayıp
+β'nın çözünürlükle nasıl davrandığını ölçüyor.
+
+## İki kol, kasıtlı
+
+| kol | `h` | ne gösterir |
+|---|---|---|
+| **A′** | parçacık başına (ince bölge `2·s/λ`) | seçilen yaklaşım |
+| **tek `h`** | hepsi `2·s` | A′'nın katkısını yalıtan kontrol |
+
+KAYIT-037 küp geometrisinde ölçtü ki A′ incelme kazancının `%67,1`'ini,
+tek `h` yalnızca `%9,1`'ini veriyor. Bu betik aynı karşılaştırmayı
+**DART geometrisinde** yapıyor — ADR-0041'in ve ADR-0042'nin "koşullu"
+kalan kısmı tam olarak buydu.
+
+## Ölçülen
+
+`β(t)` izlenir; yakınsama ölçütü **son değer** değil, çözünürlükler
+arası **fark**. Ayrıca ADR-0026'nın tanısı (merminin hedef aralığına
+göre kaç parçacık olduğu) her kolda raporlanır.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+import time
+from pathlib import Path
+
+import numpy as np
+
+REPO = Path("/arf/scratch/egitimg16/driftclaude/dart-rift")
+sys.path.insert(0, str(REPO / "src"))
+
+from dartrift.cpu_reference.materials import (  # noqa: E402
+    DamageParams, GravityParams, MaterialParams, PorosityParams,
+    StrengthParams)
+from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
+from dartrift.observables.momentum_transfer import (  # noqa: E402
+    escape_speed, momentum_transfer)
+from dartrift.setup.refine import refine_scene  # noqa: E402
+from dartrift.setup.scene import build_scene  # noqa: E402
+
+SAHNE = dict(radius=82.0, bulk_density=1800.0, root_seed=20260801,
+             model_class="M1", f_boulder=0.25, q=3.0, n_impactor=800,
+             r_min=14.0, r_max=42.0)
+
+
+def _malzeme() -> MaterialParams:
+    return MaterialParams(
+        eos="tillotson",
+        strength=StrengthParams(enabled=True, Y0=1.0e4, mu_f=0.6, YM=1.5e9,
+                                shear_G=2.27e10, jaumann=True),
+        porosity=PorosityParams(enabled=True, alpha0=1.6, Pe=1.0e6,
+                                Ps=1.0e8, n_exp=2.0),
+        gravity=GravityParams(enabled=False),
+        damage=DamageParams(enabled=False),
+        density_method="continuity")
+
+
+def _mermi_yaricapi(x, is_imp) -> float:
+    xi = x[is_imp]
+    return float(np.max(np.linalg.norm(xi - xi.mean(axis=0)[None, :], axis=1)))
+
+
+def _kos(rs, mat, device: str, steps: int, every: int, etiket: str,
+         tek_h: bool) -> dict:
+    from dartrift.warp_core.solver_solid import WarpSolid3D
+
+    h = float(2.0 * rs.spacing_coarse) if tek_h else rs.h
+    n = rs.n
+    sol = WarpSolid3D(
+        np.ascontiguousarray(rs.x), np.ascontiguousarray(rs.v),
+        np.ascontiguousarray(rs.m), np.zeros(n), h, mat, RefParams(cfl=0.25),
+        alpha0=np.ascontiguousarray(rs.alpha0),
+        Y0=np.ascontiguousarray(rs.Y0), device=device, check_every=10 ** 9)
+
+    p_imp = rs.impactor_momentum
+    m_hedef = rs.target_mass
+    v_kacis = escape_speed(m_hedef, rs.target_radius)
+    mermi_capi = 2.0 * _mermi_yaricapi(rs.x, rs.is_impactor)
+    print(f"    {etiket}: N={n} (ince {rs.diagnostics['n_ince']}, "
+          f"kaba {rs.diagnostics['n_kaba']}, mermi {rs.diagnostics['n_mermi']}), "
+          f"h={'TEK ' + format(h, '.1f') if tek_h else 'parcacik basina'}",
+          flush=True)
+    # ADR-0026 TANISI: mermi, BULUNDUGU BOLGENIN araligina gore kac parcacik?
+    s_yerel = rs.spacing_fine
+    print(f"      mermi capi {mermi_capi:.3f} m; yerel aralik {s_yerel:.3f} m "
+          f"-> {mermi_capi / s_yerel:.3f} parcacik/cap "
+          f"({'COZULMUS' if mermi_capi / s_yerel >= 2.0 else 'COZULMEMIS'})",
+          flush=True)
+
+    izler, t_sim, t0 = [], 0.0, time.perf_counter()
+    for adim in range(1, steps + 1):
+        dt = sol.compute_dt()
+        sol.step(dt)
+        t_sim += dt
+        if adim % every == 0 or adim == steps:
+            st = sol.state_numpy()
+            if not np.all(np.isfinite(st["v"])):
+                print(f"      PATLADI adim {adim}", flush=True)
+                return {"etiket": etiket, "durum": "patladi", "adim": adim}
+            try:
+                mt = momentum_transfer(
+                    st["x"], st["v"], st["m"], impactor_momentum=p_imp,
+                    center=np.zeros(3), target_mass=m_hedef,
+                    escape_speed_value=v_kacis)
+                beta = float(mt.beta)
+            except Exception as e:                       # noqa: BLE001
+                beta = float("nan")
+                if adim == every:
+                    print(f"      beta okunamadi: {e}", flush=True)
+            izler.append({"adim": adim, "t": t_sim, "beta": beta})
+    sure = time.perf_counter() - t0
+    son = [z["beta"] for z in izler[-3:] if np.isfinite(z["beta"])]
+    print(f"      beta(son) = {son[-1] if son else float('nan'):.6f}  "
+          f"t_sim = {t_sim:.4e} s  ({sure:.1f} s duvar)", flush=True)
+    return {"etiket": etiket, "durum": "tamam", "N": n, "t_sim": t_sim,
+            "beta_son": son[-1] if son else float("nan"),
+            "mermi_parcacik_cap": mermi_capi / s_yerel,
+            "tasarruf": rs.diagnostics["tasarruf"],
+            "izler": izler, "duvar_s": sure}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--device", default="cuda:0")
+    ap.add_argument("--steps", type=int, default=3000)
+    ap.add_argument("--every", type=int, default=250)
+    ap.add_argument("--r-ince", type=float, default=25.0)
+    ap.add_argument("--out", default="/arf/scratch/egitimg16/driftclaude/"
+                                     "faz44_dart_sonuc.json")
+    a = ap.parse_args()
+
+    print("=" * 78, flush=True)
+    print("FAZ 4.4 — DART KURULUMUNDA COZUNURLUK YAKINSAMASI", flush=True)
+    print("=" * 78, flush=True)
+    mat = _malzeme()
+    sonuclar = {}
+
+    for s_kaba, lam in ((7.0, 2), (7.0, 3), (5.0, 2)):
+        s_ince = s_kaba / lam
+        ad = f"s{s_kaba:g}_lam{lam}"
+        print(f"\n[{ad}] kaba={s_kaba} m, ince={s_ince:.3f} m, lam={lam}",
+              flush=True)
+        kaba = build_scene(spacing=s_kaba, device="cpu", **SAHNE)
+        ince = build_scene(spacing=s_ince, device="cpu", **SAHNE)
+        rs = refine_scene(kaba, ince, r_ince=a.r_ince)
+        print(f"    tasarruf {rs.diagnostics['tasarruf']:.2f}x, "
+              f"kutle sapmasi {rs.diagnostics['hedef_kutle_sapmasi']:.3e}",
+              flush=True)
+        sonuclar[ad + "_Aprime"] = _kos(rs, mat, a.device, a.steps, a.every,
+                                        ad + " A'", tek_h=False)
+        sonuclar[ad + "_tek_h"] = _kos(rs, mat, a.device, a.steps, a.every,
+                                       ad + " tek h", tek_h=True)
+
+    Path(a.out).write_text(json.dumps(
+        {"r_ince": a.r_ince, "steps": a.steps, "sonuclar": sonuclar}, indent=2))
+    print(f"\nyazildi: {a.out}", flush=True)
+
+    print("\nOZET", flush=True)
+    print(f"    {'kol':22s} {'N':>8s} {'beta':>10s} {'mermi p/cap':>12s}",
+          flush=True)
+    for ad, y in sonuclar.items():
+        if y["durum"] != "tamam":
+            print(f"    {ad:22s} {y['durum']}", flush=True)
+            continue
+        print(f"    {ad:22s} {y['N']:>8d} {y['beta_son']:>10.6f} "
+              f"{y['mermi_parcacik_cap']:>12.3f}", flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
