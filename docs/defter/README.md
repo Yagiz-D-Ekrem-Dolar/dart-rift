@@ -47,6 +47,7 @@ koşulardan gelir; iş numaraları yazılıdır.
 | **[039](KAYIT-039_2026-08-08_dokuz-turluk-hata-ayiklama.md)** | 08.08 | **11 tur hata ayıklama** — 11 kusur, **dördü testleri geçiyordu**; `prior_width` paydası, kenara çakılma, `None` çökmesi, numpy tipleri |
 | **[040](KAYIT-040_2026-08-08_ensemble-fizibilitesi-A-prime-ile.md)** | 08.08 | **A′ ensemble'ı mümkün kılıyor** — 1 s için A′ **9,73** GPU-günü, tekdüze ince **66,85**; `~30` günlük bütçeye yalnızca A′ sığıyor |
 | **[041](KAYIT-041_2026-08-08_yerel-gpu-ve-mermi-cozulmemis.md)** | 08.08 | **Yerel GPU açıldı** (RTX 3050, yalnızca `2,85×` yavaş) ve **G4-A1 DÜŞTÜ**: mermi `0,215` parçacık/çap, eşik `2,0` |
+| **[042](KAYIT-042_2026-08-09_iki-asama-aktarimi-dustu.md)** | 09.08 | **FAZ 4.4 bitti** (6 kol, eşit `t`; `B1`/`B3` geçti) · `t₁ = 4,767e-3 s` ölçüldü · kabalaştırmada korunum `~1e-15` **geçti** ama **atama mesafesi düştü**: `t₁`'in iki şartı **çelişiyor** |
 
 > 017/018 numaraları kronolojiyle ters: 018 (2. tur) 017'den (3. tur) **önce**
 > yaşandı ama sonra yazıldı. Numaralar yazım sırasını, tablo yaşanma sırasını
