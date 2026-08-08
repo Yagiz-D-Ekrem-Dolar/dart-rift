@@ -58,7 +58,7 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["coarsen_to_sites", "korunum_raporu"]
+__all__ = ["coarsen_to_sites", "korunum_raporu", "sites_from_cloud"]
 
 
 def _en_yakin_site(x: np.ndarray, siteler: np.ndarray,
@@ -202,3 +202,68 @@ def korunum_raporu(x, v, m, e, x_k, v_k, m_k, e_k, sacilim) -> dict:
         "kutle_giren": M0, "kutle_cikan": M1,
         "enerji_giren": E0, "enerji_cikan": E1,
     }
+
+
+# --------------------------------------------------------------------------
+# LAGRANGE'CI hedef site uretimi (ADR-0043 §7 madde 5)
+# --------------------------------------------------------------------------
+
+def sites_from_cloud(x, s_hedef: float, paketleme: str = "fcc") -> np.ndarray:
+    """`t₁` anındaki **mevcut** bulutun üzerine hedef kafes otur.
+
+    ## Neden gerekli
+
+    Euler'ci sürüm — hedef siteleri aşama-2'nin **başlangıç** kafesinden
+    almak — ölçüldü ve **düştü** (ADR-0043 §4c):
+
+    | `t₁` | atama mesafesi |
+    |---|---|
+    | `1e-3 s` | `0,97` hücre |
+    | `4,77e-3 s` (ölçülen `t₁`) | **`4,35` hücre** |
+    | `1e-2 s` | **`10,16` hücre = 35,6 m** |
+
+    Sebep basit: hedef siteler sabit duruyor, **madde gidiyor**. `t₁`'e
+    kadar ince bölgenin maddesi `r_iç`'in çok dışına çıkıyor ve aktarım
+    onu geri **ışınlıyor**. Korunum bunu görmüyor; toplamlar tutuyor.
+
+    ## Yapılan
+
+    Bulut, kenarı `a` olan bir kübik ızgaraya bölünür; **dolu** hücrelerin
+    merkezleri site olur. Böylece **her** parçacık kendi hücresinin
+    merkezine `≤ a√3/2` uzaklıkta kalır — atama mesafesi **yapı gereği**
+    sınırlı.
+
+    ## `a` neden `s_hedef` değil
+
+    Aşama-2 FCC ve parçacık hacmi `s³/√2`. Kübik ızgarada hücre başına bir
+    parçacık düşer, hacim `a³`. Aynı parçacık hacmi için:
+
+        a³ = s³/√2   →   a = s / 2^(1/6) ≈ 0,8909 · s
+
+    Yani aktarılan parçacıklar aşama-2'nin parçacıklarıyla **aynı hacmi**
+    temsil eder. `s_hedef` doğrudan kullanılsaydı `%41` daha büyük
+    hacimler çıkardı ve kütle-yoğunluk tutarlılığı bozulurdu.
+
+    Returns
+    -------
+    (M, 3) site konumları. Belirlenimci: hücre indeksine göre sıralı.
+    """
+    x = np.asarray(x, dtype=np.float64)
+    if x.ndim != 2 or x.shape[1] != 3:
+        raise ValueError(f"x (N,3) olmalı, {x.shape} geldi")
+    if len(x) == 0:
+        raise ValueError("bulut boş — site üretilemez")
+    if not np.all(np.isfinite(x)):
+        raise ValueError("bulutta sonlu olmayan konum var")
+    if s_hedef <= 0.0:
+        raise ValueError(f"s_hedef pozitif olmalı, {s_hedef} geldi")
+    if paketleme not in ("fcc", "kubik"):
+        raise ValueError(f"paketleme 'fcc' ya da 'kubik' olmalı, "
+                         f"{paketleme!r} geldi")
+    a = s_hedef / 2.0 ** (1.0 / 6.0) if paketleme == "fcc" else s_hedef
+
+    kok = x.min(axis=0)
+    hucre = np.floor((x - kok[None, :]) / a).astype(np.int64)
+    # BELIRLENIMCI benzersizlestirme: satirlari sirali dondurur.
+    tekil = np.unique(hucre, axis=0)
+    return kok[None, :] + (tekil + 0.5) * a

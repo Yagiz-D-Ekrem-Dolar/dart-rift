@@ -252,3 +252,60 @@ def test_acisal_momentum_olcekli_kayip_L0_SIFIRA_YAKINKEN_anlamli():
     assert k["acisal_momentum_hata"] > 1e10         # ham oran ANLAMSIZ
     assert k["acisal_momentum_kayip_olcekli"] == pytest.approx(0.1, rel=1e-9)
     assert 0.0 <= k["acisal_momentum_kayip_olcekli"] <= 1.0 + 1e-12
+
+
+# ------------------------------------------- LAGRANGE'ci site uretimi (#5)
+
+def test_lagrange_atama_mesafesi_YAPI_GEREGI_sinirli():
+    """Euler'ci sürümün düştüğü yer: `4,35` hücre. Bu sınırlı olmalı.
+
+    Kübik hücreye bölünen bir bulutta her parçacık kendi hücresinin
+    merkezine `≤ a√3/2` uzaklıkta. Ölçülüyor.
+    """
+    from dartrift.setup.coarsen import sites_from_cloud
+    x = RNG.uniform(-50.0, 50.0, size=(4000, 3))       # GENIS yayilmis bulut
+    v, m, e = RNG.normal(0, 200, (4000, 3)), np.ones(4000), np.zeros(4000)
+    s2 = 3.5
+    s = sites_from_cloud(x, s2)
+    k = coarsen_to_sites(x, v, m, e, s)["korunum"]
+    a = s2 / 2.0 ** (1.0 / 6.0)
+    assert k["atama_mesafe_max"] <= a * np.sqrt(3.0) / 2.0 + 1e-9
+    assert k["atama_mesafe_max"] / s2 < 1.0            # Euler'ci: 4.35
+    assert k["kutle_hata"] < 1e-14 and k["momentum_hata"] < 1e-12
+
+
+def test_lagrange_hucre_hacmi_asama2_parcacigiyla_AYNI():
+    """`a = s/2^(1/6)` — FCC parçacık hacmi `s³/√2` ile eşleşmeli."""
+    from dartrift.setup.coarsen import sites_from_cloud
+    s2 = 3.5
+    x = np.array([[0.0, 0, 0], [100.0, 0, 0]])
+    s = sites_from_cloud(x, s2)
+    a = float(np.linalg.norm(s[1] - s[0])) / round(
+        float(np.linalg.norm(s[1] - s[0])) / (s2 / 2 ** (1 / 6)))
+    assert a ** 3 == pytest.approx(s2 ** 3 / np.sqrt(2.0), rel=1e-12)
+
+
+def test_lagrange_belirlenimci_ve_dolu_hucreler():
+    from dartrift.setup.coarsen import sites_from_cloud
+    x = RNG.uniform(-10, 10, size=(500, 3))
+    s1, s2 = sites_from_cloud(x, 2.0), sites_from_cloud(x, 2.0)
+    np.testing.assert_array_equal(s1, s2)
+    # Hicbir site BOS kalmamali: her site en az bir parcacik almali.
+    k = coarsen_to_sites(x, np.zeros_like(x), np.ones(len(x)),
+                         np.zeros(len(x)), s1)["korunum"]
+    assert k["n_bos_site"] == 0
+    assert k["n_cikan"] == len(s1)
+
+
+@pytest.mark.parametrize("kw,mesaj", [
+    (dict(x=np.zeros((0, 3))), "bulut boş"),
+    (dict(s_hedef=0.0), "pozitif"),
+    (dict(paketleme="hcp"), "fcc"),
+    (dict(x=np.array([[np.nan, 0.0, 0.0]])), "sonlu olmayan"),
+])
+def test_lagrange_gecersiz_girdiler(kw, mesaj):
+    from dartrift.setup.coarsen import sites_from_cloud
+    g = dict(x=np.zeros((3, 3)), s_hedef=1.0)
+    g.update(kw)
+    with pytest.raises(ValueError, match=mesaj):
+        sites_from_cloud(**g)

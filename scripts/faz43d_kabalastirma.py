@@ -52,7 +52,8 @@ for _akis in (sys.stdout, sys.stderr):
         pass
 
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
-from dartrift.setup.coarsen import coarsen_to_sites  # noqa: E402
+from dartrift.setup.coarsen import (coarsen_to_sites,  # noqa: E402
+                                    sites_from_cloud)
 from dartrift.setup.refine import refine_scene_local  # noqa: E402
 from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
 
@@ -119,8 +120,8 @@ def main() -> int:
         Y0=np.ascontiguousarray(rs.Y0), device=a.device, check_every=10 ** 9)
 
     kayitlar, t_sim, hedefler = [], 0.0, sorted(float(t) for t in a.t1)
-    print(f"\n{'t1':>10} {'kutle':>10} {'momentum':>10} {'enerji':>10} "
-          f"{'ACISAL':>10} {'ISIYA%':>8} {'d_max/s':>8}", flush=True)
+    print(f"\n{'t1':>10} {'kip':>9} {'site':>6} {'kutle':>9} {'momentum':>9} "
+          f"{'enerji':>9} {'ISIYA%':>8} {'d_max/s':>8}", flush=True)
     print("-" * 78, flush=True)
 
     for hedef in hedefler:
@@ -141,19 +142,26 @@ def main() -> int:
             raise KeyError("state_numpy 'u' (ozgul ic enerji) dondurmedi — "
                            f"anahtarlar: {sorted(st)}")
         e = np.asarray(st["u"], np.float64)
-        out = coarsen_to_sites(st["x"][ince], st["v"][ince], rs.m[ince],
-                               e[ince], siteler,
-                               alpha0=rs.alpha0[ince], Y0=rs.Y0[ince],
-                               is_boulder=rs.is_boulder[ince])
-        k = out["korunum"]
-        k["t1"] = hedef
-        k["ic_enerji_cozucuden"] = True
-        kayitlar.append(k)
-        print(f"{hedef:10.1e} {k['kutle_hata']:10.2e} "
-              f"{k['momentum_hata']:10.2e} {k['enerji_hata']:10.2e} "
-              f"{k['acisal_momentum_hata']:10.2e} "
-              f"{100 * k['ice_donen_kinetik_oran']:8.3f} "
-              f"{k['atama_mesafe_max'] / s2:8.2f}", flush=True)
+        xi, vi = st["x"][ince], st["v"][ince]
+
+        # IKI KIP, AYNI DURUMDA. Baska turlu karsilastirma adil olmaz.
+        #   euler    -> hedefler asama-2'nin BASLANGIC kafesinden (sabit)
+        #   lagrange -> hedefler t1 anindaki BULUTUN uzerinden (§7 madde 5)
+        for kip, sit in (("euler", siteler),
+                         ("lagrange", sites_from_cloud(xi, s2))):
+            out = coarsen_to_sites(xi, vi, rs.m[ince], e[ince], sit,
+                                   alpha0=rs.alpha0[ince], Y0=rs.Y0[ince],
+                                   is_boulder=rs.is_boulder[ince])
+            k = out["korunum"]
+            k["t1"] = hedef
+            k["kip"] = kip
+            k["ic_enerji_cozucuden"] = True
+            kayitlar.append(k)
+            print(f"{hedef:10.1e} {kip:>9} {k['n_cikan']:6d} "
+                  f"{k['kutle_hata']:9.2e} {k['momentum_hata']:9.2e} "
+                  f"{k['enerji_hata']:9.2e} "
+                  f"{100 * k['ice_donen_kinetik_oran']:8.3f} "
+                  f"{k['atama_mesafe_max'] / s2:8.2f}", flush=True)
 
     print("-" * 78, flush=True)
     if kayitlar:
@@ -168,6 +176,20 @@ def main() -> int:
         print(f"  cikan kaba parcacik  = {kayitlar[-1]['n_cikan']}", flush=True)
         print(f"  bos kalan site       = {kayitlar[-1]['n_bos_site']}",
               flush=True)
+        print("\nIKI KIP, EN BUYUK t1'DE:", flush=True)
+        oe = [z for z in kayitlar if z["kip"] == "euler"]
+        ol = [z for z in kayitlar if z["kip"] == "lagrange"]
+        if oe and ol:
+            e_s, l_s = oe[-1], ol[-1]
+            print(f"  {'':24s} {'EULER':>11s} {'LAGRANGE':>11s}", flush=True)
+            for ad, anh, olc in (
+                    ("site sayisi", "n_cikan", 1.0),
+                    ("atama mesafesi / s2", "atama_mesafe_max", 1.0 / s2),
+                    ("isiya donen %", "ice_donen_kinetik_oran", 100.0),
+                    ("acisal kayip %", "acisal_momentum_kayip_olcekli", 100.0)):
+                print(f"  {ad:24s} {e_s[anh] * olc:11.3f} "
+                      f"{l_s[anh] * olc:11.3f}", flush=True)
+
         print("\nASIL BULGULAR (korunum degil):", flush=True)
         print(f"  acisal momentum kaybi = "
               f"{100 * kayitlar[-1]['acisal_momentum_kayip_olcekli']:.2f}%  "
