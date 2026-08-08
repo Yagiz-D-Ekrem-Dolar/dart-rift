@@ -13,11 +13,21 @@ parçacıkları artık hedeften ayrı bir hızda değildir.
 u(t) = |<v>_mermi − <v>_yakın hedef| / v_çarpma
 ```
 
-`u → 0` bağlanmanın bittiğini gösterir. Durulma ölçütü FAZ 4.5'inkiyle
-**aynı** (`settling_time`) — iki yerde iki ölçüt yazmamak için.
+Bağlanmanın bitmesi, `u`'nun **durmasıdır** — sıfıra inmesi değil.
+Durulma ölçütü FAZ 4.5'inkiyle **aynı** (`settling_time`), iki yerde
+iki ölçüt yazmamak için.
 
-> `u`'nun **sıfıra** gitmesi beklenmiyor; sıçrama ve saçılma bir kalıntı
-> bırakır. Ölçülen şey `u`'nun **durulduğu** an.
+> ### ⚠ İlk yazdığım cümle yanlıştı
+>
+> *"`u → 0` bağlanmanın bittiğini gösterir"* ve *"mermi hedefle aynı
+> hıza geldiğinde bağlanma bitmiştir"* yazmıştım. **Ölçüm çürüttü:**
+> `u` sıfıra inmiyor, `0,409`'da **düzleşiyor** (ve oraya *aşağıdan*,
+> `0,118`'den **yükselerek** geliyor — tek yönlü bile değil).
+>
+> Doğrusu: momentum alışverişi bitince iki topluluk balistik hâle
+> geçer ve **fark sabitlenir**. Sabitlendiği değerin sıfır olması
+> gerekmez; mermi maddesi geri saçılırken hedef maddesi ileri gider.
+> Ölçülen şey `u`'nun **durulduğu an**, durulduğu **değer** değil.
 """
 from __future__ import annotations
 

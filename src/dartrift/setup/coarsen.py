@@ -24,6 +24,19 @@ Her ince parçacık **en yakın** kaba bölgeye atanır. Atama bir
 | konum | kütle merkezi | — |
 | açısal momentum | — | **HAYIR**, artık ölçülür |
 
+> Açısal momentum kaybını `|L₀|`'a bölmek **merkezi çarpmada
+> anlamsız**: net `L₀ ≈ 0` olduğu için oran `%70 000` gibi çıkıyor ve
+> hiçbir şey söylemiyor. Okunması gereken
+> `acisal_momentum_kayip_olcekli` — paydası ulaşılabilir en büyük
+> değer, `Σ mᵢ|xᵢ||vᵢ|`.
+
+### Korunumun **görmediği** şey: atama mesafesi
+
+Üç korunum yasası da tam olsa bile kütle **uzağa** taşınmış olabilir:
+bir parçacık komşu olmayan bir siteye atanırsa toplamlar tutar ama
+madde ışınlanmıştır. `korunum["atama_mesafe_max"]` bunu ayrıca
+raporlar; `s_kaba`'yı çok aşıyorsa aktarım geometrik olarak bozuktur.
+
 ### Enerjinin püf noktası
 
 Hızları ortalamak kinetik enerji **kaybettirir**: `½Σm_i|v_i|² ≥
@@ -130,8 +143,15 @@ def coarsen_to_sites(x, v, m, e, siteler, alpha0=None, Y0=None,
                         minlength=ns)
         out["is_boulder"] = (b[dolu] / m_k[dolu]) > 0.5
 
+    # ATAMA MESAFESI: korunum tam olsa bile kutle UZAGA tasinmis olabilir.
+    # Bir parcacik komsu olmayan bir siteye atandiysa aktarim maddeyi
+    # ISINLIYOR demektir ve korunum bunu GORMEZ -- ayri bir tani gerekli.
+    d_atama = np.linalg.norm(x - siteler[idx], axis=1)
     out["korunum"] = korunum_raporu(x, v, m, e, x_k, v_k, out["m"], e_k,
                                     sacilim)
+    out["korunum"]["atama_mesafe_max"] = float(d_atama.max())
+    out["korunum"]["atama_mesafe_ort"] = float(
+        np.average(d_atama, weights=m))
     out["korunum"]["n_giren"] = int(len(x))
     out["korunum"]["n_cikan"] = int(dolu.sum())
     out["korunum"]["n_bos_site"] = int(ns - dolu.sum())
@@ -163,12 +183,21 @@ def korunum_raporu(x, v, m, e, x_k, v_k, m_k, e_k, sacilim) -> dict:
     L0 = (m[:, None] * np.cross(x, v)).sum(axis=0)
     L1 = (m_k[:, None] * np.cross(x_k, v_k)).sum(axis=0)
     K0 = float((0.5 * m * np.einsum("ij,ij->i", v, v)).sum())
+    # `|L0|`'a bolmek MERKEZI carpmada anlamsiz: net acisal momentum ~0
+    # oldugu icin gorece hata %70000 gibi cikiyor ve hicbir sey soylemiyor.
+    # Anlamli payda ULASILABILIR en buyuk deger: sum m_i |x_i| |v_i|.
+    L_olcek = float((m * np.linalg.norm(x, axis=1)
+                     * np.linalg.norm(v, axis=1)).sum())
     return {
         "kutle_hata": _gor(M0, M1),
         "momentum_hata": _gor_vek(P0, P1),
         "enerji_hata": _gor(E0, E1),
         # Bu KORUNMUYOR; esik degil, TANIDIR.
         "acisal_momentum_hata": _gor_vek(L0, L1),
+        # ASIL okunmasi gereken: kayip, ULASILABILIR olcege gore.
+        "acisal_momentum_kayip_olcekli": float(
+            np.linalg.norm(L1 - L0) / max(L_olcek, 1e-300)),
+        "acisal_momentum_olcek": L_olcek,
         "ice_donen_kinetik_oran": float(sacilim.sum() / max(K0, 1e-300)),
         "kutle_giren": M0, "kutle_cikan": M1,
         "enerji_giren": E0, "enerji_cikan": E1,

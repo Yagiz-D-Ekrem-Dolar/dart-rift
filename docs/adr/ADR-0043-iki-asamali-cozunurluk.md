@@ -114,7 +114,37 @@ eşitlenmesi ayrı şey.
 > `t₁ ≳ 1e-1 s` çıkarsa **iki aşama seçeneği çöker** ve §6'nın
 > *"bireysel/blok zaman adımı"* alternatifi tek yol kalır.
 
-Uzun koşu (`t_end = 5e-2 s`) sürüyor.
+### 4b-öncesi ek: uzun koşu bitti — **`t₁ = 4,77e-3 s`**
+
+`t_end = 5e-2 s` (25 kat uzun, 93 örnek) koştu ve `u` **duruldu**:
+
+| | |
+|---|---|
+| `u` en düşük | `0,1177` (`t = 3,7e-4 s`) |
+| `u` **plato** | `0,4093` |
+| durulma penceresi | `[0,0353 , 0,0500] s`, 28 nokta |
+| eğim kayması | `%0,067` (tol `%2`) ✔ |
+| yarım-pencere farkı | `%0,035` ✔ |
+| plato pencereden geniş | **evet** — uç-nokta yakınlığı değil, gerçek plato |
+| **`t₁` (ölçülen)** | **`4,767e-3 s`** |
+
+> **`u` sıfıra inmiyor, `0,409`'da düzleşiyor** — ve oraya *aşağıdan*
+> yükselerek geliyor (92 adımın 16'sı artış). §4'ün *"mermi hedefle
+> aynı hıza geldiğinde"* cümlesi bu yüzden **yanlıştı**. Doğrusu:
+> momentum alışverişi bitince iki topluluk balistikleşir ve fark
+> **sabitlenir**; sabitlendiği değerin sıfır olması gerekmez.
+
+**Bedele etkisi — öneri ayakta kalıyor:**
+
+| `t₁` | aşama-1 | toplam | `λ=2`'ye göre |
+|---|---|---|---|
+| `1e-3 s` (ADR'nin tahmini) | 0,096 | 9,83 | +%0,99 |
+| **`4,767e-3 s` (ölçülen)** | **0,458** | **10,19** | **+%4,70** |
+| `1e-2 s` | 0,961 | 10,69 | +%9,87 |
+
+> Tahmin **4,8 kat** şaşmıştı ama sonuç niteliksel olarak değişmedi:
+> mermiyi çözmek `%1` değil **`%4,7`**'ye mal oluyor. Bütçenin
+> (`~30` GPU-günü) hâlâ **çok altında**.
 
 ---
 
@@ -191,8 +221,10 @@ olur). Bu, ADR ile ayrıca karara bağlanmalı.
 ## 7. Bu ADR **kilitlenmeden** önce ölçülmesi gerekenler
 
 1. ~~**`t₁` gerçekte ne kadar** — mermi hızının hedefle eşitlendiği an.~~
-   **ÖLÇÜLDÜ (kısmen):** `1e-3 s` **yetmiyor** (§4a). Gerçek `t₁` hâlâ
-   bilinmiyor; `5e-2 s`'ye kadar taranıyor.
+   **✔ ÖLÇÜLDÜ: `t₁ = 4,767e-3 s`** (§4a). ADR'nin tahmininin **4,8
+   katı**; bedel `+%0,9` değil **`+%4,7`**. Öneri ayakta.
+   *Uyarı:* ölçüt *"aynı hıza gelme"* değil *"farkın durulması"*
+   olarak **düzeltildi** — ilk formülasyon yanlıştı.
 2. **Kabalaştırmanın kütle/momentum/enerji hatası** — üçü de ayrı ayrı.
 3. **`λ = 19`'da arayüz ne yapıyor** — boşluk 3 yalnızca `λ = 2`'de
    kapandı; `6478:1` oranı ölçülmüş her şeyin ötesinde.

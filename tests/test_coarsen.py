@@ -202,3 +202,53 @@ def test_uzunluk_uyusmazligi_yakalanir():
     with pytest.raises(ValueError, match="uzunluklar uyuşmuyor"):
         coarsen_to_sites(np.zeros((3, 3)), np.zeros((2, 3)), np.ones(3),
                          np.zeros(3), np.zeros((1, 3)))
+
+
+# -------------------------------------------------- atama mesafesi tanisi
+
+def test_atama_mesafesi_raporlaniyor():
+    x, v, m, e, s = _ornek()
+    k = coarsen_to_sites(x, v, m, e, s)["korunum"]
+    assert k["atama_mesafe_max"] >= k["atama_mesafe_ort"] > 0.0
+
+
+def test_UZAK_parcacik_korunumu_bozmaz_ama_mesafe_YAKALAR():
+    """Korunumun **göremediği** kusur: kütlenin ışınlanması.
+
+    Bir parçacığı çok uzağa koyup en yakın siteye zorluyoruz. Üç
+    korunum yasası da **tam** kalıyor — tanı olmasaydı bu bozukluk
+    görünmezdi.
+    """
+    x = np.array([[0.0, 0, 0], [0.1, 0, 0], [1000.0, 0, 0]])
+    v = np.array([[1.0, 0, 0], [2.0, 0, 0], [3.0, 0, 0]])
+    m, e = np.ones(3), np.zeros(3)
+    k = coarsen_to_sites(x, v, m, e, np.zeros((1, 3)))["korunum"]
+    assert k["kutle_hata"] < 1e-15
+    assert k["momentum_hata"] < 1e-15
+    assert k["enerji_hata"] < 1e-15
+    assert k["atama_mesafe_max"] == pytest.approx(1000.0)   # <-- YAKALADI
+
+
+def test_acisal_momentum_olcekli_kayip_L0_SIFIRA_YAKINKEN_anlamli():
+    """`|L₀|`'a bölmek `L₀ ≈ 0` iken **anlamsız** — ölçekli sürüm var mı.
+
+    Kurulum: yörünge terimi (`m x_km × v_k`) ile grup **iç dönüşü**
+    birbirini tam götürüyor, yani `L₀ = 0`. Kabalaştırma iç dönüşü
+    siliyor, geriye yörünge terimi kalıyor: `L₁ = 40 ẑ`.
+
+    Ham oran `40/0` → patlıyor ve hiçbir şey söylemiyor. Gerçek
+    sahnede tam bu oldu: `%72 870`. Ölçekli sürüm `0,1` diyor.
+
+    İlk denemem bunu **gösteremiyordu** (uyumlu dönen bir küme
+    kurmuştum, `L₀ = 4 ẑ` çıktı ve ham oran `1,0` oldu). Test kendi
+    kusurumu yakaladı; fikstür düzeltildi.
+    """
+    x = np.array([[11.0, 0, 0], [9.0, 0, 0], [10.0, 1.0, 0], [10.0, -1.0, 0]])
+    v = np.array([[0, -9.0, 0], [0, 11.0, 0], [10.0, 1.0, 0], [-10.0, 1.0, 0]])
+    m, e = np.ones(4), np.zeros(4)
+    L0 = (m[:, None] * np.cross(x, v)).sum(axis=0)
+    assert np.allclose(L0, 0.0), f"fikstür bozuk: L0 = {L0}"
+    k = coarsen_to_sites(x, v, m, e, np.zeros((1, 3)))["korunum"]
+    assert k["acisal_momentum_hata"] > 1e10         # ham oran ANLAMSIZ
+    assert k["acisal_momentum_kayip_olcekli"] == pytest.approx(0.1, rel=1e-9)
+    assert 0.0 <= k["acisal_momentum_kayip_olcekli"] <= 1.0 + 1e-12

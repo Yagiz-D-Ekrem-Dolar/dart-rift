@@ -2,7 +2,8 @@
 
 **Sonuç:** **GEÇİLEMEDİ**
 
-- **koşulmayan ölçütler:** A1, A2, A3, B1, B2, B3, B4, C1, C2, C3
+- **koşulmayan ölçütler:** B2, B4, C1, C2, C3
+- **düşen ölçütler:** A1
 
 > Kısmi geçiş yoktur. Bir ölçüt koşulmadıysa **geçmemiş** sayılır.
 
@@ -10,26 +11,35 @@
 
 | # | ölçüt | eşik | ölçülen | durum |
 |---|---|---|---|---|
-| A1 | mermi çapı / yerel aralık | `>= 2` | `—` | **KOSULMADI** |
-| A2 | `r_ince / R_mermi` | `>= 3` | `—` | **KOSULMADI** |
-| A3 | kaba/ince ek yerinde kütle sapması | `< 0.005` | `—` | **KOSULMADI** |
+| A1 | mermi çapı / yerel aralık | `>= 2` | `0.214638` | **DUSTU** |
+| A2 | `r_ince / R_mermi` | `>= 3` | `66.5573` | **GECTI** |
+| A3 | kaba/ince ek yerinde kütle sapması | `< 0.005` | `0.000348021` | **GECTI** |
 
 ## G4-B — gözlenebilirler yakınsıyor — GEÇMEDİ
 
 | # | ölçüt | eşik | ölçülen | durum |
 |---|---|---|---|---|
-| B1 | ardışık çözünürlükte `β` farkı | `< 0.1` | `—` | **KOSULMADI** |
+| B1 | ardışık çözünürlükte `β` farkı | `< 0.1` | `0.000842672` | **GECTI** |
 | B2 | `β` durulmuş (1 = evet) | `>= 1` | `—` | **KOSULMADI** |
-| B3 | A′, ince kola tek `h`'den yakın (1 = evet) | `>= 1` | `—` | **KOSULMADI** |
+| B3 | A′, ince kola tek `h`'den yakın (1 = evet) | `>= 1` | `1` | **GECTI** |
 | B4 | enerji sapması log-log eğim | `< 1` | `—` | **KOSULMADI** |
 
 ## G4-C — parametreler geri bulunuyor — GEÇMEDİ
 
 | # | ölçüt | eşik | ölçülen | durum |
 |---|---|---|---|---|
-| C1 | parametre kapsaması (3/3) *(kuru kip — sayılmaz)* | `>= 1` | `—` | **KOSULMADI** |
-| C2 | en dar bant / önsel *(kuru kip — sayılmaz)* | `< 0.5` | `—` | **KOSULMADI** |
-| C3 | gürültüyle genişleme (1 = evet) *(kuru kip — sayılmaz)* | `>= 1` | `—` | **KOSULMADI** |
+| C1 | parametre kapsaması (3/3) | `>= 1` | `—` | **KOSULMADI** |
+| C2 | en dar bant / önsel | `< 0.5` | `—` | **KOSULMADI** |
+| C3 | gürültüyle genişleme (1 = evet) | `>= 1` | `—` | **KOSULMADI** |
+
+## Tanılar — **ölçüt değil**
+
+> Bunlar ölçüldü ama G4'ün geçme koşulu **değil**. Ölçütler ölçümden önce yazıldı ve sonradan eklenmiyor (ADR-0040); bilgi ise gizlenmiyor.
+
+| büyüklük | ölçülen | yorum |
+|---|---|---|
+| A′ dikişinde en yakın komşu / ince aralık | `0.652114` | 0,5'in altı gözden geçirme gerektirir (KAYIT-039 §2'de ölçülen: 0,6521) |
+| A′'nın parçacık tasarrufu (her yeri inceltmeye göre) | `6.87227` | yüksek olması iyi; ölçülen 6,87× (s = 7,0/3,5, r_iç = 25) |
 
 ## Koşullu kabuller
 
