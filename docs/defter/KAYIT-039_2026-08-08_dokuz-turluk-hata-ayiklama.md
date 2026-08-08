@@ -1,6 +1,6 @@
-# KAYIT-039 — Dokuz turluk hata ayıklama: **testlerin kör olduğu** kusurlar (2026-08-08)
+# KAYIT-039 — On bir turluk hata ayıklama: **testlerin kör olduğu** kusurlar (2026-08-08)
 
-**Kapsam:** FAZ 4.4–4.7 kodu · **Durum:** dokuz tur, **dokuz kusur**
+**Kapsam:** FAZ 4.4–4.7 kodu · **Durum:** on bir tur, **on bir kusur**
 **Öncül:** [KAYIT-038](KAYIT-038_2026-08-08_kota-dolunca-kod-yazildi.md)
 
 ---
@@ -12,8 +12,8 @@ KAYIT-038'de FAZ 4.4–4.7'nin kodu yazıldı ve 136 test geçti. Ama
 
 > Testler *parçaların doğruluğunu* sınıyordu, *bütünün davranışını* değil.
 
-Bu turda yazdığım kodu **testlerden bağımsız** denetledim. Dokuz kusur
-çıktı ve **üçü testleri geçiyordu** — yani testler onlara kördü.
+Bu turda yazdığım kodu **testlerden bağımsız** denetledim. On bir kusur
+çıktı ve **dördü testleri geçiyordu** — yani testler onlara kördü.
 
 ---
 
@@ -30,10 +30,12 @@ Bu turda yazdığım kodu **testlerden bağımsız** denetledim. Dokuz kusur
 | 7 | beş koşucuda **sabit TRUBA yolu** | hayır | tutarlılık taraması |
 | 8 | `ileri_kosu` patlamayı **koşu sonunda** anlıyordu | — | GPU maliyeti düşünüldü |
 | 9 | UTF-8 koruması **dört koşucuda yoktu** | hayır | gerçekten çöktü |
+| 10 | kapı **numpy** değerleri `koşulmadı` sanıyordu | **hayır** | tip tablosu ölçüldü |
+| 11 | `judge_momentum` kütle eşiği **gerekçesiz** | — | iki ölçüt karşılaştırıldı |
 
 ---
 
-## 2. En öğretici üçü
+## 2. En öğretici beşi
 
 ### 2.1 `prior_width` — hatanın **yönü** önemliydi
 
@@ -103,6 +105,58 @@ Bu dersi hemen uyguladım ve sistematik tarama yaptım — aynı kök neden
 
 ---
 
+### 2.4 Kapının **aynası**: ölçülen ölçüt koşulmamış sayılıyordu
+
+Kapının kuralı: *"koşulmayan ölçüt geçmiş sayılmaz."* 10. tur bunun
+**tersini** buldu: **ölçülen ölçüt koşulmamış sayılıyordu.**
+
+`_al` `isinstance(v, (int, float))` ile süzüyordu. Numpy tiplerinin
+yalnızca bir kısmı Python sayılarının alt sınıfı — ölçtüm:
+
+| tip | alt sınıf mı |
+|---|---|
+| `np.float64` | **evet** |
+| `np.int64` | hayır |
+| `np.bool_` | hayır |
+| `np.float32` | hayır |
+
+`np.float32` ve `np.bool_` girdilerle kapı:
+
+```
+kosulmayan: ['A2', 'B2']      <- IKISI DE OLCULMUSTU
+dusen     : ['C3']            <- GECMISTI
+```
+
+> Bu kusur kapının **var olma sebebini** tersine çeviriyordu. Ve
+> tamamen sessizdi: kapı zaten geçmiyor, yani "koşulmadı" listesindeki
+> fazla iki kalem kimsenin dikkatini çekmezdi.
+
+`float()` ile çözüldü (`np.bool_ → 1.0/0.0`). C3'ün özel `True/False`
+eşleme tablosuna da gerek kalmadı.
+
+### 2.5 Eşikler iki taraftan da rahat olmalı
+
+`judge` (yarıçap) ile `judge_momentum` farklı kütle eşikleri kullanıyordu
+ve fark **açıklanmamıştı**. Fark fiziksel:
+
+- Yarıçapta Sedov ölçeklemesi `r ~ (E/ρ)^{1/5}` ⇒ kütle hatasının etkisi
+  **beşte bir** ⇒ eşik parantez genişliğine **göre**.
+- Momentumda böyle bir soğuma yok: süpürülen kütle değişince iletilen
+  momentum kabaca **doğrusal** değişir ⇒ **mutlak** eşik.
+
+Eşiğin yerini sayıyla gösterdim:
+
+| büyüklük | değer |
+|---|---|
+| ölçülen kütle sapması | **%0,098** |
+| eşik | **%0,5** (ölçülenin **5 katı**) |
+| parantez genişliği | **%24–51** (eşiğin **50 katı**) |
+
+> Bir eşik ölçülene çok yakınsa gürültüyle düşer; parantezle
+> kıyaslanabilir olursa ölçütü **boşaltır**. İkisi de değil.
+
+---
+
 ## 3. Kota, hata ayıklamanın **yönünü** belirledi
 
 TRUBA kotası dolu (`7.200.096 / 7.200.000 cpu-dk`; iş **1460742**
@@ -138,10 +192,10 @@ Bu zayıf bir testtir ve docstring'inde öyle yazılı. Hiç olmamasından iyi
 
 | büyüklük | değer |
 |---|---|
-| tur sayısı | 9 |
-| bulunan kusur | 9 (+3 tutarlılık) |
-| **testlerin kör olduğu kusur** | **3** |
-| eklenen gerileme testi | 24 |
+| tur sayısı | **11** |
+| bulunan kusur | **11** (+3 tutarlılık) |
+| **testlerin kör olduğu kusur** | **4** |
+| eklenen gerileme testi | **28** |
 | yerel test takımı | **912 geçti, 96 atlandı** (öncesi 898) |
 
 ---
@@ -157,3 +211,6 @@ Bu zayıf bir testtir ve docstring'inde öyle yazılı. Hiç olmamasından iyi
 | bir koruma **meşru** durumu engellememeli — pozitif kontrol | §2.2 |
 | zayıf test **zayıf** diye işaretlenir | §4 |
 | kıt kaynak, hata ayıklamanın **yönünü** belirler | §3 |
+| bir ölçütün kuralı **her iki yönde** de geçerli olmalı | §2.4 |
+| eşik, ölçülenin **üstünde** ve parantezin **altında** olmalı | §2.5 |
+| iki yerde farklı eşik varsa fark **gerekçelendirilir** | §2.5 |
