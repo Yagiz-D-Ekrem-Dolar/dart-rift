@@ -551,6 +551,19 @@ def judge_momentum(a: dict, b: dict, c: dict, lam: int, r_inner: float,
     bolge_ayni = bool(bolge_sapmasi < 5.0e-2)
     kutle = [k["total_mass"] for k in (a, b, c)]
     kutle_sapmasi = float((max(kutle) - min(kutle)) / max(kutle))
+    # KUTLE ESIGI `judge`'takinden FARKLI ve nedeni fiziksel:
+    #
+    # Yaricap olcutunde Sedov olceklemesi `r ~ (E/rho)^(1/5)` gecerlidir,
+    # yani kutle hatasinin yaricaba etkisi BESTE BIRIDIR ve esik parantez
+    # genisligine GORE tanimlanmisti.
+    #
+    # Momentumda boyle bir soguma yok: suprulen kutle degisince iletilen
+    # momentum kabaca DOGRUSAL degisir. Bu yuzden burada duz ve MUTLAK bir
+    # esik kullaniliyor.
+    #
+    # Olculen deger `%0,098` (kure sinirinin iki kafesle dosenmesi) ve
+    # parantez genislikleri `%24–51`. Yani `%0,5` esigi olculenin bes kati,
+    # parantezin ellide biri -- iki taraftan da rahat.
     kutle_ihmal = bool(kutle_sapmasi < 5.0e-3)
 
     if not (ayirt_ediyor and enerji_ayni and bolge_ayni and kutle_ihmal):

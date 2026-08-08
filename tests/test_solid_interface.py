@@ -420,3 +420,30 @@ def test_judge_TEK_esik_doygunsa_digerleri_calisiyor() -> None:
     assert y["yargi"] == "arayuz_zararsiz"
     assert y["esik_ayrinti"]["0.05"]["durum"] == "doygun -- olculemedi"
     assert set(y["esik_yargilari"]) == {"0.01", "0.02"}
+
+
+def test_momentum_kutle_esigi_OLCULENIN_USTUNDE_parantezin_ALTINDA() -> None:
+    """Eşik iki taraftan da rahat olmalı — sayıyla gösteriliyor.
+
+    Ölçülen kütle sapması `%0,098`; parantez genişlikleri `%24–51`.
+    `%0,5` eşiği ölçülenin **beş katı** ve parantezin **ellide biri**.
+    Bir eşik ölçülene çok yakınsa gürültüyle düşer; parantezle
+    kıyaslanabilir olursa ölçütü boşaltır.
+    """
+    from dartrift.validation.solid_interface import judge_momentum
+
+    olculen, esik = 0.000976, 5.0e-3
+    assert olculen < esik < 0.24 / 10.0, (olculen, esik)
+
+    # Olculen sapmayla gecer...
+    def _k(p, m):
+        return {"p_iletilen": p, "total_mass": m, "energy_injected": 1.0,
+                "injected_mass": 75.0}
+    y = judge_momentum(_k(100.0, 1.0), _k(110.0, 1.0 - olculen),
+                       _k(120.0, 1.0), 2, 0.15, 1.0)
+    assert y["kutle_ihmal_edilebilir"] is True
+    # ...esigin ustunde DUSER.
+    y2 = judge_momentum(_k(100.0, 1.0), _k(110.0, 1.0 - 0.02),
+                        _k(120.0, 1.0), 2, 0.15, 1.0)
+    assert y2["kutle_ihmal_edilebilir"] is False
+    assert y2["yargi"] == "belirsiz"
