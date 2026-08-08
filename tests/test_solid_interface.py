@@ -306,3 +306,77 @@ def test_esik_ayrinti_AYIRT_ETME_GUCUNU_raporluyor() -> None:
     # Ve siralama TERS donmus: dusuk esikte kaba > ince, yuksekte degil
     assert y["esik_ayrinti"]["0.01"]["kaba_incenin_ustunde"] is True
     assert d5["kaba_incenin_ustunde"] is False
+
+
+def test_iletilen_momentum_DISARI_bileseni_sayiyor() -> None:
+    """İçeri dönen hız net toplamı **yapay olarak küçültürdü**."""
+    from dartrift.validation.solid_interface import iletilen_radyal_momentum
+
+    x = np.array([[0.4, 0, 0], [-0.4, 0, 0]])
+    m = np.array([1.0, 1.0])
+    disari = np.array([[10.0, 0, 0], [-10.0, 0, 0]])       # ikisi de disari
+    karisik = np.array([[10.0, 0, 0], [10.0, 0, 0]])       # biri iceri
+    assert iletilen_radyal_momentum(x, disari, m, 0.3) == pytest.approx(20.0)
+    assert iletilen_radyal_momentum(x, karisik, m, 0.3) == pytest.approx(10.0)
+
+
+def test_iletilen_momentum_SONDA_DISINI_aliyor() -> None:
+    from dartrift.validation.solid_interface import iletilen_radyal_momentum
+
+    x = np.array([[0.1, 0, 0], [0.4, 0, 0]])
+    v = np.array([[10.0, 0, 0], [10.0, 0, 0]])
+    m = np.array([1.0, 1.0])
+    assert iletilen_radyal_momentum(x, v, m, 0.3) == pytest.approx(10.0)
+    with pytest.raises(RuntimeError):
+        iletilen_radyal_momentum(x, v, m, 0.9)
+
+
+def test_iletilen_momentum_DOYGUNLASMIYOR() -> None:
+    """Cephe yarıçapının aksine bir tavanı yok — ölçütün varlık nedeni.
+
+    Bozulma kutuyu doldursa bile momentum **büyümeye devam eder**;
+    cephe yarıçapı ise köşe mesafesinde takılır.
+    """
+    from dartrift.validation.solid_interface import iletilen_radyal_momentum
+
+    x = np.array([[0.4, 0, 0], [0.45, 0, 0]])
+    m = np.array([1.0, 1.0])
+    zayif = iletilen_radyal_momentum(x, np.full((2, 3), 0.0) + [1.0, 0, 0], m, 0.3)
+    guclu = iletilen_radyal_momentum(x, np.full((2, 3), 0.0) + [50.0, 0, 0], m, 0.3)
+    assert guclu == pytest.approx(50.0 * zayif)
+
+
+def _kol_p(p, m=1.0, e=1.0, km=75.0):
+    return {"p_iletilen": p, "total_mass": m, "energy_injected": e,
+            "injected_mass": km}
+
+
+def test_momentum_yargisi_parantez_ICINDE() -> None:
+    from dartrift.validation.solid_interface import judge_momentum
+
+    y = judge_momentum(_kol_p(100.0), _kol_p(110.0), _kol_p(120.0),
+                       2, 0.15, 1.0)
+    assert y["yargi"] == "arayuz_zararsiz"
+    assert y["tasma_rel"] == 0.0
+
+
+def test_momentum_yargisi_parantez_DISINDA() -> None:
+    from dartrift.validation.solid_interface import judge_momentum
+
+    y = judge_momentum(_kol_p(100.0), _kol_p(200.0), _kol_p(120.0),
+                       2, 0.15, 1.0)
+    assert y["yargi"] == "arayuz_bedelli"
+    assert y["tasma_rel"] > 0.5
+
+
+def test_momentum_yargisi_ON_KOSULLARI_koruyor() -> None:
+    from dartrift.validation.solid_interface import judge_momentum
+
+    # enjeksiyon bolgesi farkli -> belirsiz
+    y = judge_momentum(_kol_p(100.0, km=75.0), _kol_p(110.0, km=9.0),
+                       _kol_p(120.0, km=75.0), 2, 0.15, 1.0)
+    assert y["yargi"] == "belirsiz"
+    # kollar ayirt edilemiyor -> belirsiz
+    y2 = judge_momentum(_kol_p(100.0), _kol_p(100.0), _kol_p(100.05),
+                        2, 0.15, 1.0)
+    assert y2["yargi"] == "belirsiz"

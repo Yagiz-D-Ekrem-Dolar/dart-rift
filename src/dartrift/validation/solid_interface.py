@@ -245,6 +245,57 @@ def cephe_yaricapi(x: np.ndarray, v: np.ndarray, kesir: float,
     return r
 
 
+#: Momentum sondasının yarıçapı — arayüzün (`r_iç`) **dışında**, kutu
+#: kenarından uzak. Cephe yarıçapının aksine bu **doygunlaşmaz**.
+R_SONDA = 0.30
+
+
+def iletilen_radyal_momentum(x: np.ndarray, v: np.ndarray, m: np.ndarray,
+                             r_sonda: float = R_SONDA) -> float:
+    """`r > r_sonda` bölgesindeki toplam **dışarı doğru** radyal momentum.
+
+    ## Neden cephe yarıçapı yerine bu
+
+    Cephe yarıçapı gözenekli malzemede **doygunlaşıyor** (KAYIT-036 §3):
+    P-α enerjiyi gözenek çöktürerek yutunca bozulma zayıf ama geniş
+    yayılıyor ve "cephe" kutu kenarına varıyor. Kutu aynı anda hem
+    "arayüzü geç" hem "kenara varma" şartını sağlayamıyor.
+
+    İletilen momentum bu ikilemden **muaftır**: bir eşik değil bir
+    **integraldir**, doygunlaşacak bir tavanı yoktur ve sorulan şeyin ta
+    kendisidir — *"arayüz, dışarı ne kadar momentum geçirdi?"*
+
+    Yalnızca **dışarı** bileşen sayılır (`v·r̂ > 0`): geri sekme ve
+    salınım net toplamı yapay olarak küçültürdü.
+    """
+    r = np.linalg.norm(x, axis=1)
+    dis = r > float(r_sonda)
+    if not np.any(dis):
+        raise RuntimeError(f"r > {r_sonda} bölgesinde parçacık yok")
+    yon = x[dis] / r[dis][:, None]
+    v_rad = np.einsum("ij,ij->i", v[dis], yon)
+    disari = np.maximum(v_rad, 0.0)
+    return float(np.sum(m[dis] * disari))
+
+
+def _cephe_sozlugu(st: dict, v_ref: float) -> dict:
+    """Her eşikte cephe; doygun/ölçülemez olanlar `None`."""
+    d = {}
+    for k in CEPHE_ESIKLERI:
+        try:
+            d[f"{k:.2f}"] = cephe_yaricapi(st["x"], st["v"], k, v_ref)
+        except RuntimeError:
+            d[f"{k:.2f}"] = None
+    return d
+
+
+def _cephe_tek(st: dict, v_ref: float):
+    try:
+        return cephe_yaricapi(st["x"], st["v"], CEPHE_ESIKLERI[1], v_ref)
+    except RuntimeError:
+        return None
+
+
 def _kos(ic: dict, mat: MaterialParams, device: str, t_end: float) -> dict:
     from ..warp_core.solver_solid import WarpSolid3D
 
@@ -280,10 +331,13 @@ def _kos(ic: dict, mat: MaterialParams, device: str, t_end: float) -> dict:
             # Uc esikte birden -- yargi esige BAGLI cikarsa gorulsun.
             # Referans hiz KOLA BAGLI DEGIL: v_ref = sqrt(2E/m_enj).
             "v_ref": v_ref,
-            "r_esikler": {f"{k:.2f}": cephe_yaricapi(st["x"], st["v"], k, v_ref)
-                          for k in CEPHE_ESIKLERI},
-            "r_measured": cephe_yaricapi(st["x"], st["v"], CEPHE_ESIKLERI[1],
-                                         v_ref),
+            # Doygunlasmayan gozlenebilir -- gozenekli kol icin (KAYIT-036 §3)
+            "p_iletilen": iletilen_radyal_momentum(st["x"], st["v"], st["m"]),
+            # Cephe yaricapi DOYGUNLASABILIR (KAYIT-036 §3). Doygunsa
+            # None yazilir; momentum yolu yine de olculur ve yargi
+            # oradan kurulur. Sessizce cop deger DONMEZ.
+            "r_esikler": _cephe_sozlugu(st, v_ref),
+            "r_measured": _cephe_tek(st, v_ref),
             "rho_max": float(np.max(st["rho"])),
             "v_max": float(np.max(np.linalg.norm(st["v"], axis=1))),
             "n_steps": int(tani["n_steps"])}
@@ -450,3 +504,77 @@ def run_solid_interface(n_coarse: int = 32, lam: int = 2,
     c = _kos(build_two_zone_solid_ic(n_coarse * lam, 1, r_inner, h_k / lam,
                                      h_inject=h_inj), mat, device, t_end)
     return judge(a, b, c, lam, r_inner, t_end, etiket=etiket)
+
+
+def judge_momentum(a: dict, b: dict, c: dict, lam: int, r_inner: float,
+                   t_end: float, etiket: str = "") -> dict:
+    """Aynı parantez mantığı, ama gözlenebilir **iletilen radyal momentum**.
+
+    Cephe yarıçapı gözenekli malzemede doygunlaşıyor (KAYIT-036 §3) ve
+    kutu iki şartı birden sağlayamıyor. İletilen momentum bir eşik değil
+    bir **integraldir**; doygunlaşacak bir tavanı yoktur.
+
+    Ön koşullar aynen korunuyor — hangisi düşerse yargı `belirsiz`.
+    """
+    lo = min(a["p_iletilen"], c["p_iletilen"])
+    hi = max(a["p_iletilen"], c["p_iletilen"])
+    aralik = hi - lo
+    bolen = max(abs(lo), 1e-300)
+    ayirt_ediyor = bool(aralik / bolen > 2.0e-3)
+    icinde = bool(lo - 0.1 * aralik <= b["p_iletilen"] <= hi + 0.1 * aralik)
+
+    e = [k["energy_injected"] for k in (a, b, c)]
+    enerji_ayni = bool((max(e) - min(e)) / max(e) < 1.0e-3)
+    km = [k["injected_mass"] for k in (a, b, c)]
+    bolge_sapmasi = float((max(km) - min(km)) / max(km))
+    bolge_ayni = bool(bolge_sapmasi < 5.0e-2)
+    kutle = [k["total_mass"] for k in (a, b, c)]
+    kutle_sapmasi = float((max(kutle) - min(kutle)) / max(kutle))
+    kutle_ihmal = bool(kutle_sapmasi < 5.0e-3)
+
+    if not (ayirt_ediyor and enerji_ayni and bolge_ayni and kutle_ihmal):
+        yargi = "belirsiz"
+    elif icinde:
+        yargi = "arayuz_zararsiz"
+    else:
+        yargi = "arayuz_bedelli"
+
+    return {
+        "etiket": etiket, "gozlenebilir": "iletilen_radyal_momentum",
+        "r_sonda": R_SONDA,
+        "tekduze_kaba": a, "iki_bolgeli": b, "tekduze_ince": c,
+        "lam": int(lam), "r_inner": float(r_inner), "t_end": float(t_end),
+        "parantez": [lo, hi], "parantez_genisligi_rel": float(aralik / bolen),
+        "iki_bolgeli_p": b["p_iletilen"],
+        "kollar_ayirt_edilebilir": ayirt_ediyor,
+        "enerji_esit": enerji_ayni,
+        "enjeksiyon_bolgesi_ayni": bolge_ayni,
+        "enjeksiyon_kutle_sapmasi": bolge_sapmasi,
+        "kutle_ihmal_edilebilir": kutle_ihmal,
+        "kutle_sapmasi_rel": kutle_sapmasi,
+        "iki_bolgeli_parantez_icinde": icinde,
+        "tasma_rel": float(max(0.0, lo - b["p_iletilen"],
+                               b["p_iletilen"] - hi) / bolen),
+        "yargi": yargi,
+    }
+
+
+def run_solid_interface_momentum(n_coarse: int = 32, lam: int = 2,
+                                 r_inner: float = 0.15,
+                                 device: str = "cuda:0",
+                                 t_end: float = 3.0e-5,
+                                 mat: MaterialParams | None = None,
+                                 per_particle_h: bool = True,
+                                 etiket: str = "") -> dict:
+    """Üç kol, momentum gözlenebiliriyle — cephe doygunlaşsa bile çalışır."""
+    mat = BASALT_SOLID if mat is None else mat
+    h_k = H_OVER_DX * KUTU / float(n_coarse)
+    h_inj = 3.0 * KUTU / float(n_coarse)
+    a = _kos(build_two_zone_solid_ic(n_coarse, 1, r_inner, h_k,
+                                     h_inject=h_inj), mat, device, t_end)
+    b = _kos(build_two_zone_solid_ic(n_coarse, lam, r_inner, h_k,
+                                     per_particle_h=per_particle_h,
+                                     h_inject=h_inj), mat, device, t_end)
+    c = _kos(build_two_zone_solid_ic(n_coarse * lam, 1, r_inner, h_k / lam,
+                                     h_inject=h_inj), mat, device, t_end)
+    return judge_momentum(a, b, c, lam, r_inner, t_end, etiket=etiket)
