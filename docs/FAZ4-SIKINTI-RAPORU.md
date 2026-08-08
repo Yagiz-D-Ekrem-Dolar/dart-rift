@@ -168,5 +168,5 @@ yaradığı görünmez:
 | kapanan sıkıntı | **20** |
 | açık sıkıntı | **4** (üçü kotaya bağlı) |
 | **testlerin kör olduğu kusur** | **4** |
-| eklenen gerileme testi | **31** |
-| yerel test takımı | ölçülüyor (önceki: **912 geçti, 96 atlandı**) |
+| eklenen gerileme testi | **42** |
+| yerel test takımı | **954 geçti, 96 atlandı** (öncesi 912, ondan önce 898) |
