@@ -192,3 +192,52 @@ def test_esik_bagimliligi_ON_KOSUL_dusunce_ARANMIYOR() -> None:
     c = _kol_esikli({"0.01": 0.3001, "0.02": 0.3001, "0.05": 0.3001})
     y = judge(a, b, c, 2, 0.15, 1.0)
     assert y["yargi"] == "belirsiz"
+
+
+def test_enjeksiyon_bolgesi_MUTLAK_verilince_uc_kolda_AYNI() -> None:
+    """Aynı enerji **aynı bölgeye** girmeli — ince kolu patlatan hata.
+
+    İlk sürümde `h_inject = 3·dx_k` idi; ince kolun `dx`'i yarı olduğu için
+    aynı enerji `8` kat küçük hacme giriyordu (özgül `1,33e5 → 1,06e6 J/kg`)
+    ve koşu patladı (`262144/262144` parçacıkta `rho` sonlu değil).
+    """
+    h_inj = 3.0 / 16
+    a = build_two_zone_solid_ic(16, 1, 0.15, 0.125, h_inject=h_inj)
+    b = build_two_zone_solid_ic(16, 2, 0.15, 0.125, h_inject=h_inj)
+    c = build_two_zone_solid_ic(32, 1, 0.15, 0.0625, h_inject=h_inj)
+    km = [k["injected_mass"] for k in (a, b, c)]
+    assert (max(km) - min(km)) / max(km) < 0.05, km
+    assert a["h_inject"] == b["h_inject"] == c["h_inject"] == h_inj
+
+
+def test_enjeksiyon_bolgesi_dx_e_baglanirsa_AYRISIYOR() -> None:
+    """Eski davranışın gerçekten hatalı olduğunu **gösteren** test.
+
+    Bir düzeltmenin gerekli olduğunu iddia etmek yetmez; düzeltilen şeyin
+    gerçekten bozuk olduğu ölçülür.
+    """
+    a = build_two_zone_solid_ic(16, 1, 0.15, 0.125)      # h_inject yok -> 3*dx
+    c = build_two_zone_solid_ic(32, 1, 0.15, 0.0625)
+    assert c["h_inject"] == pytest.approx(a["h_inject"] / 2)
+    oran = a["injected_mass"] / c["injected_mass"]
+    assert oran > 4.0, f"ayrisma beklenenden kucuk: {oran}"
+
+
+def test_yargi_enjeksiyon_BOLGESI_farkliysa_belirsiz() -> None:
+    """`enerji_esit` bu hatayı yakalayamaz — ayrı bir ön koşul gerekiyordu."""
+    def _k(r, km):
+        d = _kol(r)
+        d["injected_mass"] = km
+        return d
+    y = judge(_k(0.20, 75.0), _k(0.25, 9.4), _k(0.30, 75.0), 2, 0.15, 1.0)
+    assert y["enerji_esit"] is True          # enerji AYNI
+    assert y["enjeksiyon_bolgesi_ayni"] is False
+    assert y["yargi"] == "belirsiz"
+
+
+def test_yargi_eski_kayitlarla_GERIYE_UYUMLU() -> None:
+    """`injected_mass` yoksa ön koşul atlanır, `nan` raporlanır."""
+    y = judge(_kol(0.20), _kol(0.25), _kol(0.30), 2, 0.15, 1.0)
+    assert y["enjeksiyon_bolgesi_ayni"] is True
+    assert np.isnan(y["enjeksiyon_kutle_sapmasi"])
+    assert y["yargi"] == "arayuz_zararsiz"
