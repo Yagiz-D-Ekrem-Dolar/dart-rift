@@ -15,9 +15,9 @@
 | 4.3b | `Ω` çelişkisinin çözümü | **BİTTİ** | KAYIT-035, ADR-0042 |
 | — | ADR-0041 §5 boşluk 3 | **BİTTİ** | KAYIT-036, KAYIT-037 |
 | **4.4** | **DART kurulumunda çözünürlük yakınsaması** | **KOD HAZIR, KOŞULMADI** | job 1460706 kuyrukta |
-| 4.5 | Gereken simüle süre | **BAŞLANMADI** | — |
-| 4.6 | Sentetik kurtarma | **BAŞLANMADI** | — |
-| 4.7 | G4 kapısı | **BAŞLANMADI** | — |
+| 4.5 | Gereken simüle süre | **ARAÇ HAZIR, KOŞULMADI** | `settling_time.py` (13 test) |
+| 4.6 | Sentetik kurtarma | **BAŞLANMADI** | eşikler G4-C'de yazılı |
+| 4.7 | G4 kapısı | **ÖLÇÜTLER YAZILDI** | [G4-OLCUTLERI.md](G4-OLCUTLERI.md) (13 test) |
 
 > **FAZ 4 bitmedi.** 4.1–4.3 ve boşluk 3 bitti; 4.4 kodu yazıldı ve
 > yerelde sınandı ama **GPU'da koşulmadı**; 4.5–4.7 başlamadı.
@@ -86,6 +86,26 @@ Beş kolun beşinde de `arayuz_zararsiz`, taşma **%0,0000**:
 > Son iki satır aynı geometri, aynı malzeme, aynı `t`. Tek fark `h`
 > politikası. **A′ aynı parçacık dağılımından 7,4 kat fazla kazanç
 > çıkarıyor.**
+
+### 4.5 aracı — durulma ölçütü (yerelde ölçüldü)
+
+`measure_longrun.py`'deki gömülü plato mantığı **"durulmadı" diyemiyordu**:
+açıkça tırmanan bir seride bile sonlu bir zaman döndürüyordu (ölçüldü:
+eğim `0,4` için `0,9574`). `validation/settling_time.py` çıkarıldı, önce
+durulmuşluk sınanıyor, durulmadıysa `nan` dönüyor.
+
+İki tahminim ölçünce yanlış çıktı ve ikisi de düzeltildi:
+kusurun *"erken bir anı durulma ilan etmek"* olduğu (değil — hiç
+reddedememek), ve yarım-pencere sınavının *"bağımsız"* olduğu (değil —
+altı şekilde de eğilim sınavı en az iki kat duyarlı, oran doğrusal
+sürüklenmede **tam 2** ve cebirsel).
+
+### 4.7 — G4 ölçütleri **ölçümden önce** yazıldı
+
+ADR-0040 gereği. Üç parça (A: mermi çözülüyor, B: gözlenebilirler
+yakınsıyor, C: parametreler geri bulunuyor), **kısmi geçiş yok**.
+`B1 < %10` eşiği geriye doğru hesaplandı ve **bilinçli olarak gevşek**
+olduğu yazıldı. **B3 düşerse ADR-0041 düşer.**
 
 ### 4.4 hazırlığı — A′ DART sahnesinde (yerelde ölçüldü)
 
