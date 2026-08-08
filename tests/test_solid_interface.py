@@ -380,3 +380,43 @@ def test_momentum_yargisi_ON_KOSULLARI_koruyor() -> None:
     y2 = judge_momentum(_kol_p(100.0), _kol_p(100.0), _kol_p(100.05),
                         2, 0.15, 1.0)
     assert y2["yargi"] == "belirsiz"
+
+
+def test_judge_DOYGUN_cephede_COKMUYOR() -> None:
+    """Cephe doygunsa `r_measured` `None`'dır — `judge` çökmemeli.
+
+    Bulunan kusur: cephe ölçümünü ölümcül olmaktan çıkarırken (`None`
+    döndürerek) `judge` güncellenmedi ve `TypeError: '<' not supported
+    between instances of 'NoneType'` ile **çöküyordu** — üstelik tam da
+    düzeltmenin hedeflediği durumda.
+    """
+    def _k(rd, r):
+        d = _kol(r)
+        d["r_esikler"] = rd
+        d["r_measured"] = r
+        return d
+
+    a = _k({"0.01": 0.20, "0.02": 0.20, "0.05": None}, None)
+    b = _k({"0.01": 0.25, "0.02": 0.25, "0.05": None}, None)
+    c = _k({"0.01": 0.30, "0.02": 0.30, "0.05": None}, None)
+    y = judge(a, b, c, 2, 0.15, 1.0)
+    assert y["yargi"] == "belirsiz"
+    assert "DOYGUN" in y["neden"]
+    assert "judge_momentum" in y["neden"]
+
+
+def test_judge_TEK_esik_doygunsa_digerleri_calisiyor() -> None:
+    """Bir eşik doygunsa yalnızca **o eşik** atlanmalı, yargı sürmeli."""
+    def _k(rd, r):
+        d = _kol(r)
+        d["r_esikler"] = rd
+        d["r_measured"] = r
+        return d
+
+    a = _k({"0.01": 0.20, "0.02": 0.20, "0.05": None}, 0.20)
+    b = _k({"0.01": 0.25, "0.02": 0.25, "0.05": None}, 0.25)
+    c = _k({"0.01": 0.30, "0.02": 0.30, "0.05": None}, 0.30)
+    y = judge(a, b, c, 2, 0.15, 1.0)
+    assert y["yargi"] == "arayuz_zararsiz"
+    assert y["esik_ayrinti"]["0.05"]["durum"] == "doygun -- olculemedi"
+    assert set(y["esik_yargilari"]) == {"0.01", "0.02"}

@@ -350,6 +350,22 @@ def judge(a: dict, b: dict, c: dict, lam: int, r_inner: float,
     Ölçüt değiştirilmiyor ki iki sonuç (ideal gaz vs mukavemetli basalt)
     **karşılaştırılabilir** olsun. Değişen tek şey fizik.
     """
+    # CEPHE DOYGUNSA `r_measured` None'dir (KAYIT-036 §3). Bu durumda
+    # yarici arıtmetige giremez.
+    #
+    # KUSUR: cephe olcumunu olumcul olmaktan cikarirken (None dondurerek)
+    # burayi guncellemeyi unuttum ve `judge` TypeError ile COKUYORDU --
+    # ustelik tam da duzeltmenin hedefledigi durumda. Yerelde yakalandi.
+    if any(k.get("r_measured") is None for k in (a, b, c)):
+        return {
+            "etiket": etiket, "yargi": "belirsiz",
+            "neden": "en az bir kolda cephe DOYGUN (r_measured yok); "
+                     "momentum gozlenebiliriyle (`judge_momentum`) bakilmali",
+            "tasma_rel": float("nan"), "esik_yargilari": {},
+            "esik_ayrinti": {}, "tekduze_kaba": a, "iki_bolgeli": b,
+            "tekduze_ince": c, "lam": int(lam), "r_inner": float(r_inner),
+            "t_end": float(t_end),
+        }
     lo = min(a["r_measured"], c["r_measured"])
     hi = max(a["r_measured"], c["r_measured"])
     aralik = hi - lo
@@ -390,6 +406,11 @@ def judge(a: dict, b: dict, c: dict, lam: int, r_inner: float,
     esik_ayrinti = {}
     if all("r_esikler" in k for k in (a, b, c)):
         for anahtar in a["r_esikler"]:
+            # Bir esikte herhangi bir kol DOYGUNSA o esik ATLANIR --
+            # None ile aritmetik TypeError verirdi.
+            if any(k["r_esikler"].get(anahtar) is None for k in (a, b, c)):
+                esik_ayrinti[anahtar] = {"durum": "doygun -- olculemedi"}
+                continue
             l2 = min(a["r_esikler"][anahtar], c["r_esikler"][anahtar])
             h2 = max(a["r_esikler"][anahtar], c["r_esikler"][anahtar])
             g2 = h2 - l2
