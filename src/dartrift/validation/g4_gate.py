@@ -149,6 +149,46 @@ class G4Rapor:
         return "\n".join(p)
 
 
+def _sayi(v):
+    """Sayıya çevir; çevrilemiyorsa `None`.
+
+    ## Neden `isinstance(v, (int, float))` yetmiyor
+
+    Numpy tiplerinin **yalnızca bir kısmı** Python sayılarının alt
+    sınıfıdır. Ölçüldü:
+
+    | tip | `isinstance(v, (int, float))` |
+    |---|---|
+    | `np.float64` | **True** |
+    | `np.int64` | **False** |
+    | `np.bool_` | **False** |
+    | `np.float32` | **False** |
+
+    Eski `_al` `isinstance` ile süzüyordu; numpy değerler geldiğinde
+    ölçülmüş bir ölçütü **`koşulmadı`** sanıyordu. Ölçüldü — `np.float32`
+    ve `np.bool_` girdilerle kapı:
+
+    ```
+    kosulmayan: ['A2', 'B2']      <- ikisi de OLCULMUSTU
+    dusen     : ['C3']            <- gecmisti
+    ```
+
+    > Kapının var olma sebebi tam bu hatayı önlemekti: *"koşulmayan
+    > ölçüt geçmiş sayılmaz."* Tersi de geçerli olmalı — **ölçülen ölçüt
+    > koşulmamış sayılmaz.**
+
+    `float()` çağrısı hepsini kapsıyor: `np.bool_` → `1.0/0.0`,
+    `np.int64` → float, Python `bool` → `1.0/0.0`. Diziler ve `None`
+    `TypeError`/`ValueError` verir ve `None` dönülür.
+    """
+    if v is None or isinstance(v, (str, bytes, dict, list, tuple)):
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
 def _al(d: dict | None, *yol, varsayilan=None):
     """İç içe sözlükten güvenli okuma — eksik anahtar `None` döner."""
     if d is None:
@@ -158,7 +198,8 @@ def _al(d: dict | None, *yol, varsayilan=None):
         if not isinstance(v, dict) or k not in v:
             return varsayilan
         v = v[k]
-    return v if isinstance(v, (int, float)) else varsayilan
+    s = _sayi(v)
+    return s if s is not None else varsayilan
 
 
 def degerlendir(faz44: dict | None = None, faz45: dict | None = None,
@@ -191,10 +232,10 @@ def degerlendir(faz44: dict | None = None, faz45: dict | None = None,
               _al(faz46, "c1_kapsama"), 1.0, ">="),
         Olcut("C2", "en dar bant / önsel",
               _al(faz46, "c2_en_dar"), 0.50, "<"),
+        # `_sayi` np.bool_ dahil her sayisal tipi float'a cevirdigi icin
+        # burada ayri bir True/False esleme tablosuna GEREK KALMADI.
         Olcut("C3", "gürültüyle genişleme (1 = evet)",
-              (1.0 if _al(faz46, "c3_gecti") in (1, 1.0, True) else
-               (0.0 if faz46 is not None and "c3_gecti" in faz46 else None)),
-              1.0, ">="),
+              _al(faz46, "c3_gecti"), 1.0, ">="),
     ]
     # KURU KIP bir kanit DEGILDIR: G4-C olcutleri kosulmamis sayilir.
     if faz46 is not None and bool(faz46.get("kuru", False)):

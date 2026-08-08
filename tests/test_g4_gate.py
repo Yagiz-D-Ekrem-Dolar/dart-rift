@@ -130,3 +130,56 @@ def test_olcut_yonu_HER_IKI_yonde_calisiyor() -> None:
     assert Olcut("x", "", 1.5, 1.0, ">=").gecti is True
     assert Olcut("x", "", 0.5, 1.0, ">=").gecti is False
     assert Olcut("x", "", None, 1.0, "<").gecti is False
+
+
+def test_NUMPY_tipleri_kosulmadi_SAYILMIYOR() -> None:
+    """Ölçülen bir ölçüt **koşulmamış sayılmamalı** — kapının aynası.
+
+    Bulunan kusur: `_al` `isinstance(v, (int, float))` ile süzüyordu ve
+    numpy tiplerinin yalnızca bir kısmı Python sayılarının alt sınıfıdır:
+
+    | tip | alt sınıf mı |
+    |---|---|
+    | `np.float64` | **evet** |
+    | `np.int64` | hayır |
+    | `np.bool_` | hayır |
+    | `np.float32` | hayır |
+
+    Ölçüldü — `np.float32` ve `np.bool_` girdilerle kapı
+    `kosulmayan: ['A2', 'B2']` ve `dusen: ['C3']` diyordu. Üçü de
+    **ölçülmüştü**.
+    """
+    import numpy as np
+
+    o44 = {"A1_mermi_parcacik_cap": np.float64(2.6),
+           "A2_r_ince_carpani": np.float32(8.0),
+           "A3_kutle_sapmasi": np.float64(2e-5),
+           "B1_beta_farki": np.float64(0.04),
+           "B3_Aprime_daha_yakin": np.float64(1.0)}
+    o45 = {"B2_durulmus": np.bool_(True), "B4_enerji_egim": np.float64(0.92)}
+    o46 = {"c1_kapsama": np.float64(1.0), "c2_en_dar": np.float64(0.21),
+           "c3_gecti": np.bool_(True), "kuru": False}
+    r = degerlendir(o44, o45, o46)
+    assert r.kosulmayanlar == [], r.kosulmayanlar
+    assert r.dusenler == [], r.dusenler
+    assert r.gecti is True
+
+
+def test_numpy_bool_FALSE_dusuyor_KOSULMADI_degil() -> None:
+    """`np.bool_(False)` `düştü` demeli, `koşulmadı` değil — ayrım önemli."""
+    import numpy as np
+
+    o44 = {"A1_mermi_parcacik_cap": 2.6, "A2_r_ince_carpani": 8.0,
+           "A3_kutle_sapmasi": 2e-5, "B1_beta_farki": 0.04,
+           "B3_Aprime_daha_yakin": 1.0}
+    o45 = {"B2_durulmus": np.bool_(False), "B4_enerji_egim": 0.92}
+    r = degerlendir(o44, o45, TAM_46)
+    assert "B2" in r.dusenler
+    assert "B2" not in r.kosulmayanlar
+
+
+def test_sayiya_cevrilemeyen_deger_KOSULMADI() -> None:
+    """Metin/liste gelirse `koşulmadı` — sessizce sayıya zorlanmamalı."""
+    for bozuk in ("evet", [1.0], {"a": 1}, None):
+        r = degerlendir(dict(TAM_44, B1_beta_farki=bozuk), TAM_45, TAM_46)
+        assert "B1" in r.kosulmayanlar, bozuk
