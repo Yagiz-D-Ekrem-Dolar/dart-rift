@@ -253,3 +253,26 @@ def test_YEREL_kurulum_gecersiz_girdiler(sahneler) -> None:
     # Cap icinde ama kafes yine de cok buyuk olacaksa da erken uyari.
     with pytest.raises(ValueError, match="çok büyük"):
         refine_scene_local(kaba, m, r_ince=160.0, lam=200.0)
+
+
+def test_dikis_kalitesi_parcali_tek_blokla_AYNI():
+    """Bellek koruması sonucu **değiştirmemeli**.
+
+    `_dikis_kalitesi` `n×n×3` diziyi tek seferde kuruyordu ve yorumu
+    *"kuşak küçük (yüzlerce)"* diyordu. `λ=19, r_ince=9 m`'de kuşakta
+    `40 597` parçacık var → `36,8 GiB` → patladı. Parçalı sürüm aynı
+    sayıyı vermeli, yoksa düzeltme sessizce ölçümü değiştirir.
+    """
+    import numpy as np
+
+    from dartrift.setup.refine import _dikis_kalitesi
+    rng = np.random.default_rng(4343)
+    x = rng.uniform(-30.0, 30.0, size=(900, 3))
+    a = _dikis_kalitesi(x, np.zeros(3), 20.0, 7.0, 3.5)
+    # Tek blok zorlanan referans: dogrudan tam matris (900 kucuk, guvenli).
+    kus = np.abs(np.linalg.norm(x, axis=1) - 20.0) < 7.0
+    xk = x[kus]
+    D = np.linalg.norm(xk[:, None, :] - xk[None, :, :], axis=2)
+    np.fill_diagonal(D, np.inf)
+    assert a["en_yakin"] == float(D.min())
+    assert a["n_kusak"] == int(kus.sum())

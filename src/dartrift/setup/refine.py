@@ -116,10 +116,20 @@ def _dikis_kalitesi(x, mp, r_ince: float, s_kaba: float,
                 "en_yakin_oran": float("nan"),
                 "not": "dikiş kuşağında 2'den az parçacık — ölçülemedi"}
     xk = x[kus]
-    # Kusak kucuk (yuzlerce); O(n^2) kabul edilebilir ve dis bagimlilik yok.
-    D = np.linalg.norm(xk[:, None, :] - xk[None, :, :], axis=2)
-    np.fill_diagonal(D, np.inf)
-    en_yakin = float(D.min())
+    # PARCALI O(n^2). Onceki surum tek seferde `n x n x 3` kuruyordu ve
+    # yorumu *"kusak kucuk (yuzlerce)"* diyordu -- bu varsayim `lam = 2`'de
+    # dogruydu, `lam = 19` + `r_ince = 9 m`'de **cokuyor**:
+    #     n = 40 597  ->  40 597 x 40 597 x 3 x 8 B = 36,8 GiB  (patladi)
+    # Ucuncu kez ayni kalip (bkz. `refine_scene_local` §4 ve `coarsen`).
+    # Blok satir sayisi bellege gore secilir; sonuc DEGISMEZ.
+    blok = max(1, (1 << 22) // max(len(xk), 1))
+    en_yakin = np.inf
+    for b in range(0, len(xk), blok):
+        D = np.linalg.norm(xk[b:b + blok, None, :] - xk[None, :, :], axis=2)
+        # Kosegen (i == j) haric tutulur: satir k'nin kosegeni sutun b+k.
+        k = np.arange(D.shape[0])
+        D[k, b + k] = np.inf
+        en_yakin = min(en_yakin, float(D.min()))
     return {"n_kusak": n, "en_yakin": en_yakin,
             "en_yakin_oran": en_yakin / max(s_ince, 1e-300),
             "s_ince": s_ince, "kusak": [r_ince - s_kaba, r_ince + s_kaba]}
@@ -311,9 +321,19 @@ def refine_scene_local(kaba, mesh, r_ince: float, lam: float,
     cikarilan_x = kaba.x[k_hedef & (d_kaba < r_ince)].copy()
 
     # 4) alpha0/Y0: EN YAKIN kaba parcaciktan (kaya bloku yapisini korur).
+    #
+    # PARCALI. Onceki surum `x_i[:, None, :] - hedef_x[None, :, :]` ile
+    # N_ince x N_kaba x 3 bir dizi kuruyordu -- `412 TiB` kusurunun aynisi,
+    # yalnizca daha yavas patliyor:
+    #     r_ince = 3 m  ->  1 524 x  9 544 x 3 x 8 B = 0,35 GB   (gecer)
+    #     r_ince = 6 m  -> 12 210 x  9 544 x 3 x 8 B = 2,8  GB   (10,5 s)
+    #     r_ince = 9 m  -> ~41 000 x 9 544 x 3 x 8 B = 9,4  GB   (patlar)
+    # `r_ince`'i buyutmek ADR-0043 icin gerekli oldugundan bu bir engeldi.
     hedef_x = kaba.x[k_hedef]
-    idx = np.argmin(np.linalg.norm(x_i[:, None, :] - hedef_x[None, :, :],
-                                   axis=2), axis=1)
+    idx = np.empty(len(x_i), dtype=np.int64)
+    for b in range(0, len(x_i), 2048):
+        idx[b:b + 2048] = np.argmin(np.linalg.norm(
+            x_i[b:b + 2048, None, :] - hedef_x[None, :, :], axis=2), axis=1)
     a0_i = kaba.alpha0[k_hedef][idx]
     y0_i = kaba.Y0[k_hedef][idx]
     blok_i = kaba.is_boulder[k_hedef][idx]

@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-08 · **Kapanan:** 24 · **Açık:** 6
+**Son güncelleme:** 2026-08-09 · **Kapanan:** 27 · **Açık:** 5
 
 ---
 
@@ -93,9 +93,40 @@ varsayım şuydu: mermi kendi çapını `1,22e-4 s`'de geçiyor, `1e-3 s`'de
 `t₁` ile **doğrusal**: `1e-2 s` → `+%9,9`, `1e-1 s` → `+%99`. `t₁`
 ölçülmeden §4'ün önerisi **savunulamaz**.
 
-**Durum:** `t₁`'i bulmak için `t_end = 5e-2 s` koşusu sürüyor (25 kat
-uzun). ADR-0043 `ÖNERİLDİ` kalıyor — zaten §7 bunu **kilit şartı**
-olarak yazmıştı, şart **işe yaradı**.
+**Durum: KAPANDI (2026-08-09).** `t_end = 5e-2 s` koşusu bitti,
+`t₁ = 4,767e-3 s` **ölçüldü** — tahminin `4,8` katı, bedel `+%0,9`
+yerine `+%4,7`. Öneri o kalemde ayakta.
+
+**Ama ölçüt tanımım da yanlıştı** ve bunu ancak iz eğrisine bakınca
+gördüm: `u` **sıfıra inmiyor**, `0,409`'da düzleşiyor — ve oraya
+*aşağıdan*, `0,118`'den **yükselerek** geliyor (92 adımın 16'sı artış).
+*"Mermi hedefle aynı hıza gelince bağlanma biter"* yanlış; doğrusu
+*"momentum alışverişi bitince fark **sabitlenir**"*. Düzeltme
+ADR-0043 §4a ve `faz43c` başlığında; yanlış cümle **silinmedi**.
+
+### A8 — **`t₁`'in sağlaması gereken iki şart çelişiyor** (2026-08-09, ADR-0043'ü durduran bulgu)
+
+Kabalaştırma ölçüldü (§2 sıkıntı 27). Korunum **geçti**, aktarım
+**düştü**:
+
+| `t₁` [s] | kütle/mom./enerji | ısıya dönen | **atama mesafesi** |
+|---|---|---|---|
+| `1e-3` | `≤ 3,4e-15` | `%93,2` | `0,97` hücre |
+| **`4,77e-3`** (ölçülen `t₁`) | `≤ 1,0e-15` | **`%99,3`** | **`4,35` hücre** |
+| `1e-2` | `≤ 6,1e-15` | **`%99,9`** | **`10,16` hücre = 35,6 m** |
+
+- Bağlanmanın bitmesi için `t₁` **büyük** olmalı → `4,77e-3 s`.
+- Aktarımın maddeyi ışınlamaması için **küçük** olmalı → `≤ 1e-3 s`.
+- **Aralık boş.**
+
+`r_iç`'i büyütmek çözmüyor: sıkıştırma `(λ₁/λ₂)³ = 857`'de **sabit**,
+yalnızca bedel artıyor (`12 m` → `+%42`).
+
+> Kusur tanımlanabilir: hedef siteler aşama-2'nin **başlangıç**
+> kafesinden alınıyor, yani **Euler**'ci — maddenin peşinden gitmiyor.
+> **Lagrange**'cı bir sürüm (`t₁` anındaki bulutun üzerine oturtulan
+> kafes) çalışabilir ama **yazılmadı ve ölçülmedi**. ADR-0043 §7'ye
+> madde 5 olarak eklendi.
 
 ### A4 — `ileri_kosu`'nun GPU kısmı hiç koşulmadı
 
@@ -217,6 +248,44 @@ değişmez düşerse maliyet tablosu da yanlış olur.
 
 ---
 
+### 25 — `refine.py`'de **iki** gizli bellek bombası (aynı kalıbın 2. ve 3. kez)
+
+| | |
+|---|---|
+| **belirti** | `r_ince = 9 m, λ = 19` → `Unable to allocate 36.8 GiB` |
+| **kök neden** | `N×M×3` dizi **tek seferde** kuruluyordu, iki ayrı yerde |
+| **yer 1** | `refine_scene_local` α₀/Y₀ komşu araması: `r=6 m`'de `2,8 GB`, `r=9 m`'de `9,4 GB` |
+| **yer 2** | `_dikis_kalitesi`: kuşakta `40 597` parçacık → `36,8 GiB` |
+| **niye görülmedi** | `_dikis_kalitesi`'nin yorumu *"kuşak küçük (yüzlerce)"* diyordu — `λ=2`'de **doğruydu** |
+| **düzeltme** | ikisi de parçalı; blok belleğe göre seçiliyor |
+| **doğrulama** | parçalı sonuç tam matrisle **birebir** aynı (yeni test) |
+
+> Bu, `412 TiB` kusurunun **aynısı**. Üçüncü kez. Karşı önlem artık bir
+> kural: `x[:, None, :] - y[None, :, :]` **asla** parçasız yazılmıyor.
+> `coarsen.py` bu kuralla yazıldığı için oraya sızmadı.
+
+### 26 — kabalaştırmanın hedef kafesi **yanlıştı**
+
+| | |
+|---|---|
+| **belirti** | `r_iç=6 m` içinde yalnızca **2 site** |
+| **kök neden** | çıkarılan `7 m`'lik **kaba** parçacıklar hedef alınıyordu |
+| **doğrusu** | aşama-2 `λ=2` kullanıyor → o bölgede aralık `3,5 m` |
+| **nasıl bulundu** | CPU ön uçuşu (GPU'ya gitmeden) |
+| **düzeltme** | hedef artık aşama-2'nin **kendi** ince kafesi (2 → 14 site) |
+
+### 27 — açısal momentum **anlamsız** bir paydayla ölçülüyordu
+
+| | |
+|---|---|
+| **belirti** | `%72 870` kayıp — okunamaz |
+| **kök neden** | `\|L₀\|`'a bölünüyordu; **merkezi çarpmada `L₀ ≈ 0`** |
+| **düzeltme** | ulaşılabilir ölçeğe göre: `Σ mᵢ\|xᵢ\|\|vᵢ\|` → `%1,71` |
+| **ikinci kusur** | ilk test fikstürüm bunu **gösteremiyordu** (`L₀ = 4` çıkmıştı) |
+| **doğrulama** | fikstür `L₀ = 0` olacak biçimde yeniden kuruldu; testin kendi iddiası artık ölçülüyor |
+
+---
+
 ## 3. Kusurların **sınıflandırması**
 
 | sınıf | sayı | örnek |
@@ -239,7 +308,8 @@ Bunlar bir kez değil, **birden çok** kez oldu:
 
 | kalıp | kaç kez | karşı önlem |
 |---|---|---|
-| bir eşiği **ölçmeden** yazmak | **5** | eşik yazılmadan önce ölçülüyor |
+| bir eşiği **ölçmeden** yazmak | **6** | eşik yazılmadan önce ölçülüyor |
+| `N×M×3` diziyi **parçasız** kurmak | **3** | kural: asla parçasız yazılmaz |
 | çalışma noktasını **içermeyen** aralıkta yargı | 2 (+2 önceki tur) | `judge` kapsam koruması |
 | aynı büyüklüğü **iki yerde** tanımlamak | 2 | tek kaynağa indirildi |
 | dönüş sözleşmesi değişince **tüketicileri denetlemem** | 2 | sistematik tarama |
@@ -254,6 +324,11 @@ Bunlar bir kez değil, **birden çok** kez oldu:
 > (mermi çapı / şok hızı, bellek bant genişliği) ve ikisi de makul
 > görünüyordu. Kalıp *"dikkatsizlik"* değil — **argümanın kendisi
 > ölçümün yerine geçemiyor.**
+>
+> Altıncısı (2026-08-09) aynı kalıbın **ölçüt** hâli: *"`u → 0`
+> bağlanmanın bittiğini gösterir"* yazdım; `u` sıfıra inmedi,
+> `0,409`'da düzleşti. Eşik değil **tanım** yanlıştı, ki bu daha sinsi:
+> yanlış tanım ölçüm yapılsa bile yanlış sonucu *doğru* gösterirdi.
 
 ---
 
@@ -270,6 +345,10 @@ yaradığı görünmez:
 | kuru kip bir **kanıt sayılmıyor** | `g4_gate` `kuru: true` → `koşulmadı` |
 | sonradan ölçülen büyüklük **ölçüt yapılmadı** | `TANILAR` bölümü |
 | R4 riski **kapandı** | `x_reference` zorunlu |
+| reddedilen alternatif **ölçüldü** | naif ortalama `%38` momentum kaybı |
+| CPU ön uçuşu GPU'dan **önce** koştu | sıkıntı 26 ve 27 GPU'ya gitmeden bulundu |
+| korunumun **görmediği** şey ayrıca ölçüldü | atama mesafesi → A8'i o buldu |
+| kendi testimin fikstürü **sınandı** | `L₀ = 4` çıkınca fikstür düzeltildi |
 
 ---
 
@@ -277,10 +356,10 @@ yaradığı görünmez:
 
 | büyüklük | değer |
 |---|---|
-| hata ayıklama turu | **15** |
-| kapanan sıkıntı | **24** |
-| açık sıkıntı | **6** (A5 + A7 karar, kalanı kota; A6 kapandı) |
-| **testlerin kör olduğu kusur** | **4** |
-| **tahminimi çürüten ölçüm** | **5** |
+| hata ayıklama turu | **16** |
+| kapanan sıkıntı | **27** |
+| açık sıkıntı | **5** (A5 + A8 karar, kalanı kota; A6 ve A7 kapandı) |
+| **testlerin kör olduğu kusur** | **5** |
+| **tahminimi çürüten ölçüm** | **6** |
 | eklenen gerileme testi | **67** |
 | yerel test takımı | **954 geçti, 96 atlandı** (öncesi 912, ondan önce 898) |

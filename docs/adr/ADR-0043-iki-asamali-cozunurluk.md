@@ -181,6 +181,71 @@ yaklaşımdır: blok sınırları ince kafeste kaba çözünürlükte kalır;
 
 ---
 
+## 4c. Kabalaştırma **ölçüldü** — korunum geçti, **aktarım düştü** (2026-08-09)
+
+`src/dartrift/setup/coarsen.py` yazıldı, `scripts/faz43d_kabalastirma.py`
+ile `λ=19`, `r_iç=3 m` gerçek sahnesinde ölçüldü. Hedef siteler
+**aşama-2'nin kendi ince kafesi** (`λ=2` → `3,5 m`).
+
+| `t₁` [s] | kütle | momentum | enerji | ısıya dönen | **atama mesafesi** |
+|---|---|---|---|---|---|
+| `1e-4` | `3,9e-14` | `2,8e-16` | `1,8e-16` | `%98,2` | `0,97 s₂` |
+| `1e-3` | `3,9e-14` | `3,4e-15` | `5,7e-16` | `%93,2` | `0,97 s₂` |
+| **`4,77e-3`** (ölçülen `t₁`) | `3,9e-14` | `1,0e-15` | `7,4e-16` | **`%99,3`** | **`4,35 s₂`** |
+| `1e-2` | `3,9e-14` | `6,1e-15` | `1,5e-15` | **`%99,9`** | **`10,16 s₂` = 35,6 m** |
+
+### §5'in istediği **karşılandı**
+
+Kütle, momentum ve enerji **üçü de** `≤ 6e-15` — makine hassasiyeti.
+Naif yolun `%38` momentum kaybettiği ayrıca ölçüldü
+(`tests/test_coarsen.py`). Yani §5'in korunum şartı **sorun değil**.
+
+### Ama aktarımın kendisi **çalışmıyor**
+
+Ölçmeyi ADR'nin istemediği, sonradan eklenen iki tanı düşürüyor:
+
+1. **Atama mesafesi `t₁`'de `4,35` hücre, `1e-2 s`'de `10,2` hücre
+   (`35,6 m`).** Hedef siteler `r_iç = 3 m` içinde **sabit** duruyor,
+   oysa madde `t₁`'e kadar oradan **çıkmış** oluyor. Aktarım `35 m`
+   öteden kütleyi `3 m`'lik bir topa **ışınlıyor**. Korunum bunu
+   göremiyor — toplamlar tutuyor.
+2. **Isıya dönen kinetik `t₁`'de `%99,3`.** Ve `t₁` büyüdükçe
+   **kötüleşiyor** (`%93,2 → %99,3 → %99,9`), çünkü akış hızla genişleyen
+   bir radyal akışa dönüşüyor ve onu ortalamak yok ediyor.
+
+> **`t₁` iki şartı aynı anda sağlayamıyor.** Bağlanmanın bitmesi için
+> `t₁` **büyük** olmalı (`4,77e-3 s`); aktarımın maddeyi ışınlamaması
+> için **küçük** olmalı (`≤ 1e-3 s`). Aralık **boş**.
+
+### Sıkıştırma oranı `r_iç` ile **değişmiyor**
+
+`r_iç`'i büyütmek akla geliyor (daha çok site). Ölçüldü — işe yaramıyor:
+
+| `r_iç` | aşama-1 `N` | site | **ince/site** | aşama-1 | toplam | `λ=2`'ye göre |
+|---|---|---|---|---|---|---|
+| 3 m | 11 871 | 2 | 1164 | 0,46 | 10,19 | +%4,7 |
+| 6 m | 22 555 | 14 | 930 | 0,87 | 10,60 | +%8,9 |
+| 9 m | 51 359 | 51 | 820 | 1,98 | 11,71 | +%20,4 |
+| 12 m | 106 275 | 120 | 806 | 4,10 | 13,83 | +%42,1 |
+
+Sıkıştırma `~857`'de sabit — çünkü **tanım gereği** `(λ₁/λ₂)³ = 9,5³`.
+`r_iç` yalnızca **bedeli** büyütüyor.
+
+### Bu ADR'yi öldürmüyor, ama **§4'ün önerisini** öldürüyor
+
+Ölçülen şey *"iki aşama olmaz"* değil; **bu aktarım olmaz**. Kusur
+tanımlanabilir: hedef siteler aşama-2'nin **başlangıç** kafesinden
+alınıyor, yani **Euler**'ci. Maddenin peşinden gitmiyor.
+
+> Çalışabilecek sürüm **Lagrange**'cı olmalı: hedef siteler `t₁`
+> anındaki **mevcut** ince parçacık dağılımından üretilmeli (örneğin
+> `s₂` aralıklı bir kafes, o anki bulutun sınırlayıcı kutusuna
+> oturtulmuş), aşama-2'nin `t=0` kafesinden değil.
+
+Bu **ölçülmedi** ve ayrı bir iş. §7'ye madde 5 olarak eklendi.
+
+---
+
 ## 5. Uygulanması gereken — **mevcut değil**
 
 Bu seçenek bir **kabalaştırma** adımı istiyor: aşama-1'in ince
@@ -192,6 +257,11 @@ parçacıkları aşama-2'nin kaba kafesine aktarılmalı.
 | **momentum** korunmalı | ana ürün `β`; kayıp doğrudan onu bozar |
 | **enerji** korunmalı | krater ve ejekta ondan geliyor |
 | aktarım hatası **ölçülmeli** | yeni bir model-form hatası kaynağı |
+
+> **2026-08-09 güncellemesi:** kod yolu **yazıldı** (`coarsen.py`) ve
+> korunum şartlarının üçünü de `~1e-15` ile geçiyor (§4c). Bu paragrafın
+> korktuğu şey **gerçekleşmedi**; düşen başka bir şey oldu (atama
+> mesafesi).
 
 > Bu **yeni bir kod yolu** ve KAYIT-025'in ölçtüğü şeyle aynı sınıfta:
 > C yaklaşımının ara değerleme hatası. Orada momentum `7,5e-03`
@@ -225,13 +295,20 @@ olur). Bu, ADR ile ayrıca karara bağlanmalı.
    katı**; bedel `+%0,9` değil **`+%4,7`**. Öneri ayakta.
    *Uyarı:* ölçüt *"aynı hıza gelme"* değil *"farkın durulması"*
    olarak **düzeltildi** — ilk formülasyon yanlıştı.
-2. **Kabalaştırmanın kütle/momentum/enerji hatası** — üçü de ayrı ayrı.
+2. ~~**Kabalaştırmanın kütle/momentum/enerji hatası** — üçü de ayrı ayrı.~~
+   **✔ ÖLÇÜLDÜ: üçü de `≤ 6e-15`** (§4c). Ama aynı ölçüm **yeni bir
+   engel** buldu: atama mesafesi `t₁`'de `4,35` hücre. Bkz. madde 5.
 3. **`λ = 19`'da arayüz ne yapıyor** — boşluk 3 yalnızca `λ = 2`'de
    kapandı; `6478:1` oranı ölçülmüş her şeyin ötesinde.
 4. **Blok sınırlarının kaba çözünürlükte kalmasının etkisi** (§4b) —
    ince bölgede kaya blokları kaba kafesin çözünürlüğünde temsil
    ediliyor ve bu **ölçülmedi**.
+5. **(YENİ, §4c)** **Lagrange'cı hedef site üretimi.** Euler'ci sürüm
+   ölçüldü ve düştü. Maddenin peşinden giden bir sürüm yazılıp aynı
+   iki tanıyla (atama mesafesi, ısıya dönen oran) **yeniden
+   ölçülmelidir**. Bu yapılmadan §4'ün önerisi uygulanamaz.
 
-> **Dördü de** ölçülmeden bu ADR **kilitlenmemelidir**. Özellikle 3: A′'nın
+> **Beşi de** ölçülmeden bu ADR **kilitlenmemelidir**. 1 ve 2 ölçüldü;
+> 2 geçerken **madde 5'i doğurdu**. Özellikle 3: A′'nın
 > arayüz davranışı yüksek oranda **bilinmiyor** ve KAYIT-024 gürültünün
 > oranla **büyüdüğünü** ölçtü.
