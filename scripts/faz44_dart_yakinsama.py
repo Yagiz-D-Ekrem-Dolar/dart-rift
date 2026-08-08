@@ -81,7 +81,21 @@ def _mermi_yaricapi(x, is_imp) -> float:
 
 
 def _kos(rs, mat, device: str, steps: int, every: int, etiket: str,
-         tek_h: bool) -> dict:
+         tek_h: bool, t_end: float | None = None) -> dict:
+    """Bir kolu koştur.
+
+    `t_end` verilirse **eşit simüle süreye** kadar koşulur ve `steps`
+    yalnızca üst sınırdır.
+
+    ## Neden `t_end` zorunlu oldu
+
+    İlk sürüm yalnızca `--steps` alıyordu. Kolların `dt`'si farklı
+    (`h` farklı) olduğu için **farklı `t_sim`**'e ulaşıyorlardı:
+    ölçüldü, `s7_λ2` A′ `0,342 s`, tek `h` `0,694 s`.
+
+    > Farklı `t`'deki `β`'ları kıyaslamak **yakınsama ölçmez**.
+    > B1 ve B3 bu yüzden hesaplanamamıştı (sıkıntı A6).
+    """
     from dartrift.warp_core.solver_solid import WarpSolid3D
 
     h = float(2.0 * rs.spacing_coarse) if tek_h else rs.h
@@ -108,11 +122,18 @@ def _kos(rs, mat, device: str, steps: int, every: int, etiket: str,
           flush=True)
 
     izler, t_sim, t0 = [], 0.0, time.perf_counter()
-    for adim in range(1, steps + 1):
+    adim = 0
+    while adim < steps:
+        adim += 1
         dt = sol.compute_dt()
+        # SON ADIM KIRPILIR: t_end'i tam yakala, asma.
+        if t_end is not None and t_sim + dt > t_end:
+            dt = t_end - t_sim
         sol.step(dt)
         t_sim += dt
-        if adim % every == 0 or adim == steps:
+        son_mu = (adim == steps) or (t_end is not None
+                                     and t_sim >= t_end * (1.0 - 1e-12))
+        if adim % every == 0 or son_mu:
             st = sol.state_numpy()
             if not np.all(np.isfinite(st["v"])):
                 print(f"      PATLADI adim {adim}", flush=True)
@@ -130,11 +151,22 @@ def _kos(rs, mat, device: str, steps: int, every: int, etiket: str,
                 if adim == every:
                     print(f"      beta okunamadi: {e}", flush=True)
             izler.append({"adim": adim, "t": t_sim, "beta": beta})
+        if son_mu:
+            break
     sure = time.perf_counter() - t0
+    # T_END'E ULASILAMADIYSA SESSIZ GECMEZ: kismi kosunun beta'si
+    # sistematik olarak yanlis olur ve tam da "yakinsamiyor" gibi gorunur
+    # (ADR-0011 §3'un dersi).
+    ulasti = t_end is None or t_sim >= t_end * (1.0 - 1e-9)
+    if not ulasti:
+        print(f"      T_END'E ULASILAMADI: {t_sim:.6e} < {t_end:.6e} "
+              f"({adim} adim) -- bu kol YAKINSAMA YARGISINA GIRMEZ",
+              flush=True)
     son = [z["beta"] for z in izler[-3:] if np.isfinite(z["beta"])]
     print(f"      beta(son) = {son[-1] if son else float('nan'):.6f}  "
           f"t_sim = {t_sim:.4e} s  ({sure:.1f} s duvar)", flush=True)
-    return {"etiket": etiket, "durum": "tamam", "N": n, "t_sim": t_sim,
+    return {"etiket": etiket, "durum": "tamam" if ulasti else "kismi",
+            "N": n, "t_sim": t_sim, "t_end_hedef": t_end,
             "beta_son": son[-1] if son else float("nan"),
             "mermi_parcacik_cap": mermi_capi / s_yerel,
             "tasarruf": rs.diagnostics["tasarruf"],
@@ -146,6 +178,9 @@ def main() -> int:
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--steps", type=int, default=3000)
     ap.add_argument("--every", type=int, default=250)
+    ap.add_argument("--t-end", type=float, default=None,
+                    help="EŞIT simüle süre [s]. Verilmezse --steps kullanılır "
+                         "ve kollar farklı t_sim'e ulaşır (B1/B3 hesaplanamaz).")
     ap.add_argument("--r-ince", type=float, default=25.0)
     ap.add_argument("--out",
                     default=str(REPO.parent / "faz44_sonuc.json"))
@@ -184,9 +219,11 @@ def main() -> int:
               f"r_ince/R_mermi {a.r_ince / max(r_mermi, 1e-300):.2f}",
               flush=True)
         sonuclar[ad + "_Aprime"] = _kos(rs, mat, a.device, a.steps, a.every,
-                                        ad + " A'", tek_h=False)
+                                        ad + " A'", tek_h=False,
+                                        t_end=a.t_end)
         sonuclar[ad + "_tek_h"] = _kos(rs, mat, a.device, a.steps, a.every,
-                                       ad + " tek h", tek_h=True)
+                                       ad + " tek h", tek_h=True,
+                                       t_end=a.t_end)
 
     # G4 anahtarlarini AYNI dosyaya yaz -- kapi betigi bu dosyayi dogrudan
     # okuyabilsin diye. Ceviri mantigi validation/g4_ozet.py'de ve SINANIYOR

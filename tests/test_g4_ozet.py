@@ -12,9 +12,13 @@ from dartrift.validation.g4_gate import degerlendir
 from dartrift.validation.g4_ozet import faz44_ozet, faz45_ozet
 
 
-def _kol(N, beta, cap=2.6, durum="tamam"):
+#: Kollar AYNI `t_sim`'e ulaşmış olmalı; yoksa B1/B3 yakınsama ölçmez.
+T_ESIT = 0.2
+
+
+def _kol(N, beta, cap=2.6, durum="tamam", t_sim=T_ESIT):
     return {"durum": durum, "N": N, "beta_son": beta,
-            "mermi_parcacik_cap": cap, "tasarruf": 6.9}
+            "mermi_parcacik_cap": cap, "tasarruf": 6.9, "t_sim": t_sim}
 
 
 def _ham(**kw):
@@ -197,3 +201,35 @@ def test_kapi_raporu_JSON_ve_markdown_uretiyor() -> None:
     assert "G4 kapı raporu" in m and len(m) > 500
     json.dumps({"gecti": r.gecti, "dusen": r.dusenler,
                 "kosulmayan": r.kosulmayanlar})
+
+
+def test_FARKLI_t_sim_de_B1_ve_B3_YAZILMIYOR() -> None:
+    """Farklı `t`'deki `β`'ları kıyaslamak yakınsama **ölçmez** (sıkıntı A6).
+
+    Gerçekten oldu: ilk yerel koşuda `faz44` `--steps` alıyordu ve kollar
+    farklı `t_sim`'e ulaştı (`s7_λ2` A′ `0,342 s`, tek `h` `0,694 s`).
+    Özet o zaman sessizce bir B1 sayısı üretebilirdi.
+    """
+    h = _ham()
+    h["sonuclar"]["s5_lam2_Aprime"]["t_sim"] = 0.35     # DIGERLERINDEN farkli
+    o = faz44_ozet(h)
+    assert o["esit_t_sim"] is False
+    assert "B1_beta_farki" not in o
+    assert "B3_Aprime_daha_yakin" not in o
+    # A1/A2/A3 yine yazilir -- onlar t'ye bagli DEGIL.
+    assert "A1_mermi_parcacik_cap" in o
+
+
+def test_KISMI_kol_yargiya_GIRMIYOR() -> None:
+    """`t_end`'e ulaşmamış koşunun `β`'sı sistematik küçük çıkar."""
+    h = _ham()
+    h["sonuclar"]["s5_lam2_Aprime"]["durum"] = "kismi"
+    o = faz44_ozet(h)
+    assert "B1_beta_farki" not in o, "kismi kol B1'e girdi"
+
+
+def test_ESIT_t_de_B1_ve_B3_yazılıyor() -> None:
+    """Pozitif kontrol: koruma **meşru** durumu engellemiyor."""
+    o = faz44_ozet(_ham())
+    assert o["esit_t_sim"] is True
+    assert "B1_beta_farki" in o and "B3_Aprime_daha_yakin" in o

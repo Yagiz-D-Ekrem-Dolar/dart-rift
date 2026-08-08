@@ -35,14 +35,32 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["faz44_ozet", "faz45_ozet"]
+__all__ = ["faz44_ozet", "faz45_ozet", "esit_t_mi"]
 
 
 def _ince_kol(sonuclar: dict, ek: str) -> list:
-    """Verilen ekli (`_Aprime` / `_tek_h`) **tamamlanmış** kolları döndür."""
+    """Verilen ekli (`_Aprime` / `_tek_h`) **tamamlanmış** kolları döndür.
+
+    `durum == "kismi"` olan kollar **dışlanır**: `t_end`'e ulaşmamış bir
+    koşunun `β`'sı sistematik olarak küçük çıkar ve tam da *"yakınsamıyor"*
+    gibi görünür (ADR-0011 §3'ün dersi).
+    """
     return [(ad, y) for ad, y in sonuclar.items()
             if ad.endswith(ek) and y.get("durum") == "tamam"
             and np.isfinite(y.get("beta_son", float("nan")))]
+
+
+def esit_t_mi(sonuclar: dict, tol: float = 1.0e-6) -> bool:
+    """Tamamlanmış kolların hepsi **aynı** `t_sim`'e mi ulaştı?
+
+    B1 ve B3 farklı `t`'deki `β`'ları kıyaslayamaz. Bu kontrol olmadan
+    özet sessizce anlamsız bir sayı üretirdi (sıkıntı A6).
+    """
+    ts = [y["t_sim"] for y in sonuclar.values()
+          if y.get("durum") == "tamam" and "t_sim" in y]
+    if len(ts) < 2:
+        return False
+    return bool((max(ts) - min(ts)) / max(max(ts), 1e-300) < tol)
 
 
 def faz44_ozet(ham: dict) -> dict:
@@ -75,7 +93,13 @@ def faz44_ozet(ham: dict) -> dict:
 
     # --- B1: en ince IKI A' kolu arasindaki GORELI beta farki.
     # "En ince" = en cok parcacikli. Iki kol yoksa B1 KOSULMAMISTIR.
-    if len(ap) >= 2:
+    #
+    # ESIT t SARTI: kollar farkli t_sim'e ulastiysa B1 yakinsama OLCMEZ.
+    # Bu durumda anahtar HIC YAZILMAZ ve kapi "kosulmadi" der -- yanlis
+    # bir sayi yazmaktan iyidir.
+    esit_t = esit_t_mi(son)
+    out["esit_t_sim"] = bool(esit_t)
+    if len(ap) >= 2 and esit_t:
         sirali = sorted(ap, key=lambda t: t[1]["N"])
         b1, b2 = sirali[-2][1]["beta_son"], sirali[-1][1]["beta_son"]
         payda = max(abs(b2), 1e-300)
@@ -91,7 +115,7 @@ def faz44_ozet(ham: dict) -> dict:
         if esi and esi.get("durum") == "tamam" and np.isfinite(
                 esi.get("beta_son", float("nan"))):
             eslesen.append((kok, y["beta_son"], esi["beta_son"]))
-    if len(eslesen) >= 2:
+    if len(eslesen) >= 2 and esit_t:
         # Referans: EN INCE kurulumun A' sonucu (en cok cozulmus olan).
         sirali = sorted(ap, key=lambda t: t[1]["N"])
         ref = sirali[-1][1]["beta_son"]
