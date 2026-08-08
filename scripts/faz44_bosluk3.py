@@ -48,13 +48,16 @@ def main() -> int:
     print("FAZ 4.4 — ADR-0041 §5 BOSLUK 3 (mukavemetli malzemede A')", flush=True)
     print("=" * 78, flush=True)
 
-    print("\n[1] t_end OLCULEREK seciliyor", flush=True)
-    kal = calibrate_t_end(N_KABA, R_IC, DEV)
-    for iz in kal["izler"]:
-        print(f"      t={iz['t']:.4e}  r={iz['r']:.6f}", flush=True)
-    t_end = kal["t_end"]
-    print(f"    secilen t_end = {t_end:.6e}  (r={kal['r_ulasilan']:.6f}, "
-          f"hedef {kal['r_hedef']}, {kal['n_kosu']} kosu)", flush=True)
+    # t_end SONDADAN (job 1460685) okundu -- tahmin degil, olcum:
+    #        t (s)   v_max   r@0.01   r@0.02   r@0.05
+    #     2.000e-05   34.24   0.2738   0.2476   0.2137
+    #     5.000e-05   26.65   0.4383   0.2808   0.2270
+    #     1.000e-04   18.53   0.6130   0.4622   0.2138
+    #     4.000e-04    0.93   0.8390   0.8390   0.8390   <- kutu doldu
+    # Kullanilabilir pencere t = 2e-5..5e-5: cephe r_inner=0.15'i GECMIS
+    # ama kutu yuzunden (0.5) uzak. t=3e-5 secildi.
+    t_end = 3.0e-5
+    print(f"\n[1] t_end = {t_end:.3e} (sonda job 1460685'ten okundu)", flush=True)
 
     sonuclar = {}
 
