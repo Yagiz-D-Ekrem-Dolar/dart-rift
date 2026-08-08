@@ -155,3 +155,45 @@ def test_B3_EN_KABA_kurulumu_seciyor() -> None:
     o = faz44_ozet(_ham())
     assert o["B3_ayrinti"]["kurulum"] == "s7_lam2"      # N=11164 < 28000
     assert o["B3_ayrinti"]["referans_beta"] == pytest.approx(3.18)
+
+
+def test_ciktilar_JSON_serilestirilebilir() -> None:
+    """12 saatlik bir koşunun **sonunda** JSON patlarsa her şey kaybolur.
+
+    `json.dumps` numpy tiplerini kabul etmez (`np.float64` kabul eder ama
+    `np.bool_` ve `np.int64` **etmez**). Bütün özet çıktıları burada
+    yuvarlanıyor.
+    """
+    import json
+
+    o44 = faz44_ozet(_ham())
+    o45 = faz45_ozet({"beta_bound_settled": True,
+                      "energy_drift_loglog_slope": 0.92})
+    for ad, o in (("faz44", o44), ("faz45", o45)):
+        json.dumps(o), ad
+    # Ve B3_ayrinti gercekten DOLU olmali -- bos bir sozluk sinamaz.
+    assert o44["B3_ayrinti"], "B3_ayrinti bos, test bos bir dogruyu siniyor"
+    json.dumps(o44["B3_ayrinti"])
+
+
+def test_durulma_tanisi_JSON_serilestirilebilir() -> None:
+    from dartrift.validation.settling_time import settling_time
+    import json
+
+    t = np.linspace(0.0, 1.0, 60)
+    for b in (0.5 + 1e-5 * np.sin(30.0 * t), 0.5 + 0.4 * t):
+        json.dumps(settling_time(t, b, adim=np.arange(60)))
+
+
+def test_kapi_raporu_JSON_ve_markdown_uretiyor() -> None:
+    import json
+
+    r = degerlendir(faz44_ozet(_ham()),
+                    faz45_ozet({"beta_bound_settled": True,
+                                "energy_drift_loglog_slope": 0.92}),
+                    {"c1_kapsama": 1.0, "c2_en_dar": 0.21,
+                     "c3_gecti": True, "kuru": False})
+    m = r.markdown()
+    assert "G4 kapı raporu" in m and len(m) > 500
+    json.dumps({"gecti": r.gecti, "dusen": r.dusenler,
+                "kosulmayan": r.kosulmayanlar})

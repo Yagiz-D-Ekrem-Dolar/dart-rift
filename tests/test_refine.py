@@ -149,3 +149,13 @@ def test_dikis_BOS_kusakta_olculemedi_diyor(sahneler) -> None:
     assert d["n_kusak"] == 0
     assert np.isnan(d["en_yakin_oran"])
     assert "ölçülemedi" in d["not"]
+
+
+def test_refine_diagnostics_JSON_serilestirilebilir(sahneler) -> None:
+    """Tanı sözlüğü koşu çıktısına yazılıyor — numpy tipi sızmamalı."""
+    import json
+
+    kaba, ince = sahneler
+    d = refine_scene(kaba, ince, r_ince=25.0).diagnostics
+    json.dumps(d)
+    assert d["dikis"]["n_kusak"] > 0
