@@ -79,6 +79,43 @@ sonra kesilebilir. Ölçütü FAZ 4.5'in durulma ölçütüyle aynı
 (`settling_time`), ama `β` yerine **mermi parçacıklarının hızı**: mermi
 hedefle aynı hıza geldiğinde bağlanma bitmiştir.
 
+### 4a. ⚠ `t₁ = 1e-3 s` **ölçüldü ve düştü** (2026-08-08)
+
+> Yukarıdaki `t₁ ≈ 1e-3 s` **yanlış çıktı.** Silinmiyor (RULES.txt);
+> düzeltme burada.
+
+`scripts/faz43c_baglanma_suresi.py` ile `λ=19`, `r_iç=3 m`,
+`N = 11 871`, `A1 = 2,04` sahnesinde ölçüldü:
+
+```
+u = |<v>_mermi − <v>_yakın hedef| / v_çarpma
+
+u(t→0)     = 0,791
+u(2e-3 s)  = 0,337     <-- ADR'nin önerdiği t1'in İKİ KATINDA
+durulma    = DÜŞTÜ (eğilim %8,56, yarım-pencere %4,79; tol %2)
+t1         = nan  (pencerede durulma yok)
+```
+
+`1e-3 s`'de mermi hedefe göre hâlâ çarpma hızının **üçte biriyle**
+gidiyor ve `u` **düşmeye devam ediyor**. §2'nin *"bağlanma fazı çok
+kısa"* akıl yürütmesi — mermi çapını `1,22e-4 s`'de geçiyor, `1e-3
+s`'de şok `4` çap yol alıyor — **bağlanmanın bittiğini göstermiyor.**
+Şokun mermiyi geçmesi ayrı şey, momentumun aktarılıp hızların
+eşitlenmesi ayrı şey.
+
+**Bunun §3'e etkisi doğrudan:** aşama-1 bedeli `t₁` ile doğrusal.
+
+| `t₁` | aşama-1 | toplam | `λ=2`'ye göre | durum |
+|---|---|---|---|---|
+| `1e-3 s` | 0,096 | 9,82 | +%0,9 | ✘ **yetersiz (ölçüldü)** |
+| `1e-2 s` | 0,961 | 10,69 | +%9,9 | ? ölçülüyor |
+| `1e-1 s` | 9,61 | 19,34 | **+%99** | ? önerinin sınırı |
+
+> `t₁ ≳ 1e-1 s` çıkarsa **iki aşama seçeneği çöker** ve §6'nın
+> *"bireysel/blok zaman adımı"* alternatifi tek yol kalır.
+
+Uzun koşu (`t_end = 5e-2 s`) sürüyor.
+
 ---
 
 ## 4b. Kurulum engeli **kaldırıldı** (2026-08-08)
@@ -153,7 +190,9 @@ olur). Bu, ADR ile ayrıca karara bağlanmalı.
 
 ## 7. Bu ADR **kilitlenmeden** önce ölçülmesi gerekenler
 
-1. **`t₁` gerçekte ne kadar** — mermi hızının hedefle eşitlendiği an.
+1. ~~**`t₁` gerçekte ne kadar** — mermi hızının hedefle eşitlendiği an.~~
+   **ÖLÇÜLDÜ (kısmen):** `1e-3 s` **yetmiyor** (§4a). Gerçek `t₁` hâlâ
+   bilinmiyor; `5e-2 s`'ye kadar taranıyor.
 2. **Kabalaştırmanın kütle/momentum/enerji hatası** — üçü de ayrı ayrı.
 3. **`λ = 19`'da arayüz ne yapıyor** — boşluk 3 yalnızca `λ = 2`'de
    kapandı; `6478:1` oranı ölçülmüş her şeyin ötesinde.
@@ -161,6 +200,6 @@ olur). Bu, ADR ile ayrıca karara bağlanmalı.
    ince bölgede kaya blokları kaba kafesin çözünürlüğünde temsil
    ediliyor ve bu **ölçülmedi**.
 
-> Üçü de ölçülmeden bu ADR **kilitlenmemelidir**. Özellikle 3: A′'nın
+> **Dördü de** ölçülmeden bu ADR **kilitlenmemelidir**. Özellikle 3: A′'nın
 > arayüz davranışı yüksek oranda **bilinmiyor** ve KAYIT-024 gürültünün
 > oranla **büyüdüğünü** ölçtü.

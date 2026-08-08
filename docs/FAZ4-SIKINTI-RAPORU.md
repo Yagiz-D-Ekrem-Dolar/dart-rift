@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-08 · **Kapanan:** 23 · **Açık:** 6
+**Son güncelleme:** 2026-08-08 · **Kapanan:** 24 · **Açık:** 6
 
 ---
 
@@ -59,12 +59,43 @@ Karar gerektiriyor: A1 eşiği mi gözden geçirilecek, mimari mi
 değişecek? İkisi de bir ADR ister. Detay:
 [KAYIT-041](defter/KAYIT-041_2026-08-08_yerel-gpu-ve-mermi-cozulmemis.md).
 
-### A6 — FAZ 4.4 `--t-end` almıyor, `--steps` alıyor
+### A6 — FAZ 4.4 `--t-end` almıyor, `--steps` alıyor → **KAPANDI**
+
+*(Kural gereği yerinde bırakıldı; bkz. §2 sıkıntı 24.)*
 
 Kollar **farklı `t_sim`**'e ulaşıyor (`dt` farklı olduğu için). Farklı
 `t`'deki `β`'ları kıyaslamak yakınsama ölçmez, dolayısıyla **B1 ve B3
 hesaplanamadı**. Kusur değil, ölçüm tasarımının bilinen sınırı; sonraki
 koşuda düzeltilmeli.
+
+### A7 — **ADR-0043'ün `t₁ ≈ 1e-3 s` tahmini ölçümle çürüdü** (2026-08-08)
+
+ADR-0043 iki aşamalı çözünürlüğü *"mermiyi çözmek `%1`'e mal oluyor"*
+diye önerdi. O `%1`, `t₁ ≈ 1e-3 s` **varsayımına** dayanıyordu ve
+varsayım şuydu: mermi kendi çapını `1,22e-4 s`'de geçiyor, `1e-3 s`'de
+şok `4` mermi çapı yol alıyor, öyleyse bağlanma bitmiştir.
+
+Ölçüldü (`scripts/faz43c_baglanma_suresi.py`, `λ=19`, `A1 = 2,04`,
+`N = 11 871`, yerel RTX 3050):
+
+| büyüklük | değer |
+|---|---|
+| ölçüt | `u = \|⟨v⟩_mermi − ⟨v⟩_yakın hedef\| / v_çarpma` |
+| `u` (`t → 0`) | `0,791` |
+| `u` (`t = 2e-3 s`) | **`0,337`** |
+| durulma sınavı | **DÜŞTÜ** — eğilim `%8,56`, yarım-pencere `%4,79` (tol `%2`) |
+| `t₁` (ölçülen) | **`nan`** — pencerede durulma **yok** |
+
+> `1e-3 s`'de mermi hâlâ hedefe göre çarpma hızının **üçte biriyle**
+> gidiyor ve `u` **düşmeye devam ediyor**. Bağlanma bitmemiştir.
+
+**Sonucu doğrudan bedele vuruyor.** ADR-0043 §3'ün duyarlılık tablosu
+`t₁` ile **doğrusal**: `1e-2 s` → `+%9,9`, `1e-1 s` → `+%99`. `t₁`
+ölçülmeden §4'ün önerisi **savunulamaz**.
+
+**Durum:** `t₁`'i bulmak için `t_end = 5e-2 s` koşusu sürüyor (25 kat
+uzun). ADR-0043 `ÖNERİLDİ` kalıyor — zaten §7 bunu **kilit şartı**
+olarak yazmıştı, şart **işe yaradı**.
 
 ### A4 — `ileri_kosu`'nun GPU kısmı hiç koşulmadı
 
@@ -169,6 +200,23 @@ değişmez düşerse maliyet tablosu da yanlış olur.
 
 ---
 
+### 24 — kollar **farklı `t_sim`**'e ulaşıyordu (A6'nın kapanışı)
+
+| | |
+|---|---|
+| **belirti** | `s7_λ2`: A′ `t = 0,342 s`, tek-`h` `t = 0,694 s` |
+| **kök neden** | koşucu yalnızca `--steps` alıyordu; `dt ∝ h`, `h` kola göre değişiyor |
+| **etkisi** | `B1` ve `B3` **anlamsız** — farklı `t`'deki `β`'lar kıyaslanıyordu |
+| **düzeltme** | `--t-end`; son adım `dt = t_end − t_sim` ile **kırpılıyor** |
+| **ikinci savunma** | `esit_t_mi()`; kollar aynı `t`'de değilse `B1`/`B3` anahtarları **hiç yazılmıyor** |
+| **doğrulama** | ilk kol tam `t_sim = 2,0000e-01`'e oturdu; fikstür güncellenince 7 test düştü → koruma **çalışıyor** |
+
+> Yanlış bir sayı yazmaktansa *"koşulmadı"* demek doğrudur. İkinci
+> savunma tam bunun için: `--t-end` unutulursa kapı sessizce yanlış bir
+> `B1` üretmiyor.
+
+---
+
 ## 3. Kusurların **sınıflandırması**
 
 | sınıf | sayı | örnek |
@@ -191,15 +239,21 @@ Bunlar bir kez değil, **birden çok** kez oldu:
 
 | kalıp | kaç kez | karşı önlem |
 |---|---|---|
-| bir eşiği **ölçmeden** yazmak | **4** | eşik yazılmadan önce ölçülüyor |
+| bir eşiği **ölçmeden** yazmak | **5** | eşik yazılmadan önce ölçülüyor |
 | çalışma noktasını **içermeyen** aralıkta yargı | 2 (+2 önceki tur) | `judge` kapsam koruması |
 | aynı büyüklüğü **iki yerde** tanımlamak | 2 | tek kaynağa indirildi |
 | dönüş sözleşmesi değişince **tüketicileri denetlemem** | 2 | sistematik tarama |
 | **tutarsız** kurulum (yol, kodlama) | 2 | parametrize testler |
 
-> En sık kalıp: **ölçmeden yazmak.** **Dört** kez oldu ve dördünde de
-> ölçüm tahminimi çürüttü. Son örnek: *"RTX 3050 ~400× yavaş olur"*
-> dedim, ölçüm **2,85×** dedi.
+> En sık kalıp: **ölçmeden yazmak.** **Beş** kez oldu ve beşinde de
+> ölçüm tahminimi çürüttü. Son iki örnek: *"RTX 3050 ~400× yavaş olur"*
+> dedim, ölçüm **2,85×** dedi; *"`t₁ ≈ 1e-3 s` yeter"* dedim, ölçüm
+> `u = 0,337` ve **hâlâ düşüyor** dedi (A7).
+>
+> Bu ikisinin ortak yanı: ikisi de bir **fizik argümanından** türetildi
+> (mermi çapı / şok hızı, bellek bant genişliği) ve ikisi de makul
+> görünüyordu. Kalıp *"dikkatsizlik"* değil — **argümanın kendisi
+> ölçümün yerine geçemiyor.**
 
 ---
 
@@ -224,8 +278,9 @@ yaradığı görünmez:
 | büyüklük | değer |
 |---|---|
 | hata ayıklama turu | **15** |
-| kapanan sıkıntı | **23** |
-| açık sıkıntı | **6** (A5 karar, A6 kurulum, kalanı kota) |
+| kapanan sıkıntı | **24** |
+| açık sıkıntı | **6** (A5 + A7 karar, kalanı kota; A6 kapandı) |
 | **testlerin kör olduğu kusur** | **4** |
+| **tahminimi çürüten ölçüm** | **5** |
 | eklenen gerileme testi | **67** |
 | yerel test takımı | **954 geçti, 96 atlandı** (öncesi 912, ondan önce 898) |
