@@ -44,6 +44,7 @@ koşulardan gelir; iş numaraları yazılıdır.
 | **[036](KAYIT-036_2026-08-08_bosluk3-mukavemette-olculdu.md)** | 08.08 | **Boşluk 3 KISMEN kapandı** — mukavemette taşma **%0,0000**; gözeneklilikte **ölçülemedi** (kutu penceresi yok) |
 | **[037](KAYIT-037_2026-08-08_bosluk3-kapandi.md)** | 08.08 | **Boşluk 3 KAPANDI** — gözlenebilir değişti (iletilen momentum); A′ kazancın **%67,1**'ini, tek `h` **%9,1**'ini veriyor |
 | **[038](KAYIT-038_2026-08-08_kota-dolunca-kod-yazildi.md)** | 08.08 | **Kota doldu, kod yazıldı** — 4.4–4.7'nin kodu + 136 test; G4 eşikleri **ölçümden önce**; R4 kapandı |
+| **[039](KAYIT-039_2026-08-08_dokuz-turluk-hata-ayiklama.md)** | 08.08 | **9 tur hata ayıklama** — 9 kusur, **üçü testleri geçiyordu**; `prior_width` paydası, kenara çakılma, `None` çökmesi |
 
 > 017/018 numaraları kronolojiyle ters: 018 (2. tur) 017'den (3. tur) **önce**
 > yaşandı ama sonra yazıldı. Numaralar yazım sırasını, tablo yaşanma sırasını
