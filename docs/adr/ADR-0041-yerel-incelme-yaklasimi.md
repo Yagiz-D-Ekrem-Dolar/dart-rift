@@ -409,7 +409,11 @@ israf_genel ≈ f_ince · λ³ + (1 − f_ince) · 1
 
 1. `h` **parçacık başına** taşınır; çift etkileşimi **simetrik**
    `h_ij = ½(h_i + h_j)` biçimindedir (§3.3'te ölçülen en iyi şema).
-2. `Ω` (grad-h) düzeltmesi **uygulanır** — enerji tutarlılığı için.
+2. ~~`Ω` (grad-h) düzeltmesi **uygulanır** — enerji tutarlılığı için.~~
+   → **[ADR-0042](ADR-0042-h-sabittir-omega-birimdir.md) ile DEĞİŞTİRİLDİ:**
+   `h` zaman içinde **sabittir**, dolayısıyla `∂h/∂ρ = 0` ve **`Ω ≡ 1`**;
+   ayrı bir `Ω` kod yolu yoktur. Madde 4 (skaler yol bit korunur) bu
+   maddeyle **çelişiyordu**; çelişki ölçülerek çözüldü (KAYIT-035).
 3. **CPU referansı ve çapraz kontrol aynı commit'te gelir** (K1'in kök
    nedeni bu boşluktu).
 4. Skaler `h` yolu **bit düzeyinde korunur** — determinizm kilitli

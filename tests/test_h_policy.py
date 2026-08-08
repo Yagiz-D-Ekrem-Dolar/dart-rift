@@ -133,3 +133,24 @@ def test_n_listesi_gecersiz_salinimda_PATLIYOR() -> None:
 
     with pytest.raises(ValueError):
         n_sides_for_swing({"N_komsu_p01": 500.0, "N_komsu_p99": 100.0}, 0.03125)
+
+
+def test_ADR_0042_var_ve_ADR_0041_madde2_ISARETLENDI() -> None:
+    """Kilitli bir karar değiştiyse iz **belgede** olmalı, yalnızca kodda değil.
+
+    RULES.txt: kilitli karara sessiz değişiklik yok. Bu test o izin
+    silinmemesini garanti ediyor — ADR-0041 §5b madde 2 hem üstü çizili
+    kalmalı hem ADR-0042'ye işaret etmeli.
+    """
+    from pathlib import Path
+
+    kok = Path(__file__).resolve().parents[1] / "docs" / "adr"
+    yeni = kok / "ADR-0042-h-sabittir-omega-birimdir.md"
+    assert yeni.is_file(), "ADR-0042 bulunamadı"
+    m2 = yeni.read_text(encoding="utf-8")
+    assert "KABUL EDİLDİ" in m2 and "ADR-0041" in m2
+
+    eski = (kok / "ADR-0041-yerel-incelme-yaklasimi.md").read_text(encoding="utf-8")
+    assert "ADR-0042" in eski, "ADR-0041 halefine işaret etmiyor"
+    assert "~~`Ω` (grad-h) düzeltmesi **uygulanır**" in eski, \
+        "madde 2 üstü çizili değil — sessiz değişiklik"
