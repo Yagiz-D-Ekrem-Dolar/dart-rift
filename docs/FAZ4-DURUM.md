@@ -14,13 +14,42 @@
 | 4.3 | Uygulama + GPU doğrulama | ✔ | **✔** | KAYIT-034 |
 | 4.3b | `Ω` çelişkisi | ✔ | **✔** | KAYIT-035, ADR-0042 |
 | — | ADR-0041 §5 boşluk 3 | ✔ | **✔** | KAYIT-036, KAYIT-037 |
-| 4.4 | DART'ta çözünürlük yakınsaması | **✔** | ✘ | job 1460706 kuyrukta |
+| 4.4 | DART'ta çözünürlük yakınsaması | **✔** | **kısmen** | yerelde 4/6 kol; **A1 düştü** (§1b) |
 | 4.5 | Gereken simüle süre | **✔** | ✘ | `settling_time` + koşucu |
 | 4.6 | Sentetik kurtarma | **✔** | ✘ (kuru kip ✔) | `inference/` paketi |
 | 4.7 | G4 kapısı | **✔** | ✘ | `g4_gate` + kapı raporu |
 
 > **FAZ 4'ün kodu bitti; ölçümlerin dördü bitmedi.** 4.4–4.7 yazıldı,
 > yerelde sınandı, uçtan uca bağlandı — ama GPU'da **koşulmadı**.
+
+---
+
+## 1b. YEREL GPU — TRUBA bağımlılığı **kırıldı** (2026-08-08)
+
+Kota dolu ama yerelde bir GPU var ve **yeterli**:
+
+| | ölçülen |
+|---|---|
+| kart | RTX 3050 Laptop, 4 GiB, sm_86 |
+| adım maliyeti | `24 659 µs/1000 parçacık` (H200: `8 658`) |
+| **yavaşlık** | **`2,85×`** — tahminim `~400×` idi, **yanlıştı** |
+| atlanan GPU testleri | `test_adaptive_h_gpu` **4/4**, `test_solid_cross` **13/13** |
+
+FAZ 4.4 yerelde koşuldu (**4/6 kol**, son ikisi PC kapanacağı için elle
+durduruldu) ve **en önemli teknik bulguyu** verdi:
+
+### G4-A1 DÜŞTÜ — mermi çözülmemiş
+
+| kurulum | yerel aralık | **A1** | eşik |
+|---|---|---|---|
+| `s7_λ2` | 3,500 m | **0,215** | 2,0 |
+| `s7_λ3` | 2,333 m | **0,322** | 2,0 |
+| `s5_λ2` | 2,500 m | **0,300** | 2,0 |
+
+Gereken `λ = 18,6` (**6478:1**) — ölçülmüş her şeyin (`λ ≤ 3`) ötesinde.
+Bedeli `r_iç = 3 m` ile `96` GPU-günü ve **`9,3×`'i saf CFL**; tek
+global adımlı şemada **küçültülemez**.
+Ayrıntı: [KAYIT-041](defter/KAYIT-041_2026-08-08_yerel-gpu-ve-mermi-cozulmemis.md).
 
 ---
 
