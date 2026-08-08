@@ -36,7 +36,13 @@ def main() -> int:
     # N_komsu ~ (2h/dx)^3 ve dx ~ 2/n  =>  N_komsu ~ (h*n)^3
     h_sabit = float(sal["h"])
     print(f"\n[2] h = {h_sabit:.6g} SABIT, dx taraniyor", flush=True)
-    n_listesi = [40, 48, 56, 64, 72, 80]
+    # Taramanin OLCULEN salinimi (268 -> 551) KAPSAMASI gerekiyor.
+    # Nominal kurulumda h/dx = 2 sabittir, yani calisma noktasi her n'de
+    # N_komsu = (4/3)pi(2*2)^3 = 268. Ust ucu 551'e tasimak icin
+    # h/dx >= (551*3/4pi)^(1/3)/2 = 2.543  =>  n >= 64*1.27 = 81.4.
+    # Ilk kosuda ust uc n=80'de 524'te kaldi ve judge() dogru bicimde
+    # "belirsiz" dondu. n=84 ile kapaniyor.
+    n_listesi = [40, 48, 56, 64, 72, 84]
     satirlar = run_fixed_h_sweep(h_sabit, n_listesi, DEV)
     print(f"    {'n':>4s} {'N':>8s} {'N_komsu':>10s} {'r_olc':>10s} "
           f"{'hata':>9s}", flush=True)

@@ -59,16 +59,38 @@ def test_yargi_kapsamayan_aralikta_BELIRSIZ() -> None:
 
 def test_yargi_kapsayan_aralikta_KARAR_VERIR() -> None:
     """Tarama salınımı kapsıyorsa ve yayılım küçükse: sabit `h` yeterli."""
-    s = [{"r_measured": 0.25, "N_komsu": 10.0 * k} for k in (1, 2, 4)]
+    s = [{"r_measured": 0.25, "N_komsu": nk} for nk in (10.0, 15.0, 25.0, 40.0)]
     y = judge(s, swing={"N_komsu_p01": 12.0, "N_komsu_p99": 30.0})
     assert y["aralik_kapsiyor"] is True
+    assert y["calisma_nokta_sayisi"] == 2
     assert y["karar"] == "sabit_h_yeterli"
 
 
 def test_yargi_buyuk_yayilimda_UYARLAMALI_ISTER() -> None:
     """Plato kayıyorsa karar tersine döner — ölçüt gerçekten iki yönlü."""
-    s = [{"r_measured": r, "N_komsu": 10.0 * k}
-         for r, k in ((0.24, 1), (0.26, 2), (0.30, 4))]
+    s = [{"r_measured": r, "N_komsu": nk}
+         for r, nk in ((0.24, 10.0), (0.26, 15.0), (0.30, 25.0), (0.31, 40.0))]
     y = judge(s, swing={"N_komsu_p01": 12.0, "N_komsu_p99": 30.0})
     assert y["karar"] == "uyarlamali_h_gerekli"
     assert y["r_yayilim"] > 0.02
+
+
+def test_yargi_ARALIK_DISI_noktalar_yargiya_GIRMEZ() -> None:
+    """Çalışma aralığı dışındaki `dx` yakınsama hatası yargıyı **kirletmemeli**.
+
+    Gerçek ölçümde `n = 40` noktası `%16,17` hata veriyor ama `N_komşu = 65`
+    çalışma noktasının **çok altında**; oradaki hata `dx` yakınsamasıdır,
+    komşu sayısı duyarlılığı değil. Bu test onu kanıtlıyor: aralık dışı
+    nokta ne kadar sapkın olursa olsun karar değişmiyor.
+    """
+    ic_noktalar = [(0.250, 15.0), (0.251, 25.0)]
+    y_temiz = judge([{"r_measured": r, "N_komsu": nk} for r, nk in
+                     [(0.250, 10.0)] + ic_noktalar + [(0.251, 40.0)]],
+                    swing={"N_komsu_p01": 12.0, "N_komsu_p99": 30.0})
+    y_sapkin = judge([{"r_measured": r, "N_komsu": nk} for r, nk in
+                      [(0.100, 10.0)] + ic_noktalar + [(0.400, 40.0)]],
+                     swing={"N_komsu_p01": 12.0, "N_komsu_p99": 30.0})
+    assert y_temiz["karar"] == y_sapkin["karar"] == "sabit_h_yeterli"
+    assert y_temiz["r_yayilim"] == pytest.approx(y_sapkin["r_yayilim"])
+    # Ama TUM yayilim ikisinde FARKLI -- yani veri gercekten degisti.
+    assert y_sapkin["tum_yayilim"] > 10.0 * y_temiz["tum_yayilim"]

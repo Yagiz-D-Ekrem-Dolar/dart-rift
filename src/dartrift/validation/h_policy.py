@@ -45,9 +45,32 @@ onda birine iner. Soru şu: **doğruluk bu aralıkta değişiyor mu?**
 ölçtü ki platonun **yerini** `h` belirliyor. Dolayısıyla `h/dx` taraması bu
 soruyu **yanıtlamaz**.
 
-Ayırmanın tek yolu: **`h` sabit tutulup `dx` taranır.** O zaman çözülen
-ölçek sabittir, yalnızca `N_komşu ∝ (h/dx)³` değişir. Plato kırılıyorsa
-suçlu komşu sayısıdır.
+**`h` sabit tutulup `dx` taranır.** O zaman çözülen ölçek sabittir ve
+`N_komşu ∝ (h/dx)³` değişir.
+
+> ### ⚠ Bu tam bir ayrıştırma **değildir**
+>
+> İlk yazdığımda "yayılım varsa suçlu komşu sayısıdır" dedim. **Yanlış.**
+> Sabit `h`'de `dx`'i değiştirmek komşu sayısını **ve** ayrıklaştırma
+> hatasını aynı anda değiştirir — ikisi tek düğmedir, ayrılamazlar.
+> Ölçülen `n = 40…80` eğrisi (hata `%16,17 → %3,18`, hâlâ **düşüyor**)
+> bunu açıkça gösteriyor: sabit-`h` platosuna daha oturulmamış.
+>
+> **Ama ölçüm yine de sonuç veriyor** — çünkü aradığımız şey bir **üst
+> sınır**. Çalışma aralığında (`N_komşu` 268→551) ölçülen toplam yayılım
+> hem `dx` yakınsamasını hem komşu sayısını içerir; dolayısıyla komşu
+> sayısının **tek başına** payı bundan **küçüktür**. Toplam tolerans
+> altındaysa, parça da altındadır.
+>
+> Bu, ölçümü zayıflatmıyor; **yönünü** düzeltiyor. Yargı "komşu sayısı
+> etkisizdir" değil, "**etkisi şu üst sınırın altındadır**".
+
+Bir ikinci sınır daha yazılmalı: deney `N_komşu`'yu **koşular arasında,
+tekdüze** değiştiriyor; gerçek bir çarpışmada tek bir parçacığın komşu
+sayısı **zaman içinde** salınır. Bu birebir aynı şey değildir. Tekdüze
+2 katlık bir değişime duyarsızlık, yerel 2 katlık bir salınımın daha
+büyük bir etki yaratmayacağının **kesin kanıtı değil**, makul bir
+göstergesidir.
 
 `resolution_scaling`'in sabit-`h` kolu bunu **zaten** yapmıştı ama dar bir
 aralıkta: `n = 56…64`, yani `N_komşu` oranı yalnızca `(64/56)³ = 1,49×`.
@@ -107,7 +130,13 @@ def measure_density_swing(n_side: int, device: str, t_end: float | None = None,
     m0 = float(np.median(ic["m"]))
     sol = WarpSPH3D(ic["x"], ic["v"], ic["m"], ic["u"], h,
                     RefParams(gamma=GAMMA), device=device)
+    # `state_numpy()` yapicidan hemen sonra SIFIR yogunluk dondurur -- rho
+    # bir degerlendirme yapilmadan hesaplanmaz. Ilk kosumda bu atlandi ve
+    # `rho_ilk_ortanca = 0.0` raporlandi. Sifir bir olcum degildir.
+    sol._eval()
     rho0 = sol.state_numpy()["rho"].copy()
+    if float(np.median(rho0)) <= 0.0:
+        raise RuntimeError("baslangic yogunlugu sifir -- _eval() calismadi")
     diag = sol.run(t_end, max_steps=500_000)
     if diag["t_end"] < t_end * (1.0 - 1.0e-9):
         raise RuntimeError(
@@ -162,9 +191,14 @@ def judge(satirlar: list[dict], swing: dict | None = None,
           tol: float = 0.02) -> dict:
     """Plato `N_komşu` ile **kayıyor mu**?
 
-    Ölçüt: taranan aralıkta ölçülen yarıçapın **göreli yayılımı**. `h`
-    sabit olduğu için çözülen ölçek de sabittir; yayılım tümüyle komşu
-    sayısına atfedilir.
+    Ölçüt: **yalnızca çalışma aralığındaki** noktaların göreli yayılımı.
+    Aralık dışındaki noktalar (`N_komşu < p01`) eğriyi görmek için
+    koşulur ama yargıya **girmez** — orada baskın olan `dx` yakınsaması,
+    çalışma noktasında olmayan bir hatadır.
+
+    Yayılım bir **üst sınırdır**: `dx` yakınsaması ile komşu sayısı bu
+    deneyde ayrılamaz (modül başlığındaki uyarı). Toplam tolerans
+    altındaysa komşu sayısının payı da altındadır.
 
     `swing` verilirse, taramanın gerçek salınımı **kapsayıp kapsamadığı**
     da raporlanır — kapsamıyorsa yargı `belirsiz`dir (KAYIT-029/033'ün
@@ -174,20 +208,38 @@ def judge(satirlar: list[dict], swing: dict | None = None,
         return {"karar": "belirsiz", "neden": "en az 3 nokta gerekir"}
     r = np.array([s["r_measured"] for s in satirlar], dtype=np.float64)
     nk = np.array([s["N_komsu"] for s in satirlar], dtype=np.float64)
-    yayilim = float((r.max() - r.min()) / np.median(r))
     sonuc = {"N_komsu_min": float(nk.min()), "N_komsu_max": float(nk.max()),
              "N_komsu_orani": float(nk.max() / nk.min()),
-             "r_yayilim": yayilim, "tol": float(tol),
-             "sabit_h_yeterli": bool(yayilim < tol)}
-    if swing is not None:
-        gerekli = (swing["N_komsu_p01"], swing["N_komsu_p99"])
-        kapsiyor = (nk.min() <= gerekli[0]) and (nk.max() >= gerekli[1])
-        sonuc["gereken_N_komsu"] = [float(gerekli[0]), float(gerekli[1])]
-        sonuc["aralik_kapsiyor"] = bool(kapsiyor)
-        if not kapsiyor:
-            sonuc["karar"] = "belirsiz"
-            sonuc["neden"] = ("tarama gercek salinimi KAPSAMIYOR; "
-                              "calisma noktasi disinda yargi kurulmaz")
-            return sonuc
+             "tum_yayilim": float((r.max() - r.min()) / np.median(r)),
+             "tol": float(tol)}
+    if swing is None:
+        sonuc["r_yayilim"] = sonuc["tum_yayilim"]
+        sonuc["karar"] = ("sabit_h_yeterli" if sonuc["r_yayilim"] < tol
+                          else "uyarlamali_h_gerekli")
+        sonuc["sabit_h_yeterli"] = bool(sonuc["r_yayilim"] < tol)
+        return sonuc
+
+    alt, ust = float(swing["N_komsu_p01"]), float(swing["N_komsu_p99"])
+    kapsiyor = (nk.min() <= alt) and (nk.max() >= ust)
+    sonuc["gereken_N_komsu"] = [alt, ust]
+    sonuc["aralik_kapsiyor"] = bool(kapsiyor)
+    if not kapsiyor:
+        sonuc["karar"] = "belirsiz"
+        sonuc["neden"] = ("tarama gercek salinimi KAPSAMIYOR; "
+                          "calisma noktasi disinda yargi kurulmaz")
+        return sonuc
+
+    # Yargi YALNIZCA calisma araligindaki noktalardan kurulur.
+    ic = (nk >= alt) & (nk <= ust)
+    if int(ic.sum()) < 2:
+        sonuc["karar"] = "belirsiz"
+        sonuc["neden"] = (f"calisma araliginda yalnizca {int(ic.sum())} nokta "
+                          f"var; en az 2 gerekir")
+        return sonuc
+    r_ic = r[ic]
+    yayilim = float((r_ic.max() - r_ic.min()) / np.median(r_ic))
+    sonuc["calisma_nokta_sayisi"] = int(ic.sum())
+    sonuc["r_yayilim"] = yayilim
+    sonuc["sabit_h_yeterli"] = bool(yayilim < tol)
     sonuc["karar"] = "sabit_h_yeterli" if yayilim < tol else "uyarlamali_h_gerekli"
     return sonuc
