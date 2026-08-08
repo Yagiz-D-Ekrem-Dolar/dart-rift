@@ -160,6 +160,10 @@ def main() -> int:
     # zayif halkadan gecer).
     a2_carpani = float("inf")
     a3_sapma = 0.0
+    # TANILAR (olcut DEGIL, kapi raporunda ayrica listelenir): dikisin
+    # EN KOTU orani ve tasarrufun EN KOTUSU.
+    dikis_oran = float("inf")
+    tasarruf_min = float("inf")
 
     for s_kaba, lam in ((7.0, 2), (7.0, 3), (5.0, 2)):
         s_ince = s_kaba / lam
@@ -173,6 +177,8 @@ def main() -> int:
         r_mermi = _mermi_yaricapi(rs.x, rs.is_impactor)
         a2_carpani = min(a2_carpani, a.r_ince / max(r_mermi, 1e-300))
         a3_sapma = max(a3_sapma, rs.diagnostics["hedef_kutle_sapmasi"])
+        dikis_oran = min(dikis_oran, rs.diagnostics["dikis_en_yakin_oran"])
+        tasarruf_min = min(tasarruf_min, rs.diagnostics["tasarruf"])
         print(f"    tasarruf {rs.diagnostics['tasarruf']:.2f}x, "
               f"kutle sapmasi {rs.diagnostics['hedef_kutle_sapmasi']:.3e}, "
               f"r_ince/R_mermi {a.r_ince / max(r_mermi, 1e-300):.2f}",
@@ -190,13 +196,16 @@ def main() -> int:
     ham = {"r_ince": a.r_ince, "steps": a.steps,
            "A2_r_ince_carpani": a2_carpani,
            "A3_kutle_sapmasi": a3_sapma,
+           "dikis_en_yakin_oran": dikis_oran,
+           "tasarruf": tasarruf_min,
            "sonuclar": sonuclar}
     ham.update(faz44_ozet(ham))
     Path(a.out).write_text(json.dumps(ham, indent=2))
     print(f"\nyazildi: {a.out}", flush=True)
     print("\nG4 ANAHTARLARI", flush=True)
     for k in ("A1_mermi_parcacik_cap", "A2_r_ince_carpani", "A3_kutle_sapmasi",
-              "B1_beta_farki", "B3_Aprime_daha_yakin"):
+              "B1_beta_farki", "B3_Aprime_daha_yakin",
+              "dikis_en_yakin_oran", "tasarruf"):
         print(f"    {k:26s} = {ham.get(k, 'KOSULMADI')}", flush=True)
 
     print("\nOZET", flush=True)

@@ -183,3 +183,36 @@ def test_sayiya_cevrilemeyen_deger_KOSULMADI() -> None:
     for bozuk in ("evet", [1.0], {"a": 1}, None):
         r = degerlendir(dict(TAM_44, B1_beta_farki=bozuk), TAM_45, TAM_46)
         assert "B1" in r.kosulmayanlar, bozuk
+
+
+def test_TANILAR_olcut_DEGIL_ama_raporda_var() -> None:
+    """Ölçümden sonra ölçülen bir büyüklük **ölçüt yapılmaz** (ADR-0040).
+
+    Ama bilgi de gizlenmez: dikiş oranı ve tasarruf raporda görünüyor ve
+    yanında *"ölçüt değil"* yazıyor.
+    """
+    o44 = dict(TAM_44, dikis_en_yakin_oran=0.6521, tasarruf=6.87)
+    r = degerlendir(o44, TAM_45, TAM_46)
+    assert r.tanilar == {"dikis_en_yakin_oran": 0.6521, "tasarruf": 6.87}
+    # Tani DUSUK olsa BILE kapiyi etkilememeli -- olcut degil.
+    r2 = degerlendir(dict(o44, dikis_en_yakin_oran=0.05), TAM_45, TAM_46)
+    assert r2.gecti is True, "tani kapiyi etkiledi -- olcut olmus"
+    assert r2.dusenler == []
+    m = r2.markdown()
+    assert "ölçüt değil" in m
+    assert "0.05" in m
+
+
+def test_TANILAR_yoksa_bolum_YAZILMIYOR() -> None:
+    """Boş bir tanı tablosu yazmak gürültüdür."""
+    m = degerlendir(TAM_44, TAM_45, TAM_46).markdown()
+    assert "Tanılar" not in m
+
+
+def test_kosucu_TANILARI_ust_duzeye_yaziyor() -> None:
+    from pathlib import Path
+
+    kaynak = (Path(__file__).resolve().parents[1] / "scripts" /
+              "faz44_dart_yakinsama.py").read_text(encoding="utf-8")
+    for k in ("dikis_en_yakin_oran", "tasarruf"):
+        assert f'"{k}": ' in kaynak, k

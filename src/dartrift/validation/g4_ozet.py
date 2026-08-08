@@ -65,9 +65,11 @@ def faz44_ozet(ham: dict) -> dict:
     if a1:
         out["A1_mermi_parcacik_cap"] = float(min(a1))
 
-    # --- A2 / A3: gecerliyse tepe duzeyde tasinir.
+    # --- A2 / A3 ve TANILAR: gecerliyse tepe duzeyde tasinir.
     for anahtar, kaynak in (("A2_r_ince_carpani", "A2_r_ince_carpani"),
-                            ("A3_kutle_sapmasi", "A3_kutle_sapmasi")):
+                            ("A3_kutle_sapmasi", "A3_kutle_sapmasi"),
+                            ("dikis_en_yakin_oran", "dikis_en_yakin_oran"),
+                            ("tasarruf", "tasarruf")):
         if kaynak in ham and np.isfinite(ham[kaynak]):
             out[anahtar] = float(ham[kaynak])
 

@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-__all__ = ["Olcut", "G4Rapor", "degerlendir", "KOSULLU_KABULLER",
+__all__ = ["Olcut", "G4Rapor", "degerlendir", "KOSULLU_KABULLER", "TANILAR",
            "A1_MERMI_PARCACIK", "A2_R_INCE_CARPANI", "A3_KUTLE_SAPMASI",
            "B1_BETA_FARKI", "B4_ENERJI_EGIM"]
 
@@ -81,11 +81,29 @@ class Olcut:
                 f"{self.esik:g}` | `{d}` | **{self.durum}** |")
 
 
+#: Raporlanan ama **ölçüt olmayan** büyüklükler.
+#:
+#: G4-OLCUTLERI.md ölçümden **önce** yazıldı ve eşikleri kilitli. Sonradan
+#: ölçülen bir büyüklüğü ölçüt yapmak o ön-kaydı bozar (ADR-0040). Ama
+#: bilgiyi gizlemek de doğru değil: kapı raporunu okuyan bunları
+#: **görmeli** ve ölçüt olmadıklarını bilmeli.
+TANILAR = {
+    "dikis_en_yakin_oran": (
+        "A′ dikişinde en yakın komşu / ince aralık",
+        "0,5'in altı gözden geçirme gerektirir (KAYIT-039 §2'de ölçülen: 0,6521)"),
+    "tasarruf": (
+        "A′'nın parçacık tasarrufu (her yeri inceltmeye göre)",
+        "yüksek olması iyi; ölçülen 6,87× (s = 7,0/3,5, r_iç = 25)"),
+}
+
+
 @dataclass(frozen=True)
 class G4Rapor:
     a: list = field(default_factory=list)
     b: list = field(default_factory=list)
     c: list = field(default_factory=list)
+    #: {anahtar: değer} — ölçüt DEĞİL, yalnızca raporlanır.
+    tanilar: dict = field(default_factory=dict)
 
     def _parca(self, ol: list) -> bool:
         return bool(ol) and all(o.gecti for o in ol)
@@ -141,6 +159,17 @@ class G4Rapor:
                   "| # | ölçüt | eşik | ölçülen | durum |",
                   "|---|---|---|---|---|"]
             p += [o.satir() for o in ol]
+            p.append("")
+        if self.tanilar:
+            p += ["## Tanılar — **ölçüt değil**", "",
+                  "> Bunlar ölçüldü ama G4'ün geçme koşulu **değil**. "
+                  "Ölçütler ölçümden önce yazıldı ve sonradan eklenmiyor "
+                  "(ADR-0040); bilgi ise gizlenmiyor.", "",
+                  "| büyüklük | ölçülen | yorum |", "|---|---|---|"]
+            for k, v in sorted(self.tanilar.items()):
+                ad, yorum = TANILAR.get(k, (k, ""))
+                d = "—" if v is None else f"{v:.6g}"
+                p.append(f"| {ad} | `{d}` | {yorum} |")
             p.append("")
         p += ["## Koşullu kabuller", "",
               "> Kapı geçse **bile** bunlar açık kalır.", ""]
@@ -237,8 +266,10 @@ def degerlendir(faz44: dict | None = None, faz45: dict | None = None,
         Olcut("C3", "gürültüyle genişleme (1 = evet)",
               _al(faz46, "c3_gecti"), 1.0, ">="),
     ]
+    tanilar = {k: _al(faz44, k) for k in TANILAR}
+    tanilar = {k: v for k, v in tanilar.items() if v is not None}
     # KURU KIP bir kanit DEGILDIR: G4-C olcutleri kosulmamis sayilir.
     if faz46 is not None and bool(faz46.get("kuru", False)):
         c = [Olcut(o.kimlik, o.aciklama + " *(kuru kip — sayılmaz)*",
                    None, o.esik, o.yon) for o in c]
-    return G4Rapor(a=a, b=b, c=c)
+    return G4Rapor(a=a, b=b, c=c, tanilar=tanilar)
