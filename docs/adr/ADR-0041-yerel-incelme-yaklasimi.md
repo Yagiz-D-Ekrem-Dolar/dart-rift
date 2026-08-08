@@ -396,6 +396,26 @@ israf_genel ≈ f_ince · λ³ + (1 − f_ince) · 1
 3. **A′'nın bedeli küçüldü** (§3.11): çok seviyeli komşu arama **ön koşul
    değil**; DART rejiminde tek ızgara kazancın %76–93'ünü veriyor.
 
+### Sonradan eklenen ÜÇÜNCÜ kefe — ensemble bütçesi (2026-08-08)
+
+Karar verilirken gerekçe iki maddeydi: *"model-form hatası yok"* ve
+*"DART rejiminde 19,6× ucuz"* (KAYIT-033). Üçüncüsü sonradan hesaplandı
+([KAYIT-040](../defter/KAYIT-040_2026-08-08_ensemble-fizibilitesi-A-prime-ile.md)):
+
+**FAZ 5 ensemble'ı (300 koşu × 1 s):**
+
+| kurulum | GPU-günü | `~30` günlük bütçeye sığıyor mu | kullanılabilir mi |
+|---|---|---|---|
+| tekdüze kaba | 4,51 | evet | **hayır** — mermi çözülmemiş (ADR-0026) |
+| **A′** | **9,73** | **evet** | **evet** |
+| tekdüze ince | 66,85 | **hayır** | evet |
+
+> **A′, çözülmüş mermili bir ensemble'ı mümkün kılan tek seçenek.**
+
+Bu, kararı **değiştirmiyor** — A′ zaten seçilmişti. Ama gerekçeyi
+güçlendiriyor ve bu kefe karar anında **boştu**, sonradan doldu.
+`dt` cezası (`h` yarıya inince CFL de yarıya) hesaba **katılmıştır**.
+
 ### Açıkça kabul edilen bedel
 
 - **Arayüzde 3,2–6,5 kat yapay kuvvet.** `Ω` düzeltmesi kurtarmıyor (§3.3).

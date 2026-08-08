@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-08 · **Kapanan:** 20 · **Açık:** 4
+**Son güncelleme:** 2026-08-08 · **Kapanan:** 21 · **Açık:** 4
 
 ---
 
@@ -103,6 +103,31 @@ GPU'suz sınanıyor) ama sıfırlanamadı.
 > koşulmamış sayılıyordu.** Ve tamamen sessizdi — kapı zaten geçmiyor,
 > yani fazla iki kalem kimsenin dikkatini çekmezdi.
 
+### Değişmez boşluğu (21) — kusur **değil**, sınanmamış varsayım
+
+| # | sıkıntı | bulgu | ne yapıldı |
+|---|---|---|---|
+| 21 | `dt` **en küçük** `h` ile mi belirleniyor — **sınanmıyordu** | kod **doğru** (`_h_np` dizi, global `min`) | CPU'da 4 test; ölçüldü |
+
+Bu bir kusur değil ama **sessiz bir risk**: biri `_h_np`'yi `self.h`'ye
+(skaler `max`) çevirse A′'da ince parçacıklar CFL'yi **ihlal ederdi** ve
+kararsızlık **birikerek** gelirdi — hemen patlamaz.
+
+Ölçülen (CPU referansı, `n = 216`):
+
+| kurulum | `dt` |
+|---|---|
+| `h = 2,6` tekdüze | `5,132e-05` |
+| `h = 1,3` tekdüze | `2,566e-05` (oran **tam 2,000**) |
+| karışık (yarısı ince) | **`2,566e-05`** — **ince** değere oturuyor |
+| **tek** parçacık `h = 0,65` | **`1,284e-05`** — dörtte bir |
+
+> Son satır `min`'in gerçekten **global** olduğunu gösteriyor: ortalama
+> alınıyor olsaydı tek parçacık `dt`'yi kayda değer düşürmezdi.
+
+`ensemble_cost`'un `dt_kaba/λ` varsayımı **bu** ölçümden geliyor;
+değişmez düşerse maliyet tablosu da yanlış olur.
+
 ### Dayanıklılık (19–20)
 
 | # | sıkıntı | risk | ne yapıldı |
@@ -121,8 +146,9 @@ GPU'suz sınanıyor) ama sıfırlanamadı.
 | dayanıklılık / portabilite | 3 | sabit yol, UTF-8, JSON |
 | fizik kurulumu | 3 | enerji mertebesi, yığın yoğunluğu |
 | süreç | 2 | doğrulanmayan değiştirme, atlanan test |
+| sınanmamış değişmez | 1 | `dt` en küçük `h` ile mi |
 
-> **Yirmi kusurun tamamı benim ölçüm düzeneğimde ya da yeni yazdığım
+> **Yirmi bir kusurun tamamı benim ölçüm düzeneğimde ya da yeni yazdığım
 > kodda.** Hiçbiri SPH çözücüsünde değil.
 
 ---
@@ -164,9 +190,9 @@ yaradığı görünmez:
 
 | büyüklük | değer |
 |---|---|
-| hata ayıklama turu | **12** |
-| kapanan sıkıntı | **20** |
+| hata ayıklama turu | **13** |
+| kapanan sıkıntı | **21** |
 | açık sıkıntı | **4** (üçü kotaya bağlı) |
 | **testlerin kör olduğu kusur** | **4** |
-| eklenen gerileme testi | **42** |
+| eklenen gerileme testi | **57** |
 | yerel test takımı | **954 geçti, 96 atlandı** (öncesi 912, ondan önce 898) |
