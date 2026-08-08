@@ -96,3 +96,56 @@ def test_FARKLI_TOHUM_reddediliyor() -> None:
     ince = build_scene(spacing=3.5, **kw2)
     with pytest.raises(ValueError, match="çarpma noktası"):
         refine_scene(kaba, ince, r_ince=25.0)
+
+
+def test_dikis_kalitesi_OLCULUYOR(sahneler) -> None:
+    """Dikişte parçacıklar ince aralıktan **daha yakın** olabilir.
+
+    Ölçüldü: `2,2824 m`, yani ince aralığın (`3,5`) `%65`'i. Bu bir
+    kurgu değil — iki farklı aralıklı kafes küresel bir sınırda
+    buluşunca kaçınılmaz. Gizlenmiyor, raporlanıyor.
+    """
+    kaba, ince = sahneler
+    d = refine_scene(kaba, ince, r_ince=25.0).diagnostics["dikis"]
+    assert d["n_kusak"] > 100
+    assert 0.5 < d["en_yakin_oran"] < 1.0, d
+    # Ince bolgenin KENDI icinde boyle bir yakinlasma YOK -- dikise ozgu.
+    assert d["en_yakin"] < ince.spacing
+
+
+def test_dikis_orani_YARICAPTAN_bagimsiz(sahneler) -> None:
+    """Aynı oran her `r_ince`'de çıkıyorsa bu **sistematik** bir özellik.
+
+    Rastgele bir sınır artefaktı olsaydı yarıçapla oynardı. Üç yarıçapta
+    da `2,2824` çıkması, iki FCC kafesinin iç içe geçme biçiminden
+    geldiğini gösteriyor.
+    """
+    kaba, ince = sahneler
+    o = [refine_scene(kaba, ince, r_ince=r).diagnostics["dikis_en_yakin_oran"]
+         for r in (15.0, 25.0, 40.0)]
+    assert max(o) - min(o) < 1e-9, o
+
+
+def test_dikis_TEHLIKELI_durumu_yakalar() -> None:
+    """Pozitif kontrol: ölçüt gerçekten küçük bir oran raporlayabiliyor mu?
+
+    Bir ölçütün *"iyi"* dediği her yerde iyi olması, ölçütün **boş**
+    olduğu anlamına da gelebilir. Elle çakışan bir çift konuyor.
+    """
+    from dartrift.setup.refine import _dikis_kalitesi
+
+    x = np.array([[25.0, 0.0, 0.0], [25.02, 0.0, 0.0],
+                  [22.0, 0.0, 0.0], [28.0, 0.0, 0.0]])
+    d = _dikis_kalitesi(x, np.zeros(3), 25.0, s_kaba=7.0, s_ince=3.5)
+    assert d["en_yakin"] == pytest.approx(0.02, abs=1e-9)
+    assert d["en_yakin_oran"] < 0.5, "tehlike esigi altinda raporlanmali"
+
+
+def test_dikis_BOS_kusakta_olculemedi_diyor(sahneler) -> None:
+    """Sayı uydurmaktansa "ölçülemedi" demek doğrudur."""
+    from dartrift.setup.refine import _dikis_kalitesi
+
+    d = _dikis_kalitesi(np.zeros((0, 3)), np.zeros(3), 25.0, 7.0, 3.5)
+    assert d["n_kusak"] == 0
+    assert np.isnan(d["en_yakin_oran"])
+    assert "ölçülemedi" in d["not"]

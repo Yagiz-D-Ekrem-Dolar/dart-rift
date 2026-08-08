@@ -77,6 +77,50 @@ class RefinedScene:
         return np.sum(self.m[s, None] * self.v[s], axis=0)
 
 
+def _dikis_kalitesi(x, mp, r_ince: float, s_kaba: float,
+                    s_ince: float) -> dict:
+    """Dikişte parçacıklar birbirine **ne kadar** yaklaşıyor?
+
+    ## Neden ölçülmeli
+
+    İki farklı aralıklı kafes küresel bir sınırda buluşuyor. Sınır
+    hiçbir kafesin düğümlerine oturmadığı için **ikisinin de kendi
+    aralığından daha yakın** çiftler oluşabilir. Çok yakın bir çift SPH'de
+    büyük bir itme kuvveti ve yerel bir yoğunluk sıçraması demektir.
+
+    Ölçüldü (`s = 7,0/3,5`, `r_iç = 25`, kuşakta 699 parçacık):
+
+    | bölge | en yakın komşu (min) | ortanca |
+    |---|---|---|
+    | ince iç (`d < 20`) | 3,5000 | 3,5000 |
+    | **dikiş kuşağı** | **2,2824** | 3,5000 |
+    | kaba dış (`d > 32`) | 7,0000 | 7,0000 |
+
+    Yani dikişte en yakın yaklaşma ince aralığın **`%65`**'i. Tehlikeli
+    değil (`h_ince = 2·s = 7 m`, yani düzleştirme uzunluğunun üçte biri)
+    ama **sıfır da değil** ve gizlenmemeli.
+
+    Dönen `en_yakin_oran` bu sayıdır: `min(d) / s_ince`. `0,5`'in altına
+    inerse kurulum gözden geçirilmelidir — o noktada çift, ince kafesin
+    komşu mesafesinin yarısından yakındır.
+    """
+    d = np.linalg.norm(x - np.asarray(mp)[None, :], axis=1)
+    kus = (d > r_ince - s_kaba) & (d < r_ince + s_kaba)
+    n = int(kus.sum())
+    if n < 2:
+        return {"n_kusak": n, "en_yakin": float("nan"),
+                "en_yakin_oran": float("nan"),
+                "not": "dikiş kuşağında 2'den az parçacık — ölçülemedi"}
+    xk = x[kus]
+    # Kusak kucuk (yuzlerce); O(n^2) kabul edilebilir ve dis bagimlilik yok.
+    D = np.linalg.norm(xk[:, None, :] - xk[None, :, :], axis=2)
+    np.fill_diagonal(D, np.inf)
+    en_yakin = float(D.min())
+    return {"n_kusak": n, "en_yakin": en_yakin,
+            "en_yakin_oran": en_yakin / max(s_ince, 1e-300),
+            "s_ince": s_ince, "kusak": [r_ince - s_kaba, r_ince + s_kaba]}
+
+
 def refine_scene(kaba, ince, r_ince: float) -> RefinedScene:
     """Kaba ve ince sahneyi **çarpma noktası çevresinde** birleştir.
 
@@ -142,6 +186,10 @@ def refine_scene(kaba, ince, r_ince: float) -> RefinedScene:
     m_kaba = float(np.sum(kaba.m[k_hedef]))
     sapma = abs(m_yeni - m_kaba) / m_kaba
 
+    x_yeni = _al("x")
+    dikis = _dikis_kalitesi(x_yeni[~is_imp], mp, r_ince,
+                            float(kaba.spacing), float(ince.spacing))
+
     return RefinedScene(
         x=_al("x"), v=_al("v"), m=_al("m"), alpha0=_al("alpha0"),
         Y0=_al("Y0"), h=h, is_impactor=is_imp, is_boulder=_al("is_boulder"),
@@ -160,6 +208,10 @@ def refine_scene(kaba, ince, r_ince: float) -> RefinedScene:
             "tasarruf": float((int(np.count_nonzero(i_hedef)) + n_m)
                               / max(n_i + n_k + n_m, 1)),
             "hedef_kutle_sapmasi": sapma,
+            # DIKIS KALITESI: iki kafesin bulustugu yerde parcaciklar
+            # birbirine ne kadar yaklasiyor? Olculur, varsayilmaz.
+            "dikis": dikis,
+            "dikis_en_yakin_oran": dikis["en_yakin_oran"],
             "h_min": float(h.min()), "h_max": float(h.max()),
         },
     )
