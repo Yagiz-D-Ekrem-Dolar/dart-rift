@@ -33,6 +33,16 @@ import numpy as np
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
+# Cikti UTF-8'e sabitleniyor: baslıklarda `—` ve `A′` geciyor ve bir
+# raporlama betiginin UnicodeEncodeError ile dusmesi raporu yok eder.
+# SLURM isi PYTHONIOENCODING=utf-8 veriyor ama betik ELLE de kosulabilir.
+for _akis in (sys.stdout, sys.stderr):
+    try:
+        _akis.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
+
 from dartrift.inference.design import (DART_UZAYI, factorial_design,  # noqa: E402
                                        lhs_design)
 from dartrift.inference.forward import GOZLENEBILIRLER  # noqa: E402

@@ -19,6 +19,16 @@ from pathlib import Path  # noqa: E402
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
+# Cikti UTF-8'e sabitleniyor: baslıklarda `—` ve `A′` geciyor ve bir
+# raporlama betiginin UnicodeEncodeError ile dusmesi raporu yok eder.
+# SLURM isi PYTHONIOENCODING=utf-8 veriyor ama betik ELLE de kosulabilir.
+for _akis in (sys.stdout, sys.stderr):
+    try:
+        _akis.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
+
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
 from dartrift.validation.solid_interface import (  # noqa: E402
     BASALT_SOLID, CEPHE_ESIKLERI, E_ENJEKTE, H_OVER_DX, KUTU, RHO0,

@@ -47,3 +47,16 @@ def test_zincir_betigi_TUM_adimlari_cagiriyor() -> None:
         assert ad in z, ad
     # `set -e` OLMAMALI: bir adim duserse kalanlar da kosmali.
     assert "set -e" not in z.replace("set -u", "")
+
+
+@pytest.mark.parametrize("p", KOSUCULAR, ids=lambda p: p.name)
+def test_UTF8_korumasi_var(p: Path) -> None:
+    """Başlıklarda `—` ve `A′` geçiyor; cp1254 konsolda çökerdi.
+
+    Gerçekten oldu: `faz47_g4_kapi.py` `UnicodeEncodeError` ile düştü ve
+    ürettiği raporu yok etti. SLURM işi `PYTHONIOENCODING=utf-8` veriyor
+    ama betikler **elle** de koşulabilir.
+    """
+    kaynak = p.read_text(encoding="utf-8")
+    assert "_akis.reconfigure" in kaynak, (
+        f"{p.name} UTF-8 korumasi icermiyor")
