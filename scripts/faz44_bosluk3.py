@@ -16,7 +16,7 @@ import sys
 sys.path.insert(0, "/arf/scratch/egitimg16/driftclaude/dart-rift/src")
 
 from dartrift.validation.solid_interface import (  # noqa: E402
-    BASALT_SOLID, _malzeme, calibrate_t_end, run_solid_interface)
+    BASALT_SOLID, _malzeme, run_solid_interface)
 
 DEV = "cuda:0"
 N_KABA = 32
@@ -31,6 +31,7 @@ def _yaz(y: dict) -> None:
     print(f"    iki bolgeli r            = {y['iki_bolgeli']['r_measured']:.6f}",
           flush=True)
     print(f"    TASMA                    = {y['tasma_rel']:.4%}", flush=True)
+    print(f"    esik yargilari           = {y.get('esik_yargilari')}", flush=True)
     print(f"    kollar ayirt edilebilir  = {y['kollar_ayirt_edilebilir']}",
           flush=True)
     print(f"    enerji esit              = {y['enerji_esit']}", flush=True)
@@ -81,8 +82,7 @@ def main() -> int:
         sonuclar[ad] = yk
 
     with open("/arf/scratch/egitimg16/driftclaude/faz44_sonuc.json", "w") as f:
-        json.dump({"t_end": t_end, "kalibrasyon": kal, "sonuclar": sonuclar},
-                  f, indent=2)
+        json.dump({"t_end": t_end, "sonuclar": sonuclar}, f, indent=2)
     print("\nyazildi: faz44_sonuc.json", flush=True)
 
     print("\n[5] OZET", flush=True)
