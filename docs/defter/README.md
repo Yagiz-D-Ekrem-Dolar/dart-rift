@@ -45,6 +45,7 @@ koşulardan gelir; iş numaraları yazılıdır.
 | **[037](KAYIT-037_2026-08-08_bosluk3-kapandi.md)** | 08.08 | **Boşluk 3 KAPANDI** — gözlenebilir değişti (iletilen momentum); A′ kazancın **%67,1**'ini, tek `h` **%9,1**'ini veriyor |
 | **[038](KAYIT-038_2026-08-08_kota-dolunca-kod-yazildi.md)** | 08.08 | **Kota doldu, kod yazıldı** — 4.4–4.7'nin kodu + 136 test; G4 eşikleri **ölçümden önce**; R4 kapandı |
 | **[039](KAYIT-039_2026-08-08_dokuz-turluk-hata-ayiklama.md)** | 08.08 | **11 tur hata ayıklama** — 11 kusur, **dördü testleri geçiyordu**; `prior_width` paydası, kenara çakılma, `None` çökmesi, numpy tipleri |
+| **[040](KAYIT-040_2026-08-08_ensemble-fizibilitesi-A-prime-ile.md)** | 08.08 | **A′ ensemble'ı mümkün kılıyor** — 1 s için A′ **9,73** GPU-günü, tekdüze ince **66,85**; `~30` günlük bütçeye yalnızca A′ sığıyor |
 
 > 017/018 numaraları kronolojiyle ters: 018 (2. tur) 017'den (3. tur) **önce**
 > yaşandı ama sonra yazıldı. Numaralar yazım sırasını, tablo yaşanma sırasını
