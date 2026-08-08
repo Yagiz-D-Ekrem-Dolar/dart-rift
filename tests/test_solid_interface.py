@@ -4,10 +4,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.validation.solid_interface import (BASALT_SOLID, KUTU, RHO0,
-                                                 _malzeme, _sok_yaricapi,
+from dartrift.validation.solid_interface import (BASALT_SOLID, CEPHE_ESIKLERI,
+                                                 KUTU, RHO0, _malzeme,
                                                  build_two_zone_solid_ic,
-                                                 judge)
+                                                 cephe_yaricapi, judge)
 
 
 def _uc_kol(n=16, lam=2, r_ic=0.15, per_particle_h=True):
@@ -72,17 +72,39 @@ def test_gecersiz_girdiler_REDDEDILIYOR() -> None:
         build_two_zone_solid_ic(16, 2, 0.001, 0.125)   # ince bölge boş
 
 
-def test_sok_yaricapi_sikismamis_ise_PATLIYOR() -> None:
-    """Sessizce `0.0` dönmek, "şok yok"u "şok merkezde" diye raporlardı."""
+def test_cephe_hicbiri_HAREKET_ETMIYORSA_patliyor() -> None:
+    """Sessizce `0.0` dönmek, "cephe yok"u "cephe merkezde" diye raporlardı."""
     x = np.array([[0.1, 0.0, 0.0], [0.2, 0.0, 0.0]])
     with pytest.raises(RuntimeError):
-        _sok_yaricapi(x, np.array([RHO0, RHO0]))
+        cephe_yaricapi(x, np.zeros_like(x), 0.02)
 
 
-def test_sok_yaricapi_EN_DIS_sikisani_buluyor() -> None:
+def test_cephe_EN_DIS_hareketliyi_buluyor() -> None:
     x = np.array([[0.1, 0.0, 0.0], [0.3, 0.0, 0.0], [0.4, 0.0, 0.0]])
-    rho = np.array([2.0 * RHO0, 2.0 * RHO0, RHO0])
-    assert _sok_yaricapi(x, rho) == pytest.approx(0.3)
+    v = np.array([[100.0, 0, 0], [10.0, 0, 0], [0.1, 0, 0]])
+    # max|v| = 100; kesir 0.02 -> esik 2.0 -> ilk ikisi gecer, ucuncusu hayir
+    assert cephe_yaricapi(x, v, 0.02) == pytest.approx(0.3)
+    # kesir 0.0005 -> esik 0.05 -> ucu de gecer
+    assert cephe_yaricapi(x, v, 0.0005) == pytest.approx(0.4)
+
+
+def test_cephe_gecersiz_kesir_REDDEDILIYOR() -> None:
+    x = np.array([[0.1, 0.0, 0.0]])
+    v = np.array([[1.0, 0.0, 0.0]])
+    for k in (0.0, 1.0, -0.1, 2.0):
+        with pytest.raises(ValueError):
+            cephe_yaricapi(x, v, k)
+
+
+def test_cephe_YIGIN_yogunlugu_tuzagi_KAYITLI() -> None:
+    """Gözeneklilik açıkken `ρ` başlangıçta `ρ₀/α₀`'dır, `ρ₀` değil.
+
+    Bu tuzak gerçekten ölçüldü: `2700/1,5 = 1800`. Yoğunluk eşiği
+    (`1,05·ρ₀ = 2835`) başlangıcın **%58 üstündeydi** ve hiç tetiklenmedi.
+    Belge kodda kalsın diye burada sabitleniyor.
+    """
+    assert RHO0 / 1.5 == pytest.approx(1800.0)
+    assert len(CEPHE_ESIKLERI) >= 3, "tek esige bagli kalinmamali"
 
 
 def _kol(r, m=1.0, e=1.0):
@@ -131,3 +153,42 @@ def test_malzeme_bayraklari_GERCEKTEN_geciyor() -> None:
     assert BASALT_SOLID.damage.enabled
     m = _malzeme(True, False, False)
     assert m.strength.enabled and not m.porosity.enabled and not m.damage.enabled
+
+
+def _kol_esikli(r_dict, m=1.0, e=1.0):
+    k = _kol(r_dict["0.02"], m, e)
+    k["r_esikler"] = r_dict
+    return k
+
+
+def test_yargi_ESIGE_BAGIMLI_dali_calisiyor() -> None:
+    """Yargı eşikten eşiğe değişiyorsa bu bir ölçüm değil, bir **tercihtir**.
+
+    Sonuç `esige_bagimli` dönmeli — sessizce eşiklerden birini seçip
+    "zararsız" demek, ölçümü tercihle değiştirmek olurdu.
+    """
+    a = _kol_esikli({"0.01": 0.20, "0.02": 0.20, "0.05": 0.20})
+    c = _kol_esikli({"0.01": 0.30, "0.02": 0.30, "0.05": 0.30})
+    # 0.01'de parantez ICINDE, 0.05'te DISINDA -> celiskili
+    b = _kol_esikli({"0.01": 0.25, "0.02": 0.25, "0.05": 0.50})
+    y = judge(a, b, c, 2, 0.15, 1.0)
+    assert y["yargi"] == "esige_bagimli", y["esik_yargilari"]
+    assert set(y["esik_yargilari"].values()) == {True, False}
+
+
+def test_yargi_UC_ESIKTE_de_ayni_ise_yargi_DURUYOR() -> None:
+    a = _kol_esikli({"0.01": 0.20, "0.02": 0.20, "0.05": 0.20})
+    b = _kol_esikli({"0.01": 0.25, "0.02": 0.25, "0.05": 0.25})
+    c = _kol_esikli({"0.01": 0.30, "0.02": 0.30, "0.05": 0.30})
+    y = judge(a, b, c, 2, 0.15, 1.0)
+    assert y["yargi"] == "arayuz_zararsiz"
+    assert set(y["esik_yargilari"].values()) == {True}
+
+
+def test_esik_bagimliligi_ON_KOSUL_dusunce_ARANMIYOR() -> None:
+    """Ön koşul düştüyse yargı zaten `belirsiz` — eşik tartışması anlamsız."""
+    a = _kol_esikli({"0.01": 0.30, "0.02": 0.30, "0.05": 0.30})
+    b = _kol_esikli({"0.01": 0.25, "0.02": 0.25, "0.05": 0.90})
+    c = _kol_esikli({"0.01": 0.3001, "0.02": 0.3001, "0.05": 0.3001})
+    y = judge(a, b, c, 2, 0.15, 1.0)
+    assert y["yargi"] == "belirsiz"

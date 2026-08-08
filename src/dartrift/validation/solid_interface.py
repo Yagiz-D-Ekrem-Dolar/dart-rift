@@ -157,18 +157,42 @@ def build_two_zone_solid_ic(n_coarse: int, lam: int, r_inner: float,
             "mass_ratio": float(lam ** 3), "r_inner": float(r_inner)}
 
 
-def _sok_yaricapi(x: np.ndarray, rho: np.ndarray, rho0: float = RHO0,
-                  esik: float = 1.05) -> float:
-    """Sıkışmanın **en dış** eriştiği yarıçap.
+#: Cephe ölçümünde kullanılan eşikler — `max|v|`'nin kesri olarak.
+#: **Tek** bir eşiğe bağlı kalmamak için üçü birden ölçülür; yargı
+#: üçünde de aynı çıkmazsa eşiğe bağımlıdır ve öyle raporlanır.
+CEPHE_ESIKLERI = (0.01, 0.02, 0.05)
 
-    Eşik `1,05·ρ₀`: gürültü tabanının üstünde ama şok cephesinin
-    (Tillotson'da `~2×`) çok altında — yani cephenin **yeri** ölçülür,
-    genliği değil.
+
+def cephe_yaricapi(x: np.ndarray, v: np.ndarray, kesir: float) -> float:
+    """Bozulmanın **en dış** eriştiği yarıçap — hız cephesiyle.
+
+    ## Neden yoğunluk değil hız
+
+    İlk sürüm `ρ > 1,05·ρ₀` kullanıyordu ve **hiçbir zaman tetiklenmedi**.
+    İki ayrı nedenle, ikisi de ölçülerek bulundu:
+
+    1. **Yığın yoğunluğu ≠ katı yoğunluk.** Gözeneklilik açıkken çözücü
+       `ρ = ρ₀/α₀ = 2700/1,5 = 1800` ile başlıyor (`solver_solid.py:133`).
+       `1,05·ρ₀ = 2835` eşiği bu yüzden başlangıç değerinin **%58 üstünde**
+       — şok değil, tam gözenek çökmesi gerekirdi.
+    2. **P-α gözenekliliği şoku yutuyor.** Ölçüldü: `t = 4e-4 s`'de
+       `ρ_maks` yalnızca `1800 → 1811` (`%0,4`). Enerji yoğunluğu artırmıyor,
+       **gözenek çöktürüyor** — modelin yapması gereken tam da bu.
+
+    Hız cephesi bu iki tuzağın **ikisinden de** bağımsızdır: malzeme
+    nerede hareket etmeye başladıysa bozulma oraya varmıştır, gözeneklilik
+    de mukavemet de bunu değiştirmez.
+
+    Eşik `max|v|`'nin bir kesridir — mutlak bir hız seçmek keyfî olurdu.
     """
-    sikisan = rho > esik * rho0
-    if not np.any(sikisan):
-        raise RuntimeError(f"hiçbir parçacık {esik}·ρ₀ üstünde sıkışmamış")
-    return float(np.max(np.linalg.norm(x[sikisan], axis=1)))
+    if not (0.0 < kesir < 1.0):
+        raise ValueError(f"kesir (0,1) aralığında olmalı, {kesir} geldi")
+    hiz = np.linalg.norm(v, axis=1)
+    v_maks = float(np.max(hiz))
+    if v_maks <= 0.0:
+        raise RuntimeError("hiçbir parçacık hareket etmiyor — cephe yok")
+    hareketli = hiz > kesir * v_maks
+    return float(np.max(np.linalg.norm(x[hareketli], axis=1)))
 
 
 def _kos(ic: dict, mat: MaterialParams, device: str, t_end: float) -> dict:
@@ -198,8 +222,12 @@ def _kos(ic: dict, mat: MaterialParams, device: str, t_end: float) -> dict:
             "total_mass": ic["total_mass"],
             "energy_injected": ic["energy_injected"],
             "n_injected": ic["n_injected"],
-            "r_measured": _sok_yaricapi(st["x"], st["rho"]),
+            # Uc esikte birden -- yargi esige BAGLI cikarsa gorulsun.
+            "r_esikler": {f"{k:.2f}": cephe_yaricapi(st["x"], st["v"], k)
+                          for k in CEPHE_ESIKLERI},
+            "r_measured": cephe_yaricapi(st["x"], st["v"], CEPHE_ESIKLERI[1]),
             "rho_max": float(np.max(st["rho"])),
+            "v_max": float(np.max(np.linalg.norm(st["v"], axis=1))),
             "n_steps": int(tani["n_steps"])}
 
 
@@ -233,7 +261,21 @@ def judge(a: dict, b: dict, c: dict, lam: int, r_inner: float,
     else:
         yargi = "arayuz_bedelli"
 
+    # ESIGE BAGIMLILIK: ayni yargi ucu esikte de cikiyor mu? Cikmiyorsa
+    # sonuc bir olcum degil, bir esik tercihidir -- ve oyle raporlanir.
+    esik_yargilari = {}
+    if all("r_esikler" in k for k in (a, b, c)):
+        for anahtar in a["r_esikler"]:
+            l2 = min(a["r_esikler"][anahtar], c["r_esikler"][anahtar])
+            h2 = max(a["r_esikler"][anahtar], c["r_esikler"][anahtar])
+            g2 = h2 - l2
+            esik_yargilari[anahtar] = bool(
+                l2 - 0.1 * g2 <= b["r_esikler"][anahtar] <= h2 + 0.1 * g2)
+        if yargi != "belirsiz" and len(set(esik_yargilari.values())) > 1:
+            yargi = "esige_bagimli"
+
     return {
+        "esik_yargilari": esik_yargilari,
         "etiket": etiket, "tekduze_kaba": a, "iki_bolgeli": b,
         "tekduze_ince": c, "lam": int(lam), "kutle_orani": float(lam ** 3),
         "r_inner": float(r_inner), "t_end": float(t_end),

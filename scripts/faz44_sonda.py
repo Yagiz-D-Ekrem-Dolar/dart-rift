@@ -15,12 +15,13 @@ sys.path.insert(0, "/arf/scratch/egitimg16/driftclaude/dart-rift/src")
 
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
 from dartrift.validation.solid_interface import (  # noqa: E402
-    BASALT_SOLID, E_ENJEKTE, H_OVER_DX, KUTU, RHO0, build_two_zone_solid_ic)
+    BASALT_SOLID, E_ENJEKTE, H_OVER_DX, KUTU, RHO0,
+    build_two_zone_solid_ic, cephe_yaricapi)
 
 DEV = "cuda:0"
 N = 32
 R_IC = 0.15
-ESIKLER = (1.01, 1.02, 1.05, 1.10)
+from dartrift.validation.solid_interface import CEPHE_ESIKLERI  # noqa: E402
 
 
 def main() -> int:
@@ -40,8 +41,8 @@ def main() -> int:
     sol._eval()
     st0 = sol.state_numpy()
     print(f"BASLANGIC: rho ortanca={float(np.median(st0['rho'])):.2f} "
-          f"(rho0={RHO0}), en buyuk={float(np.max(st0['rho'])):.2f}, "
-          f"P en buyuk={float(np.max(st0['P'])):.3e}", flush=True)
+          f"(rho0={RHO0}, gozeneklilik acikken rho0/alpha0={RHO0 / 1.5:.0f} "
+          f"BEKLENIR), P en buyuk={float(np.max(st0['P'])):.3e}", flush=True)
 
     bas = "  ".join(f"r@{e:.2f}" for e in ESIKLER)
     print(f"\n{'t (s)':>11s} {'rho_max':>9s} {'rho/rho0':>9s} {'adim':>7s}  {bas}",
@@ -55,14 +56,15 @@ def main() -> int:
             print(f"{t:>11.3e}  PATLADI (rho sonlu degil)", flush=True)
             break
         rmax = float(np.max(st["rho"]))
-        r = np.linalg.norm(st["x"], axis=1)
+        vmax = float(np.max(np.linalg.norm(st["v"], axis=1)))
         yaricaplar = []
-        for e in ESIKLER:
-            mask = st["rho"] > e * RHO0
-            yaricaplar.append(f"{float(np.max(r[mask])):.4f}" if np.any(mask)
-                              else "  --  ")
-        print(f"{t:>11.3e} {rmax:>9.1f} {rmax / RHO0:>9.4f} "
-              f"{tani['n_steps']:>7d}  " + "  ".join(f"{v:>6s}" for v in yaricaplar),
+        for e in CEPHE_ESIKLERI:
+            try:
+                yaricaplar.append(f"{cephe_yaricapi(st['x'], st['v'], e):.4f}")
+            except RuntimeError:
+                yaricaplar.append("  --  ")
+        print(f"{t:>11.3e} {rmax:>9.1f} {vmax:>9.2f} "
+              f"{tani['n_steps']:>7d}  " + "  ".join(f"{v:>7s}" for v in yaricaplar),
               flush=True)
         if tani["t_end"] < t * (1.0 - 1e-9):
             print(f"            (t_end'e ulasilamadi: {tani['t_end']:.3e})",
