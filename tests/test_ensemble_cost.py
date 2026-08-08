@@ -197,3 +197,64 @@ def test_cozunurluk_bedeli_gecersiz_girdi() -> None:
             cozunurluk_bedeli(lam, r)
     with pytest.raises(ValueError):
         mermiyi_cozmek_icin_lam(0.0)
+
+
+def test_IKI_ASAMALI_secenek_bedeli_ihmal_edilebilir() -> None:
+    """ADR-0043'ün çekirdeği: mermiyi çözmek `%1`'e mal oluyor, `10×`'a değil.
+
+    Bağlanma fazı `~1,2e-4 s` (mermi kendi çapını geçme süresi), ensemble
+    ise `~1 s` — dört mertebe fark. Pahalı çözünürlük **sürekli**
+    taşınmak zorunda değil.
+    """
+    from dartrift.validation.ensemble_cost import cozunurluk_bedeli
+
+    tek_ucuz = cozunurluk_bedeli(2.0, 25.0, t_simule_s=1.0)["ensemble_gpu_gunu"]
+    tek_pahali = cozunurluk_bedeli(19.0, 3.0, t_simule_s=1.0)["ensemble_gpu_gunu"]
+    asama1 = cozunurluk_bedeli(19.0, 3.0, t_simule_s=1e-3)["ensemble_gpu_gunu"]
+    iki_asama = asama1 + tek_ucuz
+
+    # Tek asama pahali secenek butcenin 3 katindan fazla.
+    assert tek_pahali > 3.0 * 30.0
+    # Iki asama ucuz secenekten %2'den az pahali.
+    assert iki_asama / tek_ucuz < 1.02, iki_asama / tek_ucuz
+    # Ve butceye SIGIYOR.
+    assert iki_asama < 30.0
+
+
+def test_baglanma_suresi_kosu_suresinden_COK_kisa() -> None:
+    """`t₁ / t_kosu ~ 1e-4` — iki aşamayı mümkün kılan oran."""
+    from dartrift.validation.ensemble_cost import MERMI_CAPI_M
+
+    v_carpma = 6144.9          # SAHNE varsayilani
+    t_gecis = MERMI_CAPI_M / v_carpma
+    assert t_gecis == pytest.approx(1.222e-4, rel=1e-2)
+    assert t_gecis / 1.0 < 1e-3
+
+
+def test_t1_duyarliligi_MONOTON_ve_kucuk() -> None:
+    """`t₁` on kat büyürse toplam bedel yine `%10`'un altında artar."""
+    from dartrift.validation.ensemble_cost import cozunurluk_bedeli
+
+    taban = cozunurluk_bedeli(2.0, 25.0, t_simule_s=1.0)["ensemble_gpu_gunu"]
+    oranlar = []
+    for t1 in (1e-4, 1e-3, 1e-2):
+        a1 = cozunurluk_bedeli(19.0, 3.0, t_simule_s=t1)["ensemble_gpu_gunu"]
+        oranlar.append((a1 + taban) / taban)
+    assert oranlar[0] < oranlar[1] < oranlar[2]      # monoton
+    assert oranlar[1] < 1.01                          # t1=1e-3 -> %1'in alti
+    assert oranlar[2] < 1.10                          # t1=1e-2 -> %10'un alti
+
+
+def test_ADR_0043_var_ve_KILITLI_DEGIL() -> None:
+    """Karar proje sahibinin; ADR `ÖNERİLDİ` durumunda kalmalı."""
+    from pathlib import Path
+
+    p = Path(__file__).resolve().parents[1] / "docs" / "adr" / \
+        "ADR-0043-iki-asamali-cozunurluk.md"
+    assert p.is_file()
+    m = p.read_text(encoding="utf-8")
+    assert "**ÖNERİLDİ**" in m and "kilitli değil" in m
+    # Kilitlenmeden once olculmesi gerekenler YAZILI olmali.
+    assert "kilitlenmeden** önce ölçülmesi" in m
+    # Kolay ama YANLIS yol acikca reddedilmis olmali.
+    assert "Reddedilmesi gereken kolay yol" in m
