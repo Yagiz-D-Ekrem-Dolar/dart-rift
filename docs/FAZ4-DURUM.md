@@ -96,6 +96,33 @@ Beş kolun beşinde de taşma **%0,0000**:
 
 ---
 
+## 3b. FAZ 5 hazırlığı — engellenmemiş kısım
+
+Kota GPU ölçümlerini bloke ediyor ama FAZ 5'in iki ön koşulu **GPU
+gerektirmiyor** ve ikisi de yapıldı:
+
+### Ensemble **fizibil mi** — hesaplandı (KAYIT-040)
+
+`1 s` simüle, 300 koşu:
+
+| kurulum | GPU-günü | `~30` günlük bütçe | kullanılabilir mi |
+|---|---|---|---|
+| tekdüze kaba | 4,51 | ✔ | **✘** mermi çözülmemiş (ADR-0026) |
+| **A′** | **9,73** | **✔** | **✔** |
+| tekdüze ince | 66,85 | **✘** | ✔ |
+
+> **A′, çözülmüş mermili bir ensemble'ı mümkün kılan tek seçenek.**
+> ADR-0041'e **üçüncü kefe** olarak işlendi.
+
+### Ensemble **kesintiye dayanıklı** — yazıldı
+
+`~10` GPU-günü / `12` saatlik iş = kesinti **kaçınılmaz** (ve iş 1460700
+zaten kesildi). `inference/ensemble.py` satır satır JSONL yazıyor;
+yeniden başlatmada tamamlananlar atlanıyor, bozuk son satır ve tohum
+uyuşmazlığı ayrıca ele alınıyor. On test.
+
+---
+
 ## 4. Bu oturumda yazılan kod
 
 | modül | ne yapar | test |
@@ -106,7 +133,8 @@ Beş kolun beşinde de taşma **%0,0000**:
 | `validation/settling_time.py` | `β` durulma ölçütü | 13 |
 | `validation/g4_gate.py` | kapıyı **kod** yargılar | 20 |
 | `validation/g4_ozet.py` | ölçüm → kapı anahtarları | 13 |
-| `inference/` (5 modül) | tasarım → vekil → posterior → G4-C | 35 |
+| `inference/` (7 modül) | tasarım → vekil → posterior → G4-C + ileri + ensemble | 54 |
+| `validation/ensemble_cost.py` | FAZ 5 ensemble bütçesi | 11 |
 
 Koşucular: `faz43b`, `faz44`, `faz44b`, `faz45`, `faz46`, `faz47` ve
 hepsini bağlayan `faz4_zincir.sh`.
@@ -158,6 +186,17 @@ olduğunu **ölçmeden** iddia ettim (ölçünce yanlış çıktı).
    kapandı, ADR-0026 daha yükseğini istiyor.
 3. **G4 geçilmedi.** Kapı raporu üretildi ve `GEÇİLEMEDİ` diyor;
    on ölçütün onu da `koşulmadı`.
+
+### FAZ 5 hazırlığı — durum
+
+| ön koşul | durum |
+|---|---|
+| çıkarım makinesi doğrulanmış | **✔** (analitik haritaya karşı, kuru kip) |
+| ensemble bütçesi biliniyor | **✔** (A′ ile fizibil) |
+| ensemble kesintiye dayanıklı | **✔** |
+| ileri model DART ölçeğinde çalışıyor | **✘** kota |
+| gereken simüle süre | **✘** kota |
+| G4 geçildi | **✘** kota |
 
 ### Kota yenilendiğinde — tek komut
 
