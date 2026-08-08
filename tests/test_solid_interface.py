@@ -241,3 +241,42 @@ def test_yargi_eski_kayitlarla_GERIYE_UYUMLU() -> None:
     assert y["enjeksiyon_bolgesi_ayni"] is True
     assert np.isnan(y["enjeksiyon_kutle_sapmasi"])
     assert y["yargi"] == "arayuz_zararsiz"
+
+
+def test_cephe_DOYGUNLUK_korumasi() -> None:
+    """Cephe kutu kenarına vardıysa bu bir cephe **değil**, doygunluktur.
+
+    Job 1460697'de gözenekli kaba kol `r = 0,838970` verdi — kutu köşe
+    mesafesi (`√3/2 = 0,866`). Sessizce geçtiği için parantez `%278,95`
+    genişledi ve iki bölgeli kol "içine" düştü: yargı **`arayuz_zararsiz`**
+    çıktı. Bu doğru değil; ölçüm geçersizdi.
+    """
+    x = np.array([[0.83, 0.0, 0.0], [0.1, 0.0, 0.0]])
+    v = np.array([[10.0, 0, 0], [10.0, 0, 0]])
+    with pytest.raises(RuntimeError, match="DOYGUN"):
+        cephe_yaricapi(x, v, 0.01, v_ref=100.0)
+
+
+def test_cephe_v_ref_KOLA_BAGLI_DEGIL() -> None:
+    """`v_ref` verilince eşik `max|v|`'den bağımsızdır — kollar eşitlenir.
+
+    İki "kol": aynı hız alanı, ama birinde tek bir parçacık çok hızlı.
+    `max|v|` tabanıyla eşikler farklı çıkar; `v_ref` ile aynı.
+    """
+    x = np.array([[0.1, 0, 0], [0.2, 0, 0], [0.3, 0, 0]])
+    yavas = np.array([[50.0, 0, 0], [20.0, 0, 0], [1.0, 0, 0]])
+    hizli = np.array([[500.0, 0, 0], [20.0, 0, 0], [1.0, 0, 0]])
+    # max|v| tabani: esikler 0.5 ve 5.0 -> FARKLI sonuc
+    assert cephe_yaricapi(x, yavas, 0.01) == pytest.approx(0.3)
+    assert cephe_yaricapi(x, hizli, 0.01) == pytest.approx(0.2)
+    # v_ref tabani: esik ikisinde de 5.0 -> AYNI sonuc
+    assert (cephe_yaricapi(x, yavas, 0.01, v_ref=500.0)
+            == cephe_yaricapi(x, hizli, 0.01, v_ref=500.0) == pytest.approx(0.2))
+
+
+def test_cephe_esik_gecilemezse_PATLIYOR() -> None:
+    """Hiçbir parçacık eşiği geçmiyorsa `0.0` dönmek yanlış olurdu."""
+    x = np.array([[0.1, 0.0, 0.0]])
+    v = np.array([[0.001, 0.0, 0.0]])
+    with pytest.raises(RuntimeError, match="cephe yok"):
+        cephe_yaricapi(x, v, 0.5, v_ref=500.0)

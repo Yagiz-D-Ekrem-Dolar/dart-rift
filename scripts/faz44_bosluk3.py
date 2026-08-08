@@ -25,6 +25,11 @@ R_IC = 0.15
 
 def _yaz(y: dict) -> None:
     print(f"    yargi                    = {y['yargi']}", flush=True)
+    if y["yargi"] == "olculemedi":
+        print(f"    neden                    = {y['neden']}", flush=True)
+        return
+    print(f"    t kullanilan             = {y.get('t_kullanilan')} "
+          f"(deneme {y.get('t_denemesi')})", flush=True)
     print(f"    parantez                 = [{y['parantez'][0]:.6f}, "
           f"{y['parantez'][1]:.6f}]  (genislik {y['parantez_genisligi_rel']:.3%})",
           flush=True)
@@ -41,6 +46,33 @@ def _yaz(y: dict) -> None:
         k = y[ad]
         print(f"      {ad:14s} N={k['N']:7d}  r={k['r_measured']:.6f}  "
               f"rho_max={k['rho_max']:.1f}  adim={k['n_steps']}", flush=True)
+
+
+def _kos_uyarlanarak(etiket: str, t0: float, mat, per_particle_h: bool) -> dict:
+    """`t_end`'i doygunluk olursa **yarıya indirerek** dene.
+
+    Gözenekli kollarda bozulma kutuyu daha çabuk dolduruyor (enerjiyi
+    gözenek çökmesi yutunca tepe hız düşük kalıyor ve cephe yayılıyor).
+    Sabit bir `t` üç malzeme kolunun hepsine uymuyor.
+
+    Bu bir uydurma değil: hangi `t`'nin kullanıldığı **raporlanıyor** ve
+    üç kol o `t`'de **birlikte** koşuluyor, yani karşılaştırma bozulmuyor.
+    """
+    t = float(t0)
+    for deneme in range(4):
+        try:
+            y = run_solid_interface(N_KABA, 2, R_IC, DEV, t, mat,
+                                    per_particle_h=per_particle_h,
+                                    etiket=etiket)
+            y["t_kullanilan"] = t
+            y["t_denemesi"] = deneme
+            return y
+        except RuntimeError as e:
+            print(f"    t={t:.3e} gecersiz: {e}", flush=True)
+            t *= 0.5
+    return {"etiket": etiket, "yargi": "olculemedi", "tasma_rel": float("nan"),
+            "neden": f"{t0:.3e}'den baslayarak 4 kez yariya indirildi, "
+                     f"hicbirinde gecerli cephe olculemedi"}
 
 
 def main() -> int:
@@ -63,14 +95,12 @@ def main() -> int:
 
     print("\n[2] ANA KOL — Tillotson + mukavemet + gozeneklilik + hasar, A' (h_i)",
           flush=True)
-    y = run_solid_interface(N_KABA, 2, R_IC, DEV, t_end, BASALT_SOLID,
-                            per_particle_h=True, etiket="basalt-tam-Aprime")
+    y = _kos_uyarlanarak("basalt-tam-Aprime", t_end, BASALT_SOLID, True)
     _yaz(y)
     sonuclar["basalt_tam_Aprime"] = y
 
     print("\n[3] KONTROL — ayni geometri, TEK h (A' yok)", flush=True)
-    y2 = run_solid_interface(N_KABA, 2, R_IC, DEV, t_end, BASALT_SOLID,
-                             per_particle_h=False, etiket="basalt-tam-tek-h")
+    y2 = _kos_uyarlanarak("basalt-tam-tek-h", t_end, BASALT_SOLID, False)
     _yaz(y2)
     sonuclar["basalt_tam_tek_h"] = y2
 
@@ -79,8 +109,7 @@ def main() -> int:
                     ("mukavemet", _malzeme(True, False, False)),
                     ("muk+gozenek", _malzeme(True, True, False))):
         print(f"  -- {ad}", flush=True)
-        yk = run_solid_interface(N_KABA, 2, R_IC, DEV, t_end, mat,
-                                 per_particle_h=True, etiket=ad)
+        yk = _kos_uyarlanarak(ad, t_end, mat, True)
         _yaz(yk)
         sonuclar[ad] = yk
 
@@ -90,8 +119,8 @@ def main() -> int:
 
     print("\n[5] OZET", flush=True)
     for ad, y in sonuclar.items():
-        print(f"    {ad:22s} yargi={y['yargi']:18s} tasma={y['tasma_rel']:.4%}",
-              flush=True)
+        print(f"    {ad:22s} yargi={y['yargi']:18s} "
+              f"tasma={y['tasma_rel']:.4%} t={y.get('t_kullanilan')}", flush=True)
     return 0
 
 

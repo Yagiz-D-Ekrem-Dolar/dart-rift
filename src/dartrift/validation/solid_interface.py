@@ -178,7 +178,8 @@ def build_two_zone_solid_ic(n_coarse: int, lam: int, r_inner: float,
 CEPHE_ESIKLERI = (0.01, 0.02, 0.05)
 
 
-def cephe_yaricapi(x: np.ndarray, v: np.ndarray, kesir: float) -> float:
+def cephe_yaricapi(x: np.ndarray, v: np.ndarray, kesir: float,
+                   v_ref: float | None = None) -> float:
     """Bozulmanın **en dış** eriştiği yarıçap — hız cephesiyle.
 
     ## Neden yoğunluk değil hız
@@ -198,16 +199,50 @@ def cephe_yaricapi(x: np.ndarray, v: np.ndarray, kesir: float) -> float:
     nerede hareket etmeye başladıysa bozulma oraya varmıştır, gözeneklilik
     de mukavemet de bunu değiştirmez.
 
-    Eşik `max|v|`'nin bir kesridir — mutlak bir hız seçmek keyfî olurdu.
+    ## Eşik neden `max|v|`'ye bağlanamaz
+
+    İlk sürüm eşiği `kesir·max|v|` olarak aldı. Ölçüldü ki bu **kollar
+    arasında farklı eşik** demektir: gözenekli kaba kolda tepe hız düşük
+    (enerjiyi gözenek çökmesi yutuyor), dolayısıyla `%1`'i gürültü tabanına
+    iniyor ve "cephe" `r = 0,838970`'e — **kutu köşe mesafesine**
+    (`√3/2 = 0,866`) — fırlıyor. Bu bir cephe değil, **doygunluktur**.
+
+    Ölçülen tablo (job 1460697, `muk+gözenek`):
+
+    | kol | `r` | yorum |
+    |---|---|---|
+    | tekdüze kaba | **0,838970** | doygun — geçersiz |
+    | iki bölgeli | 0,213682 | makul |
+    | tekdüze ince | 0,221393 | makul |
+
+    Doğru referans **kola bağlı olmayan** bir fiziksel hızdır:
+    `v_ref = √(2E/m_enj)`. `E` ve `m_enj` üç kolda **eşitlendiği** için
+    (yeni ön koşul) eşik de eşittir.
+
+    `v_ref=None` verilirse eski davranışa (`max|v|`) düşer — yalnızca
+    birim testleri ve geriye uyum için.
     """
     if not (0.0 < kesir < 1.0):
         raise ValueError(f"kesir (0,1) aralığında olmalı, {kesir} geldi")
     hiz = np.linalg.norm(v, axis=1)
-    v_maks = float(np.max(hiz))
-    if v_maks <= 0.0:
+    taban = float(np.max(hiz)) if v_ref is None else float(v_ref)
+    if taban <= 0.0:
         raise RuntimeError("hiçbir parçacık hareket etmiyor — cephe yok")
-    hareketli = hiz > kesir * v_maks
-    return float(np.max(np.linalg.norm(x[hareketli], axis=1)))
+    hareketli = hiz > kesir * taban
+    if not np.any(hareketli):
+        raise RuntimeError(
+            f"hiçbir parçacık {kesir:.3g}·{taban:.4g} = "
+            f"{kesir * taban:.4g} m/s eşiğini geçmiyor — cephe yok")
+    r = float(np.max(np.linalg.norm(x[hareketli], axis=1)))
+    # DOYGUNLUK KORUMASI: cephe kutu kenarina vardiysa bu bir cephe olcumu
+    # degildir. Sessizce gecerse "arayuz zararsiz" gibi gorunur (job
+    # 1460697'de muk+gozenek kolunda tam bu oldu: parantez %278,95 genis
+    # cikti ve iki bolgeli kol "icine" dustu).
+    if r > 0.45 * KUTU:
+        raise RuntimeError(
+            f"cephe DOYGUN: r = {r:.4f} > 0.45·KUTU = {0.45 * KUTU:.4f}; "
+            f"bozulma kutu kenarina vardi, olcum gecersiz")
+    return r
 
 
 def _kos(ic: dict, mat: MaterialParams, device: str, t_end: float) -> dict:
@@ -233,6 +268,9 @@ def _kos(ic: dict, mat: MaterialParams, device: str, t_end: float) -> dict:
         raise RuntimeError(
             f"kosu PATLADI: parçacıklar kutunun {float(np.max(np.abs(st['x']))) / KUTU:.1f} "
             f"katı uzağa savruldu")
+    # Karakteristik hiz: enjekte enerjinin tamami kinetige donseydi.
+    # E ve m_enj uc kolda esitlendigi icin bu esik de uc kolda AYNIDIR.
+    v_ref = float(np.sqrt(2.0 * ic["energy_injected"] / ic["injected_mass"]))
     return {"N": int(len(ic["m"])), "h_min": ic["h_min"], "h_max": ic["h_max"],
             "total_mass": ic["total_mass"],
             "energy_injected": ic["energy_injected"],
@@ -240,9 +278,12 @@ def _kos(ic: dict, mat: MaterialParams, device: str, t_end: float) -> dict:
             "injected_mass": ic["injected_mass"],
             "h_inject": ic["h_inject"],
             # Uc esikte birden -- yargi esige BAGLI cikarsa gorulsun.
-            "r_esikler": {f"{k:.2f}": cephe_yaricapi(st["x"], st["v"], k)
+            # Referans hiz KOLA BAGLI DEGIL: v_ref = sqrt(2E/m_enj).
+            "v_ref": v_ref,
+            "r_esikler": {f"{k:.2f}": cephe_yaricapi(st["x"], st["v"], k, v_ref)
                           for k in CEPHE_ESIKLERI},
-            "r_measured": cephe_yaricapi(st["x"], st["v"], CEPHE_ESIKLERI[1]),
+            "r_measured": cephe_yaricapi(st["x"], st["v"], CEPHE_ESIKLERI[1],
+                                         v_ref),
             "rho_max": float(np.max(st["rho"])),
             "v_max": float(np.max(np.linalg.norm(st["v"], axis=1))),
             "n_steps": int(tani["n_steps"])}
