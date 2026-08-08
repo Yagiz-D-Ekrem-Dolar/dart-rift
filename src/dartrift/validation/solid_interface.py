@@ -58,7 +58,19 @@ __all__ = ["BASALT_SOLID", "build_two_zone_solid_ic", "judge",
 
 RHO0 = 2700.0          #: basalt referans yoğunluğu (ADR-0009)
 U_ARKA = 1.0e3         #: arka plan iç enerjisi (J/kg) — soğuk ama sıfır değil
-E_ENJEKTE = 5.0e9      #: enjekte edilen toplam enerji (J)
+
+#: Enjekte edilen toplam enerji (J). İlk denemede `5,0e9` yazdım ve koşu
+#: **patladı** (`overflow encountered in reduce`). Nedeni ölçüldü: enjeksiyon
+#: bölgesinin kütlesi ~76 kg, yani özgül enerji `6,6e7 J/kg` — Tillotson
+#: basaltın buharlaşma enerjisinin (`E_cv = 1,82e7`) **üç katı**. Malzeme
+#: tümüyle gaz oluyor, ses hızı fırlıyor, `dt` çöküyor.
+#:
+#: Doğru mertebe **hesaplandı**, tahmin edilmedi: `r = 0,3`'e kadarki kütle
+#: `4/3·π·0,3³·2700 ≈ 305 kg`; `%5` sıkışma için gereken basınç
+#: `K·0,05 ≈ 1,3e9 Pa`, enerji yoğunluğu `~3e7 J/m³`, hacim `0,113 m³`
+#: ⇒ `~3,4e6 J`. `1,0e7` bunun üç katı — şok sürer ama yoğuşmuş kalır
+#: (özgül enerji `1,3e5 J/kg`, `E_iv = 4,72e6`'nın çok altında).
+E_ENJEKTE = 1.0e7
 KUTU = 1.0             #: kenar uzunluğu (m)
 H_OVER_DX = 2.0        #: nominal düzleştirme oranı
 
@@ -170,6 +182,18 @@ def _kos(ic: dict, mat: MaterialParams, device: str, t_end: float) -> dict:
             f"t_end'e ULASILAMADI: {tani['t_end']:.6g} < {t_end:.6g} "
             f"({tani['n_steps']} adım). Ölçüm geçersiz.")
     st = sol.state_numpy()
+    # PATLAMA SESSIZ GECMEZ. S4'te donmus ozdes degerler NaN'in imzasiydi ve
+    # fark edilmesi uzun surdu. Burada uc imza da aciktan sinaniyor.
+    for ad in ("rho", "P", "u", "x", "v"):
+        d = st[ad]
+        if not np.all(np.isfinite(d)):
+            raise RuntimeError(
+                f"kosu PATLADI: `{ad}` sonlu degil "
+                f"({int(np.count_nonzero(~np.isfinite(d)))} / {d.size} parçacık)")
+    if float(np.max(np.abs(st["x"]))) > 5.0 * KUTU:
+        raise RuntimeError(
+            f"kosu PATLADI: parçacıklar kutunun {float(np.max(np.abs(st['x']))) / KUTU:.1f} "
+            f"katı uzağa savruldu")
     return {"N": int(len(ic["m"])), "h_min": ic["h_min"], "h_max": ic["h_max"],
             "total_mass": ic["total_mass"],
             "energy_injected": ic["energy_injected"],
