@@ -132,6 +132,19 @@ def main() -> int:
                   flush=True)
             tut = np.all(np.isfinite(Y), axis=1)
             x, Y = x[tut], Y[tut]
+            # HEPSI dustuyse `fit_surrogate` kafa karistirici bir hata
+            # verirdi ("n <= p"). Kok neden burada soyleniyor.
+            if len(x) == 0:
+                raise SystemExit(
+                    "DURDURULDU: TASARIMIN TAMAMI dustu. Ileri model hic "
+                    "gecerli sonuc uretmedi -- sahne kurulumu ya da malzeme "
+                    "parametreleri gozden gecirilmeli. (forward.py'nin "
+                    "ilerleme satirlari her noktanin nedenini yazdi.)")
+            if len(x) < 12:
+                raise SystemExit(
+                    f"DURDURULDU: yalnizca {len(x)} nokta ayakta kaldi; "
+                    f"ikinci derece vekil 10 katsayi ister ve LOO icin "
+                    f"n > p gerekir. Tasarim COK seyreldi.")
     print(f"    {time.perf_counter() - t0:.1f} s", flush=True)
 
     # --- 3) vekiller

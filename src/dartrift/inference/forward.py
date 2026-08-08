@@ -151,8 +151,18 @@ def ileri_kosu(x, *, material, device: str, steps: int, r_ince: float,
                 RefParams(cfl=0.25), alpha0=np.ascontiguousarray(rs.alpha0),
                 Y0=np.ascontiguousarray(rs.Y0), device=device,
                 check_every=10 ** 9)
-            for _ in range(steps):
+            # ERKEN IPTAL: patlamayi kosu SONUNDA anlamak, her noktasi
+            # pahali olan bir tasarimda bosa GPU demektir. 100 adimda bir
+            # sonluluk sinaniyor; patlarsa o nokta nan kalir ve SIRADAKI
+            # noktaya gecilir.
+            kontrol = max(1, steps // 30)
+            for adim in range(1, steps + 1):
                 sol.step(sol.compute_dt())
+                if adim % kontrol == 0:
+                    if not np.all(np.isfinite(sol.state_numpy()["v"])):
+                        raise RuntimeError(
+                            f"kosu PATLADI adim {adim}/{steps} -- kalan "
+                            f"{steps - adim} adim BOSA harcanmadi")
             Y[i] = gozlenebilirleri_cikar(
                 sol.state_numpy(), impactor_momentum=rs.impactor_momentum,
                 target_mass=rs.target_mass, target_radius=rs.target_radius,

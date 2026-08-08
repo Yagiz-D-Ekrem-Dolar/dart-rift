@@ -127,3 +127,28 @@ def test_gozlenebilir_adlari_TEK_KAYNAK() -> None:
     assert "GOZLENEBILIRLER = (" not in kaynak, \
         "betik adlari YENIDEN tanimlamis -- iki kaynak olustu"
     assert len(GOZLENEBILIRLER) == 3
+
+
+def test_ERKEN_IPTAL_kodda_var() -> None:
+    """Patlamayı koşu **sonunda** anlamak, pahalı bir tasarımda boşa GPU.
+
+    Kota dolu olduğu için bu yolu koşamıyorum; yapının varlığı sınanıyor.
+    Zayıf bir test ama hiç olmamasından iyi — ve niyeti kayda geçiriyor.
+    """
+    from pathlib import Path
+
+    kaynak = (Path(__file__).resolve().parents[1] / "src" / "dartrift" /
+              "inference" / "forward.py").read_text(encoding="utf-8")
+    assert "ERKEN IPTAL" in kaynak
+    assert "kosu PATLADI adim" in kaynak
+    assert "BOSA harcanmadi" in kaynak
+
+
+def test_TASARIMIN_TAMAMI_duserse_kok_neden_yaziliyor() -> None:
+    """`fit_surrogate` "n <= p" derdi; kök neden anlaşılmazdı."""
+    from pathlib import Path
+
+    kaynak = (Path(__file__).resolve().parents[1] / "scripts" /
+              "faz46_sentetik_kurtarma.py").read_text(encoding="utf-8")
+    assert "TASARIMIN TAMAMI dustu" in kaynak
+    assert "COK seyreldi" in kaynak
