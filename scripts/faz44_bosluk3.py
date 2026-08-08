@@ -25,16 +25,19 @@ R_IC = 0.15
 
 def _yaz(y: dict) -> None:
     print(f"    yargi                    = {y['yargi']}", flush=True)
-    if y["yargi"] == "olculemedi":
-        print(f"    neden                    = {y['neden']}", flush=True)
+    if y["yargi"] in ("olculemedi", "belirsiz") and "parantez" not in y:
+        print(f"    neden                    = {y.get('neden', '—')}",
+              flush=True)
         return
     print(f"    t kullanilan             = {y.get('t_kullanilan')} "
           f"(deneme {y.get('t_denemesi')})", flush=True)
     print(f"    parantez                 = [{y['parantez'][0]:.6f}, "
           f"{y['parantez'][1]:.6f}]  (genislik {y['parantez_genisligi_rel']:.3%})",
           flush=True)
-    print(f"    iki bolgeli r            = {y['iki_bolgeli']['r_measured']:.6f}",
-          flush=True)
+    # DOYGUN cephede r_measured None'dir; `:.6f` cokerdi.
+    _r = y['iki_bolgeli'].get('r_measured')
+    print(f"    iki bolgeli r            = "
+          f"{'DOYGUN' if _r is None else format(_r, '.6f')}", flush=True)
     print(f"    TASMA                    = {y['tasma_rel']:.4%}", flush=True)
     print(f"    esik yargilari           = {y.get('esik_yargilari')}", flush=True)
     print(f"    kollar ayirt edilebilir  = {y['kollar_ayirt_edilebilir']}",
@@ -44,7 +47,9 @@ def _yaz(y: dict) -> None:
           f"(sapma {y['kutle_sapmasi_rel']:.4%})", flush=True)
     for ad in ("tekduze_kaba", "iki_bolgeli", "tekduze_ince"):
         k = y[ad]
-        print(f"      {ad:14s} N={k['N']:7d}  r={k['r_measured']:.6f}  "
+        kr = k.get('r_measured')
+        print(f"      {ad:14s} N={k['N']:7d}  "
+              f"r={'DOYGUN' if kr is None else format(kr, '.6f')}  "
               f"rho_max={k['rho_max']:.1f}  adim={k['n_steps']}", flush=True)
 
 
