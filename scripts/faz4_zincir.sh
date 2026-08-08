@@ -5,8 +5,12 @@
 # JSON'unu YAZAR, kapi hepsini OKUR. Ara adim duserse kapi zaten
 # "kosulmadi" der; zincir sessizce yesil gorunmez.
 set -u                      # -e YOK: bir adim duserse kalanlar da kosmali
-REPO="/arf/scratch/egitimg16/driftclaude/dart-rift"
-CIK="/arf/scratch/egitimg16/driftclaude"
+# Depo koku betigin KENDI konumundan turetiliyor -- Python kosucularla
+# ayni kural. Sabit yol, depo tasindiginda sessizce yanlis src'yi bulur.
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CIK="$(dirname "$REPO")"
+echo "REPO=$REPO"
+echo "CIK=$CIK"
 
 echo "##### FAZ 4.4 — DART cozunurluk yakinsamasi #####"
 python -u "$REPO/scripts/faz44_dart_yakinsama.py" \
