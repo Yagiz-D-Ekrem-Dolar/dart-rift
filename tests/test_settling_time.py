@@ -146,3 +146,21 @@ def test_gecersiz_girdi_REDDEDILIYOR() -> None:
         is_settled([0, 1, 2], [1, 1])
     with pytest.raises(ValueError):
         is_settled(np.linspace(0, 1, 40), np.full(40, 0.5), pencere_frac=1.5)
+
+
+def test_measure_longrun_YENI_OLCUTU_kullaniyor() -> None:
+    """Modülü çıkarmanın anlamı, asıl kullanıcısına **bağlanmasıdır**.
+
+    Eski yerel mantık dosyada kalsaydı iki ölçüt yan yana yaşardı ve
+    hangisinin raporlandığı belirsizleşirdi (2. turun dersi: aynı
+    büyüklük iki yerde yazılıysa er geç ayrışır).
+    """
+    from pathlib import Path
+
+    kod = (Path(__file__).resolve().parents[1] / "scripts" /
+           "measure_longrun.py").read_text(encoding="utf-8")
+    assert "from dartrift.validation.settling_time import settling_time" in kod
+    assert "beta_bound_settled" in kod, "durulmusluk bayragi ciktida yok"
+    # Eski yerel mantigin imzasi GERI GELMEMELI.
+    assert "icinde = np.abs(bb - b_end)" not in kod, \
+        "eski yerel plato mantigi geri gelmis"

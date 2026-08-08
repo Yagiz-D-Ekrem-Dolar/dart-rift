@@ -179,23 +179,24 @@ def main() -> int:
     ts = np.array([r["t_sim"] for r in rows], dtype=np.float64)
     steps_arr = np.array([r["step"] for r in rows])
 
+    # DURULMA: artik validation/settling_time.py kullaniliyor. Buradaki
+    # eski yerel mantik SON DEGERE gore plato ariyordu ve "durulmadi"
+    # DIYEMIYORDU -- acikca tirmanan bir seride bile sonlu bir zaman
+    # donduruyordu (olculdu: egim 0.4 icin 0.9574). Yeni olcut once
+    # durulmusluğu siniyor; durulmadiysa nan doner.
+    from dartrift.validation.settling_time import settling_time
+
     def _plateau(key: str, tol: float = 0.02):
         bs = np.array([r[key] for r in rows], dtype=np.float64)
-        ok = np.isfinite(bs)
-        if np.count_nonzero(ok) < 5:
-            return float("nan"), -1
-        bb, tt, ss_ = bs[ok], ts[ok], steps_arr[ok]
-        b_end = float(bb[-1])
-        if abs(b_end) <= 0.0:
-            return float("nan"), -1
-        icinde = np.abs(bb - b_end) <= tol * abs(b_end)
-        k = len(icinde) - 1
-        while k > 0 and icinde[k - 1]:
-            k -= 1
-        return float(tt[k]), int(ss_[k])
+        d = settling_time(ts, bs, adim=steps_arr, tol=tol)
+        if not d["durulmus"]:
+            print(f"       UYARI: `{key}` DURULMADI — {d['neden']}", flush=True)
+        return d
 
-    plateau_t, plateau_step = _plateau("beta_bound")
-    plateau_ej_t, plateau_ej_step = _plateau("beta")
+    d_bound = _plateau("beta_bound")
+    d_ej = _plateau("beta")
+    plateau_t, plateau_step = d_bound["t_durulma"], d_bound["adim_durulma"]
+    plateau_ej_t, plateau_ej_step = d_ej["t_durulma"], d_ej["adim_durulma"]
 
     # --- enerji sapmasi buyume yasasi ---
     ee = np.array([r["e_rel_err"] for r in rows], dtype=np.float64)
@@ -221,6 +222,13 @@ def main() -> int:
         "beta_bound_plateau_step": plateau_step,
         "beta_ejecta_plateau_time_s": plateau_ej_t,
         "beta_ejecta_plateau_step": plateau_ej_step,
+        # DURULDU MU -- zamanin anlamli olup olmadigini soyleyen alan.
+        "beta_bound_settled": bool(d_bound["durulmus"]),
+        "beta_ejecta_settled": bool(d_ej["durulmus"]),
+        "beta_bound_settling_diag": {k: v for k, v in d_bound.items()
+                                     if k != "izler"},
+        "beta_ejecta_settling_diag": {k: v for k, v in d_ej.items()
+                                      if k != "izler"},
         "wall_s": time.perf_counter() - t0,
         "series": rows,
     }
