@@ -154,5 +154,5 @@ def settling_time(t, b, adim=None, pencere_frac: float = 0.3,
     sonuc["adim_durulma"] = int(ss[k])
     # Durulma ANI son pencerenin BASINDAN once olmali; degilse "durulma"
     # yalnizca son birkac noktanin yakinligidir, gercek bir plato degil.
-    sonuc["plato_penceredern_genis"] = bool(tt[k] <= d["pencere_t"][0])
+    sonuc["plato_pencereden_genis"] = bool(tt[k] <= d["pencere_t"][0])
     return sonuc

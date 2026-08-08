@@ -400,3 +400,50 @@ def test_ic_bolgedeki_dar_bant_C2_yi_GECIRIYOR() -> None:
     v = recovery_verdict(post, gercek, [(1.0, post), (4.0, post)])
     assert not any(v.c2_cakili), v.c2_cakili
     assert v.c2_gecti is True
+
+
+def test_SABIT_gozlenebilir_ayri_tani() -> None:
+    """"Sabit" ile "çok dalgalı" **farklı tanılar**, farklı eylemler.
+
+    Sabit bir gözlenebilir vekilin yetersizliği değil, **ileri modelin
+    bozukluğu** işaretidir: `θ` sahneye ulaşmıyor demektir. İkisi de
+    `guvenilir = False` verir ve `q2` ayırt edemez (sabit `y`'de `nan`).
+    """
+    x = lhs_design(DART_UZAYI, 40, root_seed=1)
+    u = DART_UZAYI.to_unit(x)
+
+    sbt = fit_surrogate(DART_UZAYI, x, np.full(len(x), 3.0))
+    assert sbt.sabit is True
+    assert np.isnan(sbt.q2)
+    assert sbt.guvenilir is False
+
+    dalgali = fit_surrogate(DART_UZAYI, x,
+                            np.sin(12.0 * u[:, 0]) * np.cos(11.0 * u[:, 2]))
+    assert dalgali.sabit is False          # sabit DEGIL
+    assert dalgali.guvenilir is False      # ama yine de yetersiz
+
+    saglikli = fit_surrogate(DART_UZAYI, x, 3.0 + 2.0 * u[:, 0])
+    assert saglikli.sabit is False and saglikli.guvenilir is True
+
+
+def test_kosucu_SABIT_taniyinca_DURUYOR() -> None:
+    """Sabit gözlenebilirle devam etmek bütün koşuyu boşa harcar."""
+    from pathlib import Path
+
+    kaynak = (Path(__file__).resolve().parents[1] / "scripts" /
+              "faz46_sentetik_kurtarma.py").read_text(encoding="utf-8")
+    assert "DURDURULDU" in kaynak
+    assert "if sabitler:" in kaynak
+
+
+def test_sedov_kutusu_BIRIM_dx_bire_bolu_n() -> None:
+    """`n_sides_for_swing` `dx = 1/n` **varsayıyor** — varsayım pinlendi.
+
+    Sedov kutusu değişirse türetilen `n` listesi sessizce yanlış olurdu:
+    tarama ne kapsardı ne de iç nokta verirdi, ve `judge` "belirsiz"
+    döndüğünde nedeni anlaşılmazdı.
+    """
+    from dartrift.validation.sedov import build_sedov_ic
+
+    for n in (32, 64):
+        assert build_sedov_ic(n)["dx"] == pytest.approx(1.0 / n, rel=1e-12), n

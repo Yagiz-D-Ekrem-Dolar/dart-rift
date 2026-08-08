@@ -140,11 +140,20 @@ def main() -> int:
     for k, ad in enumerate(GOZLENEBILIRLER):
         s = fit_surrogate(DART_UZAYI, x, Y[:, k])
         vekiller.append(s)
+        tani = ("SABIT -- ILERI MODEL BOZUK OLABILIR" if s.sabit
+                else "GUVENILIR" if s.guvenilir else "YETERSIZ")
         print(f"    {ad:20s} q2={s.q2:8.5f}  rmse_loo={s.rmse_loo:.4e}  "
-              f"sigma={s.sigma:.4e}  {'GUVENILIR' if s.guvenilir else 'YETERSIZ'}",
-              flush=True)
+              f"sigma={s.sigma:.4e}  {tani}", flush=True)
     yetersiz = [ad for ad, s in zip(GOZLENEBILIRLER, vekiller)
                 if not s.guvenilir]
+    sabitler = [ad for ad, s in zip(GOZLENEBILIRLER, vekiller) if s.sabit]
+    if sabitler:
+        # SABIT bir gozlenebilir "yetersiz vekil" degil, BOZUK ILERI MODEL
+        # isaretidir. Devam etmek butun kosuyu bosa harcar.
+        raise SystemExit(
+            f"DURDURULDU: {sabitler} gozlenebilirleri HIC DEGISMIYOR. "
+            f"Muhtemel neden: theta sahneye ulasmiyor (forward.py basligi). "
+            f"Cikarim kosturmak bosuna olurdu.")
     if yetersiz:
         print(f"    UYARI: {yetersiz} vekilleri YETERSIZ (q2 <= 0.5). "
               f"Posterior yine hesaplanacak ama yargi guvenilmez.", flush=True)

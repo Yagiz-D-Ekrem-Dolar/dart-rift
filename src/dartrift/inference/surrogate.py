@@ -73,6 +73,25 @@ class Surrogate:
         return design_matrix(u) @ self.coef
 
     @property
+    def sabit(self) -> bool:
+        """Gözlenebilir **hiç değişmiyor** mu?
+
+        Bu, *"vekil yetersiz"*ten **farklı bir tanıdır** ve farklı bir
+        eylem gerektirir:
+
+        | tanı | olası neden | ne yapmalı |
+        |---|---|---|
+        | `sabit` | ileri model bozuk (`θ` sahneye ulaşmıyor) | **koşuyu durdur** |
+        | `q2` düşük, `sabit` değil | vekil biçimi yetersiz | daha çok nokta / başka vekil |
+
+        İkisi de `guvenilir = False` verir; ayrımı `q2` yapmaz çünkü
+        sabit `y`'de `q2` **`nan`**'dır. `forward.py`'nin başlığında
+        anlatılan hata (`Y₀` yanlış alana yazılır → bütün tasarım aynı
+        sahneyi koşturur) tam olarak burada görünür.
+        """
+        return bool(self.y_yayilim <= 0.0)
+
+    @property
     def guvenilir(self) -> bool:
         """`q2 > 0,5` — vekil varyansın yarısından fazlasını açıklıyor mu?
 
