@@ -116,8 +116,11 @@ sınırdır** (`dx` yakınsaması da içinde).
 
 ## 6. Açık kalan
 
-- **ADR-0041 §5 boşluk 3** — mukavemet/gözeneklilik/hasar etkileşimi.
-  FAZ 4.4'te ölçülüyor; bu ADR'yi de sınayacak çünkü `N_komşu` salınımı
-  orada farklı olabilir.
+- ~~**ADR-0041 §5 boşluk 3** — mukavemet/gözeneklilik/hasar etkileşimi.~~
+  **KAPANDI** (KAYIT-037): üç modül birlikte açıkken arayüz katkısı
+  `%0,0000`. Bu ADR'nin sabit-`h` kararı o koşulda da ayakta.
+  Ancak `N_komşu` salınımı **gözenekli malzemede ayrıca ölçülmedi** —
+  P-α sıkışmayı `%2`'den `%0,3`'e indiriyor, yani salınım muhtemelen
+  **daha küçük**; bu bir tahmindir, ölçüm değil.
 - Salınım ölçümü **Sedov geometrisinde** yapıldı. DART geometrisinde
   (moloz yığını, gerçek mermi) tekrarlanmadan bu karar **koşulludur**.

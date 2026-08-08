@@ -421,9 +421,18 @@ israf_genel ≈ f_ince · λ³ + (1 − f_ince) · 1
 
 ### Açık kalan
 
-**§5 boşluk 3** — Sedov gerilmesiz ve tek malzemeli; mukavemet, gözeneklilik
-ve hasarla etkileşim ölçülmedi. Bu, **hangi seçenek seçilirse seçilsin**
-açıktı ve A′ için de açık kalır. FAZ 4.4'te ölçülecek.
+~~**§5 boşluk 3** — Sedov gerilmesiz ve tek malzemeli; mukavemet, gözeneklilik
+ve hasarla etkileşim ölçülmedi.~~
+
+> **KAPANDI** (2026-08-08, FAZ 4.4/4.4b —
+> [KAYIT-036](../defter/KAYIT-036_2026-08-08_bosluk3-mukavemette-olculdu.md),
+> [KAYIT-037](../defter/KAYIT-037_2026-08-08_bosluk3-kapandi.md)).
+> Mukavemet + gözeneklilik + hasar **birlikte** açıkken arayüzün iletilen
+> radyal momentuma katkısı **%0,0000**. Ayrıca ölçüldü: A′ incelme
+> kazancının **%67,1**'ini veriyor, tek `h` yalnızca **%9,1**'ini.
+>
+> **Koşullu:** ölçüm küp geometrisinde ve enerji enjeksiyonlu kaynakla
+> yapıldı, DART'ın gerçek geometrisinde değil; `λ = 2` (8:1) ölçüldü.
 
 ---
 

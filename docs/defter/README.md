@@ -42,6 +42,7 @@ koşulardan gelir; iş numaraları yazılıdır.
 | **[034](KAYIT-034_2026-08-04_A-prime-GPU-dogrulandi.md)** | 04.08 | **A′ GPU'da doğrulandı** — bit uyumu **True**, momentum **8,6e-17**, CPU-GPU çapraz **True** |
 | **[035](KAYIT-035_2026-08-08_omega-celiskisi-olculerek-cozuldu.md)** | 08.08 | **`Ω` çelişkisi çözüldü** — `h` sabit ⇒ `Ω ≡ 1`; `N_komşu` `2,06×` salınırken yayılım **%0,607** (ADR-0042) |
 | **[036](KAYIT-036_2026-08-08_bosluk3-mukavemette-olculdu.md)** | 08.08 | **Boşluk 3 KISMEN kapandı** — mukavemette taşma **%0,0000**; gözeneklilikte **ölçülemedi** (kutu penceresi yok) |
+| **[037](KAYIT-037_2026-08-08_bosluk3-kapandi.md)** | 08.08 | **Boşluk 3 KAPANDI** — gözlenebilir değişti (iletilen momentum); A′ kazancın **%67,1**'ini, tek `h` **%9,1**'ini veriyor |
 
 > 017/018 numaraları kronolojiyle ters: 018 (2. tur) 017'den (3. tur) **önce**
 > yaşandı ama sonra yazıldı. Numaralar yazım sırasını, tablo yaşanma sırasını
