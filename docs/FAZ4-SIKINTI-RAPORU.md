@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-08 · **Kapanan:** 22 · **Açık:** 4
+**Son güncelleme:** 2026-08-08 · **Kapanan:** 23 · **Açık:** 6
 
 ---
 
@@ -40,6 +40,31 @@ On ölçütün **onu da** `koşulmadı`. Kapı raporu üretildi ve
 Boşluk 3 `λ = 2` (8:1) oranında kapandı; ADR-0026 daha yükseğini
 istiyor. Koşul kapı raporunda **listeleniyor** ve kapı geçse bile
 kalacak.
+
+### A5 — **G4-A1 düştü: mermi çözülmemiş** (2026-08-08, en önemli teknik bulgu)
+
+| | |
+|---|---|
+| **ölçülen** | `A1 = 0,215` parçacık/çap (`s7_λ2`), en iyi kolda `0,322` |
+| **eşik** | `2,0` — **6,2 ila 9,3 kat** eksik |
+| **gereken `λ`** | **18,6** (kütle oranı **6478:1**) |
+| **ölçülmüş `λ`** | boşluk 3: `2` (8:1); KAYIT-033: `≤ 3` |
+| **bedel** | `r_iç = 3 m` ile `96` GPU-günü — bütçenin **3,2 katı** |
+| **bedelin kaynağı** | parçacık `1,13×`, **`dt` cezası `9,3×`** |
+
+> **Tek global zaman adımlı şemada bu bedel küçültülemez.** Çözümü
+> bireysel/blok zaman adımı — bu kod tabanında **yok**.
+
+Karar gerektiriyor: A1 eşiği mi gözden geçirilecek, mimari mi
+değişecek? İkisi de bir ADR ister. Detay:
+[KAYIT-041](defter/KAYIT-041_2026-08-08_yerel-gpu-ve-mermi-cozulmemis.md).
+
+### A6 — FAZ 4.4 `--t-end` almıyor, `--steps` alıyor
+
+Kollar **farklı `t_sim`**'e ulaşıyor (`dt` farklı olduğu için). Farklı
+`t`'deki `β`'ları kıyaslamak yakınsama ölçmez, dolayısıyla **B1 ve B3
+hesaplanamadı**. Kusur değil, ölçüm tasarımının bilinen sınırı; sonraki
+koşuda düzeltilmeli.
 
 ### A4 — `ileri_kosu`'nun GPU kısmı hiç koşulmadı
 
@@ -135,6 +160,7 @@ değişmez düşerse maliyet tablosu da yanlış olur.
 | 19 | beş koşucuda **sabit TRUBA yolu** | iş nihayet koşarken yol hatası → 12 saat yanar | `REPO = Path(__file__)...` |
 | 20 | UTF-8 koruması **dört koşucuda yoktu** | `faz47` **gerçekten çöktü** ve raporu yok etti | altı koşucuya eklendi |
 | 22 | ensemble **kesintide her şeyi kaybediyordu** | iş 1460700 zaman aşımından kesildi (**yaşandı**) | JSONL, satır satır, devam edebilir |
+| 23 | **TRUBA'ya bağımlılık** — kota dolunca hiç ölçüm yok | GPU ölçümleri tamamen durmuştu | **yerel RTX 3050** kullanıldı; `2,85×` yavaş, yeterli |
 
 > **22 numaralı** sıkıntı bir kod hatası değil, bir **eksiklik**ti.
 > `~300` koşu `~10` GPU-günü (KAYIT-040) ve bir SLURM işi `12` saat —
@@ -149,12 +175,12 @@ değişmez düşerse maliyet tablosu da yanlış olur.
 |---|---|---|
 | ölçüm tasarımı (kendi düzeneğim) | 8 | dar tarama, yanlış eşik, yanlış payda |
 | sözleşme / tip | 4 | `None` çökmesi, numpy tipleri |
-| dayanıklılık / portabilite | 4 | sabit yol, UTF-8, JSON |
+| dayanıklılık / portabilite | 5 | sabit yol, UTF-8, JSON |
 | fizik kurulumu | 3 | enerji mertebesi, yığın yoğunluğu |
 | süreç | 2 | doğrulanmayan değiştirme, atlanan test |
 | sınanmamış değişmez | 1 | `dt` en küçük `h` ile mi |
 
-> **Yirmi iki kusurun tamamı benim ölçüm düzeneğimde ya da yeni yazdığım
+> **Yirmi üç kusurun tamamı benim ölçüm düzeneğimde ya da yeni yazdığım
 > kodda.** Hiçbiri SPH çözücüsünde değil.
 
 ---
@@ -165,14 +191,15 @@ Bunlar bir kez değil, **birden çok** kez oldu:
 
 | kalıp | kaç kez | karşı önlem |
 |---|---|---|
-| bir eşiği **ölçmeden** yazmak | 3 | eşik yazılmadan önce ölçülüyor |
+| bir eşiği **ölçmeden** yazmak | **4** | eşik yazılmadan önce ölçülüyor |
 | çalışma noktasını **içermeyen** aralıkta yargı | 2 (+2 önceki tur) | `judge` kapsam koruması |
 | aynı büyüklüğü **iki yerde** tanımlamak | 2 | tek kaynağa indirildi |
 | dönüş sözleşmesi değişince **tüketicileri denetlemem** | 2 | sistematik tarama |
 | **tutarsız** kurulum (yol, kodlama) | 2 | parametrize testler |
 
-> En sık kalıp: **ölçmeden yazmak.** Üç kez oldu ve üçünde de ölçüm
-> tahminimi çürüttü.
+> En sık kalıp: **ölçmeden yazmak.** **Dört** kez oldu ve dördünde de
+> ölçüm tahminimi çürüttü. Son örnek: *"RTX 3050 ~400× yavaş olur"*
+> dedim, ölçüm **2,85×** dedi.
 
 ---
 
@@ -196,9 +223,9 @@ yaradığı görünmez:
 
 | büyüklük | değer |
 |---|---|
-| hata ayıklama turu | **14** |
-| kapanan sıkıntı | **22** |
-| açık sıkıntı | **4** (üçü kotaya bağlı) |
+| hata ayıklama turu | **15** |
+| kapanan sıkıntı | **23** |
+| açık sıkıntı | **6** (A5 karar, A6 kurulum, kalanı kota) |
 | **testlerin kör olduğu kusur** | **4** |
 | eklenen gerileme testi | **67** |
 | yerel test takımı | **954 geçti, 96 atlandı** (öncesi 912, ondan önce 898) |
