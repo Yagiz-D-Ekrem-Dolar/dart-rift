@@ -81,6 +81,39 @@ hedefle aynı hıza geldiğinde bağlanma bitmiştir.
 
 ---
 
+## 4b. Kurulum engeli **kaldırıldı** (2026-08-08)
+
+`refine_scene` iki **tam** sahne kurup birleştiriyordu ve `λ = 19`'da bu
+**imkânsızdı**:
+
+| `λ` | tam ince sahne `N` | bellek |
+|---|---|---|
+| 2 | 76 180 | 0,02 GB |
+| 6 | 2 056 860 | 0,62 GB |
+| **19** | **65 314 837** | **19,6 GB** |
+
+Oysa gereken `r_iç = 3 m` içinde `~1500` parçacık — yani `%99,998`
+kurulup atılıyordu.
+
+`refine_scene_local` yazıldı: ince kafes yalnızca çarpma noktası
+çevresindeki **kutuda** kuruluyor. Ölçüldü:
+
+| `λ` | `s_ince` | `A1` | `r_iç` | `n_ince` | `N` | kütle sapması | süre |
+|---|---|---|---|---|---|---|---|
+| 2 | 3,5000 | 0,21 | 25 m | 952 | 11 183 | 1,3e-04 | 0,3 s |
+| 6 | 1,1667 | 0,64 | 6 m | 389 | 10 734 | 1,8e-05 | 0,1 s |
+| **19** | **0,3684** | **2,04 ✔** | **3 m** | **1524** | **11 871** | **2,0e-05** | **0,5 s** |
+
+> **`λ = 19` artık kurulabiliyor** — `0,5` saniyede, `11 871` parçacıkla.
+> Aşama-1'in kurulumu bir engel değil.
+
+`α₀`/`Y₀` en yakın kaba parçacıktan örnekleniyor ki **kaya blokları
+silinmesin** (`f_boulder` çıkarımın üç parametresinden biri). Bu bir
+yaklaşımdır: blok sınırları ince kafeste kaba çözünürlükte kalır;
+`diagnostics`'e yazılı, **ölçülmedi**.
+
+---
+
 ## 5. Uygulanması gereken — **mevcut değil**
 
 Bu seçenek bir **kabalaştırma** adımı istiyor: aşama-1'in ince
@@ -124,6 +157,9 @@ olur). Bu, ADR ile ayrıca karara bağlanmalı.
 2. **Kabalaştırmanın kütle/momentum/enerji hatası** — üçü de ayrı ayrı.
 3. **`λ = 19`'da arayüz ne yapıyor** — boşluk 3 yalnızca `λ = 2`'de
    kapandı; `6478:1` oranı ölçülmüş her şeyin ötesinde.
+4. **Blok sınırlarının kaba çözünürlükte kalmasının etkisi** (§4b) —
+   ince bölgede kaya blokları kaba kafesin çözünürlüğünde temsil
+   ediliyor ve bu **ölçülmedi**.
 
 > Üçü de ölçülmeden bu ADR **kilitlenmemelidir**. Özellikle 3: A′'nın
 > arayüz davranışı yüksek oranda **bilinmiyor** ve KAYIT-024 gürültünün

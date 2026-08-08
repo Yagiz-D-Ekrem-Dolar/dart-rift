@@ -39,7 +39,11 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["refine_scene", "RefinedScene"]
+__all__ = ["refine_scene", "refine_scene_local", "RefinedScene"]
+
+#: Tam ince sahnenin parçacık sayısı `mesh_hacmi / V_p` ile orantılı;
+#: sabit `1,0` çünkü `particle_volume` zaten FCC paketlemeyi taşıyor.
+INCE_TUM_SAHNE_C = 1.0
 
 
 class RefinedScene:
@@ -213,5 +217,153 @@ def refine_scene(kaba, ince, r_ince: float) -> RefinedScene:
             "dikis": dikis,
             "dikis_en_yakin_oran": dikis["en_yakin_oran"],
             "h_min": float(h.min()), "h_max": float(h.max()),
+        },
+    )
+
+
+def refine_scene_local(kaba, mesh, r_ince: float, lam: float,
+                       rho0_solid: float = 2700.0) -> RefinedScene:
+    """A′ — ince bölgeyi **yerel** kur, tam ince sahne kurma.
+
+    ## Neden gerekli: `refine_scene` yüksek `λ`'da **çalışamıyor**
+
+    `refine_scene` iki **tam** sahne kurup birleştiriyor. Ölçüldü
+    (`R = 82 m`, FCC):
+
+    | `λ` | `s_ince` | tam ince sahne `N` | bellek |
+    |---|---|---|---|
+    | 2 | 3,500 m | 76 180 | 0,02 GB |
+    | 6 | 1,167 m | 2 056 860 | 0,62 GB |
+    | **19** | **0,368 m** | **65 314 837** | **19,6 GB** |
+
+    ADR-0043 `λ ≈ 19` öneriyor ve orada `refine_scene` **kurulamaz** —
+    oysa gerçekten gereken `r_iç = 3 m` içinde **~1400** parçacık.
+    Yani `%99,998`'i kurulup atılıyordu.
+
+    ## Yapılan
+
+    İnce kafes yalnızca çarpma noktası çevresindeki **kutuda** kuruluyor
+    (`lattice_points`), sonra iki süzgeçten geçiyor: mesh'in **içinde**
+    (`inside_points`) ve `r_iç` **içinde**.
+
+    ## `α₀` ve `Y₀` en yakın kaba parçacıktan alınıyor
+
+    Moloz yığınında bunlar parçacık başına (matris vs kaya bloğu). İnce
+    bölgeye tekdüze matris değeri vermek **kaya bloklarını silerdi** ve
+    `f_boulder` çıkarımın parametrelerinden biri. En yakın komşudan
+    örneklemek yapıyı korur.
+
+    > Bu bir **yaklaşımdır**: blok sınırları ince kafeste kaba kafesin
+    > çözünürlüğünde kalır. Ölçülmedi; `diagnostics`'e yazılıyor.
+    """
+    from .rubble_generator import lattice_points, particle_volume
+    from .shape_mesh import inside_points
+
+    if lam <= 1.0:
+        raise ValueError(f"lam > 1 olmalı, {lam} geldi")
+    if r_ince <= 0.0:
+        raise ValueError(f"r_ince pozitif olmalı, {r_ince} geldi")
+    s_kaba = float(kaba.spacing)
+    s_ince = s_kaba / float(lam)
+    mp = np.asarray(kaba.impact_point, dtype=np.float64)
+
+    # KORUMA KAFESTEN ONCE GELIR. Ilk surumde `r_ince` dogrulamasi kafes
+    # KURULDUKTAN SONRA yapiliyordu; `r_ince = 1e4` verince numpy
+    # "412 TiB ayrilamiyor" diyordu -- anlasilmaz ve gec. Kendi testim
+    # yakaladi.
+    R = float(kaba.target_radius)
+    if r_ince > 2.0 * R:
+        raise ValueError(
+            f"r_ince ({r_ince} m) hedef çapından ({2 * R} m) büyük — "
+            f"ince bölge bütün cismi kaplar, kaba bölge boş kalır")
+    # Kafes nokta sayisi ONCEDEN kestirilir; kutu kupu / hucre hacmi.
+    kenar = 2.0 * (r_ince + 2.0 * s_ince)
+    tahmini = 4.0 * (kenar / (s_ince * np.sqrt(2.0))) ** 3      # FCC: 4 baz
+    if tahmini > 5.0e7:
+        raise ValueError(
+            f"yerel kafes çok büyük olurdu: ~{tahmini:.3g} nokta "
+            f"(r_ince={r_ince}, s_ince={s_ince:.4g}). r_ince'i küçültün.")
+
+    # 1) YEREL kafes: yalnizca carpma noktasi cevresindeki kutu.
+    pay = 2.0 * s_ince
+    lo, hi = mp - (r_ince + pay), mp + (r_ince + pay)
+    pts = lattice_points(lo, hi, s_ince, "fcc")
+    if len(pts) == 0:
+        raise ValueError("yerel kafes boş — r_ince çok küçük olabilir")
+    # 2) Iki suzgec: mesh ICINDE ve r_ince ICINDE.
+    d = np.linalg.norm(pts - mp[None, :], axis=1)
+    pts = pts[d < r_ince]
+    if len(pts) == 0:
+        raise ValueError(f"r_ince={r_ince} içinde kafes noktası yok")
+    x_i = pts[inside_points(mesh, pts)]
+    if len(x_i) == 0:
+        raise ValueError("ince bölge mesh'in tamamen dışında")
+
+    # 3) Kaba taraf: hedefin r_ince DISINDA kalanlari.
+    k_hedef = ~kaba.is_impactor
+    d_kaba = np.linalg.norm(kaba.x - mp[None, :], axis=1)
+    sec_kaba = k_hedef & (d_kaba >= r_ince)
+    if not np.any(sec_kaba):
+        raise ValueError(f"kaba bölge boş: r_ince={r_ince} hedefi kaplıyor")
+
+    # 4) alpha0/Y0: EN YAKIN kaba parcaciktan (kaya bloku yapisini korur).
+    hedef_x = kaba.x[k_hedef]
+    idx = np.argmin(np.linalg.norm(x_i[:, None, :] - hedef_x[None, :, :],
+                                   axis=2), axis=1)
+    a0_i = kaba.alpha0[k_hedef][idx]
+    y0_i = kaba.Y0[k_hedef][idx]
+    blok_i = kaba.is_boulder[k_hedef][idx]
+
+    # 5) Kutle YEREL hucre hacminden (ADR-0030).
+    # `alpha0` parcacik basina: m = rho_yigin * V_p = (rho0/alpha0) * V_p
+    m_i = (rho0_solid / a0_i) * particle_volume(s_ince, "fcc")
+
+    # 6) Mermi KABA sahneden -- kendi ayriklastirmasi `n_impactor`'a bagli,
+    #    `spacing`'e DEGIL, yani iki sahnede AYNI.
+    sec_mermi = kaba.is_impactor
+    n_i, n_k, n_m = len(x_i), int(sec_kaba.sum()), int(sec_mermi.sum())
+
+    def _kat(ince_deger, ad):
+        return np.concatenate([ince_deger, getattr(kaba, ad)[sec_kaba],
+                               getattr(kaba, ad)[sec_mermi]])
+
+    x = _kat(x_i, "x")
+    v = _kat(np.zeros_like(x_i), "v")
+    m = _kat(m_i, "m")
+    alpha0 = _kat(a0_i, "alpha0")
+    Y0 = _kat(y0_i, "Y0")
+    is_boulder = _kat(blok_i, "is_boulder")
+    h = np.concatenate([np.full(n_i, 2.0 * s_ince),
+                        np.full(n_k, 2.0 * s_kaba),
+                        np.full(n_m, 2.0 * s_ince)])
+    is_fine = np.concatenate([np.ones(n_i, bool), np.zeros(n_k, bool),
+                              np.ones(n_m, bool)])
+    is_imp = np.concatenate([np.zeros(n_i + n_k, bool), np.ones(n_m, bool)])
+
+    m_yeni = float(np.sum(m[~is_imp]))
+    m_kaba = float(np.sum(kaba.m[k_hedef]))
+    dikis = _dikis_kalitesi(x[~is_imp], mp, r_ince, s_kaba, s_ince)
+    n_tumu_ince = int(round(INCE_TUM_SAHNE_C * (kaba.mesh_volume
+                                                / particle_volume(s_ince, "fcc"))))
+    return RefinedScene(
+        x=x, v=v, m=m, alpha0=alpha0, Y0=Y0, h=h, is_impactor=is_imp,
+        is_boulder=is_boulder, is_fine=is_fine,
+        spacing_coarse=s_kaba, spacing_fine=s_ince,
+        target_radius=float(kaba.target_radius), impact_point=mp,
+        impact_direction=np.asarray(kaba.impact_direction),
+        surface_normal=np.asarray(kaba.surface_normal),
+        diagnostics={
+            "yerel_kurulum": True, "lam": float(lam),
+            "kutle_orani": float(lam) ** 3, "r_ince": float(r_ince),
+            "n_ince": n_i, "n_kaba": n_k, "n_mermi": n_m,
+            "n_toplam": n_i + n_k + n_m,
+            "n_tumu_ince": n_tumu_ince,
+            "tasarruf": float(n_tumu_ince / max(n_i + n_k + n_m, 1)),
+            "hedef_kutle_sapmasi": abs(m_yeni - m_kaba) / m_kaba,
+            "dikis": dikis,
+            "dikis_en_yakin_oran": dikis["en_yakin_oran"],
+            "h_min": float(h.min()), "h_max": float(h.max()),
+            # YAKLASIM: blok sinirlari ince kafeste KABA cozunurlukte kalir.
+            "blok_sinirlari_kaba_cozunurlukte": True,
         },
     )

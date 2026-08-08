@@ -159,3 +159,97 @@ def test_refine_diagnostics_JSON_serilestirilebilir(sahneler) -> None:
     d = refine_scene(kaba, ince, r_ince=25.0).diagnostics
     json.dumps(d)
     assert d["dikis"]["n_kusak"] > 0
+
+
+# --------------------------------------------- YEREL kurulum (ADR-0043)
+
+def _mesh():
+    from dartrift.setup.scene import _build_mesh
+
+    return _build_mesh("icosphere", radius=82.0, subdiv=4)
+
+
+def test_YEREL_kurulum_YUKSEK_lam_da_calisiyor(sahneler) -> None:
+    """`refine_scene` `λ=19`'da **kurulamıyordu**; yerel kurulum kuruyor.
+
+    Ölçüldü (`R = 82 m`, FCC): tam ince sahne `λ=19`'da **65 314 837**
+    parçacık ve **19,6 GB**. Oysa gereken `r_iç = 3 m` içinde `~1500`.
+    Yani `%99,998`'i kurulup atılıyordu.
+
+    Yerel kurulum ölçüldü: `N = 11 871`, **0,5 s**.
+    """
+    from dartrift.setup.refine import refine_scene_local
+
+    kaba, _ = sahneler
+    rs = refine_scene_local(kaba, _mesh(), r_ince=3.0, lam=19.0)
+    assert rs.spacing_fine == pytest.approx(7.0 / 19.0)
+    # A1 = mermi capi / s_ince -- ESIGI GECIYOR
+    assert 0.751 / rs.spacing_fine > 2.0
+    assert 500 < rs.diagnostics["n_ince"] < 5000, rs.diagnostics["n_ince"]
+    assert rs.n < 20000, rs.n
+    assert rs.diagnostics["yerel_kurulum"] is True
+
+
+def test_YEREL_kurulum_kutle_sapmasi_KUCUK(sahneler) -> None:
+    """İnce bölge kaba bölgeyi değiştiriyor; toplam kütle korunmalı."""
+    from dartrift.setup.refine import refine_scene_local
+
+    kaba, _ = sahneler
+    for lam, r in ((2.0, 25.0), (6.0, 6.0), (19.0, 3.0)):
+        d = refine_scene_local(kaba, _mesh(), r_ince=r,
+                               lam=lam).diagnostics
+        assert d["hedef_kutle_sapmasi"] < 1.0e-3, (lam, r,
+                                                   d["hedef_kutle_sapmasi"])
+
+
+def test_YEREL_ve_TAM_kurulum_AYNI_mertebede(sahneler) -> None:
+    """Boşluk kontrolü: `λ=2`'de iki yol benzer sonuç vermeli.
+
+    Birebir aynı olmaz — kafes başlangıcı farklı — ama `%10` içinde
+    olmalı. Olmazsa yerel kurulumun geometrisi bozuk demektir.
+    """
+    from dartrift.setup.refine import refine_scene_local
+
+    kaba, ince = sahneler
+    tam = refine_scene(kaba, ince, r_ince=25.0).diagnostics["n_ince"]
+    yerel = refine_scene_local(kaba, _mesh(), r_ince=25.0,
+                               lam=2.0).diagnostics["n_ince"]
+    assert abs(yerel - tam) / tam < 0.10, (tam, yerel)
+
+
+def test_YEREL_kurulum_KAYA_BLOKLARINI_koruyor(sahneler) -> None:
+    """`α₀`/`Y₀` en yakın kaba parçacıktan alınıyor — blok yapısı silinmiyor.
+
+    Tekdüze matris değeri vermek `f_boulder`'ı yok ederdi ve o, çıkarımın
+    üç parametresinden biri.
+    """
+    from dartrift.setup.refine import refine_scene_local
+
+    kaba, _ = sahneler
+    rs = refine_scene_local(kaba, _mesh(), r_ince=25.0, lam=2.0)
+    ince_hedef = rs.is_fine & ~rs.is_impactor
+    # Ince bolgede EN AZ IKI farkli Y0 olmali (matris + blok).
+    assert len(np.unique(rs.Y0[ince_hedef])) >= 2, "blok yapisi silinmis"
+    # Ve degerler kaba sahnede GERCEKTEN var olanlardan olmali.
+    assert set(np.unique(rs.Y0[ince_hedef])) <= set(np.unique(kaba.Y0))
+
+
+def test_YEREL_kurulum_gecersiz_girdiler(sahneler) -> None:
+    from dartrift.setup.refine import refine_scene_local
+
+    kaba, _ = sahneler
+    m = _mesh()
+    with pytest.raises(ValueError):
+        refine_scene_local(kaba, m, r_ince=3.0, lam=1.0)      # lam <= 1
+    with pytest.raises(ValueError):
+        refine_scene_local(kaba, m, r_ince=0.0, lam=19.0)     # r_ince <= 0
+    # BUYUK r_ince: koruma KAFESTEN ONCE gelmeli.
+    #
+    # Ilk surumde dogrulama kafes kurulduktan SONRAydi ve numpy
+    # "412 TiB ayrilamiyor" diyordu -- anlasilmaz ve gec. Bu test onu
+    # yakaladi; simdi anlasilir bir ValueError geliyor.
+    with pytest.raises(ValueError, match="hedef çapından"):
+        refine_scene_local(kaba, m, r_ince=1.0e4, lam=19.0)
+    # Cap icinde ama kafes yine de cok buyuk olacaksa da erken uyari.
+    with pytest.raises(ValueError, match="çok büyük"):
+        refine_scene_local(kaba, m, r_ince=160.0, lam=200.0)
