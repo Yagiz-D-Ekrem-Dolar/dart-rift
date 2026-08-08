@@ -15,13 +15,12 @@ sys.path.insert(0, "/arf/scratch/egitimg16/driftclaude/dart-rift/src")
 
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
 from dartrift.validation.solid_interface import (  # noqa: E402
-    BASALT_SOLID, E_ENJEKTE, H_OVER_DX, KUTU, RHO0,
+    BASALT_SOLID, CEPHE_ESIKLERI, E_ENJEKTE, H_OVER_DX, KUTU, RHO0,
     build_two_zone_solid_ic, cephe_yaricapi)
 
 DEV = "cuda:0"
 N = 32
 R_IC = 0.15
-from dartrift.validation.solid_interface import CEPHE_ESIKLERI  # noqa: E402
 
 
 def main() -> int:
@@ -44,8 +43,8 @@ def main() -> int:
           f"(rho0={RHO0}, gozeneklilik acikken rho0/alpha0={RHO0 / 1.5:.0f} "
           f"BEKLENIR), P en buyuk={float(np.max(st0['P'])):.3e}", flush=True)
 
-    bas = "  ".join(f"r@{e:.2f}" for e in ESIKLER)
-    print(f"\n{'t (s)':>11s} {'rho_max':>9s} {'rho/rho0':>9s} {'adim':>7s}  {bas}",
+    bas = "  ".join(f"{'r@' + format(e, '.2f'):>7s}" for e in CEPHE_ESIKLERI)
+    print(f"\n{'t (s)':>11s} {'rho_max':>9s} {'v_max':>9s} {'adim':>7s}  {bas}",
           flush=True)
     for t in (2.0e-5, 5.0e-5, 1.0e-4, 2.0e-4, 4.0e-4):
         sol = WarpSolid3D(ic["x"], ic["v"], ic["m"], ic["u"], ic["h"],
