@@ -166,3 +166,75 @@ def fizibilite_sinirlari(butce_gpu_gunu: float, n_kosu: int = 300) -> dict:
     out["_butce_gpu_gunu"] = float(butce_gpu_gunu)
     out["_n_kosu"] = int(n_kosu)
     return out
+
+
+#: Ölçülen mermi çapı [m] — `faz44_dart_yakinsama` yerel koşusu (RTX 3050),
+#: `SAHNE` varsayılanlarıyla (`impactor_mass = 579,4 kg`, `ρ = 2700`).
+MERMI_CAPI_M = 0.751
+
+#: `n_ince = c·(r_iç/s_ince)³` geometrik sabiti. **Ölçülen** değerden
+#: türetildi (`λ = 2`, `r_iç = 25`, `s_ince = 3,5` → `n_ince = 933`),
+#: varsayılmadı. Yarım küre + FCC paketlemeyi birlikte taşıyor.
+INCE_GEOMETRI_C = 933.0 / (25.0 / 3.5) ** 3
+
+
+def mermiyi_cozmek_icin_lam(a1_esigi: float = 2.0,
+                            s_kaba: float = 7.0) -> float:
+    """G4-A1'i geçmek için gereken incelme oranı `λ`.
+
+    `A1 = D_mermi / s_ince` ve `s_ince = s_kaba/λ` ⇒
+    `λ = a1_esigi · s_kaba / D_mermi`.
+    """
+    if a1_esigi <= 0.0 or s_kaba <= 0.0:
+        raise ValueError("eşik ve aralık pozitif olmalı")
+    return a1_esigi * s_kaba / MERMI_CAPI_M
+
+
+def cozunurluk_bedeli(lam: float, r_ince_m: float, n_kaba: int = 9428,
+                      n_mermi: int = 803, s_kaba: float = 7.0,
+                      t_simule_s: float = 1.0, n_kosu: int = 300) -> dict:
+    """Verilen `(λ, r_iç)` için ensemble bedeli ve **bedelin nereden geldiği**.
+
+    ## Neden ayrıştırma önemli
+
+    Yerel koşuda ölçüldü ki `λ = 2`'de `A1 = 0,215` — mermi **çözülmemiş**
+    (eşik `2,0`). `A1 ≥ 2` için `λ ≈ 19` gerekiyor. Ama o `λ` iki ayrı
+    maliyet getiriyor ve **ikisi çok farklı davranıyor**:
+
+    | kaynak | `r_iç` küçültülünce |
+    |---|---|
+    | ince bölgedeki **parçacık** sayısı (`∝ r_iç³/s_ince³`) | **çöker** |
+    | **`dt` cezası** (CFL, `∝ 1/λ`) | **değişmez** |
+
+    Ölçülen (`t = 1 s`, 300 koşu):
+
+    | `λ` | `A1` | `r_iç` | `N` | ensemble |
+    |---|---|---|---|---|
+    | 2 | 0,21 | 25 m | 11 164 | **9,7** gün |
+    | 19 | **2,04** | 25 m | 810 161 | 6707 gün |
+    | 19 | **2,04** | **3 m** | **11 613** | **96,1** gün |
+
+    > `r_iç`'i `25 → 3 m` küçültmek maliyeti **70 kat** düşürüyor ve
+    > parçacık yükünü ihmal edilebilir hale getiriyor (`+%4`). Kalan
+    > `9,9×` bedel **tamamen CFL**'dir (`dt` oranı `9,5`) ve **tek
+    > global adımlı** bir şemada küçültülemez.
+    """
+    if lam <= 0.0 or r_ince_m <= 0.0:
+        raise ValueError("lam ve r_ince pozitif olmalı")
+    s_ince = s_kaba / lam
+    n_ince = INCE_GEOMETRI_C * (r_ince_m / s_ince) ** 3
+    N = int(round(n_ince + n_kaba + n_mermi))
+    dt = OLCULEN["dt_kaba_s"] / lam
+    gun = n_kosu * (t_simule_s / dt) * adim_maliyeti_s(N) / 86400.0
+    # Referans: lam=2, ayni r_ince -- bedelin KAC KATI oldugunu gostermek icin
+    N_ref = int(round(INCE_GEOMETRI_C * (r_ince_m / (s_kaba / 2.0)) ** 3
+                      + n_kaba + n_mermi))
+    gun_ref = (n_kosu * (t_simule_s / (OLCULEN["dt_kaba_s"] / 2.0))
+               * adim_maliyeti_s(N_ref) / 86400.0)
+    return {"lam": float(lam), "r_ince_m": float(r_ince_m),
+            "s_ince_m": s_ince, "A1": MERMI_CAPI_M / s_ince,
+            "n_ince": int(round(n_ince)), "N": N, "dt_s": dt,
+            "ensemble_gpu_gunu": gun,
+            "parcacik_carpani": N / max(N_ref, 1),
+            "dt_carpani": lam / 2.0,
+            "toplam_carpan_lam2ye_gore": gun / max(gun_ref, 1e-300)}

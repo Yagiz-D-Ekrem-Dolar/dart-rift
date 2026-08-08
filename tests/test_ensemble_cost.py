@@ -108,3 +108,92 @@ def test_FIZIBILITE_ile_dogrudan_kiyas_UYARISI_var() -> None:
     assert "doğrudan kıyaslanamaz" in m
     assert "2 000 000" in m and "11 000" in m
     assert "ORAN" in m
+
+
+def test_mermiyi_cozmek_icin_GEREKEN_lam() -> None:
+    """`A1 = D/s_ince` ve `s_ince = s_kaba/λ` ⇒ `λ = A1·s_kaba/D`."""
+    from dartrift.validation.ensemble_cost import (MERMI_CAPI_M,
+                                                   mermiyi_cozmek_icin_lam)
+
+    lam = mermiyi_cozmek_icin_lam(2.0, 7.0)
+    assert lam == pytest.approx(2.0 * 7.0 / MERMI_CAPI_M)
+    assert 18.0 < lam < 19.0, lam
+    # Bosluk 3 lam=2'de kapandi; gereken lam ONDAN cok buyuk.
+    assert lam > 9.0 * 2.0
+
+
+def test_geometrik_sabit_OLCULEN_degeri_veriyor() -> None:
+    """`c` uydurulmadı: `λ=2, r_iç=25` ölçümünden türetildi (`n_ince = 933`)."""
+    from dartrift.validation.ensemble_cost import (INCE_GEOMETRI_C,
+                                                   cozunurluk_bedeli)
+
+    assert INCE_GEOMETRI_C * (25.0 / 3.5) ** 3 == pytest.approx(933.0)
+    d = cozunurluk_bedeli(2.0, 25.0)
+    assert d["n_ince"] == pytest.approx(933, abs=1)
+    assert d["N"] == pytest.approx(11164, abs=2)
+
+
+def test_A1_lam_ile_DOGRU_hesaplaniyor() -> None:
+    """Ölçülen: `λ=2` → `A1 = 0,215` (`COZULMEMIS`)."""
+    from dartrift.validation.ensemble_cost import cozunurluk_bedeli
+
+    assert cozunurluk_bedeli(2.0, 25.0)["A1"] == pytest.approx(0.2146, abs=1e-3)
+    assert cozunurluk_bedeli(18.6, 3.0)["A1"] == pytest.approx(2.0, rel=1e-2)
+
+
+def test_r_ince_kucultmek_PARCACIK_yukunu_KALDIRIYOR() -> None:
+    """`n_ince ∝ r_iç³` — küçük bölge parçacık bedelini yok ediyor."""
+    from dartrift.validation.ensemble_cost import cozunurluk_bedeli
+
+    buyuk = cozunurluk_bedeli(18.6, 25.0)
+    kucuk = cozunurluk_bedeli(18.6, 3.0)
+    assert buyuk["ensemble_gpu_gunu"] / kucuk["ensemble_gpu_gunu"] > 50.0
+    assert kucuk["parcacik_carpani"] < 1.2, kucuk["parcacik_carpani"]
+
+
+def test_KALAN_bedel_TAMAMEN_dt_cezasi() -> None:
+    """Küçük bölgede toplam çarpan ≈ `dt` çarpanı. **Bulgunun özü.**
+
+    Tek global adımlı bir şemada bu **küçültülemez**; çözüm bireysel /
+    blok zaman adımı (bu kod tabanında **yok**).
+    """
+    from dartrift.validation.ensemble_cost import cozunurluk_bedeli
+
+    d = cozunurluk_bedeli(18.6, 3.0)
+    assert d["toplam_carpan_lam2ye_gore"] == pytest.approx(
+        d["parcacik_carpani"] * d["dt_carpani"], rel=1e-6)
+    # dt cezasi baskin: toplam carpanin en az %85'i
+    assert d["dt_carpani"] / d["toplam_carpan_lam2ye_gore"] > 0.85
+
+
+def test_cozulmus_mermi_30_GUNLUK_butceye_SIGMIYOR() -> None:
+    """Bulgunun kararı: A′ mevcut hâliyle ikisini birlikte veremiyor.
+
+    `λ=2`: bütçeye sığar ama mermi **çözülmemiş** (`A1 = 0,21`).
+    `λ=19`: mermi çözülür ama bütçe **3 kat** aşılır.
+    """
+    from dartrift.validation.ensemble_cost import (cozunurluk_bedeli,
+                                                   mermiyi_cozmek_icin_lam)
+
+    ucuz = cozunurluk_bedeli(2.0, 25.0)
+    # `lam` PRATIKTE tam sayi secilir ve gerekenin USTUNE yuvarlanir.
+    #
+    # Kayan nokta notu: `mermiyi_cozmek_icin_lam()` tam degeri (18,6418)
+    # geri konulunca `A1 = 1.9999999999999998` cikiyor -- gidis-donusun
+    # son biti. Kusur degil, ama esigin TAM ustunde bir olcum kayan
+    # noktayla ters yone dusebilir. Pratikte lam = 19 secilir.
+    cozulmus = cozunurluk_bedeli(19.0, 3.0)
+    assert mermiyi_cozmek_icin_lam() < 19.0
+    assert ucuz["ensemble_gpu_gunu"] < 30.0 and ucuz["A1"] < 2.0
+    assert cozulmus["A1"] >= 2.0 and cozulmus["ensemble_gpu_gunu"] > 3.0 * 30.0
+
+
+def test_cozunurluk_bedeli_gecersiz_girdi() -> None:
+    from dartrift.validation.ensemble_cost import (cozunurluk_bedeli,
+                                                   mermiyi_cozmek_icin_lam)
+
+    for lam, r in ((0.0, 3.0), (-1.0, 3.0), (2.0, 0.0), (2.0, -1.0)):
+        with pytest.raises(ValueError):
+            cozunurluk_bedeli(lam, r)
+    with pytest.raises(ValueError):
+        mermiyi_cozmek_icin_lam(0.0)
