@@ -305,6 +305,10 @@ def refine_scene_local(kaba, mesh, r_ince: float, lam: float,
     sec_kaba = k_hedef & (d_kaba >= r_ince)
     if not np.any(sec_kaba):
         raise ValueError(f"kaba bölge boş: r_ince={r_ince} hedefi kaplıyor")
+    # CIKARILAN kaba parcaciklar: kabalastirmanin DOGAL hedef siteleri
+    # (ADR-0043 §5). Burada saklanmazsa tuketici ayni secimi yeniden
+    # yazmak zorunda kalir -- raporun iki kez yakaladigi kalip.
+    cikarilan_x = kaba.x[k_hedef & (d_kaba < r_ince)].copy()
 
     # 4) alpha0/Y0: EN YAKIN kaba parcaciktan (kaya bloku yapisini korur).
     hedef_x = kaba.x[k_hedef]
@@ -365,5 +369,8 @@ def refine_scene_local(kaba, mesh, r_ince: float, lam: float,
             "h_min": float(h.min()), "h_max": float(h.max()),
             # YAKLASIM: blok sinirlari ince kafeste KABA cozunurlukte kalir.
             "blok_sinirlari_kaba_cozunurlukte": True,
+            # Kabalastirmanin hedef siteleri (ADR-0043 §5).
+            "cikarilan_kaba_x": cikarilan_x,
+            "n_cikarilan_kaba": int(len(cikarilan_x)),
         },
     )
