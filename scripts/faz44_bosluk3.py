@@ -13,7 +13,13 @@ from __future__ import annotations
 import json
 import sys
 
-sys.path.insert(0, "/arf/scratch/egitimg16/driftclaude/dart-rift/src")
+from pathlib import Path  # noqa: E402
+
+# Depo koku __file__'DAN turetiliyor, sabit yazilmiyor: depo
+# tasindiginda ya da baska bir kullaniciyla kosuldugunda sabit
+# yol SESSIZCE yanlis src'yi bulur (ya da hic bulmaz).
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "src"))
 
 from dartrift.validation.solid_interface import (  # noqa: E402
     BASALT_SOLID, _malzeme, run_solid_interface)
@@ -118,7 +124,7 @@ def main() -> int:
         _yaz(yk)
         sonuclar[ad] = yk
 
-    with open("/arf/scratch/egitimg16/driftclaude/faz44_sonuc.json", "w") as f:
+    with open(REPO.parent / "faz44_sonuc.json", "w") as f:
         json.dump({"t_end": t_end, "sonuclar": sonuclar}, f, indent=2)
     print("\nyazildi: faz44_sonuc.json", flush=True)
 

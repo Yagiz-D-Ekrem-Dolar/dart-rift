@@ -11,7 +11,13 @@ import sys
 
 import numpy as np
 
-sys.path.insert(0, "/arf/scratch/egitimg16/driftclaude/dart-rift/src")
+from pathlib import Path  # noqa: E402
+
+# Depo koku __file__'DAN turetiliyor, sabit yazilmiyor: depo
+# tasindiginda ya da baska bir kullaniciyla kosuldugunda sabit
+# yol SESSIZCE yanlis src'yi bulur (ya da hic bulmaz).
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "src"))
 
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
 from dartrift.validation.solid_interface import (  # noqa: E402

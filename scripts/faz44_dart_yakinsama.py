@@ -36,7 +36,7 @@ from pathlib import Path
 
 import numpy as np
 
-REPO = Path("/arf/scratch/egitimg16/driftclaude/dart-rift")
+REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from dartrift.cpu_reference.materials import (  # noqa: E402
@@ -137,8 +137,8 @@ def main() -> int:
     ap.add_argument("--steps", type=int, default=3000)
     ap.add_argument("--every", type=int, default=250)
     ap.add_argument("--r-ince", type=float, default=25.0)
-    ap.add_argument("--out", default="/arf/scratch/egitimg16/driftclaude/"
-                                     "faz44_dart_sonuc.json")
+    ap.add_argument("--out",
+                    default=str(REPO.parent / "faz44_sonuc.json"))
     a = ap.parse_args()
 
     print("=" * 78, flush=True)
