@@ -1,0 +1,70 @@
+"""Sıkıntı raporunun **kendisi** sınanıyor (FAZ 4).
+
+Bir sıkıntı raporu güncellenmezse kötüden beter olur: okuyan onu doğru
+sanar. Bu dosya raporun temel değişmezlerini koruyor.
+"""
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+RAPOR = Path(__file__).resolve().parents[1] / "docs" / "FAZ4-SIKINTI-RAPORU.md"
+
+
+def test_rapor_VAR() -> None:
+    assert RAPOR.is_file(), "FAZ4-SIKINTI-RAPORU.md yok"
+
+
+def test_ACIK_sikintilar_KOTAYA_baglaniyor() -> None:
+    """En önemli engel açıkça yazılı ve **kanıtlı** olmalı."""
+    m = RAPOR.read_text(encoding="utf-8")
+    assert "AssocGrpCPUMinutesLimit" in m
+    assert "7 200 096" in m and "7 200 000" in m
+    assert "1460742" in m, "kuyruktaki isin numarasi yazili degil"
+
+
+def test_hicbir_satir_SILINMEZ_kurali_yazili() -> None:
+    m = RAPOR.read_text(encoding="utf-8")
+    assert "hiçbir satır silinmez" in m.lower()
+
+
+def test_KAPANAN_ve_ACIK_sayilari_TABLOLARLA_tutuyor() -> None:
+    """Başlıktaki sayı, tablolardaki satır sayısıyla uyuşmalı.
+
+    Bir rapor kendi özetiyle çelişirse okuyan hangisine inanacağını
+    bilemez. Sayılar **türetilmiyor** (elle yazılıyor) o yüzden burada
+    denetleniyor.
+    """
+    m = RAPOR.read_text(encoding="utf-8")
+    kapanan = int(re.search(r"\*\*Kapanan:\*\* (\d+)", m).group(1))
+    acik = int(re.search(r"\*\*Açık:\*\* (\d+)", m).group(1))
+
+    # ACIK: "### A1" ... "### A4" basliklari
+    a_basliklar = re.findall(r"^### A\d+ ", m, flags=re.M)
+    assert len(a_basliklar) == acik, (len(a_basliklar), acik)
+
+    # KAPANAN: §2'deki tablolarda "| N | " ile baslayan satirlar
+    bolum2 = m.split("## 2. KAPANAN")[1].split("## 3.")[0]
+    numaralar = {int(x) for x in re.findall(r"^\| (\d+) \|", bolum2, flags=re.M)}
+    assert numaralar == set(range(1, kapanan + 1)), (
+        f"numaralar {sorted(numaralar)} ile Kapanan={kapanan} tutmuyor")
+
+
+def test_DOGRU_yapilanlar_bolumu_var() -> None:
+    """Yalnızca hataları listeleyen rapor ne işe yaradığını göstermez."""
+    m = RAPOR.read_text(encoding="utf-8")
+    assert "doğru** yapılanlar" in m or "doğru yapılanlar" in m.lower()
+
+
+def test_TEKRARLANAN_kaliplar_sayiliyor() -> None:
+    """Bir hata iki kez olduysa **kalıp**tır ve öyle işaretlenmeli."""
+    m = RAPOR.read_text(encoding="utf-8")
+    assert "kalıp" in m.lower()
+    assert "ölçmeden yazmak" in m
+
+
+def test_kusurlarin_HICBIRI_cozucude_denmiyor_KANITSIZ() -> None:
+    """"Hiçbiri çözücüde değil" iddiası sınıflandırmayla desteklenmeli."""
+    m = RAPOR.read_text(encoding="utf-8")
+    assert "Hiçbiri SPH çözücüsünde değil" in m
+    assert "## 3. Kusurların" in m, "siniflandirma bolumu yok"
