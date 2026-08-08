@@ -144,6 +144,10 @@ def main() -> int:
     print("=" * 78, flush=True)
     mat = _malzeme()
     sonuclar = {}
+    # A2/A3 kurulumdan gelir; butun kollarin EN KOTUSU tutulur (kapi en
+    # zayif halkadan gecer).
+    a2_carpani = float("inf")
+    a3_sapma = 0.0
 
     for s_kaba, lam in ((7.0, 2), (7.0, 3), (5.0, 2)):
         s_ince = s_kaba / lam
@@ -153,17 +157,35 @@ def main() -> int:
         kaba = build_scene(spacing=s_kaba, device="cpu", **SAHNE)
         ince = build_scene(spacing=s_ince, device="cpu", **SAHNE)
         rs = refine_scene(kaba, ince, r_ince=a.r_ince)
+        # A2: ince bolge mermiyi KAPSIYOR mu -> r_ince / R_mermi
+        r_mermi = _mermi_yaricapi(rs.x, rs.is_impactor)
+        a2_carpani = min(a2_carpani, a.r_ince / max(r_mermi, 1e-300))
+        a3_sapma = max(a3_sapma, rs.diagnostics["hedef_kutle_sapmasi"])
         print(f"    tasarruf {rs.diagnostics['tasarruf']:.2f}x, "
-              f"kutle sapmasi {rs.diagnostics['hedef_kutle_sapmasi']:.3e}",
+              f"kutle sapmasi {rs.diagnostics['hedef_kutle_sapmasi']:.3e}, "
+              f"r_ince/R_mermi {a.r_ince / max(r_mermi, 1e-300):.2f}",
               flush=True)
         sonuclar[ad + "_Aprime"] = _kos(rs, mat, a.device, a.steps, a.every,
                                         ad + " A'", tek_h=False)
         sonuclar[ad + "_tek_h"] = _kos(rs, mat, a.device, a.steps, a.every,
                                        ad + " tek h", tek_h=True)
 
-    Path(a.out).write_text(json.dumps(
-        {"r_ince": a.r_ince, "steps": a.steps, "sonuclar": sonuclar}, indent=2))
+    # G4 anahtarlarini AYNI dosyaya yaz -- kapi betigi bu dosyayi dogrudan
+    # okuyabilsin diye. Ceviri mantigi validation/g4_ozet.py'de ve SINANIYOR
+    # (measure_longrun'daki gomulu plato mantiginin hatasini tekrarlamamak icin).
+    from dartrift.validation.g4_ozet import faz44_ozet
+
+    ham = {"r_ince": a.r_ince, "steps": a.steps,
+           "A2_r_ince_carpani": a2_carpani,
+           "A3_kutle_sapmasi": a3_sapma,
+           "sonuclar": sonuclar}
+    ham.update(faz44_ozet(ham))
+    Path(a.out).write_text(json.dumps(ham, indent=2))
     print(f"\nyazildi: {a.out}", flush=True)
+    print("\nG4 ANAHTARLARI", flush=True)
+    for k in ("A1_mermi_parcacik_cap", "A2_r_ince_carpani", "A3_kutle_sapmasi",
+              "B1_beta_farki", "B3_Aprime_daha_yakin"):
+        print(f"    {k:26s} = {ham.get(k, 'KOSULMADI')}", flush=True)
 
     print("\nOZET", flush=True)
     print(f"    {'kol':22s} {'N':>8s} {'beta':>10s} {'mermi p/cap':>12s}",
