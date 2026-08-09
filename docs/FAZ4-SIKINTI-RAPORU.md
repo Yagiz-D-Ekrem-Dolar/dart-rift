@@ -769,6 +769,64 @@ tutarlı hedef"* ve karşılaştırma bu farkı **belirterek** okunmalı —
 
 ---
 
+### A15 — Uzun koşunun krater sütunu **ejektayı ölçüyordu** (2026-08-09)
+
+`faz48 --t-end 5.0` bitti (`9805,5 s` duvar). Krater sütunu:
+
+| `t` | derinlik | çap |
+|---|---|---|
+| 3,92 | 0,0950 | 0,000 |
+| 4,16 | 0,1098 | 0,000 |
+| 4,28 | 0,1201 | 0,000 |
+| **4,40** | **5,3278** | **25,476** |
+| 4,65 | 5,3206 | 25,475 |
+| 5,00 | 5,3145 | 25,476 |
+
+Tek örnekte `44×` sıçrama, sonra dört hane kararlı.
+
+> **Fizik böyle davranmaz.** `4,3` saniye boyunca hiçbir şey olmayan bir
+> yerde krater bir adımda açılmaz; çapın `0`'dan `25,476`'ya atlayıp
+> orada donması bir **kutunun geçerli hâle gelmesinin** imzası.
+
+#### Mekanizma — ölçüldü
+
+Aynı sahnede, **kratersiz** ve varsayılan kutulamayla `crater_profile`
+çağırınca:
+
+```
+ValueError: carpma ekseni kutusunda 0 parcacik var (en az 5 gerekir).
+            Yuzey parcacigi 800, n_bins=20.
+```
+
+**Kratersiz sahne ölçülemiyor.** Ama koşu sayı üretti. Aradaki tek fark
+uçuştaki maddedir: mermi kırıntısı çarpma ekseni boyunca dışarı gidiyor
+ve `surface_particles` yarıçap üst sınırı olmadığı için (A13) onu
+*"yüzey"* sayıyor.
+
+Yani `0,033 → 0,12 m` **kraterin büyümesi değil, ejektanın
+sürüklenmesiydi**. `t = 4,40`'ta o maskeleme kalktı ve altındaki kutu
+okunur oldu.
+
+#### Ne söylenebilir, ne söylenemez
+
+| | |
+|---|---|
+| `5,31 m` / `25,48 m`'nin **başlangıç zamanı** | **anlamsız** |
+| büyüklüğün kendisi | **belirsiz** — ayrı ölçüm gerekiyor |
+| `d/D = 0,21` tipik krater oranı | **teşvik edici ama kanıt değil** |
+
+#### Yapılan
+
+`_iz_ornegi` artık `KRATER_AYARLARI_DART` kullanıyor (A13 düzeltmesi;
+`n_theta = 1024` + ejekta süzgeci). Koşu **yeniden başlatıldı**
+(`faz48_v2`). Beklenti: düzeltilmiş ayarlarla krater erkenden ve
+**sürekli** görünmeli. Sıçrama tekrarlarsa açıklama yanlıştır.
+
+> Bu bir tahmin, sonuç değil. Sıçramanın tekrar edip etmediği
+> `faz48_v2`'nin cevaplayacağı **ayırt edici** soru.
+
+---
+
 ## 2. KAPANAN sıkıntılar — kronolojik
 
 ### Ölçüm tasarımı (1–4)

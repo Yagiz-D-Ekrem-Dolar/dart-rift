@@ -220,6 +220,7 @@ def _iz_ornegi(st, *, hedef, R, v_esc, ehat, p_imp, x0) -> dict:
     olmadigi (`kacis_bekleyenler`). Beklemekle ogrenilemez, ama her
     ornekte bedavaya olculur — o yuzden ize KONULDU.
     """
+    from dartrift.inference.forward import KRATER_AYARLARI_DART
     from dartrift.observables.crater_shape import crater_profile
     from dartrift.observables.momentum_transfer import (balistik_beta,
                                                         kacis_bekleyenler)
@@ -235,9 +236,14 @@ def _iz_ornegi(st, *, hedef, R, v_esc, ehat, p_imp, x0) -> dict:
              t_gecis_medyan=kb["t_gecis_medyan"],
              t_gecis_min=kb["t_gecis_min"])
     try:
+        # DUZELTILMIS AYARLAR (rapor A13). Varsayilan kutulama bu
+        # geometride krateri OLCEMIYOR: kutup kutusu 14,36 deg, krater
+        # yari-acisi 7 deg. Uzun kosuda derinlik 4,3 s boyunca ~0,1
+        # okudu, sonra TEK ORNEKTE 5,33'e sicradi -- fizik degil, bir
+        # kutunun gecerli hale gelmesi.
         kr = crater_profile(x[hedef], center=np.zeros(3),
                             impact_direction=ehat, reference_radius=R,
-                            x_reference=x0[hedef])
+                            x_reference=x0[hedef], **KRATER_AYARLARI_DART)
         d["krater_derinlik"] = float(kr.depth)
         d["krater_cap"] = float(kr.diameter)
     except Exception as e:                                 # noqa: BLE001
