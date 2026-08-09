@@ -312,7 +312,56 @@ edilebilir. Ama **nötr değil** ve iki şey **ölçülmedi**:
 
 ---
 
-## 5. Uygulanması gereken — **mevcut değil**
+## 4e. Şema **uçtan uca kuruldu** (2026-08-09)
+
+`setup/two_stage.py` + `scripts/faz48_iki_asama.py`. CPU ön uçuşu
+(`λ₁=6`, `r_iç=6 m`, kısa `t`) hattı **baştan sona** koşturdu.
+
+### Çözülen asıl sorun: **çifte sayım**
+
+Kabalaştırılmış parçacıklar aşama-1'in ince bölgesinden geliyor;
+aşama-2'nin **kendi** parçacıkları da orada. İkisi de kalırsa o
+bölgenin kütlesi **iki katına** çıkar ve ADR-0030 delinir.
+
+> Çıkarma ölçütü **Lagrange'cı**: aşama-2'nin `r_iç_aşama1` içinde
+> **başlamış** parçacıkları atılır — *"bu madde aşama-1'de mi vardı"*.
+> Naif yol (*"kabalaştırılmışa yakın olanı at"*) keyfî bir mesafe
+> eşiği isterdi.
+
+### Ön uçuş ölçümleri
+
+| büyüklük | değer |
+|---|---|
+| korunum (kütle / momentum / enerji) | `2,8e-15` / `2,6e-16` / `1,8e-16` |
+| atama mesafesi | `0,672` hücre |
+| komşu medyanı (birleşik sahnede) | **229** (`<30` oranı `0,000`) |
+| **bölge kütle uyuşmazlığı** | **`%2,82`** |
+
+### Yeni bulgu: bölge kütle uyuşmazlığı `%2,82`
+
+Aşama-1'in ince bölgesi ile aşama-2'nin **atılan** bölgesi aynı
+fiziksel hacmi temsil ediyor ama **iki farklı kafesle** örneklenmiş.
+Aktarım korunumu bunu **görmüyor** — o yalnızca aşama-1'in kütlesini
+koruyor.
+
+> Küçük ama **sistematik** ve tam da **krater bölgesinde** — `β` oradan
+> geliyor. Mermi kütlesi (`579 kg`) hesaptan doğru şekilde çıkarılmış
+> durumda; `%2,82` saf ayrıklaştırma farkı. Tanı olarak raporlanıyor,
+> **düzeltilmedi**.
+
+### Ön uçuş **iki kendi kusurumu** buldu
+
+| kusur | önce | sonra |
+|---|---|---|
+| komşu tanısı yalnızca aktarılanlar arasında sayıyordu | medyan **27**, `<30` oranı **1,000** | medyan **229**, `<30` oranı **0,000** |
+| `is_impactor` `state_numpy()`'dan okunmaya çalışılıyordu (o anahtar **yok**) | mermi kütlesi **hiç** çıkarılmıyordu | zorunlu parametre |
+
+> Birincisi *"her aktarılan parçacık komşusuz"* diyordu ve paniğe
+> değecek bir sayıydı — **ölçüm aracının kendisi bozuktu**.
+
+---
+
+## 5. Uygulanması gereken — ~~**mevcut değil**~~ **YAZILDI**
 
 Bu seçenek bir **kabalaştırma** adımı istiyor: aşama-1'in ince
 parçacıkları aşama-2'nin kaba kafesine aktarılmalı.
