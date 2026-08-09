@@ -381,6 +381,33 @@ Geri almadan sonra *"belki çağıran taraf ters işaret veriyordur"* diye
 > Yani ölçüm **yapılıyor** ve `≈ 0,035 m` çıkıyor çünkü **krater yok**.
 > Bu kez iddia etmeden **önce** denetledim.
 
+#### Gözlenebilir **kurtarılabilir** — ayarlı kutulamayla ölçüldü
+
+Beklenen krater çapı mertebe kestirimiyle **10–25 m** (Holsapple
+mukavemet rejimi, `Y = 1e4…1e5 Pa`), varsayılan algılama tabanı ise
+`D ≳ 20 m`. Yani gözlenebilir **tam tabanın üstünde** duruyor.
+
+Bilinen `D = 16 m`, derinlik `3 m` kraterle ayarlar tarandı:
+
+| `s` | `outer` | `n_bins` | `n_theta` | ölçülen derinlik |
+|---|---|---|---|---|
+| 3,5 | 60° | 20 | vars. | **0,000** |
+| 3,5 | 20° | 10 | 48 | 0,724 |
+| 2,0 | 20° | 10 | 48 | 0,991 |
+| **2,0** | **12°** | **8** | **64** | **2,082** (gerçek `3,0`) |
+
+> **Varsayılan ayarlar kraterin ölçeğine göre çok kaba.** Kutulama
+> kratere uydurulunca derinliğin `%69`'u geri geliyor.
+
+**Üç ayar birlikte değişmeli:** `outer_angle_deg` beklenen kratere
+(`~12°`), `n_theta` daha ince (`~64`), ve `depth_threshold` — `%5 × R
+= 4,1 m` üç metrelik bir krater için **çok yüksek**, çap bu yüzden hâlâ
+`0`.
+
+`s = 3,5 m` (ensemble çözünürlüğü) en iyi hâlde `%24` veriyor; güvenilir
+bir krater gözlenebiliri **daha ince yüzey** istiyor. Bu, FAZ 4.6'nın
+tasarımına giren **ölçülmüş** bir kısıt.
+
 ### A12 — **`β` ejektayı değil MERMİNİN SEKMESİNİ ölçüyor** (2026-08-09)
 
 > ### ⚠ Bunu *"en ağır yeni bulgu"* diye yazdım — **yeni değil**
