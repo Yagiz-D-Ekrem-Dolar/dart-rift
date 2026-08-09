@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 __all__ = ["BetaResult", "escape_speed", "estimate_target_radius",
-           "momentum_transfer", "beta_sensitivity"]
+           "momentum_transfer", "beta_sensitivity", "kacis_bekleyenler"]
 
 # Duzgun dolu bir kurede yaricapin medyan uzakliga orani. r < R kabugundaki
 # kutle ~ (r/R)^3 oldugundan medyan uzaklik R/2^(1/3)'tur.
@@ -272,3 +272,100 @@ def beta_sensitivity(
         "speed_axis_active": bool(yay_f > 0.0),
         "base": base,
     }
+
+
+def kacis_bekleyenler(
+    x: np.ndarray,
+    v: np.ndarray,
+    m: np.ndarray,
+    *,
+    hedef: np.ndarray,
+    R: float,
+    v_esc: float,
+) -> dict:
+    """Ejekta olmaya ADAY madde: iceride ama disari dogru yeterince hizli.
+
+    ## Ne sorunun cevabi
+
+    `n_hedef_ejekta` sabit kalinca iki ihtimal var ve ikisi COK farkli:
+
+    1. Kazi hala suruyor; madde yolda, henuz `r > R`'yi gecmedi.
+       -> **daha uzun kos**, tasarim saglam.
+    2. Disari giden hicbir sey yok; kazi olmuyor.
+       -> **daha uzun kosmak bosuna**, tasarim degismeli.
+
+    Beklemekle ayirt edilemez ama OLCMEKLE ayirt edilir: su an `r < R`
+    olup `v_r > v_kacis` giden parcacik VAR MI?
+
+    ## `t_gecis` neyin tahmini, neyin degil
+
+    Yercekimi kapali (`GravityParams(enabled=False)`), yani parcaciga
+    baska kuvvet binmiyorsa `(R - r) / v_r` saniye sonra yuzeyi gecer.
+    Ama bu madde hala CISMIN ICINDE, yani basinc altinda: hizlanabilir
+    de yavaslayabilir de.
+
+    > Bu yuzden `t_gecis` bir **kestirim degil, buyukluk mertebesi**.
+    > "3 saniye" ile "3000 saniye" arasindaki farki soyler; "3,4 mu
+    > 3,8 mi" sorusuna cevap vermez. Kesinmis gibi rapor edilmemeli.
+
+    ## `v_kacis` esiginin kendi kusuru
+
+    Yercekimi kapaliyken `v_r < v_kacis` olan bir parcacik geri
+    DUSMEZ, oylece surukler. Yani esik, simule EDILMEYEN bir fizigin
+    yerine gecen bir vekil. Bu ADR-0028'de kilitli bir secim; burada
+    yalnizca hatirlatiliyor, yeniden tartisilmiyor.
+
+    Donenler
+    --------
+    ``n_kacti``      : `r > R` ve `v_r > v_kacis` — zaten ejekta.
+    ``n_bekleyen``   : `r <= R` ve `v_r > v_kacis` — yolda.
+    ``n_yavas_disi`` : `r > R` ama `v_r <= v_kacis` — cikti, yavas.
+    ``t_gecis_*``    : bekleyenlerin gecis suresi yuzdelikleri; bekleyen
+                       yoksa **NaN** (uydurma sayi yok).
+    """
+    x = np.asarray(x, dtype=np.float64)
+    v = np.asarray(v, dtype=np.float64)
+    m = np.asarray(m, dtype=np.float64)
+    hedef = np.asarray(hedef, dtype=bool)
+    if not (len(x) == len(v) == len(m) == len(hedef)):
+        raise ValueError("x, v, m, hedef ayni uzunlukta olmali")
+    if R <= 0.0:
+        raise ValueError("R pozitif olmali")
+
+    r = np.linalg.norm(x, axis=1)
+    # r = 0'da radyal yon tanimsiz; boyle bir parcacik ne cikiyor ne
+    # giriyor sayilir (v_r = 0), yani hicbir kovaya dusmez.
+    guvenli = np.maximum(r, 1e-300)
+    vr = np.einsum("ij,ij->i", v, x / guvenli[:, None])
+
+    hizli = vr > v_esc
+    disarida = r > R
+    kacti = hedef & disarida & hizli
+    bekleyen = hedef & (~disarida) & hizli
+    yavas_disi = hedef & disarida & (~hizli)
+
+    hedef_kutle = float(m[hedef].sum())
+    d: dict = {
+        "n_kacti": int(kacti.sum()),
+        "n_bekleyen": int(bekleyen.sum()),
+        "n_yavas_disi": int(yavas_disi.sum()),
+        "bekleyen_kutle_kesri": float(m[bekleyen].sum()
+                                      / max(hedef_kutle, 1e-300)),
+        "v_kacis": float(v_esc),
+        "R": float(R),
+    }
+
+    if not bekleyen.any():
+        d.update(t_gecis_min=float("nan"), t_gecis_medyan=float("nan"),
+                 t_gecis_p90=float("nan"),
+                 yargi="bekleyen_yok")
+        return d
+
+    tg = (R - r[bekleyen]) / vr[bekleyen]
+    d.update(
+        t_gecis_min=float(np.min(tg)),
+        t_gecis_medyan=float(np.median(tg)),
+        t_gecis_p90=float(np.percentile(tg, 90.0)),
+        yargi="bekleyen_var",
+    )
+    return d

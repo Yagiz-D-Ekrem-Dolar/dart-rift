@@ -614,6 +614,69 @@ GPU'suz sınanıyor) ama sıfırlanamadı.
 
 ---
 
+### A13 — **`KRATER_AYARLARI_DART` krateri ölçemiyordu; `n_theta` yanlıştı** (2026-08-09)
+
+> ### ⚠ Bu benim **kendi** düzeltmemin kusuru
+>
+> A11'i kapatırken `outer_angle_deg` ve `n_bins`'i ölçerek ayarladım
+> ve *"ayarlı ayarlar derinliğin `%69`'unu geri kazanıyor"* dedim.
+> `n_theta = 64`'ü **hiç sorgulamadım** — oysa bağlayıcı kısıt oydu.
+
+#### Ölçüm
+
+`surface_particles` `cos θ`'da **eşit** kutular kullanıyor, yani
+kutuptaki kutu açısal olarak en geniş olanı. Krater tam kutupta:
+
+| `n_theta` | kutup kutusu | `D = 20 m` kraterin yarı-açısı |
+|---|---|---|
+| **64** | **14,36°** | 7,00° |
+| 256 | 7,17° | 7,00° |
+| **1024** | **3,58°** | 7,00° |
+
+`64`'te krater **tek bir kutunun içine sığıyor** ve görünmez oluyor.
+Gerçek derinlik `2 → 12 m` (**6 kat**) değişirken ölçülen:
+
+| gerçek | `n_theta = 64` | `n_theta = 1024` |
+|---|---|---|
+| 2 m | **1,1975** | 2,46 |
+| 5 m | **1,1975** | 4,93 |
+| 10 m | **1,1975** | 7,48 |
+| 12 m | **1,1975** | — |
+
+**Sabit bir çıktı gözlenebilir değildir.** Bir parametre hakkında sıfır
+bilgi taşır; çıkarıma girseydi `krater_derinlik` sütunu gürültü olurdu.
+
+#### İkinci kusur: uçuştaki ejekta krateri kapatıyor
+
+`surface_particles` kutudaki **en uzak** parçacığı alıyor ve yarıçap üst
+sınırı **yok**. Kraterin üstünde uçan madde hâlâ aynı açısal kutuda, yani
+"yüzey" o oluyor. `ejekta_yaricap_carpani = 1.05` eklendi.
+
+> Süzgeç **yalnızca ölçülen yüzeye** uygulanmalı. İkisine birden
+> uygulayınca hayatta kalan parçacıklar zaten taban altında olduğu için
+> referans = ölçüm oluyor ve sonuç **özdeş sıfır** — bunu da ölçerek
+> öğrendim (ilk denemem buydu).
+
+#### Doğrulama ve yanlış-pozitif denetimi
+
+Gerçek aşama-2 sahnesinde (`N = 10 380`) `2/5/10 m` → `2,46/4,93/7,48`,
+tek düze artan. Kabuk sınavında oran üçünde de **`0,823`** — doğrusal.
+
+Kratersiz sahnede, yüzey gürültüsü `0 → 0,5 m`, 3 tohum:
+**gürültü tabanı en kötü `0,43 m`**. `2 m` krater `2,46` okunduğu için
+pay **`5,7×`**.
+
+#### Durum
+
+`n_theta = 1024`, `n_phi = 128`, `ejekta_yaricap_carpani = 1.05`
+işlendi. Beş test kilitliyor; biri `n_theta`'yı düşüreni yakalıyor.
+
+**Hâlâ açık:** `krater_capi` (çap) hâlâ `0` okuyor — derinlik kurtarıldı,
+çap kurtarılmadı. `4096`'da 2 m krater kayboluyor: tatlı nokta **dar** ve
+farklı bir sahne çözünürlüğünde yeniden ölçülmeli.
+
+---
+
 ## 2. KAPANAN sıkıntılar — kronolojik
 
 ### Ölçüm tasarımı (1–4)

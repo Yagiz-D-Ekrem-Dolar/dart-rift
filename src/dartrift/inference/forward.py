@@ -105,8 +105,41 @@ def sahne_parametreleri(theta, taban: dict | None = None, *,
 #: > `s = 3,5 m`'de (ensemble çözünürlüğü) en iyi hâlde `%24` geri
 #: > geliyor; bu ayarlar gözlenebiliri **kullanılabilir** yapar,
 #: > **doğru** yapmaz. Daha ince yüzey gerekir.
+#: DART geometrisi icin krater cikarici ayarlari.
+#:
+#: ## `n_theta = 64` ILK SURUMDE YANLISTI — duzeltildi
+#:
+#: `outer_angle_deg` ve `n_bins` ayarlanmisti ama BAGLAYICI KISIT
+#: gozden kacmisti. `surface_particles` `cos(theta)`da esit kutular
+#: kullanir, yani kutuptaki kutu acisal olarak DEVDIR:
+#:
+#:     n_theta =   64  ->  kutup kutusu 14,36 deg
+#:     n_theta =  256  ->                7,17 deg
+#:     n_theta = 1024  ->                3,58 deg
+#:
+#: `D = 20 m` kraterin yari-acisi `7,00 deg`. `n_theta = 64`'te krater
+#: TEK BIR KUTUNUN ICINDE kayboluyordu. Olculdu (DART asama-2 sahnesi,
+#: gercek derinlik 2 -> 12 m, yani 6 KAT):
+#:
+#:     n_theta = 64   ->  olculen SABIT 1,1975 m   (derinlikten BAGIMSIZ)
+#:     n_theta = 1024 ->  2,46 / 4,93 / 7,48 m     (2/5/10 m icin)
+#:
+#: Sabit cikti bir gozlenebilir degildir. `256` hala yetmiyor (7,17 >
+#: 7,00); `4096` ise kutu basina parcacik biterek 2 m'yi kaybediyor.
+#: Tatlı nokta DAR ve olculerek secildi.
+#:
+#: `ejekta_yaricap_carpani` olmadan bu ayarlar da ise yaramaz: ucustaki
+#: ejekta krater kutularini kapatir (bkz. `crater_profile` belgesi).
+#:
+#: Gurultu tabani bu ayarlarla OLCULDU (kratersiz gercek sahne, yuzey
+#: gurultusu 0 -> 0,5 m, 3 tohum): **en kotu 0,43 m**. `2 m` krater
+#: `2,46` okundugu icin pay `5,7x`.
 KRATER_AYARLARI_DART = {"outer_angle_deg": 12.0, "n_bins": 8,
-                        "n_theta": 64, "n_phi": 128}
+                        "n_theta": 1024, "n_phi": 128,
+                        "ejekta_yaricap_carpani": 1.05}
+
+#: Yukaridaki secimin dayandigi olcum — testler bunu kilitler.
+KRATER_KUTUP_KUTUSU_ESIGI_DEG = 7.0
 
 
 def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,

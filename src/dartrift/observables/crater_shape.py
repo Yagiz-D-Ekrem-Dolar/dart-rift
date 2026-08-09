@@ -129,6 +129,7 @@ def crater_profile(
     n_theta: int | None = None,
     n_phi: int | None = None,
     x_reference: np.ndarray | None = None,
+    ejekta_yaricap_carpani: float | None = None,
 ) -> CraterShape:
     """Yerel krateri, kuresel bicim degisiminden ayirarak olc.
 
@@ -144,6 +145,19 @@ def crater_profile(
     "carpmadan etkilenmemis" sayilir.
     `depth_threshold` krater kenarini belirler: referanstan sapma, referans
     yaricapin bu kesrini astigi yer krater icidir.
+
+    `ejekta_yaricap_carpani` OLCULEN yuzeyden ucustaki ejektayi eler:
+    `r > carpan * reference_radius` olan parcaciklar yuzey ADAYI sayilmaz.
+    Gerekli, cunku `surface_particles` kutudaki EN UZAK parcacigi alir ve
+    yarıcap ust siniri YOKTUR; kraterin ustunde ucan madde hala ayni acisal
+    kutudadir, yani taban yerine ejekta "yuzey" olur ve krater GORUNMEZ.
+    Olculdu (DART asama-2 sahnesi, gercek 2/5/10 m krater): suzgecsiz
+    2,46/4,93/7,48 yerine SABIT 1,1975 — yani derinlikten BAGIMSIZ.
+
+    > Suzgec YALNIZCA olculen yuzeye uygulanir, `x_reference`e DEGIL.
+    > Ikisine birden uygulanirsa hayatta kalan parcaciklar zaten taban
+    > altinda oldugu icin referans = olcum olur ve sonuc ozdes sifirdir
+    > (olculdu).
     """
     x = np.ascontiguousarray(x, dtype=np.float64)
     c = np.asarray(center, dtype=np.float64).reshape(3)
@@ -172,8 +186,23 @@ def crater_profile(
         ca = np.clip((rr @ axis) / np.maximum(dd, 1e-300), -1.0, 1.0)
         return dd, np.degrees(np.arccos(ca))
 
-    si = surface_particles(x, c, n_theta=n_theta, n_phi=n_phi)
-    rs = x[si] - c[None, :]
+    x_olcum = x
+    n_elenen = 0
+    if ejekta_yaricap_carpani is not None:
+        if ejekta_yaricap_carpani <= 0.0:
+            raise ValueError("ejekta_yaricap_carpani pozitif olmali, "
+                             f"{ejekta_yaricap_carpani} geldi")
+        tut = np.linalg.norm(x - c[None, :], axis=1) <= \
+            ejekta_yaricap_carpani * reference_radius
+        n_elenen = int(np.count_nonzero(~tut))
+        if not np.any(tut):
+            raise ValueError(
+                f"ejekta suzgeci ({ejekta_yaricap_carpani} x R) TUM "
+                f"parcaciklari eledi; olcecek yuzey kalmadi")
+        x_olcum = x[tut]
+
+    si = surface_particles(x_olcum, c, n_theta=n_theta, n_phi=n_phi)
+    rs = x_olcum[si] - c[None, :]
     rad = np.linalg.norm(rs, axis=1)
     cosang = np.clip((rs @ axis) / np.maximum(rad, 1e-300), -1.0, 1.0)
     ang = np.degrees(np.arccos(cosang))
@@ -329,6 +358,8 @@ def crater_profile(
             # kabul edilmistir; duzensiz cisimde olculen "krater" sekilden
             # gelebilir (kratersiz Dimorphos elipsoidinde 9,04 m olculdu).
             "reference_is_spherical": bool(x_reference is None),
+            "ejekta_suzgeci": ejekta_yaricap_carpani,
+            "ejekta_elenen": n_elenen,
             "reference_radius_pre_impact": r0_global,
             "global_shift_applied": float(global_shift),
         },

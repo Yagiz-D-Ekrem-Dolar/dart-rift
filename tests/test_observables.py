@@ -12,6 +12,7 @@ from dartrift.observables.crater_shape import crater_profile, surface_particles
 from dartrift.observables.ejecta_catalog import catalog_ejecta, cumulative_mass_velocity
 from dartrift.observables.momentum_transfer import (
     beta_sensitivity,
+    kacis_bekleyenler,
     escape_speed,
     momentum_transfer,
 )
@@ -672,3 +673,97 @@ def test_krater_ekseni_kutusu_SEYREKSE_hata_veriyor():
     with pytest.raises(ValueError, match="carpma ekseni kutusunda"):
         crater_profile(x, center=np.zeros(3), impact_direction=idir,
                        reference_radius=R, x_reference=x0)
+
+
+# ---------------------------------------------------------------------------
+# kacis_bekleyenler — "bekle" ile "bosuna bekliyorsun" arasini ayiran tani
+# ---------------------------------------------------------------------------
+
+def _bekleyen_sahne():
+    """Elle kurulmus, her kovada BILINEN sayida parcacik olan sahne.
+
+    R = 10, v_kacis = 1. Konumlar +x ekseninde, yani `v_r = v_x`.
+    """
+    x = np.array([
+        [8.0, 0.0, 0.0],    # 0 iceride, v_r = 2 > 1   -> BEKLEYEN, t = 1.0
+        [6.0, 0.0, 0.0],    # 1 iceride, v_r = 4 > 1   -> BEKLEYEN, t = 1.0
+        [5.0, 0.0, 0.0],    # 2 iceride, v_r = 0,5     -> yavas, hicbir kova
+        [9.0, 0.0, 0.0],    # 3 iceride, v_r = -3      -> ICERI gidiyor
+        [12.0, 0.0, 0.0],   # 4 disarida, v_r = 5 > 1  -> KACTI
+        [15.0, 0.0, 0.0],   # 5 disarida, v_r = 0,2    -> YAVAS DISI
+        [7.0, 0.0, 0.0],    # 6 MERMI (hedef degil)    -> hicbir kova
+    ], dtype=np.float64)
+    v = np.zeros_like(x)
+    v[:, 0] = [2.0, 4.0, 0.5, -3.0, 5.0, 0.2, 9.0]
+    m = np.ones(len(x))
+    hedef = np.array([True, True, True, True, True, True, False])
+    return x, v, m, hedef
+
+
+def test_kacis_bekleyenler_kovalar_dogru():
+    x, v, m, hedef = _bekleyen_sahne()
+    d = kacis_bekleyenler(x, v, m, hedef=hedef, R=10.0, v_esc=1.0)
+
+    assert d["n_bekleyen"] == 2, "iceride hizli giden 2 parcacik var"
+    assert d["n_kacti"] == 1
+    assert d["n_yavas_disi"] == 1
+    assert d["yargi"] == "bekleyen_var"
+    # Mermi (indeks 6) iceride ve cok hizli ama HEDEF degil; sayilmamali.
+    assert d["n_bekleyen"] + d["n_kacti"] + d["n_yavas_disi"] == 4
+
+
+def test_kacis_bekleyenler_gecis_suresi_elle_hesapla():
+    """`t = (R - r) / v_r` — iki bekleyen de tam 1,0 s veriyor."""
+    x, v, m, hedef = _bekleyen_sahne()
+    d = kacis_bekleyenler(x, v, m, hedef=hedef, R=10.0, v_esc=1.0)
+    # (10-8)/2 = 1,0   ve   (10-6)/4 = 1,0
+    assert d["t_gecis_min"] == pytest.approx(1.0)
+    assert d["t_gecis_medyan"] == pytest.approx(1.0)
+    assert d["t_gecis_p90"] == pytest.approx(1.0)
+
+
+def test_kacis_bekleyenler_bekleyen_yoksa_NaN_uretir():
+    """Bekleyen yokken sayi UYDURULMAZ.
+
+    Bu testin butun mesele: `t_gecis_medyan = 0` gibi bir varsayilan,
+    "hemen cikacak" diye okunur ve tam TERS karari verdirir.
+    """
+    x = np.array([[5.0, 0.0, 0.0], [6.0, 0.0, 0.0]])
+    v = np.zeros_like(x)          # hicbiri hareket etmiyor
+    m = np.ones(2)
+    hedef = np.ones(2, dtype=bool)
+    d = kacis_bekleyenler(x, v, m, hedef=hedef, R=10.0, v_esc=1.0)
+
+    assert d["n_bekleyen"] == 0
+    assert d["yargi"] == "bekleyen_yok"
+    assert np.isnan(d["t_gecis_medyan"])
+    assert np.isnan(d["t_gecis_min"])
+    assert np.isnan(d["t_gecis_p90"])
+
+
+def test_kacis_bekleyenler_merkezdeki_parcacik_patlatmaz():
+    """`r = 0`'da radyal yon tanimsiz — bolme hatasi da olmamali."""
+    x = np.array([[0.0, 0.0, 0.0], [8.0, 0.0, 0.0]])
+    v = np.array([[100.0, 0.0, 0.0], [2.0, 0.0, 0.0]])
+    m = np.ones(2)
+    hedef = np.ones(2, dtype=bool)
+    d = kacis_bekleyenler(x, v, m, hedef=hedef, R=10.0, v_esc=1.0)
+    # Merkezdeki parcacik icin v_r = 0 cikar; hizli sayilmaz.
+    assert d["n_bekleyen"] == 1
+    assert np.isfinite(d["t_gecis_medyan"])
+
+
+def test_kacis_bekleyenler_kutle_kesri_hedefe_gore():
+    x, v, m, hedef = _bekleyen_sahne()
+    m = m.copy()
+    m[0] = 3.0                      # bekleyenlerden biri agir
+    d = kacis_bekleyenler(x, v, m, hedef=hedef, R=10.0, v_esc=1.0)
+    # bekleyen kutle = 3 + 1 = 4; hedef kutlesi = 3+1+1+1+1+1 = 8
+    assert d["bekleyen_kutle_kesri"] == pytest.approx(4.0 / 8.0)
+
+
+def test_kacis_bekleyenler_uzunluk_uyusmazligi_hata():
+    x = np.zeros((3, 3))
+    with pytest.raises(ValueError, match="ayni uzunlukta"):
+        kacis_bekleyenler(x, np.zeros((2, 3)), np.ones(3),
+                             hedef=np.ones(3, dtype=bool), R=1.0, v_esc=1.0)

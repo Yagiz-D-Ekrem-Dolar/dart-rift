@@ -139,8 +139,17 @@ def _iz_ornegi(st, *, hedef, R, v_esc, ehat, p_imp, x0) -> dict:
     > **Okuma olcutu: `n_hedef_ejekta > n_aktarilan` olursa GERCEK
     > hedef ejektasi baslamistir.** Altinda kaldigi surece hala
     > merminin kirintisi sayiliyor.
+
+    ## `n_bekleyen` NEDEN BURADA
+
+    `n_hedef_ejekta` sabit kalinca tek basina hicbir sey soylemiyor:
+    "kazi suruyor, madde yolda" ile "kazi hic olmuyor" ayni sayiyi
+    verir. Ikisini ayiran olcum, ICERIDE disari dogru giden madde olup
+    olmadigi (`kacis_bekleyenler`). Beklemekle ogrenilemez, ama her
+    ornekte bedavaya olculur — o yuzden ize KONULDU.
     """
     from dartrift.observables.crater_shape import crater_profile
+    from dartrift.observables.momentum_transfer import kacis_bekleyenler
     x, v, m = st["x"], st["v"], st["m"]
     r = np.linalg.norm(x, axis=1)
     vr = np.einsum("ij,ij->i", v, x / np.maximum(r, 1e-300)[:, None])
@@ -149,6 +158,11 @@ def _iz_ornegi(st, *, hedef, R, v_esc, ehat, p_imp, x0) -> dict:
     d = {"beta_bal": 1.0 - float(np.dot(p_ej, ehat)) / p_imp,
          "n_hedef_ejekta": int((hedef & kacan).sum()),
          "hedef_ejekta_kutle": float(m[hedef & kacan].sum())}
+    kb = kacis_bekleyenler(x, v, m, hedef=hedef, R=R, v_esc=v_esc)
+    d.update(n_bekleyen=kb["n_bekleyen"],
+             bekleyen_kutle_kesri=kb["bekleyen_kutle_kesri"],
+             t_gecis_medyan=kb["t_gecis_medyan"],
+             t_gecis_min=kb["t_gecis_min"])
     try:
         kr = crater_profile(x[hedef], center=np.zeros(3),
                             impact_direction=ehat, reference_radius=R,
@@ -293,8 +307,11 @@ def main() -> int:
         izler.append(d)
         with iz_yolu.open("a", encoding="utf-8") as f:
             f.write(json.dumps(d) + "\n")
+        tg = d["t_gecis_medyan"]
         print(f"    a2 {adim:6d} t={tt:.4e} beta_bal={d['beta_bal']:.5f} "
               f"hedef_ej={d['n_hedef_ejekta']:5d} "
+              f"bekleyen={d['n_bekleyen']:5d} "
+              f"t_gecis={'--' if tg != tg else f'{tg:.2f}s':>8} "
               f"derinlik={d['krater_derinlik']:.4f}", flush=True)
 
     iz_yolu = Path(a.out).with_suffix(".izler.jsonl")

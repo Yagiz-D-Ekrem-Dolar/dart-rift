@@ -241,3 +241,108 @@ def test_KRATER_AYARLARI_DART_yanlis_pozitif_URETMIYOR():
             # KRATERSIZ cisimde derinlik GURULTU duzeyinde kalmali.
             assert kr.depth < 0.5, (s, gur, kur, kr.depth)
             assert kr.diameter == 0.0, (s, gur, kur, kr.diameter)
+
+
+# ---------------------------------------------------------------------------
+# KRATER_AYARLARI_DART duzeltmesi: `n_theta = 64` krateri OLCEMIYORDU
+# ---------------------------------------------------------------------------
+
+def _kraterli_kabuk(derinlik, R=82.0, D=20.0, s=3.5, tohum=5):
+    """Yaricapi `R` olan kabuga `D` capinda paraboloid krater kaz."""
+    rng = np.random.default_rng(tohum)
+    n = int(4 * np.pi * R * R / (s * s))
+    u = rng.uniform(-1, 1, n)
+    ph = rng.uniform(0, 2 * np.pi, n)
+    q = np.sqrt(1 - u * u)
+    yon = np.column_stack([q * np.cos(ph), q * np.sin(ph), u])
+    ehat = np.array([0.0, 0.0, 1.0])
+    th = np.arccos(np.clip(yon @ ehat, -1, 1))
+    th_c = np.arcsin(D / (2 * R))
+    taban = R - derinlik * (1.0 - (th / th_c) ** 2)
+    r = np.where(th < th_c, np.minimum(R, taban), R)
+    return r[:, None] * yon, R * yon, ehat, R
+
+
+def test_krater_ayarlari_kutup_kutusu_kraterden_KUCUK_olmali():
+    """Bagli kisit: kutuptaki `cos(theta)` kutusu krater konisinden dar mi?
+
+    `surface_particles` `cos(theta)`da esit kutular kullanir, yani kutup
+    kutusu acisal olarak en genis olandir. Krater TAM KUTUPTA oldugu icin
+    o kutu kraterden genisse krater tek kutuya sigar ve GORUNMEZ.
+    """
+    from dartrift.inference.forward import (KRATER_AYARLARI_DART,
+                                            KRATER_KUTUP_KUTUSU_ESIGI_DEG)
+    nth = KRATER_AYARLARI_DART["n_theta"]
+    kutup_deg = np.degrees(np.arccos(1.0 - 2.0 / nth))
+    assert kutup_deg < KRATER_KUTUP_KUTUSU_ESIGI_DEG, (
+        f"n_theta={nth} -> kutup kutusu {kutup_deg:.2f} deg, krater "
+        f"yari-acisi {KRATER_KUTUP_KUTUSU_ESIGI_DEG} deg")
+    # Eski deger bu sinavi GECEMEZ — duzeltmenin gerekcesi budur.
+    assert np.degrees(np.arccos(1.0 - 2.0 / 64)) > KRATER_KUTUP_KUTUSU_ESIGI_DEG
+
+
+def test_krater_derinligi_GERCEK_derinlikle_degisiyor():
+    """Gozlenebilir olmanin sarti: girdi degisince cikti DEGISMELI.
+
+    Duzeltmeden once `n_theta = 64` ile olculen derinlik, gercek derinlik
+    `2 -> 12 m` (6 KAT) degisirken **sabit 1,1975 m** kaliyordu. Sabit bir
+    sayi hicbir parametre hakkinda bilgi tasimaz.
+    """
+    from dartrift.inference.forward import KRATER_AYARLARI_DART
+    from dartrift.observables.crater_shape import crater_profile
+
+    okunan = []
+    for derin in (2.0, 5.0, 10.0):
+        x, x0, ehat, R = _kraterli_kabuk(derin)
+        kr = crater_profile(x, center=np.zeros(3), impact_direction=-ehat,
+                            reference_radius=R, x_reference=x0,
+                            **KRATER_AYARLARI_DART)
+        okunan.append(kr.depth)
+
+    assert okunan[0] < okunan[1] < okunan[2], f"tek duze artmiyor: {okunan}"
+    # Olculdu: oran ucunde de 0,823 — dogrusal ve yanliligi sabit.
+    for derin, d in zip((2.0, 5.0, 10.0), okunan):
+        assert 0.6 < d / derin < 1.1, f"gercek {derin}, olculen {d}"
+
+
+def test_eski_n_theta_64_ayni_krateri_OLCEMIYOR():
+    """Duzeltmenin gerekcesi kalici olarak kayitli.
+
+    Ayni sahne, tek fark `n_theta`: eski deger olcumu REDDEDIYOR (ya da
+    sabit sayi veriyor). Bu test duserse birisi `n_theta`yi geri
+    dusurmustur.
+    """
+    from dartrift.inference.forward import KRATER_AYARLARI_DART
+    from dartrift.observables.crater_shape import crater_profile
+
+    eski = {**KRATER_AYARLARI_DART, "n_theta": 64}
+    x, x0, ehat, R = _kraterli_kabuk(5.0)
+    with pytest.raises(ValueError, match="carpma ekseni kutusunda"):
+        crater_profile(x, center=np.zeros(3), impact_direction=-ehat,
+                       reference_radius=R, x_reference=x0, **eski)
+
+
+def test_ejekta_suzgeci_referansa_UYGULANMIYOR():
+    """Suzgec her ikisine uygulanirsa sonuc ozdes sifir olur.
+
+    Kazilan parcaciklar suzulunce geriye kalanlar zaten taban altindadir;
+    onlarin CARPMA ONCESI konumu da ayni yerdedir. Yani referans = olcum
+    ve krater kaybolur. Bu, olcerek bulundu.
+    """
+    from dartrift.observables.crater_shape import crater_profile
+    x, x0, ehat, R = _kraterli_kabuk(5.0)
+    kr = crater_profile(x, center=np.zeros(3), impact_direction=-ehat,
+                        reference_radius=R, x_reference=x0,
+                        outer_angle_deg=12.0, n_bins=8, n_theta=1024,
+                        n_phi=128, ejekta_yaricap_carpani=1.05)
+    assert kr.depth > 1.0
+    assert kr.diagnostics["ejekta_suzgeci"] == 1.05
+
+
+def test_ejekta_suzgeci_hepsini_elerse_hata():
+    from dartrift.observables.crater_shape import crater_profile
+    x, x0, ehat, R = _kraterli_kabuk(2.0)
+    with pytest.raises(ValueError, match="TUM"):
+        crater_profile(x, center=np.zeros(3), impact_direction=-ehat,
+                       reference_radius=R, x_reference=x0,
+                       ejekta_yaricap_carpani=0.1)
