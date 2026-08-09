@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-09 · **Kapanan:** 30 · **Açık:** 4
+**Son güncelleme:** 2026-08-09 · **Kapanan:** 31 · **Açık:** 4
 
 ---
 
@@ -333,6 +333,36 @@ değişmez düşerse maliyet tablosu da yanlış olur.
 
 ---
 
+### 31 — çıkarım hattının **uçtan uca** sınavı yoktu
+
+| | |
+|---|---|
+| **belirti** | 42 çıkarım testi var ama **hiçbiri** uçtan uca değil |
+| **kök neden** | posterior testleri veriyi **vekilin kendisinden** üretiyordu (`veri = s.predict(gerçek)`) — döngüsel |
+| **niye önemli** | gerçekte veri **simülatörden** gelir; vekil onu yalnızca yaklaşık temsil eder. Asıl risk **dar ama yanlış** posterior |
+| **düzeltme** | `tests/test_inference_uctan_uca.py` — veri, vekilin öğrenemeyeceği bir modelden geliyor |
+| **sonuç** | `C1`, gerçeğin posteriorda olup olmadığını **doğru** izliyor (üç doğrusalsızlık düzeyinde de) |
+| **ek** | `ensemble_kos` ilk kez **kuru olmayan** kipte sınandı: sürdürme, düşen nokta, kesinti→aynı vekil |
+
+> **Ölçüm bir tahminimi daha çürüttü (7.):** *"`dogrusalsizlik = 3` vekili
+> bozar"* dedim; `q2 = 0,944…0,996` çıktı. Hangi biçimin **gerçekten**
+> bozduğu ölçüldü:
+>
+> | tepki yüzeyi | `q2` | geçiyor mu |
+> |---|---|---|
+> | `a³` | 0,9944 | ✔ |
+> | basamak `a > ½` | 0,6706 | ✔ |
+> | `1/(0,05+a)` | 0,7812 | ✔ |
+> | **`sin(4πa)`** | **−0,0262** | **✘** |
+>
+> **Bunun kendisi bir bulgu:** `q2 > 0,5` **zayıf** bir koruma. Yalnızca
+> **salınımlı** tepki yüzeyinde uyarı veriyor ve `β(θ)` fizik gereği
+> salınımlı değil — yani pratikte **neredeyse her zaman geçecek**.
+> G4-C bu bayrağa tek başına yaslanmamalı. Sınır artık **testle**
+> belgeli (`test_q2_esigi_ZAYIF_bir_koruma_bu_yazili_olsun`).
+
+---
+
 ## 3. Kusurların **sınıflandırması**
 
 | sınıf | sayı | örnek |
@@ -406,9 +436,9 @@ yaradığı görünmez:
 | büyüklük | değer |
 |---|---|
 | hata ayıklama turu | **16** |
-| kapanan sıkıntı | **30** |
+| kapanan sıkıntı | **31** |
 | açık sıkıntı | **4** (A5 karar, kalanı kota; A6/A7/A8 kapandı) |
 | **testlerin kör olduğu kusur** | **6** |
-| **tahminimi çürüten ölçüm** | **6** |
-| eklenen gerileme testi | **111** |
+| **tahminimi çürüten ölçüm** | **7** |
+| eklenen gerileme testi | **123** |
 | yerel test takımı | **954 geçti, 96 atlandı** (öncesi 912, ondan önce 898) |
