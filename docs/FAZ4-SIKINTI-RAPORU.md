@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-09 · **Kapanan:** 36 · **Açık:** 5
+**Son güncelleme:** 2026-08-09 · **Kapanan:** 37 · **Açık:** 6
 
 ---
 
@@ -181,6 +181,24 @@ ister; `docs/G4-OLCUTLERI.md` `B2`'yi bu varsayımla yazmamıştı.
 
 > `β`'nın donması **kusur değil**; kusur, onu *"durulma"* diye
 > raporlayacak bir ölçüt tanımlamış olmak.
+
+### A10 — **Çıkarım parametre uzayı `ρ_yığın` ile tutarsız** (2026-08-09, FAZ 4.6'yı durduran bulgu)
+
+FAZ 4.6'nın GPU ileri modeli ilk kez koşuldu (duman testi, 2 tasarım
+noktası, 40 adım) ve **29/29 nokta düştü**.
+
+| | |
+|---|---|
+| **çatışma 1** | `ρ_yığın = 1800` sabitken `matrix_alpha0`, `f_boulder`'ın **fonksiyonu** |
+| | `f=0,0 → α₀=1,500` · `f=0,3 → α₀=1,838` · `f=0,5 → α₀=2,625` |
+| | İlan edilen 3B kutunun uygulanabilir oranı **tam olarak `0`** |
+| **çatışma 2** | `f_boulder = 0` `M1` sınıfında **yasak**, ama kutunun alt sınırı `0` ve `factorial_design` köşeleri alıyor |
+| **kod kusuru mu** | **Hayır** — `build_rubble_pile`'ın reddi ADR-0030'u koruyor. Kusur **uzayın tanımında** |
+| **durum** | [ADR-0044](adr/ADR-0044-cikarim-parametre-uzayi-tutarsiz.md) **ÖNERİLDİ**; FAZ 4.6 karar verilmeden koşulamaz |
+
+> **Duman testi `~2` dakika sürdü ve `~9` saatlik bir GPU koşusunu
+> kurtardı.** Bu, A4'ün (*"GPU yolu hiç koşulmadı"*) neden bir risk
+> olarak yazıldığının kanıtı — risk **gerçekleşti**.
 
 ### A4 — `ileri_kosu`'nun GPU kısmı hiç koşulmadı
 
@@ -507,6 +525,22 @@ FAZ 4.6 koşmak üzereyken `grid_posterior` denetlendi:
 
 ---
 
+### 37 — düşme gerekçesi **yutuluyordu**
+
+| | |
+|---|---|
+| **belirti** | `29/29` nokta düştü, tek mesaj: `sonlu olmayan cikti: [nan nan nan]` |
+| **kök neden** | `faz46`, `ileri_kosu`'ya `ilerleme` geri çağrısı **geçirmiyordu**; içerideki gerekçe kayboluyordu |
+| **etkisi** | kök neden ancak nokta **elle** koşularak görüldü |
+| **düzeltme** | gerekçe yakalanıp `RuntimeError` olarak yeniden atılıyor → `ensemble_kos` gerçek sebebi yazıyor |
+| **hemen kazanç** | düzeltme, **ikinci** çatışmayı (`f_boulder = 0` M1'de yasak) anında gösterdi — ilk mesajda görünmüyordu |
+
+> Bir hata yolunun **kendisi** de sınanmalı: *"düşen nokta `nan` kalır
+> ve çağıran taraf görür"* doğruydu, ama çağıran taraf **nedeni**
+> görmüyordu.
+
+---
+
 ## 3. Kusurların **sınıflandırması**
 
 | sınıf | sayı | örnek |
@@ -580,8 +614,8 @@ yaradığı görünmez:
 | büyüklük | değer |
 |---|---|
 | hata ayıklama turu | **16** |
-| kapanan sıkıntı | **36** |
-| açık sıkıntı | **5** (A5 + A9 karar, kalanı kota; A6/A7/A8 kapandı) |
+| kapanan sıkıntı | **37** |
+| açık sıkıntı | **6** (A5 + A9 + A10 karar, kalanı kota) |
 | **testlerin kör olduğu kusur** | **7** |
 | **tahminimi çürüten ölçüm** | **9** |
 | eklenen gerileme testi | **133** |

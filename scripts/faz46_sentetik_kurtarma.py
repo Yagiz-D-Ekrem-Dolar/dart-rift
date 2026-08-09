@@ -215,10 +215,25 @@ def main() -> int:
         _mat = _malzeme()
 
         def _bir(th):
-            return _tek_nokta(th[None, :], material=_mat, device=a.device,
-                              steps=a.steps, r_ince=a.r_ince,
-                              spacing=a.spacing, lam=a.lam,
-                              sahne_taban=SAHNE)[0]
+            # GEREKCEYI YUTMA. `ileri_kosu` dusen noktayi `nan` birakip
+            # sebebi yalnizca kendi `ilerleme`sine yaziyor. Burada o geri
+            # cagri VERILMEDIGI icin disariya sadece "sonlu olmayan cikti:
+            # [nan nan nan]" ciiyordu ve kok neden GORUNMUYORDU.
+            #
+            # Duman testinde tam bu oldu: 29/29 nokta dustu ve gercek
+            # sebep ("matrix_alpha0 ile rho_yigin tutarsiz", ADR-0044)
+            # ancak nokta ELLE kosulunca goruldu.
+            gerekce: list = []
+            y = _tek_nokta(th[None, :], material=_mat, device=a.device,
+                           steps=a.steps, r_ince=a.r_ince,
+                           spacing=a.spacing, lam=a.lam,
+                           sahne_taban=SAHNE,
+                           ilerleme=lambda i, n, m: gerekce.append(m))[0]
+            if not np.all(np.isfinite(y)) and gerekce:
+                # `ileri_kosu` mesaji zaten "DUSTU: " ile basliyor ve
+                # `ensemble_kos` bir tane daha ekliyor -> "DUSTU: DUSTU:".
+                raise RuntimeError(gerekce[-1].removeprefix("DUSTU: "))
+            return y
 
         def _ilerleme(i, n, mesaj):
             print(f"    [{i + 1}/{n}] {mesaj}", flush=True)
