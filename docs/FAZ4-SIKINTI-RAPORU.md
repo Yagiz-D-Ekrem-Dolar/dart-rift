@@ -408,6 +408,26 @@ Bilinen `D = 16 m`, derinlik `3 m` kraterle ayarlar tarandı:
 bir krater gözlenebiliri **daha ince yüzey** istiyor. Bu, FAZ 4.6'nın
 tasarımına giren **ölçülmüş** bir kısıt.
 
+#### Yanlış pozitif sınavı **geçildi**
+
+`n_theta = 64`, `s = 3,5 m`'de **`0,84` parçacık/kutu** demek — tam da
+`surface_particles`'ın *"kutuda `~1` parçacık kalınca hayalî `41 m`
+krater üretir"* diye uyardığı bölge. Sınandı:
+
+| `s` | gürültü | küresel kayma | ölçülen derinlik | çap |
+|---|---|---|---|---|
+| 3,5 | 0,00 | 0,0 | 0,0000 | 0 |
+| 3,5 | 0,20 | 0,0 | 0,0854 | 0 |
+| 3,5 | 0,20 | −0,5 | 0,1694 | 0 |
+| 2,0 | 0,20 | −0,5 | 0,1313 | 0 |
+
+**Hayalî krater yok.** Yanlılığı `x_reference` çıkarması götürüyor —
+R4'ün onu **zorunlu** yapmasının sebebi tam bu.
+
+> **Gürültü tabanı `0,02–0,17 m`.** Gerçek koşunun ölçtüğü
+> `0,033–0,037 m` bu bandın **içinde** — yani o sayı bir krater değil,
+> gürültü. Bağımsız bir doğrulama daha.
+
 ### A12 — **`β` ejektayı değil MERMİNİN SEKMESİNİ ölçüyor** (2026-08-09)
 
 > ### ⚠ Bunu *"en ağır yeni bulgu"* diye yazdım — **yeni değil**

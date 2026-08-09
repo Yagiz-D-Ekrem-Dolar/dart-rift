@@ -207,3 +207,37 @@ def test_krater_ayarlari_VARSAYILAN_davranisi_bozmuyor():
     import inspect
     p = inspect.signature(gozlenebilirleri_cikar).parameters
     assert p["krater_ayarlari"].default is None
+
+
+def test_KRATER_AYARLARI_DART_yanlis_pozitif_URETMIYOR():
+    """İnce kutulama `surface_particles`'ın uyardığı tuzağa düşüyor mu?
+
+    Belge diyor ki kutu başına `~1` parçacık kalınca *"kutudaki en
+    uzak"* rastgele bir parçacık olur ve ölçülen yüzey `0,75 R`'ye
+    iner — **hayalî bir krater** üretir. `KRATER_AYARLARI_DART`
+    `n_theta = 64` kullanıyor ve `s = 3,5 m`'de bu **`0,84`
+    parçacık/kutu** demek, yani tam o bölge.
+
+    Ölçüldü: **düşmüyor**, çünkü `x_reference` çıkarması yanlılığı
+    götürüyor (R4'ün `x_reference`'ı zorunlu yapmasının sebebi).
+    """
+    from dartrift.inference.forward import KRATER_AYARLARI_DART
+    from dartrift.observables.crater_shape import crater_profile
+    R = 82.0
+    for s in (3.5, 2.0):
+        rng = np.random.default_rng(11)
+        n = int(4 * np.pi * R * R / (s * s))
+        u = rng.uniform(-1, 1, n)
+        ph = rng.uniform(0, 2 * np.pi, n)
+        q = np.sqrt(1 - u * u)
+        yon = np.column_stack([q * np.cos(ph), q * np.sin(ph), u])
+        x0 = R * yon
+        for gur, kur in ((0.0, 0.0), (0.20, 0.0), (0.20, -0.5)):
+            r = R + kur + gur * rng.normal(size=n)
+            kr = crater_profile(r[:, None] * yon, center=np.zeros(3),
+                                impact_direction=np.array([-1.0, 0.0, 0.0]),
+                                reference_radius=R, x_reference=x0,
+                                **KRATER_AYARLARI_DART)
+            # KRATERSIZ cisimde derinlik GURULTU duzeyinde kalmali.
+            assert kr.depth < 0.5, (s, gur, kur, kr.depth)
+            assert kr.diameter == 0.0, (s, gur, kur, kr.diameter)
