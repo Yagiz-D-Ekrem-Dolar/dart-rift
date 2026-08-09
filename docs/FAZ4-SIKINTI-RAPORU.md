@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-09 · **Kapanan:** 31 · **Açık:** 4
+**Son güncelleme:** 2026-08-09 · **Kapanan:** 32 · **Açık:** 4
 
 ---
 
@@ -331,6 +331,38 @@ değişmez düşerse maliyet tablosu da yanlış olur.
 | **kök neden** | **iki** `pytest` (biri unutulmuş) + kullanıcının kestiği `faz43e`'nin süreci **hâlâ koşuyordu** (`λ=19, r=25 m` → 1,85 M parçacık) |
 | **ders** | bir aracın çağrısını kesmek **süreci öldürmüyor** |
 
+### 32 — yavaşlığın nedenini **ölçmeden** aradım
+
+`faz45` 3,5 saatte 40 000 adımın 2 000'ine varmıştı. Sırayla iki şey
+**varsaydım**, ikisi de yanlıştı:
+
+| varsayım | ölçüm |
+|---|---|
+| *"`beta_from_bound` `O(N²)`, örnekleme boğuyor"* | `1,18 ms` |
+| *"`budgets()` yerçekimi potansiyeli hesaplıyor"* | `2,40 ms` (yerçekimi zaten **kapalı**) |
+
+Profil çıkarınca sebep göründü:
+
+| | |
+|---|---|
+| adım | **1467,86 ms** |
+| `state_numpy` | 6,20 ms |
+| `budgets` | 2,40 ms |
+| `momentum_transfer` | 1,18 ms |
+
+Aynı sahne FAZ 4.4'te **`52 ms/adım`** koşmuştu. Yani örnekleme değil,
+**adımın kendisi** `28×` yavaşlamıştı — sebebi tek: **4 GiB'lik tek
+kartta aynı anda 3–4 iş** koşturuyordum (`faz45` + iki `pytest` +
+profil betiğinin kendisi).
+
+> Kendi ölçüm betiğim de yükün **parçasıydı** — yani ölçtüğüm yavaşlığa
+> ölçüm işlemi de katkı veriyordu. Rakamlar bu yüzden yalnızca *"adım
+> baskın"* sonucunu destekler, mutlak değer olarak **geçersizdir**.
+
+**Ders:** paralel koşu ücretsiz değil. Tek GPU'da **tek** ağır iş;
+gerisi sıraya. Yalnız kaldığında `40 000` adım `~35 dk` sürecek —
+`3,5` saat değil.
+
 ---
 
 ### 31 — çıkarım hattının **uçtan uca** sınavı yoktu
@@ -436,9 +468,9 @@ yaradığı görünmez:
 | büyüklük | değer |
 |---|---|
 | hata ayıklama turu | **16** |
-| kapanan sıkıntı | **31** |
+| kapanan sıkıntı | **32** |
 | açık sıkıntı | **4** (A5 karar, kalanı kota; A6/A7/A8 kapandı) |
 | **testlerin kör olduğu kusur** | **6** |
-| **tahminimi çürüten ölçüm** | **7** |
+| **tahminimi çürüten ölçüm** | **9** |
 | eklenen gerileme testi | **123** |
 | yerel test takımı | **954 geçti, 96 atlandı** (öncesi 912, ondan önce 898) |

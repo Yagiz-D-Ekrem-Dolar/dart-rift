@@ -366,6 +366,26 @@ olur). Bu, ADR ile ayrıca karara bağlanmalı.
    engel** buldu: atama mesafesi `t₁`'de `4,35` hücre. Bkz. madde 5.
 3. **`λ = 19`'da arayüz ne yapıyor** — boşluk 3 yalnızca `λ = 2`'de
    kapandı; `6478:1` oranı ölçülmüş her şeyin ötesinde.
+
+   > **`λ = 19` bu sınavda DOĞRUDAN ÖLÇÜLEMEZ** (2026-08-09).
+   > `run_solid_interface`'in üçüncü kolu **tekdüze ince** referanstır ve
+   > kenarı `n_coarse·λ`:
+   >
+   > | `n_coarse` | `λ` | referans `N` | |
+   > |---|---|---|---|
+   > | 32 | 2 | `64³` = 262 144 | koştu (KAYIT-037) |
+   > | 32 | 6 | `192³` = 7,1 M | 4 GiB'a sığmaz |
+   > | 32 | **19** | **`608³` = 225 M** | **imkânsız** |
+   > | 16 | 6 | `96³` = 884 736 | koşabilir |
+   >
+   > Referans kolu olmadan **taşma** ölçülemez — parantezin üst ucu odur.
+   > Bu bir **sonuç değil, ölçümün sınırı**.
+
+   `scripts/faz43f_arayuz_lam_taramasi.py` yazıldı: `n_coarse` sabit,
+   `λ` taranıyor ve soru **eğilime** çevriliyor — taşma `λ` ile büyüyor
+   mu? Büyümüyorsa `λ = 19` için **dolaylı kanıt** (ispat **değil**);
+   büyüyorsa bu madde **düşer**. Sonuç ne olursa olsun `λ = 19`
+   **ölçülmemiş** kalır ve betik bunu her koşuda basıyor.
 4. ~~**Blok sınırlarının kaba çözünürlükte kalmasının etkisi** (§4b)~~
    **◐ GEOMETRİK YARISI ÖLÇÜLDÜ** (`scripts/faz43e_blok_sinirlari.py`,
    `r_iç = 25 m`, 7 blok):
