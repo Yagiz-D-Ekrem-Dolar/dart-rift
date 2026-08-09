@@ -31,7 +31,7 @@ import numpy as np
 
 __all__ = ["BetaResult", "escape_speed", "estimate_target_radius",
            "momentum_transfer", "beta_sensitivity", "kacis_bekleyenler",
-           "balistik_beta", "beta_bal_bandi"]
+           "balistik_beta", "bekleyen_profili"]
 
 # Duzgun dolu bir kurede yaricapin medyan uzakliga orani. r < R kabugundaki
 # kutle ~ (r/R)^3 oldugundan medyan uzaklik R/2^(1/3)'tur.
@@ -288,15 +288,27 @@ def kacis_bekleyenler(
 
     ## Ne sorunun cevabi
 
-    `n_hedef_ejekta` sabit kalinca iki ihtimal var ve ikisi COK farkli:
+    `n_hedef_ejekta` sabit kalinca iki ihtimal var: madde yolda, ya da
+    kazi hic olmuyor. Bu fonksiyon `r < R` olup `v_r > v_kacis` giden
+    parcacigi sayar.
 
-    1. Kazi hala suruyor; madde yolda, henuz `r > R`'yi gecmedi.
-       -> **daha uzun kos**, tasarim saglam.
-    2. Disari giden hicbir sey yok; kazi olmuyor.
-       -> **daha uzun kosmak bosuna**, tasarim degismeli.
-
-    Beklemekle ayirt edilemez ama OLCMEKLE ayirt edilir: su an `r < R`
-    olup `v_r > v_kacis` giden parcacik VAR MI?
+    > ### DUZELTME — bu sayi TEK BASINA kaziyi gostermez
+    >
+    > Ilk yazdigimda *"beklemekle ayirt edilemez ama olcmekle edilir"*
+    > dedim. **Yetersizdi.** DART kosusunun son durumunda `n_bekleyen =
+    > 2671` (hedefin `%26`'si) cikti ve dagilimi olcunce:
+    >
+    > | carpma noktasina uzaklik | bekleyen orani |
+    > |---|---|
+    > | 0-20 m | **%11,7** |
+    > | 40-60 m | %25,6 |
+    > | 80-120 m | **%31,5** |
+    >
+    > Oran carpma noktasinda **en dusuk**. Kazi bunun TERSINI verirdi.
+    > O parcaciklar kazi degil, **cismin cinlamasi**.
+    >
+    > Ayirt eden sey sayinin kendisi degil **uzaysal dagilimi**:
+    > `bekleyen_profili` kullanin.
 
     ## `t_gecis` neyin tahmini, neyin degil
 
@@ -441,42 +453,66 @@ def balistik_beta(
     }
 
 
-def beta_bal_bandi(
+def bekleyen_profili(
     x: np.ndarray, v: np.ndarray, m: np.ndarray, *,
     hedef: np.ndarray, R: float, v_esc: float,
-    ehat: np.ndarray, p_imp: float,
+    carpma_noktasi: np.ndarray,
+    kenarlar=(0.0, 20.0, 40.0, 60.0, 80.0, 120.0, 200.0),
 ) -> dict:
-    """`beta`nin ALT ve UST siniri — tek sayi degil **bant**.
+    """Bekleyen maddenin **carpma noktasina gore** dagilimi.
 
-    ## Neden bant
+    ## Neden sayi yetmiyor
 
-    `balistik_beta` yalnizca `r > R` olani sayar. Ama iceride, disari
-    dogru, `v_r > v_kacis` giden madde de var ve yercekimi kapali oldugu
-    icin **o da kacacak** -- sadece henuz yuzeyi gecmedi. Olculdu (DART
-    asama-2, `t = 0,066 s`): **bekleyen 37**, sayilan **28**. Ayni
-    mertebede.
+    `kacis_bekleyenler`in `n_bekleyen`i tek basina yaniltici: yercekimi
+    kapali oldugu icin (`GravityParams(enabled=False)`) cisim carpma
+    sonrasi **cinlar** ve salinimin disa giden yarisi `v_r > v_kacis`
+    sinavini gecer. Olculdu: DART kosusunda `2671` parcacik, hedefin
+    `%26`'si.
 
-        alt = beta_bal                       (bekleyen HIC kacmaz varsayimi)
-        ust = beta_bal, bekleyen de sayilir  (hepsi kacar varsayimi)
+    Kaziyi cinlamadan ayiran sey dagilimdir:
 
-    Gercek deger arada. Ikisini birden vermek, tek bir sayi verip
-    "olculdu" demekten **durust**tur: `t_gecis` medyani **117-196 s** ve
-    o sure simule EDILMIYOR, yani hangisinin gerceklestigi bu kosudan
-    bilinemez.
+        KAZI ise     -> oran carpma yakininda YUKSEK, uzakta DUSUK
+        CINLAMA ise  -> oran her kusakta benzer ya da uzakta daha yuksek
 
-    > Bant genisligi bir belirsizlik degil, **olculmus bir bilgisizlik**:
-    > daha uzun kosmadan daraltilamaz.
+    ## `v_kacis`in kendi kusuru burada da gecerli
+
+    Yercekimi simule EDILMIYOR, yani `v_kacis` var olmayan bir fizigin
+    vekili. `0,082 m/s` gibi kucuk bir esik neredeyse her disa hareketi
+    yakalar. Bu ADR-0028'de kilitli bir secim; burada yalnizca sonucu
+    olculuyor.
+
+    Donen ``kusaklar`` her kusak icin ``(alt, ust, n_toplam, n_bekleyen,
+    oran)``; ``yargi`` ise ``"kazi_benzeri"`` / ``"cinlama_benzeri"`` /
+    ``"belirsiz"``.
     """
-    a = balistik_beta(x, v, m, hedef=hedef, R=R, v_esc=v_esc,
-                      ehat=ehat, p_imp=p_imp)
-    b = kacis_bekleyenler(x, v, m, hedef=hedef, R=R, v_esc=v_esc)
-    p_bek = np.asarray(b["bekleyen_p"], dtype=np.float64)
-    ust = a["beta_bal"] - float(np.dot(p_bek, np.asarray(ehat))) / p_imp
-    return {
-        "beta_alt": a["beta_bal"],
-        "beta_ust": float(ust),
-        "beta_bant": float(abs(ust - a["beta_bal"])),
-        "n_sayilan": a["n_hedef_ejekta"],
-        "n_bekleyen": b["n_bekleyen"],
-        "t_gecis_medyan": b["t_gecis_medyan"],
-    }
+    x = np.asarray(x, dtype=np.float64)
+    hedef = np.asarray(hedef, dtype=bool)
+    mp = np.asarray(carpma_noktasi, dtype=np.float64).reshape(3)
+    r = np.linalg.norm(x, axis=1)
+    vr = np.einsum("ij,ij->i", v, x / np.maximum(r, 1e-300)[:, None])
+    bek = hedef & (r <= R) & (vr > v_esc)
+    d_mp = np.linalg.norm(x - mp[None, :], axis=1)
+
+    kusaklar = []
+    for a, b in zip(kenarlar[:-1], kenarlar[1:]):
+        msk = hedef & (d_mp >= a) & (d_mp < b)
+        n_t = int(msk.sum())
+        if n_t == 0:
+            continue
+        n_b = int((msk & bek).sum())
+        kusaklar.append({"alt": float(a), "ust": float(b), "n_toplam": n_t,
+                         "n_bekleyen": n_b, "oran": n_b / n_t})
+
+    if len(kusaklar) < 2:
+        return {"kusaklar": kusaklar, "yargi": "belirsiz",
+                "neden": "iki kusaktan az veri"}
+
+    yakin, uzak = kusaklar[0]["oran"], kusaklar[-1]["oran"]
+    if yakin > 1.5 * max(uzak, 1e-12):
+        yargi = "kazi_benzeri"
+    elif uzak > 1.5 * max(yakin, 1e-12):
+        yargi = "cinlama_benzeri"
+    else:
+        yargi = "belirsiz"
+    return {"kusaklar": kusaklar, "yakin_oran": yakin, "uzak_oran": uzak,
+            "yargi": yargi, "n_bekleyen": int(bek.sum())}

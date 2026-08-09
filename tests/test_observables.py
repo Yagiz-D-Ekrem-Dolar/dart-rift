@@ -12,7 +12,7 @@ from dartrift.observables.crater_shape import crater_profile, surface_particles
 from dartrift.observables.ejecta_catalog import catalog_ejecta, cumulative_mass_velocity
 from dartrift.observables.momentum_transfer import (
     balistik_beta,
-    beta_bal_bandi,
+    bekleyen_profili,
     beta_sensitivity,
     kacis_bekleyenler,
     escape_speed,
@@ -833,46 +833,59 @@ def test_kacis_olcutu_betiklerde_YENIDEN_yazilmamis():
     assert not suclu, f"olcut su betiklerde yeniden yazilmis: {suclu}"
 
 
-def test_beta_bal_bandi_alt_siniri_balistik_beta_ile_AYNI():
-    """Alt sınır tanım gereği `balistik_beta`; kayarsa iki sayı çelişir."""
-    rng = np.random.default_rng(9)
-    n = 300
-    x = rng.normal(scale=40.0, size=(n, 3))
-    v = rng.normal(scale=2.0, size=(n, 3))
-    m = rng.uniform(0.5, 2.0, n)
-    hedef = np.ones(n, dtype=bool)
-    ort = dict(hedef=hedef, R=30.0, v_esc=0.5,
-               ehat=np.array([0.0, 0.0, 1.0]), p_imp=100.0)
-    assert (beta_bal_bandi(x, v, m, **ort)["beta_alt"]
-            == balistik_beta(x, v, m, **ort)["beta_bal"])
+# ---------------------------------------------------------------------------
+# bekleyen_profili — kaziyi CINLAMADAN ayiran sey sayi degil DAGILIM
+# ---------------------------------------------------------------------------
+
+def _profil_sahnesi(kazi_gibi: bool, R=80.0, n=4000, tohum=3):
+    """Kure; `kazi_gibi` ise disa hareket carpma noktasinda YOGUN."""
+    rng = np.random.default_rng(tohum)
+    u = rng.uniform(-1, 1, n); ph = rng.uniform(0, 2*np.pi, n)
+    q = np.sqrt(1 - u*u)
+    yon = np.column_stack([q*np.cos(ph), q*np.sin(ph), u])
+    x = yon * (R * rng.random(n) ** (1/3))[:, None]
+    mp = np.array([0.0, 0.0, R])                      # carpma +z'de
+    d_mp = np.linalg.norm(x - mp[None, :], axis=1)
+    # disa hareket olasiligi
+    p_out = np.where(d_mp < 40.0, 0.8, 0.05) if kazi_gibi else np.full(n, 0.4)
+    hizli = rng.random(n) < p_out
+    r = np.linalg.norm(x, axis=1)
+    v = np.where(hizli[:, None], 1.0, -1.0) * x / np.maximum(r, 1e-300)[:, None]
+    return x, v, np.ones(n), np.ones(n, bool), R, mp
 
 
-def test_beta_bal_bandi_bekleyen_yoksa_BANT_SIFIR():
-    """Bekleyen madde yoksa belirsizlik de yok — bant genişliği `0`."""
-    x = np.array([[0.0, 0.0, 5.0], [0.0, 0.0, 20.0]])
-    v = np.array([[0.0, 0.0, 10.0], [0.0, 0.0, -4.0]])
-    d = beta_bal_bandi(x, v, np.ones(2), hedef=np.array([False, True]),
-                       R=10.0, v_esc=1.0, ehat=np.array([0.0, 0.0, 1.0]),
-                       p_imp=20.0)
-    assert d["n_bekleyen"] == 0
-    assert d["beta_bant"] == 0.0
-    assert d["beta_alt"] == d["beta_ust"]
+def test_bekleyen_profili_KAZIYI_taniyor():
+    x, v, m, hedef, R, mp = _profil_sahnesi(kazi_gibi=True)
+    d = bekleyen_profili(x, v, m, hedef=hedef, R=R, v_esc=0.5,
+                         carpma_noktasi=mp)
+    assert d["yargi"] == "kazi_benzeri", d
 
 
-def test_beta_bal_bandi_GERI_giden_bekleyen_ustu_BUYUTUR():
-    """Mermiye ters giden bekleyen madde `β`'yı **yukarı** çeker.
+def test_bekleyen_profili_CINLAMAYI_kaziyla_karistirmiyor():
+    """Tekduze disa hareket kazi SAYILMAMALI — sayi buyuk olsa bile."""
+    x, v, m, hedef, R, mp = _profil_sahnesi(kazi_gibi=False)
+    d = bekleyen_profili(x, v, m, hedef=hedef, R=R, v_esc=0.5,
+                         carpma_noktasi=mp)
+    assert d["n_bekleyen"] > 500, "sinav anlamsiz: bekleyen yok"
+    assert d["yargi"] != "kazi_benzeri", d
 
-    Gerçek ejekta budur: geri fırlar, momentumu `-ê` yönündedir ve
-    `β = 1 - p·ê/|p|` ifadesini `1`'in üstüne taşır. `beta_ust` bunu
-    hesaba katınca alt sınırdan BUYUK olmalı.
+
+def test_bekleyen_profili_GERCEK_kosuda_cinlama_diyor():
+    """DART koşusunun son durumunda ölçülen: oran çarpmada **en düşük**.
+
+    | uzaklık | bekleyen oranı |
+    |---|---|
+    | 0-20 m | %11,7 |
+    | 80-120 m | %31,5 |
+
+    Bu sayıyı ilk gördüğümde *"madde yolda"* diye okumuştum; dağılım
+    tersini söylüyor. Test o dersi kilitliyor: **sayı değil dağılım**.
     """
-    x = np.array([[0.0, 0.0, 5.0], [0.0, 0.0, 9.0]])
-    v = np.array([[0.0, 0.0, 10.0], [0.0, 0.0, -3.0]])   # 2. geri gidiyor
-    # `v_r` disari dogru olmali; -z'de duran parcacik icin r yonu +z, yani
-    # v_r = -3 < 0. Bunun yerine cismi -z tarafina koyalim:
-    x = np.array([[0.0, 0.0, 5.0], [0.0, 0.0, -9.0]])
-    d = beta_bal_bandi(x, v, np.ones(2), hedef=np.array([False, True]),
-                       R=10.0, v_esc=1.0, ehat=np.array([0.0, 0.0, 1.0]),
-                       p_imp=20.0)
-    assert d["n_bekleyen"] == 1, d
-    assert d["beta_ust"] > d["beta_alt"]
+    x = np.array([[0.0, 0.0, 79.0]] * 20 + [[0.0, 0.0, -79.0]] * 20)
+    v = np.zeros_like(x)
+    v[:5, 2] = 1.0            # carpma yakininda 5/20 disa
+    v[20:36, 2] = -1.0        # uzakta 16/20 disa
+    d = bekleyen_profili(x, v, np.ones(40), hedef=np.ones(40, bool),
+                         R=80.0, v_esc=0.5,
+                         carpma_noktasi=np.array([0.0, 0.0, 80.0]))
+    assert d["yargi"] == "cinlama_benzeri", d
