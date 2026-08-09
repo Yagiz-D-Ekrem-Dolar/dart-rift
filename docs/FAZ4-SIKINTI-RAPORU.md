@@ -365,6 +365,22 @@ ile *"sıfır"* artık ayrı.
 4 test bu sınırları kilitliyor; yanlış yönelimin `0` verdiği de
 **kayıtlı** ki bir daha kusur sanılmasın.
 
+#### Üretim çağrısı **doğru** — denetlendi
+
+Geri almadan sonra *"belki çağıran taraf ters işaret veriyordur"* diye
+şüphelendim. **Vermiyor:**
+
+| | |
+|---|---|
+| `crater_shape.py:154` | `axis = -d_imp / dn  # krater ekseni: DISA dogru` |
+| yani | `crater_profile` işareti **kendi içinde** çeviriyor |
+| sahne | `impact_point = [0,0,82]`, `impact_direction = [0,0,-1]` |
+| sonuç eksen | `[0,0,+1]` — **kratere doğru** ✔ |
+| gerçek DART sahnesinde `0.` kutu | **13** yüzey parçacığı (`min_per_bin = 5`) |
+
+> Yani ölçüm **yapılıyor** ve `≈ 0,035 m` çıkıyor çünkü **krater yok**.
+> Bu kez iddia etmeden **önce** denetledim.
+
 ### A12 — **`β` ejektayı değil MERMİNİN SEKMESİNİ ölçüyor** (2026-08-09)
 
 > ### ⚠ Bunu *"en ağır yeni bulgu"* diye yazdım — **yeni değil**
