@@ -502,6 +502,14 @@ değişmez düşerse maliyet tablosu da yanlış olur.
 | **kök neden** | **iki** `pytest` (biri unutulmuş) + kullanıcının kestiği `faz43e`'nin süreci **hâlâ koşuyordu** (`λ=19, r=25 m` → 1,85 M parçacık) |
 | **ders** | bir aracın çağrısını kesmek **süreci öldürmüyor** |
 
+**ÜÇÜNCÜ KEZ (2026-08-09).** `10` dakikalık araç zaman aşımına uğrayan
+bir ölçüm betiği (`python -`) **koşmaya devam etti** ve `16,5` CPU-dakika
+yiyerek krater sondasını yavaşlattı. Sonda `11` dakikada bitmesi
+gerekirken `17` dakikada tek satır bile üretemedi.
+
+> Kural: uzun bir işi başlatmadan **önce** süreç listesine bak. Araç
+> zaman aşımı, `Ctrl-C` **değildir**.
+
 ### 32 — yavaşlığın nedenini **ölçmeden** aradım
 
 `faz45` 3,5 saatte 40 000 adımın 2 000'ine varmıştı. Sırayla iki şey
