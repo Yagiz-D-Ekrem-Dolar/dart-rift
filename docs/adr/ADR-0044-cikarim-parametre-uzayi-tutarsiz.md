@@ -131,10 +131,33 @@ görmek için nokta **elle** koşuldu.
 
 ## 6. Kilitlenmeden önce ölçülmesi gerekenler
 
-1. **Seçenek 3'ün tasarım kutusu gerçekten uygulanabilir mi** —
-   `boulder_alpha0 × f_boulder` kutusunun her köşesinde
-   `matrix_alpha0_for_bulk_density` çözülebiliyor mu, yoksa orada da
-   yasak bölgeler mi var?
+1. ~~**Seçenek 3'ün tasarım kutusu gerçekten uygulanabilir mi**~~
+   **✔ ÖLÇÜLDÜ (2026-08-09): kutunun tamamı uygulanabilir, `0/36` yasak.**
+
+   Türetilen matris `α₀` (`ρ_yığın = 1800`, `ρ₀ = 2700`):
+
+   | `f_boulder` \ `boulder_α₀` | 1,00 | 1,05 | 1,10 | 1,20 | 1,30 | 1,50 |
+   |---|---|---|---|---|---|---|
+   | 0,05 | 1,541 | 1,535 | 1,529 | 1,520 | 1,512 | 1,500 |
+   | 0,10 | 1,588 | 1,575 | 1,563 | 1,543 | 1,526 | 1,500 |
+   | 0,20 | 1,714 | 1,680 | 1,650 | 1,600 | 1,560 | 1,500 |
+   | 0,30 | 1,909 | 1,837 | 1,777 | 1,680 | 1,606 | 1,500 |
+   | 0,40 | 2,250 | 2,100 | 1,980 | 1,800 | 1,671 | 1,500 |
+   | 0,50 | 3,000 | 2,625 | 2,357 | 2,000 | 1,773 | 1,500 |
+
+   Yasak sınır (`matris α₀ = 1`, yani matris **tam katı**) çok uzakta:
+
+   | `boulder_α₀` | 1,00 | 1,05 | 1,10 | 1,20 | 1,30 | 1,50 |
+   |---|---|---|---|---|---|---|
+   | üst sınır `f_boulder` | 0,667 | 0,700 | 0,733 | 0,800 | 0,867 | ~1,0 |
+
+   > Tasarımın `f_boulder ≤ 0,5` sınırı, en kısıtlayıcı durumda bile
+   > (`boulder_α₀ = 1,0` → `0,667`) **rahatça** içeride.
+
+   **Dikkat edilmesi gereken:** türetilen matris `α₀`, kutunun köşesinde
+   `3,0`'a çıkıyor (`%67` gözeneklilik). Fiziksel olarak savunulabilir
+   ama `P-α` modelinin kalibre edildiği aralığın **dışında** olabilir;
+   `boulder_α₀`'ın alt sınırı `1,05`'te tutulursa tavan `2,625`'e iner.
 2. **Üç gözlenebilir yeni parametreleri ayırt edebiliyor mu** — `C2`
    (bant/önsel) ve `C3` (gürültü tepkisi) yeni uzayda **yeniden**
    ölçülmeli. `boulder_alpha0`, `β`'yı `f_boulder` kadar etkilemiyorsa
