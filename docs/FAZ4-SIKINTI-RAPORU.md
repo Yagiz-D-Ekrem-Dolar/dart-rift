@@ -253,9 +253,59 @@ gözlenebilir anlamlı değil, **yok**.
 
 **Durum:** koşu `3/60`'ta **durduruldu**.
 
-### A12 — **`β` ejektayı değil MERMİNİN SEKMESİNİ ölçüyor** (2026-08-09, en ağır bulgu)
+### A12 — **`β` ejektayı değil MERMİNİN SEKMESİNİ ölçüyor** (2026-08-09)
 
-#### Ölçülen (çıkarım değil)
+> ### ⚠ Bunu *"en ağır yeni bulgu"* diye yazdım — **yeni değil**
+>
+> [ADR-0028](adr/ADR-0028-uzun-kosu-kararliligi.md) bunu **zaten**
+> kaydetmiş: *"kontrol yüzeyini geçen malzeme, hedeften kopan ejekta
+> değil, **merminin geri sıçramasıdır**; hedeften hiçbir parçacık
+> `2R`'yi geçmedi."* `100+` saniye kestirimi de orada yazılı.
+>
+> Ben bunu **yeniden keşfettim**. Kendi deposunun ADR'lerini okumadan
+> *"en ağır bulgu"* demek, bu turda düştüğüm kalıpların bir başkası.
+>
+> Aşağısı düzeltilmiş hâlidir: **ne biliniyordu**, **ne yeni**.
+
+#### Zaten biliniyordu (ADR-0028)
+
+- Kontrol yüzeyini geçen şey merminin sekmesi.
+- Ejekta `β`'sı `m/s` mertebesindeki ejekta için `100+` saniye ister.
+- ADR-0028 soruyu FAZ 4'e **erteledi**: *"β ne zaman durulur sorusu
+  FAZ 4'ün yerel incelme tasarımına bağlıdır ve orada ölçülecektir."*
+
+**FAZ 4 onu ölçmedi — belirti aynen sürüyor.** Bu maddenin işlevi:
+ertelenen sorunun **hâlâ açık** olduğunu kapı raporuna taşımak.
+
+#### YENİ olan iki şey
+
+**1. ADR-0028'in gösterdiği sebep artık geçerli değil, belirti sürüyor.**
+
+| | ADR-0028 | FAZ 4 (şimdi) |
+|---|---|---|
+| mermi yoğunluğu | `20 kg/m³` (**135 kat** düşürülmüş, *"köpük top"*) | **`2610 kg/m³`** — gerçekçi |
+| belirti | ejekta = mermi | **aynı** |
+
+ADR-0028 sebebi *"mermi köpük top gibi sıçrıyor"* diye açıklamıştı.
+Mermi artık gerçekçi yoğunlukta ve **yine** aynı şey oluyor. Yani
+sebep yoğunluk **değil** — geçiş süresi geometrinin kendisinden
+geliyor (`82 m` yol, `m/s` hız).
+
+**2. ADR-0028'in azaltıcı önlemi hiçbir şey kazandırmıyor.**
+
+ADR-0028 *"plato araması **bağlı kütle** momentumundan türetilen `β`
+ile yapılır, ejektadan türetilenle değil"* diyor. Ama momentum
+korunumundan (`p_bağlı + p_ejekta = p_mermi`):
+
+```
+β_bound = p_bağlı·ê/|p_mermi| = 1 − p_ejekta·ê/|p_mermi| = β
+```
+
+**İkisi aynı büyüklük.** `β_bound` kullanmak ejekta bekleme sorununu
+**çözmüyor**; FAZ 4.5 tam da bu yüzden `t = 0,0406 s`'de donmuş bir
+sayı ölçtü.
+
+#### Ölçülen (bu turda)
 
 | | |
 |---|---|
