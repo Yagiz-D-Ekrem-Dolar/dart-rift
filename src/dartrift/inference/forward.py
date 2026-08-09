@@ -39,13 +39,28 @@ __all__ = ["sahne_parametreleri", "gozlenebilirleri_cikar", "ileri_kosu",
 GOZLENEBILIRLER = ("beta", "krater_capi", "ejekta_kutle_kesri")
 
 
-def sahne_parametreleri(theta, taban: dict | None = None) -> dict:
+def sahne_parametreleri(theta, taban: dict | None = None, *,
+                        secenek3: bool = False) -> dict:
     """`θ = (α₀, Y₀, f_boulder)` → `build_scene` argümanları.
 
     `α₀` ve `Y₀` **matris** malzemesine uygulanır; kaya blokları
     (boulder) FAZ 3'te ayrı parametrelerle tanımlıdır ve **çıkarımın
     parçası değildir** — onları da serbest bırakmak parametre sayısını
     beşe çıkarırdı ve ızgara posterior o boyutta pahalılaşır.
+
+    .. warning::
+       **Varsayılan eşleme `ρ_yığın` ile tutarsız.** `matrix_alpha0`
+       serbest verilince üretici, hedef yığın yoğunluğunu tutturamadığı
+       için **reddediyor** — FAZ 4.6 duman testinde `29/36` nokta bu
+       yüzden düştü. Ölçüm ve seçenekler: **ADR-0044**.
+
+    Parameters
+    ----------
+    secenek3
+        `True` ise ADR-0044 **Seçenek 3** eşlemesi: `θ₀` artık
+        `boulder_alpha0`, `matrix_alpha0` **verilmiyor** ve üretici onu
+        `ρ_yığın`dan türetiyor. **ÖNERİ** — varsayılan `False` ve
+        kilitli karar yok (RULES.txt).
     """
     theta = np.asarray(theta, dtype=np.float64).ravel()
     if theta.shape != (3,):
@@ -57,6 +72,14 @@ def sahne_parametreleri(theta, taban: dict | None = None) -> dict:
         raise ValueError(f"Y0 pozitif olmalı, {y0} geldi")
     if not (0.0 <= fb <= 1.0):
         raise ValueError(f"f_boulder [0,1] içinde olmalı, {fb} geldi")
+    if secenek3:
+        # ADR-0044 SECENEK 3 (ONERI, kilitli DEGIL): birinci bilesen
+        # `boulder_alpha0`. `matrix_alpha0` VERILMIYOR -> uretici onu
+        # `ρ_yigin`dan turetiyor, boylece ADR-0030 kisiti bozulmuyor.
+        kw = dict(taban or {})
+        kw.update(boulder_alpha0=a0, matrix_Y0=y0, f_boulder=fb)
+        kw.pop("matrix_alpha0", None)
+        return kw
     kw = dict(taban or {})
     kw.update(matrix_alpha0=a0, matrix_Y0=y0, f_boulder=fb)
     return kw

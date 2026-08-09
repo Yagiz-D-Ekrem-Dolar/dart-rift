@@ -24,7 +24,8 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-__all__ = ["ParamSpace", "factorial_design", "lhs_design", "DART_UZAYI"]
+__all__ = ["ParamSpace", "factorial_design", "lhs_design",
+           "DART_UZAYI", "DART_UZAYI_S3"]
 
 
 @dataclass(frozen=True)
@@ -113,6 +114,31 @@ DART_UZAYI = ParamSpace(
     names=("alpha0", "Y0", "f_boulder"),
     lo=(1.10, 1.0e3, 0.0),
     hi=(2.00, 1.0e7, 0.50),
+    log=(False, True, False),
+)
+#: .. warning::
+#:    **Bu uzay `ρ_yığın` kısıtıyla TUTARSIZ ve uygulanabilir oranı `0`.**
+#:    `ρ_yığın` sabitken `matrix_alpha0`, `f_boulder`'ın fonksiyonudur;
+#:    ayrıca `f_boulder = 0` `M1` sınıfında yasaktır. Ölçüm ve dört
+#:    seçenek: :doc:`ADR-0044 <../../../docs/adr/ADR-0044-cikarim-parametre-uzayi-tutarsiz>`.
+#:    Değiştirilmedi çünkü karar **kilitlenmedi** (RULES.txt).
+
+#: ADR-0044 **Seçenek 3** — `matrix_alpha0` artık serbest değil,
+#: `ρ_yığın`'dan **türetiliyor**; yerine `boulder_alpha0` çıkarıma
+#: giriyor (şu an `1,05`'te sabit kodlu ve gerçekte bilinmiyor).
+#:
+#: | sınır | gerekçe |
+#: |---|---|
+#: | `boulder_alpha0 ∈ [1,00 , 1,30]` | `1,0` = tam katı blok; `1,30` üstü türetilen matris `α₀`'ı `%67` gözenekliliğin üstüne çıkarır |
+#: | `f_boulder ∈ [0,05 , 0,50]` | alt sınır `0` **olamaz** (M1 blok ister); üst sınır yasak eğrinin (`0,667`) altında |
+#:
+#: **ÖNERİ — kilitli değil.** Varsayılan hâlâ `DART_UZAYI`.
+#: ADR-0044 §6 madde 2 (gözlenebilirler bunları ayırt ediyor mu)
+#: **ölçülmedi**.
+DART_UZAYI_S3 = ParamSpace(
+    names=("boulder_alpha0", "Y0", "f_boulder"),
+    lo=(1.00, 1.0e3, 0.05),
+    hi=(1.30, 1.0e7, 0.50),
     log=(False, True, False),
 )
 

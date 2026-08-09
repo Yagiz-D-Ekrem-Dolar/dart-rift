@@ -324,3 +324,72 @@ def test_SAGLAM_vekiller_hala_calisiyor():
     vek, post, _ = _hat(dogrusalsizlik=0.0, tarama=False)
     assert np.all(np.isfinite(post.p))
     assert post.p.sum() == pytest.approx(1.0, rel=1e-12)
+
+
+# ------------------------- ADR-0044: uzay tutarsizligi ve Secenek 3
+
+def test_VARSAYILAN_uzayin_KUTUSU_rho_yiginla_TUTARSIZ():
+    """ADR-0044 §1 — ölçüm, iddianın kendisi.
+
+    `ρ_yığın` sabitken `matrix_alpha0`, `f_boulder`'ın fonksiyonudur.
+    Tasarım kutusu ikisini bağımsız ilan ediyor, yani kutunun neredeyse
+    tamamı **uygulanamaz**.
+    """
+    from dartrift.setup.rubble_generator import \
+        matrix_alpha0_for_bulk_density as g
+    rng = np.random.default_rng(0)
+    n = 4000
+    a0 = rng.uniform(DART_UZAYI.lo[0], DART_UZAYI.hi[0], n)
+    fb = rng.uniform(DART_UZAYI.lo[2], DART_UZAYI.hi[2], n)
+    tutarli = np.array([g(1800.0, 2700.0, 1.05, float(f)) for f in fb])
+    sapma = np.abs(a0 - tutarli) / tutarli
+    assert np.mean(sapma < 1e-9) == 0.0            # TAM uyum: hicbiri
+    assert np.mean(sapma < 0.10) < 0.35            # %10 tolerans bile az
+
+
+def test_SECENEK3_kutusunun_TAMAMI_uygulanabilir():
+    """ADR-0044 §6 madde 1 — ölçüldü, `0/36` yasak."""
+    from dartrift.inference.design import DART_UZAYI_S3
+    from dartrift.setup.rubble_generator import \
+        matrix_alpha0_for_bulk_density as g
+    for b in np.linspace(DART_UZAYI_S3.lo[0], DART_UZAYI_S3.hi[0], 6):
+        for f in np.linspace(DART_UZAYI_S3.lo[2], DART_UZAYI_S3.hi[2], 6):
+            a = g(1800.0, 2700.0, float(b), float(f))
+            assert np.isfinite(a) and a >= 1.0, (b, f, a)
+
+
+def test_SECENEK3_eslemesi_matrix_alpha0_VERMIYOR():
+    """Türetilmesi gereken şeyi elle vermek çatışmayı geri getirirdi."""
+    from dartrift.inference.forward import sahne_parametreleri
+    taban = {"bulk_density": 1800.0, "matrix_alpha0": 1.5}
+    kw = sahne_parametreleri(np.array([1.05, 3.0e5, 0.30]), taban,
+                             secenek3=True)
+    assert "matrix_alpha0" not in kw          # <-- uretici turetecek
+    assert kw["boulder_alpha0"] == 1.05
+    assert kw["f_boulder"] == 0.30
+    # Varsayilan esleme DEGISMEDI (karar kilitli degil).
+    kv = sahne_parametreleri(np.array([1.5, 3.0e5, 0.30]), taban)
+    assert kv["matrix_alpha0"] == 1.5 and "boulder_alpha0" not in kv
+
+
+def test_SECENEK3_ile_yigin_GERCEKTEN_kuruluyor():
+    """Asıl sınav: varsayılanın **düştüğü** yerde Seçenek 3 kuruyor mu."""
+    from dartrift.setup.scene import build_scene
+    from dartrift.inference.forward import sahne_parametreleri
+    taban = dict(radius=82.0, bulk_density=1800.0, root_seed=20260801,
+                 model_class="M1", q=3.0, n_impactor=800,
+                 r_min=14.0, r_max=42.0)
+    th = np.array([1.05, 3.0e5, 0.30])
+
+    # Varsayilan esleme: rho_yigin catismasi -> ValueError
+    with pytest.raises(ValueError, match="sapiyor"):
+        build_scene(spacing=14.0, device="cpu",
+                    **sahne_parametreleri(np.array([1.55, 3.0e5, 0.30]),
+                                          taban))
+
+    # Secenek 3: KURULUYOR ve yogunluk hedefi tutuyor.
+    sahne = build_scene(spacing=14.0, device="cpu",
+                        **sahne_parametreleri(th, taban, secenek3=True))
+    assert sahne.n > 0
+    rho = sahne.target_mass / sahne.mesh_volume
+    assert abs(rho - 1800.0) / 1800.0 < 0.05, rho

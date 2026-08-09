@@ -108,7 +108,31 @@ Onu çıkarıma almak
 - `ρ_yığın` kısıtını **bozmaz** (matris `α₀` türetilir),
 - `f_boulder`'ı **serbest** bırakır — ki o çıkarımın asıl hedefi.
 
-> Bu bir **öneri**; ölçülmedi. Kilitlenmeden önce §6'daki iki şey
+### Seçenek 3 **kuruluyor** — ölçüldü (2026-08-09)
+
+Eşleme `sahne_parametreleri(..., secenek3=True)` olarak yazıldı
+(**varsayılan `False`**, karar kilitli değil) ve sınandı:
+
+| | varsayılan eşleme | **Seçenek 3** |
+|---|---|---|
+| `build_scene(θ = (·, 3e5, 0,30))` | `ValueError: … %10,58 sapiyor` | **kuruluyor** |
+| elde edilen `ρ_yığın` | — | hedefin **`%5`** içinde |
+| `matrix_alpha0` | elle veriliyor (çatışma) | **türetiliyor** |
+
+> Yani çatışma yalnızca *tarif edilmiş* değil, çözümü de **çalışır
+> hâlde gösterilmiş** durumda. Kalan tek şey §6 madde 2.
+
+Öneri kutusu:
+
+| parametre | aralık | gerekçe |
+|---|---|---|
+| `boulder_alpha0` | `[1,00 , 1,30]` | `1,0` = tam katı blok; üstü matris `α₀`'ı `%67` gözenekliliğin üstüne çıkarır |
+| `Y0` | `[1e3 , 1e7]` | değişmedi |
+| `f_boulder` | `[0,05 , 0,50]` | alt sınır `0` **olamaz** (§1b); üst sınır yasak eğrinin (`0,667`) altında |
+
+`design.DART_UZAYI_S3` olarak tanımlı; **varsayılan hâlâ `DART_UZAYI`**.
+
+> Bu bir **öneri**; §6 madde 2 ölçülmedi. Kilitlenmeden önce o
 > ölçülmelidir.
 
 ---
