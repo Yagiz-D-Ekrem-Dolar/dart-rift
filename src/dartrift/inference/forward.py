@@ -40,7 +40,7 @@ GOZLENEBILIRLER = ("beta", "krater_capi", "ejekta_kutle_kesri")
 
 
 def sahne_parametreleri(theta, taban: dict | None = None, *,
-                        secenek3: bool = False) -> dict:
+                        secenek3: bool = True) -> dict:
     """`θ = (α₀, Y₀, f_boulder)` → `build_scene` argümanları.
 
     `α₀` ve `Y₀` **matris** malzemesine uygulanır; kaya blokları
@@ -48,19 +48,22 @@ def sahne_parametreleri(theta, taban: dict | None = None, *,
     parçası değildir** — onları da serbest bırakmak parametre sayısını
     beşe çıkarırdı ve ızgara posterior o boyutta pahalılaşır.
 
-    .. warning::
-       **Varsayılan eşleme `ρ_yığın` ile tutarsız.** `matrix_alpha0`
-       serbest verilince üretici, hedef yığın yoğunluğunu tutturamadığı
-       için **reddediyor** — FAZ 4.6 duman testinde `29/36` nokta bu
-       yüzden düştü. Ölçüm ve seçenekler: **ADR-0044**.
+    .. note::
+       **ADR-0044 (KABUL EDİLDİ) sonrası varsayılan Seçenek 3'tür.**
+       `θ₀` artık `boulder_alpha0`; `matrix_alpha0` **verilmez** ve
+       üretici onu `ρ_yığın`dan türetir.
+
+       Eski eşleme (`secenek3=False`) `ρ_yığın` ile **tutarsızdı**:
+       serbest `matrix_alpha0` verilince üretici hedef yoğunluğu
+       tutturamadığı için **reddediyordu** — FAZ 4.6 duman testinde
+       `29/29` nokta bu yüzden düştü. Yol **silinmedi** ki karar geri
+       alınabilsin.
 
     Parameters
     ----------
     secenek3
-        `True` ise ADR-0044 **Seçenek 3** eşlemesi: `θ₀` artık
-        `boulder_alpha0`, `matrix_alpha0` **verilmiyor** ve üretici onu
-        `ρ_yığın`dan türetiyor. **ÖNERİ** — varsayılan `False` ve
-        kilitli karar yok (RULES.txt).
+        `False` verilirse ADR-0044 **öncesi** eşleme kullanılır
+        (`θ₀ → matrix_alpha0`). Yalnızca karşılaştırma/gerileme için.
     """
     theta = np.asarray(theta, dtype=np.float64).ravel()
     if theta.shape != (3,):

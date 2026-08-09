@@ -18,15 +18,27 @@ from dartrift.inference.forward import (GOZLENEBILIRLER,
 
 def test_theta_DOGRU_alanlara_yaziliyor() -> None:
     """En sinsi hata: `Y₀` yanlış alana gider, bütün tasarım aynı sahneyi
-    koşturur ve vekil **sabit** bir yüzey öğrenir."""
-    kw = sahne_parametreleri([1.6, 3.0e5, 0.3])
-    assert kw["matrix_alpha0"] == pytest.approx(1.6)
+    koşturur ve vekil **sabit** bir yüzey öğrenir.
+
+    ADR-0044 (KABUL EDİLDİ) sonrası `θ₀` **`boulder_alpha0`**'dır;
+    `matrix_alpha0` **verilmez** ve üretici onu `ρ_yığın`dan türetir.
+    """
+    kw = sahne_parametreleri([1.15, 3.0e5, 0.3])
+    assert kw["boulder_alpha0"] == pytest.approx(1.15)
     assert kw["matrix_Y0"] == pytest.approx(3.0e5)
     assert kw["f_boulder"] == pytest.approx(0.3)
+    assert "matrix_alpha0" not in kw            # <-- TURETILECEK
+
+
+def test_ESKI_esleme_hala_erisilebilir() -> None:
+    """ADR-0044 geri alınabilir olmalı — eski yol **silinmedi**."""
+    kw = sahne_parametreleri([1.6, 3.0e5, 0.3], secenek3=False)
+    assert kw["matrix_alpha0"] == pytest.approx(1.6)
+    assert "boulder_alpha0" not in kw
 
 
 def test_taban_argumanlari_KORUNUYOR_ama_EZILEBILIYOR() -> None:
-    kw = sahne_parametreleri([1.6, 3.0e5, 0.3],
+    kw = sahne_parametreleri([1.15, 3.0e5, 0.3],
                              {"radius": 82.0, "f_boulder": 0.99})
     assert kw["radius"] == 82.0
     assert kw["f_boulder"] == pytest.approx(0.3)     # theta kazanir
@@ -34,10 +46,10 @@ def test_taban_argumanlari_KORUNUYOR_ama_EZILEBILIYOR() -> None:
 
 def test_FARKLI_theta_FARKLI_sahne() -> None:
     """Pozitif kontrol: eşleme gerçekten `θ`'ya bağlı mı?"""
-    a = sahne_parametreleri([1.2, 1.0e4, 0.1])
-    b = sahne_parametreleri([1.8, 5.0e6, 0.4])
+    a = sahne_parametreleri([1.05, 1.0e4, 0.1])
+    b = sahne_parametreleri([1.25, 5.0e6, 0.4])
     assert a != b
-    for k in ("matrix_alpha0", "matrix_Y0", "f_boulder"):
+    for k in ("boulder_alpha0", "matrix_Y0", "f_boulder"):
         assert a[k] != b[k], k
 
 

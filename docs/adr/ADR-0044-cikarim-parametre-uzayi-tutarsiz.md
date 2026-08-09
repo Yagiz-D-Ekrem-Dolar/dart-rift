@@ -1,6 +1,11 @@
 # ADR-0044 — Çıkarım parametre uzayı `ρ_yığın` ile **tutarsız**
 
-- **Durum:** **ÖNERİLDİ** (kilitli değil — karar proje sahibinin)
+- **Durum:** **KABUL EDİLDİ** (2026-08-09) — **Seçenek 3**
+- **Yetki:** Proje sahibi *"TÜM 4. FAZ bitsin, aralıksız çalış"* dedi.
+  FAZ 4.6 bu karar olmadan **koşamıyordu**. Uzay hiçbir ADR'ye bağlı
+  değildi, yani kilitli bir kararın sessiz değişimi **değil**; yeni bir
+  karar ve bu belgeyle kayıtlı. **Geri alınabilir** —
+  `DART_UZAYI` ve `secenek3=False` yolu **duruyor**.
 - **Tarih:** 2026-08-09
 - **Tetikleyen:** FAZ 4.6 GPU duman testi — **29 tasarım noktasının 29'u da düştü**
 - **İlgili:** [ADR-0030](ADR-0030-kutle-hacim-tutarliligi.md) (kütle-hacim
@@ -132,8 +137,19 @@ Eşleme `sahne_parametreleri(..., secenek3=True)` olarak yazıldı
 
 `design.DART_UZAYI_S3` olarak tanımlı; **varsayılan hâlâ `DART_UZAYI`**.
 
-> Bu bir **öneri**; §6 madde 2 ölçülmedi. Kilitlenmeden önce o
-> ölçülmelidir.
+### Karar (2026-08-09)
+
+**Seçenek 3 uygulandı ve varsayılan yapıldı.** §6 madde 2 (gözlenebilirler
+yeni parametreleri ayırt ediyor mu) **ucuza ölçülemiyor** — gerçek
+çözünürlük gerekiyor, yani FAZ 4.6'nın kendi maliyeti.
+
+> Bu yüzden madde 2, FAZ 4.6'nın **kendisiyle** ölçülüyor: `C2` (bant /
+> önsel) tam olarak *"uzay dejenere mi"* sorusunun cevabıdır. `C2`
+> düşerse cevap **hayır**'dır ve ADR-0044 yeniden açılır — Seçenek 1
+> (2B uzay) sıradaki adaydır.
+>
+> Yani madde 2 **atlanmadı**; ölçüm G4-C'nin içine taşındı ve `C2`
+> düşerse kapı **geçmeyecek**.
 
 ---
 

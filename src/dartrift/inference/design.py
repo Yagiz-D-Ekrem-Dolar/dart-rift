@@ -116,8 +116,10 @@ DART_UZAYI = ParamSpace(
     hi=(2.00, 1.0e7, 0.50),
     log=(False, True, False),
 )
-#: .. warning::
+#: .. deprecated:: ADR-0044 (KABUL EDİLDİ, 2026-08-09)
 #:    **Bu uzay `ρ_yığın` kısıtıyla TUTARSIZ ve uygulanabilir oranı `0`.**
+#:    Varsayılan artık :data:`DART_UZAYI_S3`. Bu tanım **silinmedi** ki
+#:    karar geri alınabilsin ve gerileme testleri koşabilsin.
 #:    `ρ_yığın` sabitken `matrix_alpha0`, `f_boulder`'ın fonksiyonudur;
 #:    ayrıca `f_boulder = 0` `M1` sınıfında yasaktır. Ölçüm ve dört
 #:    seçenek: :doc:`ADR-0044 <../../../docs/adr/ADR-0044-cikarim-parametre-uzayi-tutarsiz>`.
@@ -132,9 +134,11 @@ DART_UZAYI = ParamSpace(
 #: | `boulder_alpha0 ∈ [1,00 , 1,30]` | `1,0` = tam katı blok; `1,30` üstü türetilen matris `α₀`'ı `%67` gözenekliliğin üstüne çıkarır |
 #: | `f_boulder ∈ [0,05 , 0,50]` | alt sınır `0` **olamaz** (M1 blok ister); üst sınır yasak eğrinin (`0,667`) altında |
 #:
-#: **ÖNERİ — kilitli değil.** Varsayılan hâlâ `DART_UZAYI`.
-#: ADR-0044 §6 madde 2 (gözlenebilirler bunları ayırt ediyor mu)
-#: **ölçülmedi**.
+#: **KABUL EDİLDİ (ADR-0044) — çıkarımın VARSAYILAN uzayı budur.**
+#:
+#: ADR-0044 §6 madde 2 (gözlenebilirler bunları ayırt ediyor mu) ucuza
+#: ölçülemedi; ölçüm **G4-C `C2`'nin içine** taşındı. `C2` düşerse uzay
+#: dejenere demektir ve ADR-0044 yeniden açılır.
 DART_UZAYI_S3 = ParamSpace(
     names=("boulder_alpha0", "Y0", "f_boulder"),
     lo=(1.00, 1.0e3, 0.05),

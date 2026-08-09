@@ -43,7 +43,8 @@ for _akis in (sys.stdout, sys.stderr):
         pass
 
 
-from dartrift.inference.design import (DART_UZAYI, factorial_design,  # noqa: E402
+from dartrift.inference.design import (DART_UZAYI,  # noqa: E402
+                                       DART_UZAYI_S3, factorial_design,
                                        lhs_design)
 from dartrift.inference.forward import GOZLENEBILIRLER  # noqa: E402
 from dartrift.inference.forward import ileri_kosu as _gercek_ileri  # noqa: E402
@@ -51,6 +52,13 @@ from dartrift.inference.posterior import grid_posterior  # noqa: E402
 from dartrift.inference.recovery import recovery_verdict  # noqa: E402
 from dartrift.inference.surrogate import fit_surrogate  # noqa: E402
 from dartrift.validation.kosu_suresi import sure_denetimi  # noqa: E402
+
+#: ADR-0044 (**KABUL EDİLDİ**): çıkarımın uzayı **Seçenek 3**'tür —
+#: `(boulder_alpha0, Y0, f_boulder)`. Eski uzay (`DART_UZAYI`) `ρ_yığın`
+#: ile tutarsızdı ve duman testinde `29/29` nokta düşmüştü.
+#: `--eski-uzay` ile ona dönülebilir; **yalnızca gerileme** içindir ve
+#: koşunun düşmesi **beklenir**.
+UZAY = DART_UZAYI_S3
 
 #: Nominal gözlem gürültüsü. **Uydurulmadı**: `beta` için ADR-0026'nın
 #: hedeflediği `±0,1`; diğer ikisi FAZ 3'ün çıkarıcı duyarlılık
@@ -67,7 +75,7 @@ def _analitik_harita(x: np.ndarray) -> np.ndarray:
     biçimlerde bağlı olmalı — aksi halde çözüm dejenere olur ve C2
     yapay biçimde düşer.
     """
-    u = DART_UZAYI.to_unit(x)
+    u = UZAY.to_unit(x)
     a, y, f = u[:, 0], u[:, 1], u[:, 2]
     return np.column_stack([
         3.0 + 1.5 * a - 0.8 * y + 2.0 * f - 0.6 * a * f,
@@ -174,22 +182,34 @@ def main() -> int:
                     help="FAZ 4.5 sonuc JSON'u — kosu suresini dogrular")
     ap.add_argument("--kisa-kosuya-izin", action="store_true",
                     help="FAZ 4.5 durulma zamanina ULASILMASA da kos")
+    ap.add_argument("--eski-uzay", action="store_true",
+                    help="ADR-0044 ONCESI uzay (DART_UZAYI). rho_yigin ile "
+                         "TUTARSIZ; yalnizca gerileme icin, dusmesi BEKLENIR")
     a = ap.parse_args()
+
+    # ADR-0044: varsayilan Secenek 3. Global `UZAY`i degistirmek yerine
+    # yerel bir ad kullanmak daha temiz olurdu ama betigin her yerinde
+    # `UZAY` geciyor; tek yerden baglaniyor ve SECIM YAZILIYOR.
+    global UZAY
+    if a.eski_uzay:
+        UZAY = DART_UZAYI
 
     print("=" * 78, flush=True)
     print(f"FAZ 4.6 — SENTETIK KURTARMA (G4-C){'  [KURU KIP]' if a.kuru else ''}",
           flush=True)
+    print(f"uzay: {'DART_UZAYI (ADR-0044 ONCESI, TUTARSIZ)' if a.eski_uzay else 'DART_UZAYI_S3 (ADR-0044)'}"
+          f"  -> {UZAY.names}", flush=True)
     print("=" * 78, flush=True)
 
     kisa = _sure_denetimi(a)
 
     # --- 1) tasarim
-    x_kenar = factorial_design(DART_UZAYI, 3)
-    x_ic = lhs_design(DART_UZAYI, a.n_lhs, root_seed=a.root_seed)
+    x_kenar = factorial_design(UZAY, 3)
+    x_ic = lhs_design(UZAY, a.n_lhs, root_seed=a.root_seed)
     x = np.vstack([x_kenar, x_ic])
     print(f"\n[1] tasarim: {len(x_kenar)} kenar + {len(x_ic)} LHS = {len(x)} nokta",
           flush=True)
-    for j, ad in enumerate(DART_UZAYI.names):
+    for j, ad in enumerate(UZAY.names):
         print(f"    {ad:12s} [{x[:, j].min():.4g}, {x[:, j].max():.4g}]",
               flush=True)
 
@@ -276,7 +296,7 @@ def main() -> int:
     print("\n[3] vekiller", flush=True)
     vekiller = []
     for k, ad in enumerate(GOZLENEBILIRLER):
-        s = fit_surrogate(DART_UZAYI, x, Y[:, k])
+        s = fit_surrogate(UZAY, x, Y[:, k])
         vekiller.append(s)
         tani = ("SABIT -- ILERI MODEL BOZUK OLABILIR" if s.sabit
                 else "GUVENILIR" if s.guvenilir else "YETERSIZ")
@@ -297,10 +317,21 @@ def main() -> int:
               f"Posterior yine hesaplanacak ama yargi guvenilmez.", flush=True)
 
     # --- 4) gercek deger ve sentetik veri
-    gercek = np.array([1.55, 3.0e5, 0.30])
+    #
+    # GERCEK DEGER UZAYDAN TURETILIYOR, sabit yazilmiyor. Onceki surumde
+    # `[1.55, 3e5, 0.30]` sabitti; ADR-0044 ile birinci bilesen
+    # `boulder_alpha0` olup araligi `[1.00, 1.30]`e inince 1.55 uzayin
+    # DISINDA kaldi ve posterior kenara CAKILDI:
+    #     boulder_alpha0 bant = [1.289, 1.298]  (ust kenar)
+    #     Y0             bant = [1000, 1000]    (alt kenar)
+    # `pinned()` korumasi bunu yakaladi (C2 gecmedi), ama kok neden
+    # "cikarim kotu" degil "GERCEK DEGER KUTUNUN DISINDA" idi.
+    #
+    # Uzayin ORTASI (birim uzayda 0,5) her uzayda tanim geregi icerdedir.
+    gercek = UZAY.from_unit(np.full((1, UZAY.ndim), 0.5))[0]
     veri = np.array([float(s.predict(gercek[None, :])[0]) for s in vekiller])
     print(f"\n[4] gercek parametre: "
-          + ", ".join(f"{ad}={v:.4g}" for ad, v in zip(DART_UZAYI.names, gercek)),
+          + ", ".join(f"{ad}={v:.4g}" for ad, v in zip(UZAY.names, gercek)),
           flush=True)
     print("    sentetik veri: "
           + ", ".join(f"{ad}={v:.5g}" for ad, v in zip(GOZLENEBILIRLER, veri)),
@@ -308,13 +339,13 @@ def main() -> int:
 
     # --- 5) posterior + gurultu taramasi (C3)
     print("\n[5] posterior", flush=True)
-    post = grid_posterior(DART_UZAYI, vekiller, veri, SIGMA_NOMINAL,
+    post = grid_posterior(UZAY, vekiller, veri, SIGMA_NOMINAL,
                           n_grid=a.n_grid)
-    tarama = [(c, grid_posterior(DART_UZAYI, vekiller, veri,
+    tarama = [(c, grid_posterior(UZAY, vekiller, veri,
                                  tuple(c * s for s in SIGMA_NOMINAL),
                                  n_grid=a.n_grid))
               for c in (1.0, 4.0, 16.0)]
-    for j, ad in enumerate(DART_UZAYI.names):
+    for j, ad in enumerate(UZAY.names):
         lo, hi = post.hdi(j)
         print(f"    {ad:12s} gercek={gercek[j]:10.4g}  "
               f"%68=[{lo:.4g}, {hi:.4g}]  "
@@ -355,6 +386,11 @@ def main() -> int:
         # ensemble ile durulmaya kadar kosulmus olan ayni sayilmamali;
         # `kuru: true`nun yaptigi ayrimin aynisi.
         "sure_denetimi": kisa,
+        # HANGI UZAYDA kosuldugu sonuca yazilir: iki uzayin sonuclari
+        # birbirine karistirilamaz (parametre ADLARI bile farkli).
+        "uzay": list(UZAY.names),
+        "uzay_adi": "DART_UZAYI" if a.eski_uzay else "DART_UZAYI_S3",
+        "adr_0044": not a.eski_uzay,
     }, indent=2))
     print(f"\nyazildi: {a.out}", flush=True)
     return 0

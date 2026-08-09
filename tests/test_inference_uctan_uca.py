@@ -367,9 +367,13 @@ def test_SECENEK3_eslemesi_matrix_alpha0_VERMIYOR():
     assert "matrix_alpha0" not in kw          # <-- uretici turetecek
     assert kw["boulder_alpha0"] == 1.05
     assert kw["f_boulder"] == 0.30
-    # Varsayilan esleme DEGISMEDI (karar kilitli degil).
-    kv = sahne_parametreleri(np.array([1.5, 3.0e5, 0.30]), taban)
-    assert kv["matrix_alpha0"] == 1.5 and "boulder_alpha0" not in kv
+    # ADR-0044 KABUL EDILDI: varsayilan artik Secenek 3.
+    kvar = sahne_parametreleri(np.array([1.05, 3.0e5, 0.30]), taban)
+    assert "matrix_alpha0" not in kvar and kvar["boulder_alpha0"] == 1.05
+    # Eski yol SILINMEDI (karar geri alinabilsin).
+    kes = sahne_parametreleri(np.array([1.5, 3.0e5, 0.30]), taban,
+                              secenek3=False)
+    assert kes["matrix_alpha0"] == 1.5 and "boulder_alpha0" not in kes
 
 
 def test_SECENEK3_ile_yigin_GERCEKTEN_kuruluyor():
@@ -381,15 +385,15 @@ def test_SECENEK3_ile_yigin_GERCEKTEN_kuruluyor():
                  r_min=14.0, r_max=42.0)
     th = np.array([1.05, 3.0e5, 0.30])
 
-    # Varsayilan esleme: rho_yigin catismasi -> ValueError
+    # ESKI esleme (ADR-0044 oncesi): rho_yigin catismasi -> ValueError
     with pytest.raises(ValueError, match="sapiyor"):
         build_scene(spacing=14.0, device="cpu",
                     **sahne_parametreleri(np.array([1.55, 3.0e5, 0.30]),
-                                          taban))
+                                          taban, secenek3=False))
 
     # Secenek 3: KURULUYOR ve yogunluk hedefi tutuyor.
     sahne = build_scene(spacing=14.0, device="cpu",
-                        **sahne_parametreleri(th, taban, secenek3=True))
+                        **sahne_parametreleri(th, taban))   # varsayilan
     assert sahne.n > 0
     rho = sahne.target_mass / sahne.mesh_volume
     assert abs(rho - 1800.0) / 1800.0 < 0.05, rho
