@@ -309,3 +309,49 @@ def test_lagrange_gecersiz_girdiler(kw, mesaj):
     g.update(kw)
     with pytest.raises(ValueError, match=mesaj):
         sites_from_cloud(**g)
+
+
+# ------------------------------------------------ komsu sagligi (SPH sarti)
+
+def test_komsu_sagligi_duzgun_kafeste_bol_komsu():
+    """FCC benzeri düzgün bir kafeste `2h = 4s` içinde komşu **çok**."""
+    from dartrift.setup.coarsen import komsu_sagligi
+    from dartrift.setup.rubble_generator import lattice_points
+    s2 = 3.5
+    x = lattice_points(np.full(3, -30.0), np.full(3, 30.0), s2, "fcc")
+    d = komsu_sagligi(x, h=2.0 * s2)
+    assert d["komsu_medyan"] > 100.0, d
+    assert d["yalniz_oran"] < 0.35            # yalnizca KENAR parcaciklari
+
+
+def test_komsu_sagligi_seyrek_bulutta_YALNIZ_parcacik_yakalar():
+    """Genişlemiş/seyrek bir kümede uyarı çıkmalı — sessiz kalmamalı."""
+    from dartrift.setup.coarsen import komsu_sagligi
+    rng = np.random.default_rng(11)
+    x = rng.uniform(-500.0, 500.0, size=(200, 3))     # cok seyrek
+    d = komsu_sagligi(x, h=7.0)
+    assert d["komsu_medyan"] == 0.0
+    assert d["cok_yalniz_oran"] == pytest.approx(1.0)
+
+
+def test_komsu_sagligi_parcali_tek_blokla_ayni():
+    from dartrift.setup.coarsen import komsu_sagligi
+    x = RNG.uniform(-20, 20, size=(700, 3))
+    a = komsu_sagligi(x, h=3.0)
+    d = np.linalg.norm(x[:, None, :] - x[None, :, :], axis=2)
+    bek = np.count_nonzero(d < 6.0, axis=1) - 1
+    assert a["komsu_ort"] == pytest.approx(float(bek.mean()), rel=1e-12)
+    assert a["komsu_min"] == int(bek.min())
+
+
+@pytest.mark.parametrize("kw,mesaj", [
+    (dict(x_k=np.zeros((0, 3))), "boş küme"),
+    (dict(h=0.0), "pozitif"),
+    (dict(x_k=np.zeros((3, 2))), r"\(M,3\)"),
+])
+def test_komsu_sagligi_gecersiz(kw, mesaj):
+    from dartrift.setup.coarsen import komsu_sagligi
+    g = dict(x_k=np.zeros((3, 3)), h=1.0)
+    g.update(kw)
+    with pytest.raises(ValueError, match=mesaj):
+        komsu_sagligi(**g)

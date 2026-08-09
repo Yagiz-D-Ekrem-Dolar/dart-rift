@@ -58,7 +58,8 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["coarsen_to_sites", "korunum_raporu", "sites_from_cloud"]
+__all__ = ["coarsen_to_sites", "korunum_raporu", "sites_from_cloud",
+           "komsu_sagligi"]
 
 
 def _en_yakin_site(x: np.ndarray, siteler: np.ndarray,
@@ -267,3 +268,54 @@ def sites_from_cloud(x, s_hedef: float, paketleme: str = "fcc") -> np.ndarray:
     # BELIRLENIMCI benzersizlestirme: satirlari sirali dondurur.
     tekil = np.unique(hucre, axis=0)
     return kok[None, :] + (tekil + 0.5) * a
+
+
+def komsu_sagligi(x_k, h: float, destek_over_h: float = 2.0) -> dict:
+    """Kabalaştırılmış kümede **komşu sayısı** yeterli mi.
+
+    ## Neden ayrı bir kontrol
+
+    Korunum ve atama mesafesi *"madde doğru yerde ve doğru miktarda mı"*
+    diye soruyor. Ama aşama-2 bu parçacıkları **SPH ile** ilerletecek ve
+    SPH'nin çalışması için her parçacığın **yeterli komşusu** olmalı.
+
+    Aktarım tam da maddenin **genişlediği** anda yapılıyor
+    (`t₁ = 4,77e-3 s`'de bulut `r_iç`'in dışına taşmış durumda). Genişleyen
+    bir bulutta `s₂` aralıklı hücrelerin çoğu **kenar** hücresi olur ve
+    kenardaki parçacığın komşusu azdır.
+
+    > Aşama-2 parçacıkları `h = 2·s₂` ile geliyor (ADR-0041). Düzgün bir
+    > FCC kafeste `2h = 4·s₂` yarıçapı içinde `~250` komşu var. Aktarılan
+    > kümede bu sayı **çok** düşerse yoğunluk toplamı bozulur ve
+    > `ρ` sistematik olarak **düşük** çıkar.
+
+    Ölçülen: `2h` destek yarıçapı içindeki komşu sayısının dağılımı.
+    Bir eşik **konmuyor** — bu bir tanı; eşiği ADR yazarı koyar.
+    """
+    x_k = np.asarray(x_k, dtype=np.float64)
+    if x_k.ndim != 2 or x_k.shape[1] != 3:
+        raise ValueError(f"x_k (M,3) olmalı, {x_k.shape} geldi")
+    if len(x_k) == 0:
+        raise ValueError("boş küme — komşu sayılamaz")
+    if h <= 0.0:
+        raise ValueError(f"h pozitif olmalı, {h} geldi")
+    destek = destek_over_h * h
+
+    # PARCALI (kural: N x M x 3 asla parcasiz).
+    n = len(x_k)
+    sayi = np.zeros(n, dtype=np.int64)
+    blok = max(1, (1 << 22) // max(n, 1))
+    for b in range(0, n, blok):
+        d = np.linalg.norm(x_k[b:b + blok, None, :] - x_k[None, :, :], axis=2)
+        sayi[b:b + blok] = np.count_nonzero(d < destek, axis=1) - 1  # kendisi
+    return {
+        "n": int(n), "destek": float(destek),
+        "komsu_ort": float(sayi.mean()),
+        "komsu_medyan": float(np.median(sayi)),
+        "komsu_min": int(sayi.min()),
+        "komsu_p10": float(np.percentile(sayi, 10)),
+        # SPH'de yogunluk toplami icin pratik alt sinir ~30-50; altinda
+        # kalan parcaciklarin `rho`'su sistematik DUSUK cikar.
+        "yalniz_oran": float(np.mean(sayi < 30)),
+        "cok_yalniz_oran": float(np.mean(sayi < 10)),
+    }

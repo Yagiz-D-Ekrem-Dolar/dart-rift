@@ -53,7 +53,7 @@ for _akis in (sys.stdout, sys.stderr):
 
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
 from dartrift.setup.coarsen import (coarsen_to_sites,  # noqa: E402
-                                    sites_from_cloud)
+                                    komsu_sagligi, sites_from_cloud)
 from dartrift.setup.refine import refine_scene_local  # noqa: E402
 from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
 
@@ -121,7 +121,7 @@ def main() -> int:
 
     kayitlar, t_sim, hedefler = [], 0.0, sorted(float(t) for t in a.t1)
     print(f"\n{'t1':>10} {'kip':>9} {'site':>6} {'kutle':>9} {'momentum':>9} "
-          f"{'enerji':>9} {'ISIYA%':>8} {'d_max/s':>8}", flush=True)
+          f"{'enerji':>9} {'ISIYA%':>8} {'d_max/s':>8} {'komsu':>7}", flush=True)
     print("-" * 78, flush=True)
 
     for hedef in hedefler:
@@ -156,12 +156,16 @@ def main() -> int:
             k["t1"] = hedef
             k["kip"] = kip
             k["ic_enerji_cozucuden"] = True
+            # Asama-2 bunlari SPH ile ilerletecek: komsu YETIYOR MU?
+            # Korunum ve atama mesafesi bu soruyu SORMUYOR.
+            k["komsu"] = komsu_sagligi(out["x"], h=2.0 * s2)
             kayitlar.append(k)
             print(f"{hedef:10.1e} {kip:>9} {k['n_cikan']:6d} "
                   f"{k['kutle_hata']:9.2e} {k['momentum_hata']:9.2e} "
                   f"{k['enerji_hata']:9.2e} "
                   f"{100 * k['ice_donen_kinetik_oran']:8.3f} "
-                  f"{k['atama_mesafe_max'] / s2:8.2f}", flush=True)
+                  f"{k['atama_mesafe_max'] / s2:8.2f} "
+                  f"{k['komsu']['komsu_medyan']:7.0f}", flush=True)
 
     print("-" * 78, flush=True)
     if kayitlar:
@@ -189,6 +193,13 @@ def main() -> int:
                     ("acisal kayip %", "acisal_momentum_kayip_olcekli", 100.0)):
                 print(f"  {ad:24s} {e_s[anh] * olc:11.3f} "
                       f"{l_s[anh] * olc:11.3f}", flush=True)
+            for ad, anh in (("komsu medyan", "komsu_medyan"),
+                            ("komsu < 30 orani", "yalniz_oran"),
+                            ("komsu < 10 orani", "cok_yalniz_oran")):
+                print(f"  {ad:24s} {e_s['komsu'][anh]:11.3f} "
+                      f"{l_s['komsu'][anh]:11.3f}", flush=True)
+            print("  (komsu = 2h destegi icindeki parcacik; SPH yogunluk "
+                  "toplami icin ~30 pratik alt sinir)", flush=True)
 
         print("\nASIL BULGULAR (korunum degil):", flush=True)
         print(f"  acisal momentum kaybi = "
