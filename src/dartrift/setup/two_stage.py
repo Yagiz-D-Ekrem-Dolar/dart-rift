@@ -57,7 +57,7 @@ class IkiAsamaSahne:
 
 def asama2_sahnesi(a1_durum: dict, a1_ince_maske, a1_m, a1_alpha0, a1_Y0,
                    a1_is_boulder, a2, r_ince_a1: float,
-                   ) -> IkiAsamaSahne:
+                   a1_is_impactor=None) -> IkiAsamaSahne:
     """Aşama-1'in son durumunu aşama-2 sahnesine **birleştir**.
 
     Parameters
@@ -72,6 +72,9 @@ def asama2_sahnesi(a1_durum: dict, a1_ince_maske, a1_m, a1_alpha0, a1_Y0,
     r_ince_a1
         Aşama-1'in ince yarıçapı. Aşama-2'nin bu yarıçap **içinde
         başlamış** parçacıkları atılır (çifte sayım koruması).
+    a1_is_impactor
+        Aşama-1'in mermi maskesi. **Zorunlu**: bölge kütle
+        karşılaştırmasında mermi çıkarılmalı (aşama-2'de karşılığı yok).
     """
     ince = np.asarray(a1_ince_maske, dtype=bool)
     if not ince.any():
@@ -127,6 +130,28 @@ def asama2_sahnesi(a1_durum: dict, a1_ince_maske, a1_m, a1_alpha0, a1_Y0,
 
     m_a1 = float(m1.sum())
     m_akt = float(kaba["m"].sum())
+    # BOLGE KUTLE UYUSMAZLIGI: asama-1'in ince bolgesi ile asama-2'nin
+    # ATILAN bolgesi AYNI fiziksel hacmi temsil ediyor, ama iki FARKLI
+    # kafesle orneklenmis. Aradaki fark bir ayriklastirma farkidir ve
+    # aktarim korunumunun GORMEDIGI bir seydir.
+    #
+    # Mermi ayri tutuluyor: o asama-2'de zaten YOK (yuzeyin ustunde
+    # basliyor ve `r_ince_a1` icinde degil).
+    #
+    # `is_impactor` AYRI bir parametre olarak geliyor. Ilk surumde
+    # `a1_durum.get("is_impactor", ...)` yaziyordu ve `state_numpy()` o
+    # anahtari HIC dondurmuyor -- yani mermi kutlesi SESSIZCE hic
+    # cikarilmazdi ve uyusmazlik oldugundan buyuk gorunurdu.
+    if a1_is_impactor is None:
+        raise ValueError("`a1_is_impactor` zorunlu — mermi kütlesi bölge "
+                         "karşılaştırmasından çıkarılmalı")
+    imp1 = np.asarray(a1_is_impactor, dtype=bool)
+    if imp1.shape != ince.shape:
+        raise ValueError(f"is_impactor {imp1.shape}, ince {ince.shape} — "
+                         f"aynı olmalı")
+    m_mermi = float(np.asarray(a1_m, dtype=np.float64)[ince & imp1].sum())
+    m_a1_hedef = m_a1 - m_mermi
+    m_atilan = float(np.asarray(a2.m)[atilan].sum())
     tani = dict(kaba["korunum"])
     tani.update({
         "n_asama1_ince": int(ince.sum()),
@@ -138,10 +163,20 @@ def asama2_sahnesi(a1_durum: dict, a1_ince_maske, a1_m, a1_alpha0, a1_Y0,
         "r_ince_a1": float(r_ince_a1),
         # KUTLE DEFTERI: aktarim kutle kaybetmemeli.
         "aktarim_kutle_hatasi": abs(m_akt - m_a1) / max(m_a1, 1e-300),
-        "asama2_atilan_kutle": float(np.asarray(a2.m)[atilan].sum()),
+        "asama2_atilan_kutle": m_atilan,
         "aktarilan_kutle": m_akt,
+        "aktarilan_mermi_kutlesi": m_mermi,
+        # ~0 olmasi BEKLENMIYOR: iki kafes ayni hacmi farkli ornekliyor.
+        # Buyukse birlesik sahnenin krater bolgesi SISTEMATIK olarak
+        # fazla/eksik kutle tasir ve `beta` dogrudan etkilenir.
+        "bolge_kutle_uyusmazligi": (abs(m_a1_hedef - m_atilan)
+                                    / max(m_atilan, 1e-300)),
         # Asama-2 SPH ile ilerletecek: komsu yetiyor mu?
-        "komsu": komsu_sagligi(kaba["x"], h=2.0 * s2),
+        # KOMSULAR BIRLESIK sahnede sayilir. Yalnizca aktarilanlar
+        # arasinda saymak "her parcacik komsusuz" gibi YANILTICI bir
+        # sonuc veriyordu (on ucusta medyan 27, <30 orani 1.000).
+        "komsu": komsu_sagligi(kaba["x"], h=2.0 * s2,
+                               cevre=np.asarray(a2.x)[tut]),
     })
     return IkiAsamaSahne(x=x, v=v, m=m, e=e, h=h, alpha0=alpha0, Y0=Y0,
                          is_boulder=blok, is_impactor=is_imp, kaynak=kaynak,

@@ -49,7 +49,8 @@ def _a1(n=900, r=3.0, seed=7):
 
 def _kur(r_ince_a1=3.0, **kw):
     d, ince, m, a0, y0, bl = _a1(**kw)
-    return asama2_sahnesi(d, ince, m, a0, y0, bl, _SahteA2(), r_ince_a1)
+    return asama2_sahnesi(d, ince, m, a0, y0, bl, _SahteA2(), r_ince_a1,
+                          a1_is_impactor=np.zeros(len(m), bool))
 
 
 # ------------------------------------------------------- cifte sayim
@@ -120,14 +121,16 @@ def test_patlamis_asama1_REDDEDILIYOR():
     d, ince, m, a0, y0, bl = _a1()
     d["v"][5] = np.nan
     with pytest.raises(ValueError, match="sonlu değil"):
-        asama2_sahnesi(d, ince, m, a0, y0, bl, _SahteA2(), 3.0)
+        asama2_sahnesi(d, ince, m, a0, y0, bl, _SahteA2(), 3.0,
+                       a1_is_impactor=np.zeros(len(m), bool))
 
 
 def test_ic_enerji_YOKSA_acik_hata():
     d, ince, m, a0, y0, bl = _a1()
     del d["u"]
     with pytest.raises(KeyError, match="özgül iç enerji"):
-        asama2_sahnesi(d, ince, m, a0, y0, bl, _SahteA2(), 3.0)
+        asama2_sahnesi(d, ince, m, a0, y0, bl, _SahteA2(), 3.0,
+                       a1_is_impactor=np.zeros(len(m), bool))
 
 
 def test_ince_parcacik_yoksa_reddediliyor():
@@ -141,4 +144,35 @@ def test_yaricap_sahneden_BUYUKSE_reddediliyor():
     """Her şeyi atmak sessizce boş bir sahne üretmemeli."""
     d, ince, m, a0, y0, bl = _a1()
     with pytest.raises(ValueError, match="tamamı atılıyor"):
-        asama2_sahnesi(d, ince, m, a0, y0, bl, _SahteA2(), 1.0e6)
+        asama2_sahnesi(d, ince, m, a0, y0, bl, _SahteA2(), 1.0e6,
+                       a1_is_impactor=np.zeros(len(m), bool))
+
+
+def test_is_impactor_ZORUNLU():
+    """`state_numpy()` `is_impactor` döndürmüyor; sessizce atlanamaz.
+
+    İlk sürüm `a1_durum.get("is_impactor", zeros)` yapıyordu — yani
+    mermi kütlesi **hiçbir zaman** çıkarılmıyordu ve bölge uyuşmazlığı
+    olduğundan büyük görünürdü.
+    """
+    d, ince, m, a0, y0, bl = _a1()
+    with pytest.raises(ValueError, match="zorunlu"):
+        asama2_sahnesi(d, ince, m, a0, y0, bl, _SahteA2(), 3.0)
+    with pytest.raises(ValueError, match="aynı olmalı"):
+        asama2_sahnesi(d, ince, m, a0, y0, bl, _SahteA2(), 3.0,
+                       a1_is_impactor=np.zeros(5, bool))
+
+
+def test_bolge_kutle_uyusmazligi_raporlaniyor():
+    """İki kafes aynı hacmi farklı örnekliyor — fark görünmeli."""
+    t = _kur().diagnostics
+    assert "bolge_kutle_uyusmazligi" in t
+    assert t["bolge_kutle_uyusmazligi"] >= 0.0
+    assert t["aktarilan_mermi_kutlesi"] == 0.0     # fikstürde mermi yok
+
+
+def test_komsu_CEVRE_ile_sayiliyor():
+    """Aktarılanların aşama-2 komşuları da sayılmalı — yoksa kötümser."""
+    t = _kur().diagnostics
+    assert t["komsu"]["n_cevre"] == t["n_asama2_tutulan"]
+    assert t["komsu"]["komsu_medyan"] > 30, t["komsu"]

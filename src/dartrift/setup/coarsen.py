@@ -270,7 +270,8 @@ def sites_from_cloud(x, s_hedef: float, paketleme: str = "fcc") -> np.ndarray:
     return kok[None, :] + (tekil + 0.5) * a
 
 
-def komsu_sagligi(x_k, h: float, destek_over_h: float = 2.0) -> dict:
+def komsu_sagligi(x_k, h: float, destek_over_h: float = 2.0,
+                  cevre=None) -> dict:
     """Kabalaştırılmış kümede **komşu sayısı** yeterli mi.
 
     ## Neden ayrı bir kontrol
@@ -291,6 +292,19 @@ def komsu_sagligi(x_k, h: float, destek_over_h: float = 2.0) -> dict:
 
     Ölçülen: `2h` destek yarıçapı içindeki komşu sayısının dağılımı.
     Bir eşik **konmuyor** — bu bir tanı; eşiği ADR yazarı koyar.
+
+    Parameters
+    ----------
+    cevre
+        Aktarılan kümenin **etrafındaki** parçacıklar (aşama-2'nin geri
+        kalanı). Verilmezse komşular **yalnızca `x_k` içinde** sayılır
+        ve sonuç **kötümser** olur.
+
+        İlk sürümde bu parametre yoktu ve ön uçuşta `komşu medyan = 27`,
+        `<30 oranı = 1,000` çıktı — yani *"her aktarılan parçacık
+        komşusuz"*. **Yanıltıcıydı:** birleşik sahnede o parçacıkların
+        aşama-2 komşuları da var. Ölçüm birleşik bulut üzerinde
+        yapılmalı, aktarılan **alt kümesi** için raporlanmalı.
     """
     x_k = np.asarray(x_k, dtype=np.float64)
     if x_k.ndim != 2 or x_k.shape[1] != 3:
@@ -300,16 +314,19 @@ def komsu_sagligi(x_k, h: float, destek_over_h: float = 2.0) -> dict:
     if h <= 0.0:
         raise ValueError(f"h pozitif olmalı, {h} geldi")
     destek = destek_over_h * h
+    # KOMSULAR BIRLESIK BULUTTA sayilir; istatistik `x_k` icin verilir.
+    tum = x_k if cevre is None else np.vstack(
+        [x_k, np.asarray(cevre, dtype=np.float64)])
 
     # PARCALI (kural: N x M x 3 asla parcasiz).
-    n = len(x_k)
+    n, nt = len(x_k), len(tum)
     sayi = np.zeros(n, dtype=np.int64)
-    blok = max(1, (1 << 22) // max(n, 1))
+    blok = max(1, (1 << 22) // max(nt, 1))
     for b in range(0, n, blok):
-        d = np.linalg.norm(x_k[b:b + blok, None, :] - x_k[None, :, :], axis=2)
+        d = np.linalg.norm(x_k[b:b + blok, None, :] - tum[None, :, :], axis=2)
         sayi[b:b + blok] = np.count_nonzero(d < destek, axis=1) - 1  # kendisi
     return {
-        "n": int(n), "destek": float(destek),
+        "n": int(n), "n_cevre": int(nt - n), "destek": float(destek),
         "komsu_ort": float(sayi.mean()),
         "komsu_medyan": float(np.median(sayi)),
         "komsu_min": int(sayi.min()),
