@@ -479,6 +479,51 @@ momentum atmaktansa hata vermek doğrudur.
 
 ---
 
+## 4g. ÖLÇÜLDÜ: mermiyi çözmek **niteliksel** fark yaratıyor (2026-08-09)
+
+Üç kol, aynı `t_end = 0,2 s`, aynı sahne tohumu:
+
+| kol | `A1` | `β` | **`n_ejekta`** | momentum kapanışı |
+|---|---|---|---|---|
+| tek aşama (`λ=2`) | 0,2146 | **1,617583** | **803** | 1,36e-14 |
+| iki seviyeli *(geçersiz)* | 2,0391 | 1,412659 | 32 | **6,90e-01** |
+| **üç seviyeli** | **2,0391** | **1,411216** | **28** | **1,31e-14** |
+
+### Asıl bulgu `β` değil, **`n_ejekta`**
+
+`803` — merminin **parçacık sayısının tamamı**. Çözülmemiş mermide
+**bütün mermi sekip kaçıyor**. ADR-0028'in *"köpük top gibi
+sıçrıyor"* dediği davranış, mermi gerçekçi yoğunlukta (`2610 kg/m³`)
+olsa **bile** sürüyor — çünkü `h` çapının `9,3` katı.
+
+Çözülmüş mermide yalnızca **28** parçacık kaçıyor: mermi ağırlıklı
+olarak **gömülüyor** — yoğun bir merminin gözenekli hedefe yapması
+gereken şey.
+
+> Bu `%12,8`'lik bir `β` farkı değil, **niteliksel bir rejim
+> değişikliği**: *"tamamen seken top"* → *"gömülen mermi"*.
+> ADR-0026'nın *"çözülmemiş mermi erken bağlanmayı sayısal yapay
+> yapar"* uyarısı **ölçümle doğrulandı**.
+
+### `A1 ≥ 2` eşiği **haklı çıktı**
+
+§6'da *"A1 eşiğini düşürmek"* alternatifi *"eşiği boşaltmak"* diye
+reddedilmişti. Artık ölçümle destekli: eşiğin altında ve üstünde
+**farklı fizik** var.
+
+### İki seviyelinin `β`'sı neden yakın çıktı
+
+`1,412659` ile `1,411216` neredeyse aynı — ama iki seviyelinin
+momentum kapanışı `0,690`, yani **sahne bozuktu**. `β` ejekta
+momentumundan hesaplanıyor; atılan `%69` ise **bağlı** kütlenin
+momentumuydu ve `β`'ya yansımadı.
+
+> **Yakınlık tesadüf.** `β`'nın makul çıkması sahnenin doğru olduğu
+> anlamına **gelmiyor**. Momentum kapanışı tanısı olmasaydı bozuk
+> sahne *"doğrulanmış"* sayılırdı.
+
+---
+
 ## 5. Uygulanması gereken — ~~**mevcut değil**~~ **YAZILDI**
 
 Bu seçenek bir **kabalaştırma** adımı istiyor: aşama-1'in ince

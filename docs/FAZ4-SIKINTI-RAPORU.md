@@ -55,6 +55,24 @@ kalacak.
 > **Tek global zaman adımlı şemada bu bedel küçültülemez.** Çözümü
 > bireysel/blok zaman adımı — bu kod tabanında **yok**.
 
+#### ÖLÇÜLDÜ: mermiyi çözmek **rejimi değiştiriyor** (2026-08-09)
+
+Üç kol, aynı `t_end = 0,2 s`:
+
+| kol | `A1` | `β` | **`n_ejekta`** | mom. kapanışı |
+|---|---|---|---|---|
+| tek aşama (`λ=2`) | 0,2146 | 1,617583 | **803** | 1,36e-14 |
+| iki seviyeli *(geçersiz)* | 2,0391 | 1,412659 | 32 | **6,90e-01** |
+| **üç seviyeli** | **2,0391** | **1,411216** | **28** | **1,31e-14** |
+
+**`803`, merminin parçacık sayısının tamamı.** Çözülmemiş mermide
+**bütün mermi sekip kaçıyor**; çözülmüşte yalnızca `28` parçacık —
+mermi **gömülüyor**.
+
+> `%12,8`'lik bir `β` farkı değil, **rejim değişikliği**: *"tamamen
+> seken top"* → *"gömülen mermi"*. `A1 ≥ 2` eşiği **haklı çıktı**:
+> altında ve üstünde **farklı fizik** var.
+
 #### `A1`'in daha keskin hâli: **`h` merminin `9,3` katı** (2026-08-09)
 
 *"`0,215` parçacık/çap"* soyut kalıyor. Aynı şey yumuşatma uzunluğuyla:
