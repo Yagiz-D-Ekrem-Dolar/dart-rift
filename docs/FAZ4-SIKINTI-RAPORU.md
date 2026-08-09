@@ -143,17 +143,32 @@ ve ölçüldü — **çelişki Euler'ci aktarımın çelişkisiymiş**:
 **Kalan (ölçülmedi):** ek parçacıkların (40 / 210) aşama-2 kafesiyle
 **dikişi**, ve site sayısına **üst sınır** yok.
 
-### A9 — **`β` bu kurulumda donuyor: `B2` ölçülemez** (2026-08-09)
+### A9 — **`β` bir BASAMAK: `B2` geçiyor ama zayıf kanıt** (2026-08-09)
 
-`β` iki **bağımsız** koşuda, aynı sahnede, **bit düzeyinde** aynı:
+> ### ⚠ Bu maddeyi önce **fazla güçlü** yazdım
+>
+> *"`B2` ölçülemez"* demiştim. **Yanlış.** FAZ 4.5 bitti ve `β` baştan
+> sona sabit **değil**: ilk üç örnekte `1,000000` (ejekta **yok**), sonra
+> `t = 4,056e-2 s`'de `1,583620`'ye **atlıyor**. `yayilim_rel = 0,369`,
+> yani `sabit` bayrağı **kalkmıyor** ve `B2` meşru biçimde yazılıyor:
+> **`B2 = 1,0` GEÇTİ.**
+>
+> Maddenin **özü** doğru kaldı; aşağısı ölçümle düzeltilmiş hâlidir.
 
-| kaynak | `t` aralığı | `β` |
+FAZ 4.5 bitti (`40 000` adım, `t = 4,63 s`, `17 757 s` duvar). `β`
+bir **basamak fonksiyonu**:
+
+| örnek | `t` | `β` |
 |---|---|---|
-| FAZ 4.4 (`s7_λ2` A′) | `0,052 → 0,200 s` | `1,583620` (yayılım `5,6e-16`) |
-| FAZ 4.5 (sürüyor) | `0,226 → 0,922 s` | `1,583620` |
+| 1–3 | `0,0088 → 0,0290 s` | **`1,000000`** (ejekta **yok**) |
+| 4 | **`0,040558 s`** | **`1,583620`** ← geçiş |
+| 5–400 | `0,052 → 4,632 s` | `1,583620` |
 
-Yani `β`, `t ≈ 0,05 s`'ten `0,92 s`'ye kadar **makine hassasiyetinde
-sabit**. Bu bir *"%2 içinde duruldu"* değil, **donma**.
+**Geçişten sonraki yayılım: `2,18e-13`** — 397 örnek, `4,6` saniyelik
+simüle süre, **bit düzeyinde** düz. FAZ 4.4 aynı sahnede `0,052 → 0,200 s`
+için bağımsız olarak aynı değeri vermişti (`5,6e-16`).
+
+Yani `β` **relakse olmuyor**; bir kez **atlıyor** ve donuyor.
 
 **Sebebi kurulumda ve meşru:** `_malzeme()` `GravityParams(enabled=False)`
 kullanıyor (ADR-0024 ölçeklendirmesi). Yerçekimi yokken:
@@ -165,22 +180,30 @@ kullanıyor (ADR-0024 ölçeklendirmesi). Yerçekimi yokken:
 
 `β = 1 − p_ejekta·ê / |p_mermi|` bu yüzden şoktan sonra **değişemez**.
 
-> **Sonuç: G4-B2 bu yapılandırmada bir şey ölçmüyor.** *"`β` durdu mu"*
-> sorusunun cevabı **evet, tanım gereği** — ve bu, *"gereken simüle
-> süre ne kadar"* sorusunun cevabı **değil**. `B2`'nin ölçmek istediği
-> geç-zaman davranışı (yeniden birikme, geri düşen ejekta) **yerçekimi
-> gerektiriyor** ve o kapalı.
+> **Sonuç: `B2` geçiyor ama ölçtüğü şey dar.** `t_durulma = 4,06e-2 s`
+> aslında *"ejektanın kontrol yüzeyini ilk geçtiği an"*; ondan sonra
+> değişecek bir şey **yok**. Yani `B2`, *"şok bitti mi"*yi ölçüyor —
+> *"gereken simüle süre ne kadar"*ı **değil**.
+>
+> `B2`'nin ölçmek istediği geç-zaman davranışı (yeniden birikme, geri
+> düşen ejekta) **yerçekimi gerektiriyor** ve o kapalı.
 
-**Ne yapıldı:** sıkıntı 33'ün düzeltmesi bunu **görünür** kılıyor —
-`sabit` bayrağı kalkarsa `B2` **yazılmıyor** ve kapı `koşulmadı` diyor.
-Yani kapı sahte bir geçiş **almayacak**.
+**Ne yapıldı:** sıkıntı 33'ün düzeltmesi doğru davrandı — seri sabit
+**olmadığı** için bayrak kalkmadı ve `B2` yazıldı. Koruma yanlış
+pozitif üretmiyor.
+
+> Koşu **eski kodla** bittiği için `sabit` alanı `None` gelmişti; özet
+> **güncel kodla yeniden hesaplandı** (ham seri değişmedi, dosyaya
+> `yeniden_ozetlendi` notu düşüldü).
 
 **Ne yapılmadı:** `B2`'nin anlamlı ölçülebilmesi için ya yerçekimi açık
 bir koşu ya da başka bir gözlenebilir gerekiyor. İkisi de **karar**
 ister; `docs/G4-OLCUTLERI.md` `B2`'yi bu varsayımla yazmamıştı.
 
 > `β`'nın donması **kusur değil**; kusur, onu *"durulma"* diye
-> raporlayacak bir ölçüt tanımlamış olmak.
+> raporlayacak bir ölçüt tanımlamış olmak. `B2` geçti ama **`B4` ile
+> aynı ağırlıkta okunmamalı**: `B4 = −0,0037` gerçek bir sayısal hijyen
+> ölçümü, `B2 = 1,0` ise neredeyse tanım gereği.
 
 ### A10 — **Çıkarım parametre uzayı `ρ_yığın` ile tutarsız** (2026-08-09, FAZ 4.6'yı durduran bulgu)
 
