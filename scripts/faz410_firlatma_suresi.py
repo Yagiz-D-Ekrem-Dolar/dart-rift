@@ -52,32 +52,14 @@ for _akis in (sys.stdout, sys.stderr):
         pass
 
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
-from dartrift.observables.momentum_transfer import escape_speed  # noqa: E402
+from dartrift.observables.momentum_transfer import (  # noqa: E402
+    balistik_beta, escape_speed)  # noqa: E402
 from dartrift.setup.refine import refine_scene_local  # noqa: E402
 from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
 from dartrift.validation.settling_time import settling_time  # noqa: E402
 
 sys.path.insert(0, str(REPO / "scripts"))
 from faz44_dart_yakinsama import SAHNE, _malzeme  # noqa: E402
-
-
-def balistik_beta(x, v, m, *, hedef, R, v_esc, ehat, p_imp) -> dict:
-    """`β_bal` ve bileşenleri.
-
-    Mermi **her zaman** sayılır (o zaten kaçmış durumda); hedef maddesi
-    `r > R` **ve** `v_r > v_kaçış` şartıyla.
-    """
-    r = np.linalg.norm(x, axis=1)
-    vr = np.einsum("ij,ij->i", v, x / np.maximum(r, 1e-300)[:, None])
-    kacan = (~hedef) | (hedef & (r > R) & (vr > v_esc))
-    p_ej = np.sum(m[kacan, None] * v[kacan], axis=0)
-    beta = 1.0 - float(np.dot(p_ej, ehat)) / p_imp
-    h_kac = hedef & kacan
-    return {"beta_bal": beta,
-            "n_ejekta": int(kacan.sum()),
-            "n_hedef_ejekta": int(h_kac.sum()),
-            "hedef_ejekta_kutle_kesri": float(m[h_kac].sum()
-                                              / max(m[hedef].sum(), 1e-300))}
 
 
 def main() -> int:

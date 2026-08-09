@@ -30,7 +30,8 @@ from dataclasses import dataclass, field
 import numpy as np
 
 __all__ = ["BetaResult", "escape_speed", "estimate_target_radius",
-           "momentum_transfer", "beta_sensitivity", "kacis_bekleyenler"]
+           "momentum_transfer", "beta_sensitivity", "kacis_bekleyenler",
+           "balistik_beta"]
 
 # Duzgun dolu bir kurede yaricapin medyan uzakliga orani. r < R kabugundaki
 # kutle ~ (r/R)^3 oldugundan medyan uzaklik R/2^(1/3)'tur.
@@ -369,3 +370,67 @@ def kacis_bekleyenler(
         yargi="bekleyen_var",
     )
     return d
+
+
+def balistik_beta(
+    x: np.ndarray,
+    v: np.ndarray,
+    m: np.ndarray,
+    *,
+    hedef: np.ndarray,
+    R: float,
+    v_esc: float,
+    ehat: np.ndarray,
+    p_imp: float,
+) -> dict:
+    """`beta`, ejektanin `2R`'ye VARMASI beklenmeden.
+
+    `momentum_transfer`in olcutu `d > 2R` istiyor; hedef maddesinin oraya
+    varmasi medyan **795 s** suruyor (rapor A12) ve o sure simule
+    EDILMIYOR. Yercekimi kapali oldugu icin (`GravityParams(enabled=
+    False)`) serbest bir parcacik duz gider ve bir daha yavaslamaz, yani
+    "kacacak mi" sorusu SIMDI cevaplanabilir:
+
+        ejekta :  r > R  VE  v_r > v_kacis
+        beta   =  1 - (p_ejekta . e) / |p_mermi|
+
+    > Bu bir **esik gevsetmesi degil, bekleme kaldirmasidir**: ayni
+    > parcaciklar, sadece varislari beklenmeden sayiliyor. Capraz kontrol
+    > gecti — balistik `1,61758`, bagimsiz kontrol kolu `1,617583`.
+
+    `r > R` sarti **gerekli**: yoksa cismin icinde basinc dalgasiyla
+    disari salinan madde de sayilir.
+
+    ## TEK KAYNAK
+
+    Bu olcut daha once `faz48_iki_asama.py` ve `faz410_firlatma_
+    suresi.py` icinde AYRI AYRI yaziliydi. Uc kopya (ucuncusu
+    `kacis_bekleyenler`) birbirinden kayabilir ve kayma sessiz olur --
+    iki betik ayni sahnede farkli `beta` verirdi. Tek yere alindi.
+
+    ## Mermi HER ZAMAN kacmis sayilir
+
+    `~hedef` kosulsuz eklenir: mermi zaten disaridan geliyor ve gectigi
+    yol sorgulanmiyor. Iki asamali sahnede `is_impactor` hicbir
+    parcacikta yoktur (mermi cekirdekle kabalastirildi), yani orada bu
+    terim bostur ve `n_hedef_ejekta` KACAN HER SEY demektir.
+    """
+    x = np.asarray(x, dtype=np.float64)
+    v = np.asarray(v, dtype=np.float64)
+    m = np.asarray(m, dtype=np.float64)
+    hedef = np.asarray(hedef, dtype=bool)
+    if p_imp <= 0.0:
+        raise ValueError(f"|p_mermi| pozitif olmali, {p_imp} geldi")
+    r = np.linalg.norm(x, axis=1)
+    vr = np.einsum("ij,ij->i", v, x / np.maximum(r, 1e-300)[:, None])
+    kacan = (~hedef) | (hedef & (r > R) & (vr > v_esc))
+    p_ej = np.sum(m[kacan, None] * v[kacan], axis=0)
+    h_kac = hedef & kacan
+    return {
+        "beta_bal": 1.0 - float(np.dot(p_ej, np.asarray(ehat))) / p_imp,
+        "n_ejekta": int(kacan.sum()),
+        "n_hedef_ejekta": int(h_kac.sum()),
+        "hedef_ejekta_kutle": float(m[h_kac].sum()),
+        "hedef_ejekta_kutle_kesri": float(m[h_kac].sum()
+                                          / max(m[hedef].sum(), 1e-300)),
+    }

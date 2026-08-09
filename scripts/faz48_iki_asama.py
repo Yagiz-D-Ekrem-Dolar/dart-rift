@@ -149,15 +149,14 @@ def _iz_ornegi(st, *, hedef, R, v_esc, ehat, p_imp, x0) -> dict:
     ornekte bedavaya olculur — o yuzden ize KONULDU.
     """
     from dartrift.observables.crater_shape import crater_profile
-    from dartrift.observables.momentum_transfer import kacis_bekleyenler
+    from dartrift.observables.momentum_transfer import (balistik_beta,
+                                                        kacis_bekleyenler)
     x, v, m = st["x"], st["v"], st["m"]
-    r = np.linalg.norm(x, axis=1)
-    vr = np.einsum("ij,ij->i", v, x / np.maximum(r, 1e-300)[:, None])
-    kacan = (~hedef) | (hedef & (r > R) & (vr > v_esc))
-    p_ej = np.sum(m[kacan, None] * v[kacan], axis=0)
-    d = {"beta_bal": 1.0 - float(np.dot(p_ej, ehat)) / p_imp,
-         "n_hedef_ejekta": int((hedef & kacan).sum()),
-         "hedef_ejekta_kutle": float(m[hedef & kacan].sum())}
+    # Olcut BURADA YAZILMIYOR: tek kaynak `balistik_beta`. Onceden bu
+    # satirlar `faz410_firlatma_suresi.py`de de vardi ve iki kopya
+    # sessizce kayabilirdi.
+    d = balistik_beta(x, v, m, hedef=hedef, R=R, v_esc=v_esc,
+                      ehat=ehat, p_imp=p_imp)
     kb = kacis_bekleyenler(x, v, m, hedef=hedef, R=R, v_esc=v_esc)
     d.update(n_bekleyen=kb["n_bekleyen"],
              bekleyen_kutle_kesri=kb["bekleyen_kutle_kesri"],

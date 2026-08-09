@@ -11,6 +11,7 @@ import pytest
 from dartrift.observables.crater_shape import crater_profile, surface_particles
 from dartrift.observables.ejecta_catalog import catalog_ejecta, cumulative_mass_velocity
 from dartrift.observables.momentum_transfer import (
+    balistik_beta,
     beta_sensitivity,
     kacis_bekleyenler,
     escape_speed,
@@ -767,3 +768,65 @@ def test_kacis_bekleyenler_uzunluk_uyusmazligi_hata():
     with pytest.raises(ValueError, match="ayni uzunlukta"):
         kacis_bekleyenler(x, np.zeros((2, 3)), np.ones(3),
                              hedef=np.ones(3, dtype=bool), R=1.0, v_esc=1.0)
+
+
+# ---------------------------------------------------------------------------
+# balistik_beta — kacis olcutunun TEK kaynagi
+# ---------------------------------------------------------------------------
+
+def test_balistik_beta_elle_hesaplanan_degeri_verir():
+    """Iki parcacik, cevabi kagitta cikan durum.
+
+    Mermi (hedef degil) +z'de 10 kg m/s tasiyor; hedef parcacigi
+    `r > R` ve hizli, -z'de 4 kg m/s. `p_mermi` = 20, ekseni +z.
+        p_ejekta . e = 10 - 4 = 6  ->  beta = 1 - 6/20 = 0,70
+    """
+    x = np.array([[0.0, 0.0, 5.0], [0.0, 0.0, 20.0]])
+    v = np.array([[0.0, 0.0, 10.0], [0.0, 0.0, -4.0]])
+    m = np.ones(2)
+    d = balistik_beta(x, v, m, hedef=np.array([False, True]), R=10.0,
+                      v_esc=1.0, ehat=np.array([0.0, 0.0, 1.0]), p_imp=20.0)
+    # hedef parcaciginin v_r = -4 < v_kacis, yani KACMIYOR
+    assert d["n_hedef_ejekta"] == 0
+    assert d["beta_bal"] == pytest.approx(1.0 - 10.0 / 20.0)
+
+
+def test_balistik_beta_ile_kacis_bekleyenler_AYNI_kumeyi_sayiyor():
+    """Iki fonksiyon ayni olcutu kullaniyor mu — kayma sinavi.
+
+    `n_hedef_ejekta` (balistik_beta) ile `n_kacti` (kacis_bekleyenler)
+    ayni sey: `hedef & r > R & v_r > v_kacis`. Biri degisip digeri
+    kalirsa iki betik ayni sahnede farkli sonuc verir.
+    """
+    rng = np.random.default_rng(4)
+    n = 500
+    x = rng.normal(scale=40.0, size=(n, 3))
+    v = rng.normal(scale=2.0, size=(n, 3))
+    m = rng.uniform(0.5, 2.0, n)
+    hedef = rng.random(n) > 0.1
+    R, v_esc = 30.0, 0.5
+    a = balistik_beta(x, v, m, hedef=hedef, R=R, v_esc=v_esc,
+                      ehat=np.array([0.0, 0.0, 1.0]), p_imp=100.0)
+    b = kacis_bekleyenler(x, v, m, hedef=hedef, R=R, v_esc=v_esc)
+    assert a["n_hedef_ejekta"] == b["n_kacti"]
+
+
+def test_balistik_beta_sifir_mermi_momentumu_reddedilir():
+    with pytest.raises(ValueError, match="pozitif"):
+        balistik_beta(np.zeros((2, 3)), np.zeros((2, 3)), np.ones(2),
+                      hedef=np.ones(2, dtype=bool), R=1.0, v_esc=1.0,
+                      ehat=np.array([0.0, 0.0, 1.0]), p_imp=0.0)
+
+
+def test_kacis_olcutu_betiklerde_YENIDEN_yazilmamis():
+    """Olcut tek yerde kalsin; kopyalar sessizce kayar.
+
+    `settling_time`i iki yere koymamanin ayni gerekcesi. Betikler
+    `balistik_beta`yi CAGIRMALI, satir ici hesaplamamali.
+    """
+    from pathlib import Path
+    kok = Path(__file__).resolve().parents[1] / "scripts"
+    desen = "kacan = (~hedef)"
+    suclu = [p.name for p in kok.glob("*.py")
+             if desen in p.read_text(encoding="utf-8")]
+    assert not suclu, f"olcut su betiklerde yeniden yazilmis: {suclu}"
