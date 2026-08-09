@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-09 · **Kapanan:** 35 · **Açık:** 4
+**Son güncelleme:** 2026-08-09 · **Kapanan:** 35 · **Açık:** 5
 
 ---
 
@@ -142,6 +142,45 @@ ve ölçüldü — **çelişki Euler'ci aktarımın çelişkisiymiş**:
 
 **Kalan (ölçülmedi):** ek parçacıkların (40 / 210) aşama-2 kafesiyle
 **dikişi**, ve site sayısına **üst sınır** yok.
+
+### A9 — **`β` bu kurulumda donuyor: `B2` ölçülemez** (2026-08-09)
+
+`β` iki **bağımsız** koşuda, aynı sahnede, **bit düzeyinde** aynı:
+
+| kaynak | `t` aralığı | `β` |
+|---|---|---|
+| FAZ 4.4 (`s7_λ2` A′) | `0,052 → 0,200 s` | `1,583620` (yayılım `5,6e-16`) |
+| FAZ 4.5 (sürüyor) | `0,226 → 0,922 s` | `1,583620` |
+
+Yani `β`, `t ≈ 0,05 s`'ten `0,92 s`'ye kadar **makine hassasiyetinde
+sabit**. Bu bir *"%2 içinde duruldu"* değil, **donma**.
+
+**Sebebi kurulumda ve meşru:** `_malzeme()` `GravityParams(enabled=False)`
+kullanıyor (ADR-0024 ölçeklendirmesi). Yerçekimi yokken:
+
+1. Ejekta bir kez serbest kalınca **balistik**tir → momentumu **tam**
+   korunur.
+2. Ejekta kümesi (`d > r_ctrl` **ve** `v_r > v_kaçış`) donuyor — hızlılar
+   çoktan geçti, yavaşlar `0,9 s`'de `r_ctrl`'e ulaşamıyor.
+
+`β = 1 − p_ejekta·ê / |p_mermi|` bu yüzden şoktan sonra **değişemez**.
+
+> **Sonuç: G4-B2 bu yapılandırmada bir şey ölçmüyor.** *"`β` durdu mu"*
+> sorusunun cevabı **evet, tanım gereği** — ve bu, *"gereken simüle
+> süre ne kadar"* sorusunun cevabı **değil**. `B2`'nin ölçmek istediği
+> geç-zaman davranışı (yeniden birikme, geri düşen ejekta) **yerçekimi
+> gerektiriyor** ve o kapalı.
+
+**Ne yapıldı:** sıkıntı 33'ün düzeltmesi bunu **görünür** kılıyor —
+`sabit` bayrağı kalkarsa `B2` **yazılmıyor** ve kapı `koşulmadı` diyor.
+Yani kapı sahte bir geçiş **almayacak**.
+
+**Ne yapılmadı:** `B2`'nin anlamlı ölçülebilmesi için ya yerçekimi açık
+bir koşu ya da başka bir gözlenebilir gerekiyor. İkisi de **karar**
+ister; `docs/G4-OLCUTLERI.md` `B2`'yi bu varsayımla yazmamıştı.
+
+> `β`'nın donması **kusur değil**; kusur, onu *"durulma"* diye
+> raporlayacak bir ölçüt tanımlamış olmak.
 
 ### A4 — `ileri_kosu`'nun GPU kısmı hiç koşulmadı
 
@@ -525,7 +564,7 @@ yaradığı görünmez:
 |---|---|
 | hata ayıklama turu | **16** |
 | kapanan sıkıntı | **35** |
-| açık sıkıntı | **4** (A5 karar, kalanı kota; A6/A7/A8 kapandı) |
+| açık sıkıntı | **5** (A5 + A9 karar, kalanı kota; A6/A7/A8 kapandı) |
 | **testlerin kör olduğu kusur** | **7** |
 | **tahminimi çürüten ölçüm** | **9** |
 | eklenen gerileme testi | **133** |
