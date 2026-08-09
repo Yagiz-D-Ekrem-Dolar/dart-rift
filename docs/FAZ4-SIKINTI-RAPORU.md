@@ -253,6 +253,24 @@ gözlenebilir anlamlı değil, **yok**.
 
 **Durum:** koşu `3/60`'ta **durduruldu**.
 
+#### Krater **derinliği** de kurtarmıyor — ölçüldü
+
+Çap eşik istiyor, **derinlik istemiyor**. O yüzden derinlik ölçüldü
+(`boulder_α₀ = 1,00`, `f_boulder = 0,05`, `1500` adım, `593,7 s`):
+
+| büyüklük | değer |
+|---|---|
+| krater **derinliği** | **`0,03486 m`** |
+| çap eşiği (`0,05 × R`) | `4,1 m` — **118 kat** uzak |
+| **parçacık aralığı** (`s_ince`) | **`3,5 m`** |
+| derinlik / aralık | **`0,0100`** |
+
+> Ölçülen *"krater"* bir parçacık aralığının **yüzde biri**. Bu bir
+> krater değil, **sayısal gürültü**. Derinliği gözlenebilir yapmak
+> gürültüyü çıkarıma sokmak olurdu.
+
+`t = 0,174 s`'de krater **yok** — ne çap ne derinlik olarak.
+
 ### A12 — **`β` ejektayı değil MERMİNİN SEKMESİNİ ölçüyor** (2026-08-09)
 
 > ### ⚠ Bunu *"en ağır yeni bulgu"* diye yazdım — **yeni değil**
@@ -350,11 +368,31 @@ bedel tablosu buna dayanıyor. `1 s`'de yüzeyi geçmek için ejekta
 
 Sayılar **doğru**; **iddia ettikleri daha dar**.
 
+#### Gereken sürenin **bedeli** — ölçülmüş `dt` ve hızla
+
+`dt = 1,158e-4 s` ve `0,4439 s/adım` (ikisi de FAZ 4.5'ten **ölçüldü**):
+
+| gereken `t` | adım | nokta başı | **60 nokta** |
+|---|---|---|---|
+| `0,174 s` (şimdiki) | 1 503 | 0,2 sa | **0,5 gün** |
+| `1 s` (ADR-0043'ün varsayımı) | 8 636 | 1,1 sa | **2,7 gün** |
+| `10 s` | 86 363 | 10,6 sa | **26,6 gün** |
+| `100 s` (ADR-0028'in kestirimi) | 863 634 | 106,5 sa | **266 gün** |
+
+> H200 `2,85×` hızlı olsa bile `100 s` için `93` gün. **FAZ 4.6 bu
+> tanımla koşulamaz.**
+
 #### Ölçülmedi
 
 Hedef maddesi kaçış hızını **aşıyor mu** (yüzeyi geçmemiş olsa da)?
 `v_kaçış = 0,082 m/s` çok küçük. Aşıyorsa sorun **koşu süresi**;
 aşmıyorsa `β ≈ mermi sekmesi` **fiziksel olarak doğru cevap**.
+
+> **Ucuz bir çıkış yolu olabilir:** yerçekimi **kapalı** olduğu için
+> serbest kalmış parçacık **doğru çizgide** gider. O hâlde tek bir
+> durumdan her parçacığın `2R`'yi ne zaman geçeceği
+> **tam olarak** hesaplanır ve `β(t)` geleceğe doğru **koşmadan**
+> çıkarılır. Ölçülüyor.
 
 ### A4 — `ileri_kosu`'nun GPU kısmı hiç koşulmadı → **KAPANDI**
 
