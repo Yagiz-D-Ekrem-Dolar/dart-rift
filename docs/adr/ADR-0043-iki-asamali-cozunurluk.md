@@ -246,6 +246,72 @@ Bu **ölçülmedi** ve ayrı bir iş. §7'ye madde 5 olarak eklendi.
 
 ---
 
+## 4d. Lagrange'cı aktarım **yazıldı ve ölçüldü** — engel **kalktı** (2026-08-09)
+
+`sites_from_cloud`: `t₁` anındaki bulut, kenarı `a = s₂/2^{1/6}` olan
+kübik ızgaraya bölünüyor; **dolu** hücrelerin merkezleri site oluyor.
+Her parçacık kendi hücresinin merkezine `≤ a√3/2` uzaklıkta —
+atama mesafesi **yapı gereği** sınırlı.
+
+> `a = s₂/2^{1/6} ≈ 0,8909·s₂`, çünkü aşama-2 FCC ve parçacık hacmi
+> `s₂³/√2`; kübik hücrede hacim `a³`. Eşitlenmezse aktarılan parçacıklar
+> `%41` daha büyük hacim temsil ederdi.
+
+**İki kip, aynı durumda** (`λ=19`, `r_iç=3 m`, yerel RTX 3050):
+
+| `t₁` [s] | kip | site | kütle | momentum | enerji | **ısıya dönen** | **atama mes.** |
+|---|---|---|---|---|---|---|---|
+| `1e-4` | euler | 2 | 3,9e-14 | 2,8e-16 | 1,8e-16 | `%98,2` | `0,97` |
+| `1e-4` | **lagrange** | 4 | 8,0e-15 | 8,2e-16 | 3,7e-16 | `%97,1` | `0,73` |
+| `1e-3` | euler | 2 | 3,9e-14 | 3,4e-15 | 5,7e-16 | `%93,2` | `0,97` |
+| `1e-3` | **lagrange** | 7 | 7,9e-15 | 2,7e-15 | 3,8e-16 | `%85,9` | `0,73` |
+| **`4,77e-3`** | euler | 2 | 3,9e-14 | 1,0e-15 | 7,4e-16 | **`%99,3`** | **`4,35`** |
+| **`4,77e-3`** | **lagrange** | **40** | 2,1e-15 | 4,3e-16 | 3,7e-16 | **`%2,88`** | **`0,73`** |
+| `1e-2` | euler | 2 | 3,9e-14 | 6,1e-15 | 1,5e-15 | **`%99,9`** | **`10,16`** |
+| `1e-2` | **lagrange** | **210** | 1,6e-15 | 3,6e-15 | 1,8e-16 | **`%0,46`** | **`0,73`** |
+
+### İki kip **zıt yönlere** gidiyor
+
+| `t₁` | euler ısıya | lagrange ısıya |
+|---|---|---|
+| `1e-4` | 98,2 | 97,1 |
+| `1e-3` | 93,2 | 85,9 |
+| `4,77e-3` | **99,3** | **2,88** |
+| `1e-2` | **99,9** | **0,46** |
+
+> Euler'ci **kötüleşiyor**, Lagrange'cı **iyileşiyor**. Sebebi aynı olay:
+> madde genişliyor. Sabit hedef ondan uzaklaşıyor; bulutu izleyen hedef
+> ise giderek daha **düzgün** bir akış görüyor ve `s₂` ölçeğinde
+> temsil edilebilir hâle geliyor.
+
+### §4c'nin *"aralık boş"* sonucu **düzeldi**
+
+Ölçülen `t₁ = 4,767e-3 s`'de Lagrange'cı aktarım:
+
+| | euler | **lagrange** |
+|---|---|---|
+| ısıya dönen | `%99,3` | **`%2,88`** — `34×` iyi |
+| atama mesafesi | `4,35` hücre | **`0,73` hücre` |
+| korunum (üçü) | `≤ 1,0e-15` | `≤ 2,1e-15` |
+| açısal kayıp (ölçekli) | `%0,007` | `%0,012` |
+
+**`t₁`'in iki şartı artık çelişmiyor.** §4c'de kaydedilen engel,
+Euler'ci aktarımın engeliydi — **yaklaşımın değil**.
+
+### Karşılığı: aktarım parçacık sayısını **artırıyor**
+
+Aşama-2'nin o bölgede `2` parçacığı olurdu; Lagrange'cı aktarım
+`t₁ = 4,77e-3 s`'de **40**, `1e-2 s`'de **210** üretiyor. Mutlak sayı
+küçük (toplam `~11 000`'in `%0,4`'ü ve `%1,9`'u), yani bedel ihmal
+edilebilir. Ama **nötr değil** ve iki şey **ölçülmedi**:
+
+1. Bu ek parçacıkların aşama-2'nin mevcut kafesiyle **dikişi**
+   (`_dikis_kalitesi` bu duruma uygulanmadı).
+2. `t₁` büyüdükçe site sayısı da büyüyor (`4 → 7 → 40 → 210`); bir üst
+   sınır **konmadı**.
+
+---
+
 ## 5. Uygulanması gereken — **mevcut değil**
 
 Bu seçenek bir **kabalaştırma** adımı istiyor: aşama-1'in ince
@@ -300,15 +366,29 @@ olur). Bu, ADR ile ayrıca karara bağlanmalı.
    engel** buldu: atama mesafesi `t₁`'de `4,35` hücre. Bkz. madde 5.
 3. **`λ = 19`'da arayüz ne yapıyor** — boşluk 3 yalnızca `λ = 2`'de
    kapandı; `6478:1` oranı ölçülmüş her şeyin ötesinde.
-4. **Blok sınırlarının kaba çözünürlükte kalmasının etkisi** (§4b) —
-   ince bölgede kaya blokları kaba kafesin çözünürlüğünde temsil
-   ediliyor ve bu **ölçülmedi**.
-5. **(YENİ, §4c)** **Lagrange'cı hedef site üretimi.** Euler'ci sürüm
-   ölçüldü ve düştü. Maddenin peşinden giden bir sürüm yazılıp aynı
-   iki tanıyla (atama mesafesi, ısıya dönen oran) **yeniden
-   ölçülmelidir**. Bu yapılmadan §4'ün önerisi uygulanamaz.
+4. ~~**Blok sınırlarının kaba çözünürlükte kalmasının etkisi** (§4b)~~
+   **◐ GEOMETRİK YARISI ÖLÇÜLDÜ** (`scripts/faz43e_blok_sinirlari.py`,
+   `r_iç = 25 m`, 7 blok):
 
-> **Beşi de** ölçülmeden bu ADR **kilitlenmemelidir**. 1 ve 2 ölçüldü;
-> 2 geçerken **madde 5'i doğurdu**. Özellikle 3: A′'nın
+   | `λ` | `s_ince` | yanlış sınıflanan | kütlece | `f_blok` sapması |
+   |---|---|---|---|---|
+   | 2 | 3,500 m | `%4,73` | `%4,96` | **`%3,02`** |
+   | 6 | 1,167 m | `%5,48` | `%6,44` | **`%6,45`** |
+
+   > **`λ` arttıkça kötüleşiyor** — ince kafes inceldikçe daha çok
+   > parçacık blok sınırına düşüyor ve `7 m`'lik komşudan örnekleme
+   > onları çözemiyor. `f_boulder` çıkarımın **üç parametresinden biri**.
+
+   **Dinamik etkisi hâlâ ölçülmedi**: bu sapmanın `β`'ya ne yaptığı
+   ayrı bir koşu ister.
+5. ~~**(YENİ, §4c)** **Lagrange'cı hedef site üretimi.**~~
+   **✔ ÖLÇÜLDÜ (§4d):** yazıldı (`sites_from_cloud`) ve ölçülen `t₁`'de
+   ısıya dönen oran `%99,3 → %2,88`, atama mesafesi `4,35 → 0,73`
+   hücre. §4c'nin engeli **kalktı**.
+   *Kalan:* ek parçacıkların aşama-2 kafesiyle **dikişi** ölçülmedi ve
+   site sayısına **üst sınır konmadı** (`t₁=1e-2 s` → 210).
+
+> **Durum (2026-08-09):** 1, 2 ve 5 **ölçüldü**; 4'ün geometrik yarısı
+> ölçüldü. **3 hiç ölçülmedi** ve kilit için hâlâ şart. Özellikle 3: A′'nın
 > arayüz davranışı yüksek oranda **bilinmiyor** ve KAYIT-024 gürültünün
 > oranla **büyüdüğünü** ölçtü.
