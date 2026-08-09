@@ -45,6 +45,16 @@ KOSULLU_KABULLER = (
     "yüksek oran istiyor.",
     "B1 eşiği (`%10`) bilinçli olarak gevşek; ana ürün henüz `±0,1` "
     "doğrulukta değil (G4-OLCUTLERI §3).",
+    # --- 2026-08-09: olculen kisitlar. Kapi gecse BILE bunlar kalir.
+    "`B1`/`B2`/`B3` `β` uzerinden olculdu ve `λ=2`'de `β` MERMININ "
+    "SEKMESIDIR: kacan kutle 579,44 kg = merminin kendisi (579,40 kg). "
+    "Sayilar dogru, IDDIALARI DAR (rapor A12).",
+    "`λ=2`'de mermi `h`si capinin 9,32 katı — mermi tek bir yumusatma "
+    "uzunlugunun icinde. Cozulmus mermide (`A1=2,04`) `n_ejekta` "
+    "803 -> 28: REJIM degisiyor (ADR-0043 §4g).",
+    "Krater ve ejekta gozlenebilirleri `t = 0,2 s`'de OLU (derinlik = "
+    "parcacik araliginin %1'i). Gereken simule sure OLCULMEDI "
+    "(rapor A11).",
 )
 
 
