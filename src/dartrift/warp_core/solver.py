@@ -369,9 +369,15 @@ class WarpSPH1D(_WarpSPHBase):
         self._launch(I.drift_1d, [self.x, self.v, self.active, F(dt)])
 
     def _accumulate_continuity(self, dt: float) -> None:
+        # `continuity_rate_1d` SKALER `h: F` bekler (density.py:90) ve
+        # 1B yolun `h`si zaten skalerdir (`_eval` de `F(self.h)` veriyor).
+        # Onceki surum `self.h_arr` geciyordu -- o alan YALNIZCA
+        # `WarpSPH3D`de var; 3B yoldan kopyalanmis. Sonuc:
+        #     AttributeError: 'WarpSPH1D' object has no attribute 'h_arr'
+        # yani `track_continuity=True` olan 1B cozucu HIC calismamisti.
         self._launch(
             D.continuity_rate_1d,
-            [self.x, self.v, self.m, self.n, self.h_arr, self._cont_rate],
+            [self.x, self.v, self.m, self.n, F(self.h), self._cont_rate],
         )
         self._launch(I.accumulate_1d, [self.rho_cont, self._cont_rate, self.active, F(dt)])
 

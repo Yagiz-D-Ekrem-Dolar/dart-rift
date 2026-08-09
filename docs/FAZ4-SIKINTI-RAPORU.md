@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-09 · **Kapanan:** 37 · **Açık:** 6
+**Son güncelleme:** 2026-08-09 · **Kapanan:** 37 · **Açık:** 5
 
 ---
 
@@ -68,7 +68,7 @@ Kollar **farklı `t_sim`**'e ulaşıyor (`dt` farklı olduğu için). Farklı
 hesaplanamadı**. Kusur değil, ölçüm tasarımının bilinen sınırı; sonraki
 koşuda düzeltilmeli.
 
-### A7 — **ADR-0043'ün `t₁ ≈ 1e-3 s` tahmini ölçümle çürüdü** (2026-08-08)
+### A7 — ADR-0043'ün `t₁ ≈ 1e-3 s` tahmini ölçümle çürüdü → **KAPANDI**
 
 ADR-0043 iki aşamalı çözünürlüğü *"mermiyi çözmek `%1`'e mal oluyor"*
 diye önerdi. O `%1`, `t₁ ≈ 1e-3 s` **varsayımına** dayanıyordu ve
@@ -104,7 +104,7 @@ gördüm: `u` **sıfıra inmiyor**, `0,409`'da düzleşiyor — ve oraya
 *"momentum alışverişi bitince fark **sabitlenir**"*. Düzeltme
 ADR-0043 §4a ve `faz43c` başlığında; yanlış cümle **silinmedi**.
 
-### A8 — **`t₁`'in sağlaması gereken iki şart çelişiyor** (2026-08-09, ADR-0043'ü durduran bulgu)
+### A8 — `t₁`'in iki şartı çelişiyor (ADR-0043'ü durduran bulgu) → **KAPANDI**
 
 Kabalaştırma ölçüldü (§2 sıkıntı 27). Korunum **geçti**, aktarım
 **düştü**:
@@ -205,7 +205,13 @@ ister; `docs/G4-OLCUTLERI.md` `B2`'yi bu varsayımla yazmamıştı.
 > aynı ağırlıkta okunmamalı**: `B4 = −0,0037` gerçek bir sayısal hijyen
 > ölçümü, `B2 = 1,0` ise neredeyse tanım gereği.
 
-### A10 — **Çıkarım parametre uzayı `ρ_yığın` ile tutarsız** (2026-08-09, FAZ 4.6'yı durduran bulgu)
+### A10 — Çıkarım parametre uzayı `ρ_yığın` ile tutarsız → **KAPANDI**
+
+**KAPANDI (2026-08-09):** [ADR-0044](adr/ADR-0044-cikarim-parametre-uzayi-tutarsiz.md)
+**KABUL EDİLDİ** ve uygulandı — çıkarımın uzayı artık **Seçenek 3**
+(`boulder_alpha0, Y0, f_boulder`). FAZ 4.6 o uzayla **koşuyor**.
+ADR-0044 §6 madde 2, G4-C `C2`'nin içine taşındı: `C2` düşerse uzay
+dejenere demektir ve ADR yeniden açılır.
 
 FAZ 4.6'nın GPU ileri modeli ilk kez koşuldu (duman testi, 2 tasarım
 noktası, 40 adım) ve **29/29 nokta düştü**.
@@ -223,7 +229,15 @@ noktası, 40 adım) ve **29/29 nokta düştü**.
 > kurtardı.** Bu, A4'ün (*"GPU yolu hiç koşulmadı"*) neden bir risk
 > olarak yazıldığının kanıtı — risk **gerçekleşti**.
 
-### A4 — `ileri_kosu`'nun GPU kısmı hiç koşulmadı
+### A4 — `ileri_kosu`'nun GPU kısmı hiç koşulmadı → **KAPANDI**
+
+**KAPANDI (2026-08-09):** yol **koşuldu**. İlk koşuda `29/29` nokta
+düştü ve kök neden bulundu (A10 / ADR-0044). Düzeltmeden sonra FAZ 4.6
+gerçek GPU koşusuna **başladı**.
+
+> Risk *"kod yolu doğrulanmadı"* diye yazılmıştı ve **gerçekleşti**.
+> Onu `2` dakikalık bir duman testiyle yakalamak, `~11` saatlik koşunun
+> sonunda görmekten ucuzdu.
 
 Yapısı doğrulanmış `faz44` döngüsüyle aynı tutuldu ama bu bir kanıt
 değil. Doğrulanamayan kod yolu **küçültüldü** (üçe bölündü, ikisi

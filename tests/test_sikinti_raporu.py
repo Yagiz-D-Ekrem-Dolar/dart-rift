@@ -39,13 +39,28 @@ def test_KAPANAN_ve_ACIK_sayilari_TABLOLARLA_tutuyor() -> None:
     kapanan = int(re.search(r"\*\*Kapanan:\*\* (\d+)", m).group(1))
     acik = int(re.search(r"\*\*Açık:\*\* (\d+)", m).group(1))
 
-    # ACIK: "### A1" ... "### A4" basliklari
-    a_basliklar = re.findall(r"^### A\d+ ", m, flags=re.M)
-    assert len(a_basliklar) == acik, (len(a_basliklar), acik)
+    # ACIK: "### A1 ..." basliklari -- AMA kapananlar YERINDE KALIYOR
+    # ("hicbir satir silinmez" kurali), o yuzden basligin kendisinde
+    # KAPANDI gecenler sayilmaz. Ilk surum hepsini sayiyordu ve A6/A7/A8
+    # kapaninca test kirildi: 10 baslik vs Acik=6.
+    a_basliklar = re.findall(r"^### (A\d+) —(.*)$", m, flags=re.M)
+    a_acik = [k for k, bas in a_basliklar if "KAPANDI" not in bas]
+    a_kapali = [k for k, bas in a_basliklar if "KAPANDI" in bas]
+    assert len(a_acik) == acik, (
+        f"acik A-basliklari {a_acik} ({len(a_acik)}) ile "
+        f"Acik={acik} tutmuyor; yerinde kapananlar: {a_kapali}")
+    # Numaralar BENZERSIZ olmali: ayni A numarasi iki kez yazilmis olmasin.
+    tum = [k for k, _ in a_basliklar]
+    assert len(tum) == len(set(tum)), f"tekrar eden A numarasi: {tum}"
 
-    # KAPANAN: §2'deki tablolarda "| N | " ile baslayan satirlar
+    # KAPANAN: §2'de IKI bicim var ve ikisi de sayilmali --
+    #   eski girdiler tablo satiri  : "| 7 | belirti | ... |"
+    #   yeni girdiler alt baslik    : "### 24 — kollar farkli t_sim'e ..."
+    # Ilk surum yalnizca tablo satirlarini sayiyordu; 24-37 eklenince
+    # test "Kapanan=37 tutmuyor" dedi ama kusur RAPORDA degil TESTTEydi.
     bolum2 = m.split("## 2. KAPANAN")[1].split("## 3.")[0]
     numaralar = {int(x) for x in re.findall(r"^\| (\d+) \|", bolum2, flags=re.M)}
+    numaralar |= {int(x) for x in re.findall(r"^### (\d+) ", bolum2, flags=re.M)}
     assert numaralar == set(range(1, kapanan + 1)), (
         f"numaralar {sorted(numaralar)} ile Kapanan={kapanan} tutmuyor")
 
