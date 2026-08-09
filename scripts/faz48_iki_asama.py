@@ -108,6 +108,20 @@ def _iz_ornegi(st, *, hedef, R, v_esc, ehat, p_imp, x0) -> dict:
     maddesinin oraya varmasi `~795 s` suruyor (rapor A12). Yercekimi
     kapali oldugu icin `r > R` ve `v_r > v_kacis` yeterli: o parcacik
     bir daha yavaslamaz.
+
+    ## `n_hedef_ejekta` NASIL OKUNUR
+
+    Aktarimdan sonra birlesik sahnede `is_impactor` **hicbir parcacikta
+    yok**: mermi maddesi cekirdekle birlikte kabalastirildi ve artik
+    hedeften ayirt edilmiyor (`two_stage` bunu bilerek yapiyor).
+
+    O yuzden `n_hedef_ejekta` = **kacan HER parcacik**. Baslangicta bu
+    sayi aktarilan cekirdek parcacik sayisini (`n_aktarilan`, olculen
+    **32**) gecemez, cunku kacan sey merminin kendisi.
+
+    > **Okuma olcutu: `n_hedef_ejekta > n_aktarilan` olursa GERCEK
+    > hedef ejektasi baslamistir.** Altinda kaldigi surece hala
+    > merminin kirintisi sayiliyor.
     """
     from dartrift.observables.crater_shape import crater_profile
     x, v, m = st["x"], st["v"], st["m"]
