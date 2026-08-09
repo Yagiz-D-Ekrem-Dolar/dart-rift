@@ -1,4 +1,4 @@
-# FAZ 4 — durum (2026-08-08)
+# FAZ 4 — durum (2026-08-09)
 
 > Bu belge **ne bittiğini ve ne bitmediğini** ayırır. Bitmemiş bir işi
 > bitmiş göstermek RULES.txt'in ilk maddesine aykırıdır.
@@ -14,13 +14,23 @@
 | 4.3 | Uygulama + GPU doğrulama | ✔ | **✔** | KAYIT-034 |
 | 4.3b | `Ω` çelişkisi | ✔ | **✔** | KAYIT-035, ADR-0042 |
 | — | ADR-0041 §5 boşluk 3 | ✔ | **✔** | KAYIT-036, KAYIT-037 |
-| 4.4 | DART'ta çözünürlük yakınsaması | **✔** | **kısmen** | yerelde 4/6 kol; **A1 düştü** (§1b) |
-| 4.5 | Gereken simüle süre | **✔** | ✘ | `settling_time` + koşucu |
-| 4.6 | Sentetik kurtarma | **✔** | ✘ (kuru kip ✔) | `inference/` paketi |
-| 4.7 | G4 kapısı | **✔** | ✘ | `g4_gate` + kapı raporu |
+| 4.4 | DART'ta çözünürlük yakınsaması | ✔ | **✔** | 6/6 kol, eşit `t`; `B1`/`B3` geçti |
+| 4.5 | Gereken simüle süre | ✔ | **✔ ama YANLIŞ ŞEYİ ölçtü** | `B2`/`B4` geçti; bkz. §1c |
+| 4.6 | Sentetik kurtarma | ✔ | ✘ **durduruldu** (3/60) | gözlenebilirlerin ikisi ölü |
+| 4.7 | G4 kapısı | ✔ | **kısmen** | A/B'nin 6'sı geçti, `A1` düştü, C koşulmadı |
+| 4.8 | İki aşamalı koşu (yeni) | ✔ | koşuyor | `A1 = 2,04` **çözülmüş** |
 
-> **FAZ 4'ün kodu bitti; ölçümlerin dördü bitmedi.** 4.4–4.7 yazıldı,
-> yerelde sınandı, uçtan uca bağlandı — ama GPU'da **koşulmadı**.
+### Kapı durumu (2026-08-09)
+
+| | ölçülen | |
+|---|---|---|
+| A1 | 0,214638 | **DÜŞTÜ** |
+| A2 / A3 | 66,56 / 3,48e-04 | GEÇTİ |
+| B1 / B2 / B3 / B4 | 8,43e-04 / 1 / 1 / −0,0037 | GEÇTİ |
+| C1 / C2 / C3 | — | **koşulmadı** |
+
+> **Kod bitti, ölçümlerin çoğu bitti — ama `A1` her şeyin önünde
+> duruyor** (§1c).
 
 ---
 
@@ -50,6 +60,37 @@ Gereken `λ = 18,6` (**6478:1**) — ölçülmüş her şeyin (`λ ≤ 3`) ötes
 Bedeli `r_iç = 3 m` ile `96` GPU-günü ve **`9,3×`'i saf CFL**; tek
 global adımlı şemada **küçültülemez**.
 Ayrıntı: [KAYIT-041](defter/KAYIT-041_2026-08-08_yerel-gpu-ve-mermi-cozulmemis.md).
+
+---
+
+## 1c. `A1` bir ölçüt değil, **her şeyin ön koşulu** (2026-08-09)
+
+`A1`'i yumuşatma uzunluğuyla yazınca ne olduğu görünüyor:
+
+| | `λ = 2` | `λ = 19` |
+|---|---|---|
+| mermi çapı | 0,7512 m | 0,7512 m |
+| mermi `h` | **7,0000 m** | 0,7368 m |
+| **`h` / çap** | **`9,32`** | **`0,98`** |
+
+`λ = 2`'de bütün mermi **tek bir yumuşatma uzunluğunun içinde**; SPH onu
+katı bir mermi değil, çapının `9` katına yayılmış **seyrek bir bulut**
+gibi görüyor.
+
+**Ölçülen sonuçları bu açıklıyor:**
+
+| gözlem (`λ = 2`, `t = 0,174 s`) | değer |
+|---|---|
+| kaçan kütle | `579,44 kg` = **merminin kendisi** (`579,40`) |
+| krater derinliği | `0,035 m` = parçacık aralığının **`%1`**'i |
+| hedeften ayrılmış parçacık (`r > R`, `v_r > v_kaçış`) | **0** |
+
+> `λ = 2`'de ölçülen `β`, krater ve ejekta *"yanlış"* değil —
+> **başka bir problemin doğru cevapları**. `B1`/`B2`/`B3`'ün sayıları
+> geçerli ama **iddiaları dar**: hepsi merminin sekmesini ölçüyor.
+
+**Sonuç:** `A1` düzelmeden FAZ 4.6'nın gözlenebilirleri anlamlı
+değil. FAZ 4.8 (iki aşama, `A1 = 2,04`) bu yüzden koşuluyor.
 
 ---
 
