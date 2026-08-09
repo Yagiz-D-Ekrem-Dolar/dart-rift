@@ -380,3 +380,20 @@ def test_krater_capi_esigi_HAYALI_krater_sinirini_kilitler():
                         reference_radius=R, x_reference=x0,
                         **KRATER_AYARLARI_DART)
     assert kr.diameter == 0.0, f"kratersiz cisimde {kr.diameter} m cap"
+
+
+def test_iki_ileri_kosu_yolu_krateri_AYNI_olcuyor():
+    """`ileri_kosu` ve `ileri_kosu_ikiasama` aynı ayarları kullanmalı.
+
+    Bulundu: iki aşamalı yol `KRATER_AYARLARI_DART` geçiriyordu, tek
+    aşamalı yol **hiç geçirmiyordu** (varsayılan kaba kutulama). Aynı
+    kurulumun iki kolu krateri farklı ölçerse aralarındaki fark fizik
+    değil **ayar farkı** olur — ve karşılaştırma sessizce anlamsızlaşır.
+    """
+    import inspect
+    from dartrift.inference import forward as F
+
+    a = inspect.signature(F.ileri_kosu).parameters["krater_ayarlari"].default
+    b = inspect.signature(
+        F.ileri_kosu_ikiasama).parameters["krater_ayarlari"].default
+    assert a == b == F.KRATER_AYARLARI_DART

@@ -198,7 +198,8 @@ def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,
 
 def ileri_kosu(x, *, material, device: str, steps: int, r_ince: float,
                spacing: float, lam: int, sahne_taban: dict,
-               ilerleme=None) -> np.ndarray:
+               ilerleme=None,
+               krater_ayarlari=KRATER_AYARLARI_DART) -> np.ndarray:
     """Tasarımın her noktası için bir GPU koşusu.
 
     .. warning::
@@ -248,7 +249,8 @@ def ileri_kosu(x, *, material, device: str, steps: int, r_ince: float,
                 sol.state_numpy(), impactor_momentum=rs.impactor_momentum,
                 target_mass=rs.target_mass, target_radius=rs.target_radius,
                 is_impactor=rs.is_impactor,
-                impact_direction=rs.impact_direction, x_reference=x0)
+                impact_direction=rs.impact_direction, x_reference=x0,
+                krater_ayarlari=krater_ayarlari)
         except (RuntimeError, ValueError) as e:
             if ilerleme:
                 ilerleme(i, len(x), f"DUSTU: {e}")
