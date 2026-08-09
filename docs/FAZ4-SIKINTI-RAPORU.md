@@ -440,6 +440,11 @@ Yerçekimi kapalı olduğu için serbest parçacık doğru çizgide gider;
 etmeye gerek **yok**; balistik olarak hesaplanıyor. `100 s / 266 gün`
 rakamı bu yüzden **geçersiz**.
 
+> **Çapraz kontrol geçti:** balistik betik `t ≈ 0,168 s`'de
+> `β = 1,61758` verdi; FAZ 4.8'in **bağımsız** tek-aşama kontrol kolu
+> `t = 0,2 s`'de `β = 1,617583` ölçtü. İki ayrı kod yolu, aynı sayı —
+> yani balistik hesap `β`'yı doğru çıkarıyor.
+
 **(2) Fırlatma — ÇÖZÜLMEDİ, asıl sorun bu.** Balistik kestirim
 *"durum şu an dondurulursa"* `β = 1,698` diyor. Ama `t = 0,174 s`'de
 krater **oluşmamış** (derinlik = aralığın `%1`'i), yani fırlatılacak
