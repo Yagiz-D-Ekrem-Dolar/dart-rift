@@ -49,6 +49,7 @@ koşulardan gelir; iş numaraları yazılıdır.
 | **[041](KAYIT-041_2026-08-08_yerel-gpu-ve-mermi-cozulmemis.md)** | 08.08 | **Yerel GPU açıldı** (RTX 3050, yalnızca `2,85×` yavaş) ve **G4-A1 DÜŞTÜ**: mermi `0,215` parçacık/çap, eşik `2,0` |
 | **[042](KAYIT-042_2026-08-09_iki-asama-aktarimi-dustu.md)** | 09.08 | **FAZ 4.4 bitti** (6 kol, eşit `t`; `B1`/`B3` geçti) · `t₁ = 4,767e-3 s` ölçüldü · kabalaştırmada korunum `~1e-15` **geçti** ama **atama mesafesi düştü**: `t₁`'in iki şartı **çelişiyor** |
 | **[043](KAYIT-043_2026-08-09_lagrange-aktarimi-engeli-kaldirdi.md)** | 09.08 | **Lagrange'cı aktarım engeli kaldırdı**: ısıya dönen `%99,3 → %2,88`, atama mesafesi `4,35 → 0,73` hücre · `λ=19` arayüzü **ölçülemedi** (referans `608³`) · çıkarım hattı ilk kez uçtan uca sınandı |
+| **[044](KAYIT-044_2026-08-09_gate-6-7-ve-iki-asama-kuruldu.md)** | 09.08 | **G4'te 6/7 geçti** (B2, B4 eklendi; `A1` tek düşen) · **ADR-0044 KABUL**: çıkarım uzayı `ρ_yığın` ile tutarsızdı, `29/29` nokta düşüyordu · iki aşama **uçtan uca kuruldu** · `WarpSPH1D` continuity yolu hiç çalışmamış |
 
 > 017/018 numaraları kronolojiyle ters: 018 (2. tur) 017'den (3. tur) **önce**
 > yaşandı ama sonra yazıldı. Numaralar yazım sırasını, tablo yaşanma sırasını
