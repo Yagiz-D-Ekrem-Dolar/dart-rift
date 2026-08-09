@@ -112,8 +112,22 @@ def is_settled(t, b, pencere_frac: float = 0.3, tol: float = 0.02) -> dict:
     ilk, son = float(np.mean(bp[:yari])), float(np.mean(bp[yari:]))
     fark = abs(son - ilk) / olcek
 
+    # 3) SABIT MI? Gozlenebilir BUTUN kosu boyunca hic degismediyse
+    # "duruldu" demek dogru ama BOS bir cumledir: olculen sey durulma
+    # degil, gozlenebilirin DUYARSIZLIGIdir. `Surrogate.sabit` ile ayni
+    # kalip: ayri bir TANI olarak raporlanir, `durulmus`a karistirilmaz.
+    #
+    # Somut risk: `beta_from_bound` bagli parcaciklarin momentumundan
+    # geliyor ve hicbir parcacik kacis esigini gecmediyse BASTAN SONA
+    # sabit kalir. O zaman `t_durulma = t[0]` cikar ve "beta 0,01 s'de
+    # duruldu" gibi okunur -- oysa hicbir sey olmamistir.
+    yayilim = (float(np.max(b)) - float(np.min(b))) / olcek
+    sabit = bool(yayilim < 1.0e-12)
+
     durulmus = bool(kayma < tol and fark < tol)
     return {"durulmus": durulmus,
+            "sabit": sabit,
+            "yayilim_rel": yayilim,
             "pencere_nokta": int(pen.sum()),
             "pencere_t": [float(tp[0]), float(tp[-1])],
             "egim_kaymasi": kayma, "yarim_pencere_farki": fark,
@@ -152,6 +166,16 @@ def settling_time(t, b, adim=None, pencere_frac: float = 0.3,
         k -= 1
     sonuc["t_durulma"] = float(tt[k])
     sonuc["adim_durulma"] = int(ss[k])
+    # SABIT seride `t_durulma` KACINILMAZ olarak ilk ornege iner ve
+    # "hemen duruldu" gibi okunur. Sayi silinmiyor ama YORUMU yaziliyor:
+    # bu bir durulma zamani degil, gozlenebilirin hic kimildamadiginin
+    # kaydidir.
+    if d.get("sabit"):
+        sonuc["t_durulma_anlamli"] = False
+        sonuc["neden"] = ("gözlenebilir baştan sona SABİT — `t_durulma` bir "
+                          "durulma zamanı değil; ölçüm duyarsız")
+    else:
+        sonuc["t_durulma_anlamli"] = True
     # Durulma ANI son pencerenin BASINDAN once olmali; degilse "durulma"
     # yalnizca son birkac noktanin yakinligidir, gercek bir plato degil.
     sonuc["plato_pencereden_genis"] = bool(tt[k] <= d["pencere_t"][0])

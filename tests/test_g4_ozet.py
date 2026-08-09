@@ -233,3 +233,45 @@ def test_ESIT_t_de_B1_ve_B3_yazılıyor() -> None:
     o = faz44_ozet(_ham())
     assert o["esit_t_sim"] is True
     assert "B1_beta_farki" in o and "B3_Aprime_daha_yakin" in o
+
+
+# --------------------------------------------- B2: SABIT seride yazilmaz
+
+def test_B2_SABIT_seride_HIC_YAZILMIYOR():
+    """Sabit `β_bound` kapıyı **boş bir kanıtla** geçirmemeli.
+
+    Hiçbir parçacık kaçış eşiğini geçmediyse `β_bound` baştan sona sabit
+    kalır ve durulma sınavı `True` der. Teknik olarak doğru, kanıt olarak
+    **boş**. `esit_t_mi`'nin `B1`/`B3` için yaptığının aynısı.
+    """
+    ham = {"beta_bound_settled": True,
+           "beta_bound_settling_diag": {"sabit": True, "durulmus": True},
+           "energy_drift_loglog_slope": 0.4}
+    out = faz45_ozet(ham)
+    assert "B2_durulmus" not in out          # <-- KAPI 'kosulmadi' diyecek
+    assert out["B2_sabit_seri"] is True
+    assert out["B4_enerji_egim"] == 0.4      # B4 etkilenmiyor
+
+
+def test_B2_GERCEK_platoda_yaziliyor():
+    ham = {"beta_bound_settled": True,
+           "beta_bound_settling_diag": {"sabit": False, "durulmus": True},
+           "energy_drift_loglog_slope": 0.4}
+    out = faz45_ozet(ham)
+    assert out["B2_durulmus"] == 1.0
+    assert out["B2_sabit_seri"] is False
+
+
+def test_B2_durulmayan_seride_SIFIR_yaziliyor():
+    """Durulmadıysa `0,0` yazılır — bu bir **ölçüm**, yokluk değil."""
+    ham = {"beta_bound_settled": False,
+           "beta_bound_settling_diag": {"sabit": False, "durulmus": False}}
+    out = faz45_ozet(ham)
+    assert out["B2_durulmus"] == 0.0
+
+
+def test_B2_tani_YOKSA_eski_davranis_korunuyor():
+    """Eski çıktı dosyalarında `beta_bound_settling_diag` olmayabilir."""
+    out = faz45_ozet({"beta_bound_settled": True})
+    assert out["B2_durulmus"] == 1.0
+    assert out["B2_sabit_seri"] is False

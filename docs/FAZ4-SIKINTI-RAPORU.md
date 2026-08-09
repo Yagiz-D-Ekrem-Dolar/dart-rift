@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-09 · **Kapanan:** 32 · **Açık:** 4
+**Son güncelleme:** 2026-08-09 · **Kapanan:** 33 · **Açık:** 4
 
 ---
 
@@ -395,6 +395,32 @@ gerisi sıraya. Yalnız kaldığında `40 000` adım `~35 dk` sürecek —
 
 ---
 
+### 33 — `B2` **sabit** bir seriyle kapıyı geçebilirdi (koşu sürerken yakalandı)
+
+FAZ 4.5 koşarken `β_bound` üç ölçümde de **birebir aynı** çıktı
+(`1,583620` @ `t = 0,226` ve `t = 0,458`). Sebebi meşru: `β_bound` bağlı
+parçacıkların momentumu ve hiçbir parçacık kaçış eşiğini geçmemişse
+değişmez. Ama bunun kapıya yansıması **meşru değildi**:
+
+| | |
+|---|---|
+| **belirti** | sabit seride `is_settled` → `durulmus = True` |
+| **sonucu** | `faz45_ozet` `B2_durulmus = 1,0` yazardı |
+| **niye yanlış** | yerleşen bir şey yok; ölçüm **duyarsız**. Kapı **boş bir kanıtla** geçerdi |
+| **düzeltme 1** | `is_settled` artık `sabit` ve `yayilim_rel` döndürüyor (`Surrogate.sabit` kalıbı) |
+| **düzeltme 2** | `settling_time` sabit seride `t_durulma_anlamli = False` diyor — sayı silinmiyor, **yorumu** yazılıyor |
+| **düzeltme 3** | `faz45_ozet` sabit seride `B2`'yi **hiç yazmıyor** → kapı `koşulmadı` diyor |
+| **doğrulama** | 7 yeni test; gerçek platoda bayrak **kalkmıyor** (ayrım korunuyor) |
+
+> `esit_t_mi`'nin `B1`/`B3` için yaptığının aynısı (sıkıntı A6). Aynı
+> ilke üçüncü kez: **yanlış bir sayı yazmaktansa *"koşulmadı"* demek.**
+>
+> Bu kusur bir **koşu sürerken** bulundu — çıktıya bakıp *"bu sayı üç
+> kez aynı, kapı buna ne diyecek?"* diye sormakla. Test takımı onu
+> bulamazdı; hiçbir fikstürde sabit seri yoktu.
+
+---
+
 ## 3. Kusurların **sınıflandırması**
 
 | sınıf | sayı | örnek |
@@ -468,9 +494,9 @@ yaradığı görünmez:
 | büyüklük | değer |
 |---|---|
 | hata ayıklama turu | **16** |
-| kapanan sıkıntı | **32** |
+| kapanan sıkıntı | **33** |
 | açık sıkıntı | **4** (A5 karar, kalanı kota; A6/A7/A8 kapandı) |
-| **testlerin kör olduğu kusur** | **6** |
+| **testlerin kör olduğu kusur** | **7** |
 | **tahminimi çürüten ölçüm** | **9** |
-| eklenen gerileme testi | **123** |
+| eklenen gerileme testi | **133** |
 | yerel test takımı | **954 geçti, 96 atlandı** (öncesi 912, ondan önce 898) |

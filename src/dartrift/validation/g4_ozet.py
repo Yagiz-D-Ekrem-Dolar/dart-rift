@@ -138,9 +138,24 @@ def faz44_ozet(ham: dict) -> dict:
 
 
 def faz45_ozet(ham: dict) -> dict:
-    """`measure_longrun.py` çıktısı → G4-B2 ve B4 anahtarları."""
+    """`measure_longrun.py` çıktısı → G4-B2 ve B4 anahtarları.
+
+    ## `B2` **sabit** seride yazılmaz
+
+    `β_bound` bağlı parçacıkların momentumundan geliyor. Hiçbir parçacık
+    kaçış eşiğini geçmediyse baştan sona **sabit** kalır ve durulma
+    sınavı `durulmus = True` der — teknik olarak doğru, ama *"`β` yerleşti"*
+    diye okunamaz: yerleşen bir şey yok, **ölçüm duyarsız**.
+
+    Böyle bir seride `B2`'yi `1,0` yazmak kapıyı **boş bir kanıtla**
+    geçirirdi. Anahtar hiç yazılmıyor → kapı `koşulmadı` diyor. Bu,
+    `esit_t_mi`'nin `B1`/`B3` için yaptığının aynısı (sıkıntı A6).
+    """
     out: dict = {}
-    if "beta_bound_settled" in ham:
+    tani = ham.get("beta_bound_settling_diag") or {}
+    sabit = bool(tani.get("sabit", False))
+    out["B2_sabit_seri"] = sabit
+    if "beta_bound_settled" in ham and not sabit:
         out["B2_durulmus"] = 1.0 if bool(ham["beta_bound_settled"]) else 0.0
     egim = ham.get("energy_drift_loglog_slope")
     if egim is not None and np.isfinite(egim):

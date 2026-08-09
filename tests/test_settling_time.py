@@ -164,3 +164,52 @@ def test_measure_longrun_YENI_OLCUTU_kullaniyor() -> None:
     # Eski yerel mantigin imzasi GERI GELMEMELI.
     assert "icinde = np.abs(bb - b_end)" not in kod, \
         "eski yerel plato mantigi geri gelmis"
+
+
+# ------------------------------------- SABIT gozlenebilir (ayri tani)
+
+def test_bastan_sona_SABIT_seri_ayri_tani_veriyor():
+    """Hiç değişmeyen gözlenebilir *"duruldu"* der ama bu **boş** bir cümle.
+
+    `beta_from_bound` bağlı parçacıkların momentumundan geliyor; hiçbir
+    parçacık kaçış eşiğini geçmediyse baştan sona sabit kalır ve
+    `t_durulma = t[0]` çıkar — *"β 0,01 s'de duruldu"* diye okunur, oysa
+    hiçbir şey olmamıştır. `Surrogate.sabit` ile aynı kalıp.
+    """
+    import numpy as np
+
+    from dartrift.validation.settling_time import is_settled, settling_time
+    t = np.linspace(0.0, 1.0, 40)
+    b = np.full(40, 1.583620)
+    d = is_settled(t, b)
+    assert d["durulmus"] is True          # teknik olarak DOGRU
+    assert d["sabit"] is True             # ama BILGI TASIMIYOR
+    assert d["yayilim_rel"] == 0.0
+    s = settling_time(t, b)
+    assert s["t_durulma_anlamli"] is False
+    assert "SABİT" in s["neden"]
+
+
+def test_GERCEK_platoda_sabit_bayragi_KALKMIYOR():
+    """Gerçekten yerleşen bir seri `sabit` olmamalı — ayrım korunmalı."""
+    import numpy as np
+
+    from dartrift.validation.settling_time import is_settled, settling_time
+    t = np.linspace(0.0, 1.0, 40)
+    b = 1.0 + 0.5 * np.exp(-8.0 * t)      # duser, sonra duzlesir
+    d = is_settled(t, b)
+    assert d["sabit"] is False
+    assert d["yayilim_rel"] > 1e-3
+    s = settling_time(t, b)
+    assert s["t_durulma_anlamli"] is True
+
+
+def test_sabit_esigi_MIKRO_degisimi_sabit_saymiyor():
+    """`1e-12` makine düzeyi; fiziksel olarak küçük ama gerçek bir
+    değişim `sabit` sayılmamalı."""
+    import numpy as np
+
+    from dartrift.validation.settling_time import is_settled
+    t = np.linspace(0.0, 1.0, 40)
+    assert is_settled(t, 1.0 + 1e-9 * np.linspace(0, 1, 40))["sabit"] is False
+    assert is_settled(t, 1.0 + 1e-15 * np.linspace(0, 1, 40))["sabit"] is True
