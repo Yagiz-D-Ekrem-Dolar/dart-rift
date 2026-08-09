@@ -55,6 +55,37 @@ kalacak.
 > **Tek global zaman adımlı şemada bu bedel küçültülemez.** Çözümü
 > bireysel/blok zaman adımı — bu kod tabanında **yok**.
 
+#### `A1`'in daha keskin hâli: **`h` merminin `9,3` katı** (2026-08-09)
+
+*"`0,215` parçacık/çap"* soyut kalıyor. Aynı şey yumuşatma uzunluğuyla:
+
+| | `λ = 2` | `λ = 19` |
+|---|---|---|
+| mermi çapı | 0,7512 m | 0,7512 m |
+| mermi `h` | **7,0000 m** | 0,7368 m |
+| **`h` / çap** | **`9,32`** | **`0,98`** |
+| `h` / mermi iç aralığı | 96,7 | 10,2 |
+
+> `λ = 2`'de **bütün mermi tek bir yumuşatma uzunluğunun içinde**.
+> SPH onu katı bir mermi gibi değil, çapının `9` katına yayılmış
+> **seyrek bir bulut** gibi görüyor. Temas basıncı `~10³` kat düşük
+> kalır.
+
+**Bu, A9/A11/A12'nin hepsini açıklıyor:**
+
+| gözlem | açıklaması |
+|---|---|
+| `β` = merminin *"sekmesi"* | yayılmış bulut gömülmüyor, **sekiyor** |
+| krater derinliği = aralığın `%1`'i | basınç krater açmaya yetmiyor |
+| hedef ejektası **sıfır** | fırlatacak itki yok |
+
+> Yani `A1` **kapının bir ölçütü değil, diğer her şeyin ön koşulu**.
+> `λ = 2`'de ölçülen `β`, krater ve ejekta sayıları *"yanlış"* değil —
+> **başka bir problemin doğru cevapları**.
+
+Bu yüzden FAZ 4.10 (fırlatma süresi) `λ = 2`'de ölçmek **anlamsızdı** ve
+durduruldu; önce `λ = 19` ile çözülmüş mermide bakılıyor (FAZ 4.8).
+
 Karar gerektiriyor: A1 eşiği mi gözden geçirilecek, mimari mi
 değişecek? İkisi de bir ADR ister. Detay:
 [KAYIT-041](defter/KAYIT-041_2026-08-08_yerel-gpu-ve-mermi-cozulmemis.md).
