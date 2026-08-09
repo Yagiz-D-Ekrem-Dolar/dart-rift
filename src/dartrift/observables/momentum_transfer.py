@@ -31,7 +31,7 @@ import numpy as np
 
 __all__ = ["BetaResult", "escape_speed", "estimate_target_radius",
            "momentum_transfer", "beta_sensitivity", "kacis_bekleyenler",
-           "balistik_beta"]
+           "balistik_beta", "beta_bal_bandi"]
 
 # Duzgun dolu bir kurede yaricapin medyan uzakliga orani. r < R kabugundaki
 # kutle ~ (r/R)^3 oldugundan medyan uzaklik R/2^(1/3)'tur.
@@ -352,6 +352,11 @@ def kacis_bekleyenler(
         "n_yavas_disi": int(yavas_disi.sum()),
         "bekleyen_kutle_kesri": float(m[bekleyen].sum()
                                       / max(hedef_kutle, 1e-300)),
+        # BEKLEYENIN MOMENTUMU: `balistik_beta` bunu SAYMIYOR, cunku
+        # olcutu `r > R`. Olculdu (DART, t = 0,07 s): bekleyen 37,
+        # sayilan 28 -- ayni mertebede. Yani `beta_bal` sistematik olarak
+        # DUSUK ve ne kadar dusuk oldugu buradan okunur.
+        "bekleyen_p": np.sum(m[bekleyen, None] * v[bekleyen], axis=0).tolist(),
         "v_kacis": float(v_esc),
         "R": float(R),
     }
@@ -433,4 +438,45 @@ def balistik_beta(
         "hedef_ejekta_kutle": float(m[h_kac].sum()),
         "hedef_ejekta_kutle_kesri": float(m[h_kac].sum()
                                           / max(m[hedef].sum(), 1e-300)),
+    }
+
+
+def beta_bal_bandi(
+    x: np.ndarray, v: np.ndarray, m: np.ndarray, *,
+    hedef: np.ndarray, R: float, v_esc: float,
+    ehat: np.ndarray, p_imp: float,
+) -> dict:
+    """`beta`nin ALT ve UST siniri — tek sayi degil **bant**.
+
+    ## Neden bant
+
+    `balistik_beta` yalnizca `r > R` olani sayar. Ama iceride, disari
+    dogru, `v_r > v_kacis` giden madde de var ve yercekimi kapali oldugu
+    icin **o da kacacak** -- sadece henuz yuzeyi gecmedi. Olculdu (DART
+    asama-2, `t = 0,066 s`): **bekleyen 37**, sayilan **28**. Ayni
+    mertebede.
+
+        alt = beta_bal                       (bekleyen HIC kacmaz varsayimi)
+        ust = beta_bal, bekleyen de sayilir  (hepsi kacar varsayimi)
+
+    Gercek deger arada. Ikisini birden vermek, tek bir sayi verip
+    "olculdu" demekten **durust**tur: `t_gecis` medyani **117-196 s** ve
+    o sure simule EDILMIYOR, yani hangisinin gerceklestigi bu kosudan
+    bilinemez.
+
+    > Bant genisligi bir belirsizlik degil, **olculmus bir bilgisizlik**:
+    > daha uzun kosmadan daraltilamaz.
+    """
+    a = balistik_beta(x, v, m, hedef=hedef, R=R, v_esc=v_esc,
+                      ehat=ehat, p_imp=p_imp)
+    b = kacis_bekleyenler(x, v, m, hedef=hedef, R=R, v_esc=v_esc)
+    p_bek = np.asarray(b["bekleyen_p"], dtype=np.float64)
+    ust = a["beta_bal"] - float(np.dot(p_bek, np.asarray(ehat))) / p_imp
+    return {
+        "beta_alt": a["beta_bal"],
+        "beta_ust": float(ust),
+        "beta_bant": float(abs(ust - a["beta_bal"])),
+        "n_sayilan": a["n_hedef_ejekta"],
+        "n_bekleyen": b["n_bekleyen"],
+        "t_gecis_medyan": b["t_gecis_medyan"],
     }

@@ -12,6 +12,7 @@ from dartrift.observables.crater_shape import crater_profile, surface_particles
 from dartrift.observables.ejecta_catalog import catalog_ejecta, cumulative_mass_velocity
 from dartrift.observables.momentum_transfer import (
     balistik_beta,
+    beta_bal_bandi,
     beta_sensitivity,
     kacis_bekleyenler,
     escape_speed,
@@ -830,3 +831,48 @@ def test_kacis_olcutu_betiklerde_YENIDEN_yazilmamis():
     suclu = [p.name for p in kok.glob("*.py")
              if desen in p.read_text(encoding="utf-8")]
     assert not suclu, f"olcut su betiklerde yeniden yazilmis: {suclu}"
+
+
+def test_beta_bal_bandi_alt_siniri_balistik_beta_ile_AYNI():
+    """Alt sınır tanım gereği `balistik_beta`; kayarsa iki sayı çelişir."""
+    rng = np.random.default_rng(9)
+    n = 300
+    x = rng.normal(scale=40.0, size=(n, 3))
+    v = rng.normal(scale=2.0, size=(n, 3))
+    m = rng.uniform(0.5, 2.0, n)
+    hedef = np.ones(n, dtype=bool)
+    ort = dict(hedef=hedef, R=30.0, v_esc=0.5,
+               ehat=np.array([0.0, 0.0, 1.0]), p_imp=100.0)
+    assert (beta_bal_bandi(x, v, m, **ort)["beta_alt"]
+            == balistik_beta(x, v, m, **ort)["beta_bal"])
+
+
+def test_beta_bal_bandi_bekleyen_yoksa_BANT_SIFIR():
+    """Bekleyen madde yoksa belirsizlik de yok — bant genişliği `0`."""
+    x = np.array([[0.0, 0.0, 5.0], [0.0, 0.0, 20.0]])
+    v = np.array([[0.0, 0.0, 10.0], [0.0, 0.0, -4.0]])
+    d = beta_bal_bandi(x, v, np.ones(2), hedef=np.array([False, True]),
+                       R=10.0, v_esc=1.0, ehat=np.array([0.0, 0.0, 1.0]),
+                       p_imp=20.0)
+    assert d["n_bekleyen"] == 0
+    assert d["beta_bant"] == 0.0
+    assert d["beta_alt"] == d["beta_ust"]
+
+
+def test_beta_bal_bandi_GERI_giden_bekleyen_ustu_BUYUTUR():
+    """Mermiye ters giden bekleyen madde `β`'yı **yukarı** çeker.
+
+    Gerçek ejekta budur: geri fırlar, momentumu `-ê` yönündedir ve
+    `β = 1 - p·ê/|p|` ifadesini `1`'in üstüne taşır. `beta_ust` bunu
+    hesaba katınca alt sınırdan BUYUK olmalı.
+    """
+    x = np.array([[0.0, 0.0, 5.0], [0.0, 0.0, 9.0]])
+    v = np.array([[0.0, 0.0, 10.0], [0.0, 0.0, -3.0]])   # 2. geri gidiyor
+    # `v_r` disari dogru olmali; -z'de duran parcacik icin r yonu +z, yani
+    # v_r = -3 < 0. Bunun yerine cismi -z tarafina koyalim:
+    x = np.array([[0.0, 0.0, 5.0], [0.0, 0.0, -9.0]])
+    d = beta_bal_bandi(x, v, np.ones(2), hedef=np.array([False, True]),
+                       R=10.0, v_esc=1.0, ehat=np.array([0.0, 0.0, 1.0]),
+                       p_imp=20.0)
+    assert d["n_bekleyen"] == 1, d
+    assert d["beta_ust"] > d["beta_alt"]
