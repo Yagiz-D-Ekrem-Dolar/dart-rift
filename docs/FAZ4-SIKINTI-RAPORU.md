@@ -852,6 +852,10 @@ Bunlar bir kez değil, **birden çok** kez oldu:
 | aynı büyüklüğü **iki yerde** tanımlamak | 2 | tek kaynağa indirildi |
 | dönüş sözleşmesi değişince **tüketicileri denetlemem** | 2 | sistematik tarama |
 | **tutarsız** kurulum (yol, kodlama) | 2 | parametrize testler |
+| **ölçüm aracının kendisi bozuk** | **3** | aracı önce bilinen bir durumda sına |
+| **kuşkulandım ama ölçmeden geçtim** | **2** | kuşku = ölçüm emri |
+| düzenleme **sessizce düşerken** commit mesajı yazıldı | **3** | `grep` ile doğrula, sonra commit |
+| bayat süreç kaynağı yiyor | **3** | uzun iş öncesi süreç listesine bak |
 
 > En sık kalıp: **ölçmeden yazmak.** **Beş** kez oldu ve beşinde de
 > ölçüm tahminimi çürüttü. Son iki örnek: *"RTX 3050 ~400× yavaş olur"*
@@ -867,6 +871,42 @@ Bunlar bir kez değil, **birden çok** kez oldu:
 > bağlanmanın bittiğini gösterir"* yazdım; `u` sıfıra inmedi,
 > `0,409`'da düzleşti. Eşik değil **tanım** yanlıştı, ki bu daha sinsi:
 > yanlış tanım ölçüm yapılsa bile yanlış sonucu *doğru* gösterirdi.
+
+### En pahalı yeni kalıp: **ölçüm aracının kendisi bozuk**
+
+Üç kez oldu ve üçünde de **sayı inandırıcıydı**:
+
+| araç | verdiği | gerçek |
+|---|---|---|
+| komşu tanısı (çevre sayılmıyordu) | medyan **27**, *"hepsi komşusuz"* | medyan **229** |
+| `is_impactor` (`state_numpy()`'da o anahtar yok) | mermi kütlesi hiç çıkarılmıyordu | zorunlu parametre |
+| balistik `β` (konum şartı yoktu) | `18` ejekta, `β(∞) = 1,698` | **`0`** ejekta, `1,618` |
+
+> Yanlış bir **sonuç** tartışılır; yanlış bir **araç** tartışmayı da
+> bozar. Karşı önlem: yeni bir tanıyı **bilinen** bir durumda
+> (analitik ya da dejenere) sınamadan gerçek veriye uygulamamak.
+
+### İkinci yeni kalıp: **kuşkulandım ama ölçmeden geçtim**
+
+| kuşku | ne dedim | ölçüm |
+|---|---|---|
+| krater `β`'dan yavaş olabilir | *"hepsi aynı `t`'de, `C1/C2/C3` yine anlamlı"* | krater **yok**, gözlenebilir ölü (A11) |
+| `β` donuyor, `B2` boş olabilir | *"`B2` ölçülemez"* (fazla güçlü) | `B2` **geçti**, ama iddiası dar (A9) |
+
+> İkisi de **doğru kuşkulardı** ve ikisi de ölçülmeden geçildi.
+> Kuşku bir **ölçüm emri**dir; *"muhtemelen sorun olmaz"* diye
+> kapatılmaz.
+
+### Üçüncü yeni kalıp: **düzenleme düştü, commit mesajı yazıldı**
+
+`python - <<'PY'` blokları birden çok `replace` yapıp **sonda tek
+seferde** yazıyor. Biri patlarsa öncekiler de kaybolur — ama commit
+mesajı zaten yazılmış olur. `A11` tam böyle **hiç yazılmadan**
+*"A11: …"* başlıklı bir commit'e konu oldu.
+
+> Karşı önlem: dosya değişikliğinden sonra `grep` ile **doğrula**,
+> sonra commit et. Ayrıca `;` yerine `&&` — *"pushed"* yazısı git
+> başarısızken de basılıyordu.
 
 ---
 
