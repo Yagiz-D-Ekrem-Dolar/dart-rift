@@ -33,6 +33,7 @@ from __future__ import annotations
 import numpy as np
 
 __all__ = ["sahne_parametreleri", "gozlenebilirleri_cikar", "ileri_kosu",
+           "ileri_kosu_ikiasama",
            "GOZLENEBILIRLER"]
 
 #: Gözlenebilir adları — `gozlenebilirleri_cikar` bu **sırada** döner.
@@ -201,4 +202,101 @@ def ileri_kosu(x, *, material, device: str, steps: int, r_ince: float,
         if ilerleme:
             ilerleme(i, len(x), " ".join(
                 f"{a}={v:.5g}" for a, v in zip(GOZLENEBILIRLER, Y[i])))
+    return Y
+
+
+def ileri_kosu_ikiasama(x, *, material, device: str, t1: float, t_end: float,
+                        r1: float, lam1: float, r2: float, lam2: float,
+                        spacing: float, sahne_taban: dict,
+                        azami_adim: int = 200000, ilerleme=None) -> np.ndarray:
+    """İki aşamalı ileri model — **çözülmüş mermiyle**.
+
+    ## Neden gerekli
+
+    Tek aşamalı (`λ=2`) ileri modelde mermi çözülmemiş (`A1 = 0,215`,
+    `h`/çap `= 9,32`) ve ölçüldü ki bu **niteliksel** bir fark yaratıyor:
+
+    | | `λ = 2` | iki aşama (`A1 = 2,04`) |
+    |---|---|---|
+    | `n_ejekta` | **803** = merminin tamamı | **28** |
+    | `β` | 1,617583 | 1,411216 |
+
+    `803`, mermi parçacıklarının **tümü**: çözülmemiş mermi **tamamen
+    sekiyor**. Çözülmüşte gömülüyor. Yani tek aşamalı ileri model
+    **başka bir problemi** çözüyor (ADR-0043 §4g).
+
+    ## Aşama-1 **üç seviyeli** olmak zorunda
+
+    İki seviyelide `t₁`'de momentumun `%69`'u ince bölgenin dışında
+    kalıyor ve aktarımda atılıyordu (`momentum_kapanis = 0,690`).
+    Üç seviyelide `5,10e-15` (ADR-0043 §4f).
+
+    > Düşen nokta **atlanmaz**: `nan` döner ve çağıran taraf sayar.
+    """
+    from ..cpu_reference.sph_ref import RefParams
+    from ..setup.refine import refine_scene_ucseviye
+    from ..setup.scene import _build_mesh, build_scene
+    from ..setup.two_stage import asama2_sahnesi_ucseviye
+    from ..warp_core.solver_solid import WarpSolid3D
+
+    x = np.atleast_2d(np.asarray(x, dtype=np.float64))
+    Y = np.full((len(x), len(GOZLENEBILIRLER)), np.nan)
+    if not (0.0 < t1 < t_end):
+        raise ValueError(f"0 < t1 < t_end gerekir; t1={t1}, t_end={t_end}")
+
+    def _ilerlet(sol, t_bas, t_hedef, etiket):
+        t = float(t_bas)
+        kontrol = max(1, azami_adim // 200)
+        for adim in range(1, azami_adim + 1):
+            dt = sol.compute_dt()
+            if t + dt > t_hedef:
+                dt = t_hedef - t
+            sol.step(dt)
+            t += dt
+            if adim % kontrol == 0 and not np.all(
+                    np.isfinite(sol.state_numpy()["v"])):
+                raise RuntimeError(f"{etiket} PATLADI (adim {adim})")
+            if t >= t_hedef * (1.0 - 1e-12):
+                return t
+        raise RuntimeError(f"{etiket}: {azami_adim} adimda {t_hedef}'e "
+                           f"varilamadi (t={t:.4e})")
+
+    for i, th in enumerate(x):
+        kw = sahne_parametreleri(th, sahne_taban)
+        try:
+            kaba = build_scene(spacing=spacing, device="cpu", **kw)
+            mesh = _build_mesh("icosphere",
+                               radius=float(sahne_taban["radius"]), subdiv=4)
+            a1 = refine_scene_ucseviye(kaba, mesh, r1=r1, lam1=lam1,
+                                       r2=r2, lam2=lam2)
+            sol1 = WarpSolid3D(
+                np.ascontiguousarray(a1.x), np.ascontiguousarray(a1.v),
+                np.ascontiguousarray(a1.m), np.zeros(a1.n), a1.h, material,
+                RefParams(cfl=0.25), alpha0=np.ascontiguousarray(a1.alpha0),
+                Y0=np.ascontiguousarray(a1.Y0), device=device,
+                check_every=10 ** 9)
+            _ilerlet(sol1, 0.0, t1, "asama-1")
+            sahne = asama2_sahnesi_ucseviye(a1, sol1.state_numpy())
+            # KRATER REFERANSI: aktarim sonrasi konumlar. Aktarim parcacik
+            # kimliklerini degistirdigi icin asama-1'in t=0 konumlari
+            # KULLANILAMAZ; olculen sey "t1 -> t_end degisimi".
+            x0 = np.array(sahne.x, dtype=np.float64, copy=True)
+            sol2 = WarpSolid3D(
+                np.ascontiguousarray(sahne.x), np.ascontiguousarray(sahne.v),
+                np.ascontiguousarray(sahne.m), np.ascontiguousarray(sahne.e),
+                sahne.h, material, RefParams(cfl=0.25),
+                alpha0=np.ascontiguousarray(sahne.alpha0),
+                Y0=np.ascontiguousarray(sahne.Y0), device=device,
+                check_every=10 ** 9)
+            _ilerlet(sol2, t1, t_end, "asama-2")
+            Y[i] = gozlenebilirleri_cikar(
+                sol2.state_numpy(), impactor_momentum=a1.impactor_momentum,
+                target_mass=a1.target_mass, target_radius=a1.target_radius,
+                is_impactor=sahne.is_impactor,
+                impact_direction=a1.impact_direction, x_reference=x0)
+            if ilerleme:
+                ilerleme(i, len(x), f"tamam (A1 gecti, N={sahne.n})")
+        except (RuntimeError, ValueError, KeyError) as e:
+            if ilerleme:
+                ilerleme(i, len(x), f"DUSTU: {e}")
     return Y
