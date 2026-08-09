@@ -1,0 +1,31 @@
+{
+  "r_ince": 25.0,
+  "n_blok": 7,
+  "yeniden_uretim_ayni": true,
+  "kayitlar": [
+    {
+      "lam": 2.0,
+      "s_ince": 3.5,
+      "n_ince": 952,
+      "yanlis_oran": 0.04726890756302521,
+      "yanlis_kutle_oran": 0.04955671799724932,
+      "f_blok_kesin": 0.3133049598186313,
+      "f_blok_kullanilan": 0.30385031367726467,
+      "f_blok_sapma": 0.03017713523220264,
+      "alpha0_bagil_hata_max": 0.6727759763146759,
+      "alpha0_bagil_hata_ort": 0.027915066648294053
+    },
+    {
+      "lam": 6.0,
+      "s_ince": 1.1666666666666667,
+      "n_ince": 25728,
+      "yanlis_oran": 0.05480410447761194,
+      "yanlis_kutle_oran": 0.06442467892856055,
+      "f_blok_kesin": 0.31786194643893484,
+      "f_blok_kullanilan": 0.33836571353778694,
+      "f_blok_sapma": 0.06450525874065621,
+      "alpha0_bagil_hata_max": 0.6727759763146759,
+      "alpha0_bagil_hata_ort": 0.031853209032856766
+    }
+  ]
+}

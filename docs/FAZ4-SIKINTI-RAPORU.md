@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-09 · **Kapanan:** 27 · **Açık:** 5
+**Son güncelleme:** 2026-08-09 · **Kapanan:** 30 · **Açık:** 4
 
 ---
 
@@ -124,9 +124,24 @@ yalnızca bedel artıyor (`12 m` → `+%42`).
 
 > Kusur tanımlanabilir: hedef siteler aşama-2'nin **başlangıç**
 > kafesinden alınıyor, yani **Euler**'ci — maddenin peşinden gitmiyor.
-> **Lagrange**'cı bir sürüm (`t₁` anındaki bulutun üzerine oturtulan
-> kafes) çalışabilir ama **yazılmadı ve ölçülmedi**. ADR-0043 §7'ye
-> madde 5 olarak eklendi.
+
+**KAPANDI (2026-08-09).** Lagrange'cı sürüm yazıldı (`sites_from_cloud`)
+ve ölçüldü — **çelişki Euler'ci aktarımın çelişkisiymiş**:
+
+| `t₁` [s] | euler ısıya | **lagrange ısıya** | euler mes. | **lagrange mes.** |
+|---|---|---|---|---|
+| `1e-4` | %98,2 | %97,1 | 0,97 | 0,73 |
+| `1e-3` | %93,2 | %85,9 | 0,97 | 0,73 |
+| **`4,77e-3`** | **%99,3** | **%2,88** | **4,35** | **0,73** |
+| `1e-2` | %99,9 | **%0,46** | **10,16** | **0,73** |
+
+> İki kip **zıt yönlere** gidiyor: Euler'ci kötüleşiyor, Lagrange'cı
+> **iyileşiyor**. Aynı olayın iki yüzü — madde genişliyor; sabit hedef
+> ondan uzaklaşıyor, bulutu izleyen hedef ise giderek daha **düzgün**
+> bir akış görüyor.
+
+**Kalan (ölçülmedi):** ek parçacıkların (40 / 210) aşama-2 kafesiyle
+**dikişi**, ve site sayısına **üst sınır** yok.
 
 ### A4 — `ileri_kosu`'nun GPU kısmı hiç koşulmadı
 
@@ -286,6 +301,38 @@ değişmez düşerse maliyet tablosu da yanlış olur.
 
 ---
 
+### 28 — dejenere ölçüm **`%0` diye raporlanıyordu** (kendi betiğimde)
+
+| | |
+|---|---|
+| **belirti** | `r_iç = 6 m`'de bütün satırlar `%0,000` — bir an *"hata yok"* diye okudum |
+| **kök neden** | ince bölgede **hiç blok yoktu**; `f_kes = f_kul = 0`, sapma `0/1e-300 = 0` |
+| **niye tehlikeli** | ölçülemeyen şeye `0` demek `nan` demekten **kötü**: `nan` görünür, `0` **başarı** gibi okunur |
+| **düzeltme** | `validation/boulder_boundary.py`; dejenere kol `belirsiz`, `judge` onları **atıyor**, hepsi dejenereyse `gecti = None` (`False` değil) |
+| **doğrulama** | 14 test; koşucu artık çıkış kodu `1` ve *"kayıt bulunamadı"* |
+
+### 29 — kendi **test fikstürüm** eşiği yuvarlıyordu
+
+| | |
+|---|---|
+| **belirti** | `test_esik_kenarlari[0.099-True]` düştü |
+| **kök neden** | fikstür `n=1000` parçacık **sayarak** kesir kuruyordu; `int(round(0,3297·1000)) = 330` → `%9,9` **`%10,0`** oldu |
+| **düzeltme** | kütle doğrudan veriliyor, yuvarlama yok |
+
+> Sınav kodun değil **fikstürün** kusuruydu ve fikstür kusuru testi
+> *"kod yanlış"* diye bağırtıyordu. §2 sıkıntı 27'deki `L₀ = 4`
+> fikstürüyle aynı sınıf — bu turda **iki kez**.
+
+### 30 — bayat süreçler kaynağı yiyordu
+
+| | |
+|---|---|
+| **belirti** | test takımı `%30`'da, `faz45` bir saatte 2000 adıma varamadı |
+| **kök neden** | **iki** `pytest` (biri unutulmuş) + kullanıcının kestiği `faz43e`'nin süreci **hâlâ koşuyordu** (`λ=19, r=25 m` → 1,85 M parçacık) |
+| **ders** | bir aracın çağrısını kesmek **süreci öldürmüyor** |
+
+---
+
 ## 3. Kusurların **sınıflandırması**
 
 | sınıf | sayı | örnek |
@@ -348,7 +395,9 @@ yaradığı görünmez:
 | reddedilen alternatif **ölçüldü** | naif ortalama `%38` momentum kaybı |
 | CPU ön uçuşu GPU'dan **önce** koştu | sıkıntı 26 ve 27 GPU'ya gitmeden bulundu |
 | korunumun **görmediği** şey ayrıca ölçüldü | atama mesafesi → A8'i o buldu |
-| kendi testimin fikstürü **sınandı** | `L₀ = 4` çıkınca fikstür düzeltildi |
+| kendi testimin fikstürü **sınandı** | `L₀ = 4` ve `%9,9→%10,0`, ikisi de düzeltildi |
+| reddedilen yol **ölçülerek** çürütüldü | Euler'ci aktarım: `%99,3` vs `%2,88` |
+| dejenere ölçüm **`belirsiz`** oldu | `%0` diye raporlanması engellendi |
 
 ---
 
@@ -357,9 +406,9 @@ yaradığı görünmez:
 | büyüklük | değer |
 |---|---|
 | hata ayıklama turu | **16** |
-| kapanan sıkıntı | **27** |
-| açık sıkıntı | **5** (A5 + A8 karar, kalanı kota; A6 ve A7 kapandı) |
-| **testlerin kör olduğu kusur** | **5** |
+| kapanan sıkıntı | **30** |
+| açık sıkıntı | **4** (A5 karar, kalanı kota; A6/A7/A8 kapandı) |
+| **testlerin kör olduğu kusur** | **6** |
 | **tahminimi çürüten ölçüm** | **6** |
-| eklenen gerileme testi | **67** |
+| eklenen gerileme testi | **111** |
 | yerel test takımı | **954 geçti, 96 atlandı** (öncesi 912, ondan önce 898) |
