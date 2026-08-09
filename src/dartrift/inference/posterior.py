@@ -141,12 +141,31 @@ def grid_posterior(space: ParamSpace, surrogates, data, sigma,
     u_flat = np.column_stack([g.ravel() for g in izgara])
     x_flat = space.from_unit(u_flat)
 
+    if not np.all(np.isfinite(data)):
+        raise ValueError(f"veri içinde sonlu olmayan değer var: {data}")
+
     ki2 = np.zeros(len(u_flat), dtype=np.float64)
-    for s, d, sg in zip(surrogates, data, sig):
+    for i, (s, d, sg) in enumerate(zip(surrogates, data, sig)):
         tahmin = np.asarray(s.predict(x_flat), dtype=np.float64).ravel()
+        # SESSIZ NaN'A KARSI. Tek bir `nan` tahmin butun `logp`yi `nan`
+        # yapar (`logp.max()` -> nan), posterior tamamen `nan` olur ve
+        # `contains()` her yerde `False` doner. G4-C o zaman `C1 dustu`
+        # der -- DOGRU sonuc ama TAMAMEN YANILTICI sebep. Kusur burada
+        # adiyla soylenmeli.
+        if not np.all(np.isfinite(tahmin)):
+            kotu = int(np.count_nonzero(~np.isfinite(tahmin)))
+            raise ValueError(
+                f"{i}. vekil ızgarada {kotu}/{len(tahmin)} sonlu olmayan "
+                f"tahmin üretti — posterior hesaplanamaz")
+        if tahmin.shape != (len(x_flat),):
+            raise ValueError(
+                f"{i}. vekil {tahmin.shape} döndürdü, "
+                f"({len(x_flat)},) bekleniyordu")
         # VEKIL HATASI GOZLEM GURULTUSUNE EKLENIR. Yok sayilirsa posterior
         # yapay bicimde daralir -- olculmemis bir kesinlik iddiasi olurdu.
         s_vekil = float(getattr(s, "sigma", 0.0))
+        if not np.isfinite(s_vekil) or s_vekil < 0.0:
+            raise ValueError(f"{i}. vekilin `sigma`sı geçersiz: {s_vekil}")
         ki2 += (tahmin - d) ** 2 / (sg ** 2 + s_vekil ** 2)
 
     logp = -0.5 * ki2

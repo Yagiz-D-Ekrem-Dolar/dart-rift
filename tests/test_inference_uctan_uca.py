@@ -267,3 +267,60 @@ def test_ensemble_tasarimdan_vekile_KESINTIDEN_SONRA_ayni(tmp_path):
     for s1, s2 in zip(_vek(a), _vek(b)):
         np.testing.assert_array_equal(s1.coef, s2.coef)
         assert s1.q2 == s2.q2
+
+
+# ------------------------------------- posterior: SESSIZ NaN'a karsi
+
+class _Bozuk:
+    """Izgarada `nan` üreten vekil — gerçekte bozuk bir ileri modelden gelir."""
+
+    def __init__(self, nerede="hepsi"):
+        self.sigma, self._nerede = 0.1, nerede
+
+    def predict(self, x):
+        y = np.ones(len(np.atleast_2d(x)))
+        if self._nerede == "hepsi":
+            return y * np.nan
+        y[0] = np.nan                     # TEK bir nokta bile yeter
+        return y
+
+
+def test_posterior_NaN_tahminde_ACIKCA_patliyor():
+    """Tek bir `nan`, bütün `logp`'yi `nan` yapar ve posterior sessizce
+    çöker: `contains()` her yerde `False`, G4-C *"C1 düştü"* der —
+    **doğru sonuç, tamamen yanıltıcı sebep**."""
+    vek, _, _ = _hat(dogrusalsizlik=0.0, tarama=False)
+    veri = list(_gercek_model(GERCEK[None, :])[0])
+    for nerede in ("hepsi", "tek"):
+        with pytest.raises(ValueError, match="sonlu olmayan tahmin"):
+            grid_posterior(DART_UZAYI, [_Bozuk(nerede), vek[1], vek[2]],
+                           veri, sigma=0.02, n_grid=16)
+
+
+def test_posterior_NaN_VERIDE_de_reddediliyor():
+    vek, _, _ = _hat(dogrusalsizlik=0.0, tarama=False)
+    with pytest.raises(ValueError, match="veri içinde sonlu olmayan"):
+        grid_posterior(DART_UZAYI, vek, [1.0, np.nan, 2.0], sigma=0.02,
+                       n_grid=16)
+
+
+def test_posterior_gecersiz_vekil_sigmasi_reddediliyor():
+    vek, _, _ = _hat(dogrusalsizlik=0.0, tarama=False)
+    veri = list(_gercek_model(GERCEK[None, :])[0])
+
+    class _KotuSigma:
+        sigma = float("nan")
+
+        def predict(self, x):
+            return np.ones(len(np.atleast_2d(x)))
+
+    with pytest.raises(ValueError, match="`sigma`sı geçersiz"):
+        grid_posterior(DART_UZAYI, [_KotuSigma(), vek[1], vek[2]], veri,
+                       sigma=0.02, n_grid=16)
+
+
+def test_SAGLAM_vekiller_hala_calisiyor():
+    """Korumalar meşru yolu bozmamalı."""
+    vek, post, _ = _hat(dogrusalsizlik=0.0, tarama=False)
+    assert np.all(np.isfinite(post.p))
+    assert post.p.sum() == pytest.approx(1.0, rel=1e-12)

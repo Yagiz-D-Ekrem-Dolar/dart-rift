@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-09 · **Kapanan:** 35 · **Açık:** 5
+**Son güncelleme:** 2026-08-09 · **Kapanan:** 36 · **Açık:** 5
 
 ---
 
@@ -490,6 +490,23 @@ değişmez. Ama bunun kapıya yansıması **meşru değildi**:
 
 ---
 
+### 36 — posterior tek bir `nan`'la **sessizce** çökerdi (FAZ 4.6 koşmadan bulundu)
+
+FAZ 4.6 koşmak üzereyken `grid_posterior` denetlendi:
+
+| | |
+|---|---|
+| **belirti (potansiyel)** | herhangi bir vekil ızgarada `nan` üretirse `logp.max()` `nan` olur, `p` **tamamen** `nan` olur |
+| **sonucu** | `contains()` her yerde `False` → G4-C *"`C1` düştü"* der |
+| **niye tehlikeli** | **doğru sonuç, tamamen yanıltıcı sebep**. Kimse vekilin bozuk olduğunu anlamaz; herkes çıkarımın gerçeği kaçırdığını sanar |
+| **düzeltme** | tahmin, veri ve vekil `sigma`sı **açıkça** denetleniyor; kaç noktada `nan` olduğu mesaja yazılıyor |
+| **doğrulama** | 4 yeni test — tek bir `nan` bile yakalanıyor; sağlam vekiller etkilenmiyor |
+
+> Kusur **gerçekleşmemişti**; koşulmadan önce arandı ve bulundu. Bu turda
+> ikinci kez CPU denetimi GPU harcamasını önledi (ilki sıkıntı 26).
+
+---
+
 ## 3. Kusurların **sınıflandırması**
 
 | sınıf | sayı | örnek |
@@ -563,7 +580,7 @@ yaradığı görünmez:
 | büyüklük | değer |
 |---|---|
 | hata ayıklama turu | **16** |
-| kapanan sıkıntı | **35** |
+| kapanan sıkıntı | **36** |
 | açık sıkıntı | **5** (A5 + A9 karar, kalanı kota; A6/A7/A8 kapandı) |
 | **testlerin kör olduğu kusur** | **7** |
 | **tahminimi çürüten ölçüm** | **9** |
