@@ -50,6 +50,7 @@ from dartrift.inference.forward import ileri_kosu as _gercek_ileri  # noqa: E402
 from dartrift.inference.posterior import grid_posterior  # noqa: E402
 from dartrift.inference.recovery import recovery_verdict  # noqa: E402
 from dartrift.inference.surrogate import fit_surrogate  # noqa: E402
+from dartrift.validation.kosu_suresi import sure_denetimi  # noqa: E402
 
 #: Nominal gözlem gürültüsü. **Uydurulmadı**: `beta` için ADR-0026'nın
 #: hedeflediği `±0,1`; diğer ikisi FAZ 3'ün çıkarıcı duyarlılık
@@ -114,51 +115,34 @@ def _sure_denetimi(a) -> dict:
     Dosya verilmezse denetim **yapılamaz** ve bu **yazılır** — sessizce
     geçilmez.
     """
-    out = {"denetlendi": False, "kisa_kosu": None, "neden": ""}
     if a.kuru:
-        out["neden"] = "kuru kip — süre denetimi anlamsız"
-        return out
+        return {"durum": "denetlenemedi", "kisa_kosu": None,
+                "neden": "kuru kip — süre denetimi anlamsız"}
+
+    # KARAR MANTIGI BURADA DEGIL: `validation/kosu_suresi.py`de ve 17
+    # testle sinaniyor. Burada yalnizca dosya okuma ve raporlama var.
+    # Ilk surumde mantik bu betigin icindeydi; raporun iki kez kaydettigi
+    # "ayni buyuklugu iki yerde tanimlamak" kalibina girmemek icin disari
+    # alindi.
+    veri = (json.loads(Path(a.faz45).read_text(encoding="utf-8"))
+            if a.faz45 else None)
+    out = sure_denetimi(veri, a.steps)
+    out["faz45_yolu"] = a.faz45
+
     if not a.faz45:
-        out["neden"] = ("`--faz45` verilmedi — koşu süresinin yeterliliği "
-                        "DENETLENMEDI")
-        print("\n[0] SURE DENETIMI YAPILMADI: " + out["neden"], flush=True)
+        print("\n[0] SURE DENETIMI YAPILMADI: `--faz45` verilmedi — koşu "
+              "süresinin yeterliliği DENETLENMEDI", flush=True)
         return out
 
-    veri = json.loads(Path(a.faz45).read_text(encoding="utf-8"))
-    tani = veri.get("beta_bound_settling_diag") or {}
-    t_dur = veri.get("beta_bound_settling_time_s")
-    out["denetlendi"] = True
-    out["faz45_t_durulma"] = t_dur
-    out["faz45_sabit_seri"] = bool(tani.get("sabit", False))
     print("\n[0] SURE DENETIMI (FAZ 4.5: " + str(a.faz45) + ")", flush=True)
-
-    if tani.get("sabit"):
-        out["neden"] = ("FAZ 4.5'te `β_bound` baştan sona SABIT — durulma "
-                        "zamanı anlamlı değil, denetim yapılamıyor")
-        print("    " + out["neden"], flush=True)
-        return out
-    if t_dur is None or not np.isfinite(t_dur):
-        out["neden"] = "FAZ 4.5 durulmadı — karşılaştırılacak zaman yok"
-        print("    " + out["neden"], flush=True)
+    if out["durum"] == "denetlenemedi":
+        print("    DENETLENEMEDI: " + out["neden"], flush=True)
         return out
 
-    # FAZ 4.5 AYNI sahneyi kosuyor; adim->zaman orani ORADAN okunuyor.
-    t_son, adim_son = veri.get("t_sim_end"), veri.get("steps_done")
-    if not (t_son and adim_son):
-        out["neden"] = "FAZ 4.5 çıktısında `t_sim_end`/`steps_done` yok"
-        print("    " + out["neden"], flush=True)
-        return out
-    dt_ort = float(t_son) / float(adim_son)
-    t_kestirim = dt_ort * a.steps
-    out["t_kestirim_s"] = t_kestirim
-    out["kisa_kosu"] = bool(t_kestirim < t_dur)
-    print(f"    durulma (FAZ 4.5)  = {t_dur:.4e} s", flush=True)
-    print(f"    bu kosu (kestirim) = {t_kestirim:.4e} s "
-          f"({a.steps} adim x {dt_ort:.3e} s)", flush=True)
-    if out["kisa_kosu"]:
-        gereken = int(np.ceil(t_dur / dt_ort))
-        out["onerilen_steps"] = gereken
-        out["neden"] = f"koşu durulmadan bitiyor; `--steps {gereken}` gerekir"
+    print(f"    durulma (FAZ 4.5)  = {out['t_durulma_s']:.4e} s", flush=True)
+    print(f"    bu kosu (kestirim) = {out['t_kestirim_s']:.4e} s "
+          f"({a.steps} adim x {out['dt_ort_s']:.3e} s)", flush=True)
+    if out["durum"] == "kisa":
         print("    KISA KOSU: " + out["neden"], flush=True)
         if not a.kisa_kosuya_izin:
             raise SystemExit(
