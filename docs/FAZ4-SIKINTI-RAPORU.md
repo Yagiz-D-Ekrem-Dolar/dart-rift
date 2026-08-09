@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-09 · **Kapanan:** 33 · **Açık:** 4
+**Son güncelleme:** 2026-08-09 · **Kapanan:** 35 · **Açık:** 4
 
 ---
 
@@ -421,6 +421,36 @@ değişmez. Ama bunun kapıya yansıması **meşru değildi**:
 
 ---
 
+### 34 — `faz45` **hiçbir şeyi** koşu bitene kadar yazmıyordu
+
+| | |
+|---|---|
+| **belirti** | 3,5 saatlik koşu; kesilirse **tamamı** kaybolur |
+| **kök neden** | bütün izler bellekte tutulup sonda tek seferde yazılıyordu |
+| **niye önemli** | `ensemble_kos` bu dersi **zaten** öğrenmişti (*"her nokta hemen yazılır, kesinti en fazla son noktayı kaybeder"*) — aynı depoda aynı ders iki yerde tutarsızdı |
+| **düzeltme** | her örnek `.izler.jsonl`'e hemen yazılıyor; ana çıktı yalnızca **bitince** (yarım JSON *"sonuç"* sanılmasın) |
+| **ek koruma** | eski iz dosyası baştan siliniyor — iki koşunun izi karışırsa `settling_time` iki seriyi **tek** seri sanardı |
+
+> Diğer koşucular (`faz43c/d/f`, `faz47`) da sonda tek seferde yazıyor
+> ama koşuları `15–40` dk. Riski **düşük**, kusuru **aynı**;
+> düzeltilmedi ve bu **bilerek** yazıldı.
+
+### 35 — süre denetimi **yoktu**: kısa koşu sessizce geçerdi
+
+| | |
+|---|---|
+| **belirti** | FAZ 4.6 varsayılanı `--steps 3000` → `t ≈ 0,075 s`; FAZ 4.4 aynı sahnede `0,2 s`'ye `8000` adımda gitti |
+| **niye tehlikeli** | erken kesilen koşu `β`'yı **sistematik** küçük verir ve **bütün** tasarım noktalarını aynı yönde kaydırır. Vekil bunu göremez (`q2` yüksek, yüzey düzgün) → posterior **dar ama yanlış** |
+| **düzeltme** | `--faz45` verilince koşu süresi FAZ 4.5'in ölçtüğü durulma zamanıyla karşılaştırılıyor; yetmiyorsa **duruyor** |
+| **oran nereden** | adım→zaman FAZ 4.5'in **kendi çıktısından** (`t_sim_end/steps_done`), tahmin edilmiyor |
+| **dört dal da sınandı** | kısa → durdu (`--steps 6000` önerdi) · yeterli → geçti · sabit seri → *"denetim yapılamıyor"* · `--faz45` yok → *"DENETLENMEDİ"* |
+
+> Denetim sonucu çıktıya **yazılıyor**: denetlenmeden koşulmuş bir
+> ensemble ile durulmaya kadar koşulmuş olan aynı sayılmamalı —
+> `kuru: true`nun yaptığı ayrımın aynısı.
+
+---
+
 ## 3. Kusurların **sınıflandırması**
 
 | sınıf | sayı | örnek |
@@ -494,7 +524,7 @@ yaradığı görünmez:
 | büyüklük | değer |
 |---|---|
 | hata ayıklama turu | **16** |
-| kapanan sıkıntı | **33** |
+| kapanan sıkıntı | **35** |
 | açık sıkıntı | **4** (A5 karar, kalanı kota; A6/A7/A8 kapandı) |
 | **testlerin kör olduğu kusur** | **7** |
 | **tahminimi çürüten ölçüm** | **9** |

@@ -91,6 +91,14 @@ def main() -> int:
     v_kacis = escape_speed(m_hedef, rs.target_radius)
     e0 = sol.budgets()["e_tot"]
 
+    # Kesintiye dayanikli iz dosyasi. Onceki kosunun izi varsa USTUNE
+    # eklenmesin diye bastan siliniyor -- iki kosunun izi karisirsa
+    # `settling_time` iki farkli seriyi tek seri sanardi.
+    iz_yolu = Path(a.out).with_suffix(".izler.jsonl")
+    iz_yolu.parent.mkdir(parents=True, exist_ok=True)
+    if iz_yolu.exists():
+        iz_yolu.unlink()
+
     izler, t_sim, t0 = [], 0.0, time.perf_counter()
     for adim in range(1, a.steps + 1):
         dt = sol.compute_dt()
@@ -114,6 +122,15 @@ def main() -> int:
                 beta_b = float("nan")
             izler.append({"adim": adim, "t": t_sim, "beta_bound": beta_b,
                           "e_rel_err": abs(b["e_tot"] - e0) / max(abs(e0), 1e-300)})
+            # IZ HEMEN DISKE. Onceki surum HICBIR SEY yazmiyordu; kosu
+            # kesilirse (kota, cokme, elektrik) saatlerce sureli is
+            # tamamen kayboluyordu. `ensemble_kos` zaten bu dersi
+            # ogrenmisti (her nokta hemen yazilir); burada eksikti.
+            #
+            # Ayri bir `.izler.jsonl`: ana cikti yalnizca kosu BITINCE
+            # yazilir ve yarim bir JSON'un "sonuc" sanilma riski olmaz.
+            with iz_yolu.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(izler[-1]) + "\n")
             if adim % (a.every * 20) == 0:
                 print(f"  adim {adim:6d}  t={t_sim:.5e}  beta_b={beta_b:.6f}",
                       flush=True)
