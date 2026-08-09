@@ -353,7 +353,18 @@ def main() -> int:
         iz_yolu.unlink()
     t2 = _kos(sol2, t, a.t_end, a.azami_adim, "a2",
               ornekle=_ornek if a.iz_every > 0 else None, her=a.iz_every)
-    b = _beta(sol2.state_numpy(), sahne, p_imp, m_hedef, R)
+    st_son = sol2.state_numpy()
+    b = _beta(st_son, sahne, p_imp, m_hedef, R)
+
+    # SON DURUM DISKE YAZILIR. Bugun iki kez post-hoc tani yapmak istedim
+    # ve elimde yalnizca ozet JSON vardi; her seferinde saatlerce yeniden
+    # kosmak gerekiyordu. Diziler kucuk (~1 MB), kosu ise saatler.
+    durum_yolu = Path(a.out).with_suffix(".son_durum.npz")
+    np.savez_compressed(
+        durum_yolu, x=st_son["x"], v=st_son["v"], m=st_son["m"],
+        x_referans=x_ref2, hedef=hedef2, R=R, v_esc=v_esc, ehat=ehat,
+        p_imp=P, t=t2)
+    print(f"\nson durum yazildi: {durum_yolu}", flush=True)
 
     print(f"\nSONUC ({time.perf_counter() - t0:.1f} s duvar)", flush=True)
     print(f"  A1        = {A1:.4f}  "
