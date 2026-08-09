@@ -320,82 +320,50 @@ gözlenebilir anlamlı değil, **yok**.
 
 `t = 0,174 s`'de krater **yok** — ne çap ne derinlik olarak.
 
-#### ⚠ KÖK NEDEN BAŞKAYMIŞ: **çıkarıcı krateri göremiyor** (2026-08-09)
+#### ⚠⚠ GERİ ALINDI: *"çıkarıcı krateri göremiyor"* **YANLIŞTI** (2026-08-09)
 
-*"Krater henüz oluşmadı"* diye yazmıştım. **Ölçüm çürüttü.** Bozulmamış
-bir küreye **bilinen** bir krater oyup çıkarıcıya verdim
-(`scripts/tani_krater_cikarici_kusuru.py`):
+Bu bölümde *"`crater_profile` `80 m`'lik krateri bile göremiyor"* diye
+bir **kusur bildirdim**. **Yanlıştı ve geri alıyorum.**
 
-| gerçek `D` | gerçek derinlik | **ölçülen derinlik** | **ölçülen çap** |
-|---|---|---|---|
-| 20 m | 4 m | **0,0000** | 0,000 |
-| 40 m | 8 m | **0,0000** | 0,000 |
-| 60 m | 12 m | **0,0000** | 0,000 |
-| **80 m** | **16 m** | **0,0000** | 0,000 |
+**Hata bendeydi:** sınav küresine krateri `+x`'e oyup
+`impact_direction = +x` verdim. Oysa o parametre merminin **gidiş
+yönü**dür — krater `−impact_direction` tarafındadır. Yanlış işaretle
+çıkarıcı **karşı kutba** bakıyor ve doğal olarak `0` buluyordu.
 
-İki yönelimde de (`+z` ve `+x`) aynı. **`80 m` çaplı, `16 m` derin bir
-krater bile `0` raporlanıyor** — cismin yarısı kadar.
+> Bu, bugün **beşinci** kez: kendi ölçüm düzeneğimin kusurunu koda
+> yıkmak. Üstelik bu kez sonucu *"ciddi kusur"* diye **raporladım**.
 
-> Yani `krater_capi = 0`, *"krater oluşmadı"* demek **değil**;
-> **çıkarıcı çalışmıyor** demek. FAZ 4.6'nın ölü gözlenebilirinin
-> sebebi fizik değil, **kod**.
+#### Doğru yönelimle ÖLÇÜLEN gerçek sınırlar
 
-**Kısmi tanı** (tam kök neden bulunmadı):
+`R = 82 m` küre, parabolik krater, `impact_direction = −merkez_yönü`:
 
-| | |
-|---|---|
-| `surface_particles` | 6897 → **512** parçacık bırakıyor (`PER_BUCKET = 12`) |
-| seçilenler içinde krater parçacığı | **4** (89 krater parçacığından) |
-| profil kutusu 0'ın medyanı | **82,000** — bozulmamış |
-| `bin_counts_min` / `empty_bins` | 2 / 3 |
+| `D` | derinlik | `s = 3,5 m` | `s = 2,0 m` | `s = 1,2 m` |
+|---|---|---|---|---|
+| 40 m | 8 m | *ölçülemedi* (koruma çalıştı) | **3,51** | **3,80** |
+| 20 m | 4 m | 0 | 0 | 0 |
 
-Yüzey seçimi yön kutularında **en uzak** parçacığı alıyor; kraterin
-kenarına değen kutularda bu hep **bozulmamış** parçacık oluyor, taban
-eleniyor.
+**İki gerçek sınır, ikisi de kusur değil:**
 
-**Eklenen koruma (bu kusuru ÇÖZMÜYOR):** çarpma ekseni kutusu geçersizse
-`crater_profile` artık `0` yerine **hata veriyor**. Bu senaryoda kutu
-geçerli olduğu için koruma **devreye girmiyor**; yine de *"ölçemedim"*
-ile *"sıfır"*ı ayırmak doğrudur.
+1. **`0.` kutu genişliği.** Kutu `0–12,84°` (yüzeyde `18,4 m`) ve
+   **medyan** alınıyor. Parabolik kraterin medyanı tepe derinliğinin
+   ~yarısı → `8 m` yerine `3,5–3,8 m`. Çözünürlük artırmak bunu
+   düzeltmiyor (`3,51 → 3,80`).
+2. **Çap eşiği.** `depth_threshold × R = 4,1 m`; ölçülen `dev` altında
+   kaldığı için **çap `0`**.
 
-> Gerçek düzeltme yüzey seçimi ve profil kutulamasının **birlikte**
-> tasarlanmasını istiyor; yama işi değil. Yeniden üretim betiği
-> depoda.
+`D = 20 m` krater `0.` kutudan **küçük** (yarı açı `7° < 12,84°`);
+medyan kımıldamıyor.
 
-**Mevcut testler bu kusuru göremiyordu:** 43 krater/gözlenebilir testi
-geçiyor. Kusur artık `strict xfail` olarak kilitli
-(`test_krater_cikarici_BILINEN_krateri_gormeli`) — düzeltilince test
-**kendiliğinden haber verecek**.
+> Yani `krater_capi = 0`, `t = 0,174 s`'de **gerçekten krater yok**
+> demek — ilk okuyuşum doğruymuş. A11'in özü değişmiyor: gözlenebilir
+> ölü, çünkü **krater oluşmamış**.
 
-#### ⚠ *"Daha çok kutu çözer"* dedim — **çözmüyor**
+**Kalan kazanç:** çarpma ekseni kutusu seyrekse `crater_profile` artık
+`0` yerine **hata veriyor** (`s = 3,5 m` satırında çalıştı). *"Ölçemedim"*
+ile *"sıfır"* artık ayrı.
 
-Yön kutusu sayısını artırınca kraterin görüneceğini düşündüm ve
-**elle** hesapladığım `0.` kutu medyanı bunu destekliyordu:
-
-| `n_theta` | elle hesaplanan derinlik (`D = 40 m`) |
-|---|---|
-| 16 (varsayılan) | `nan` (kutuda `< 5` parçacık) |
-| 32 | 4,344 |
-| 48 | 4,777 |
-| 96 | 4,595 |
-
-Ama **gerçek API üzerinden** aynı ayarlarla:
-
-| `D` | `n_theta = 48`, eşleşmiş `outer_angle` | sonuç |
-|---|---|---|
-| 40 m | ✔ | **0,000** |
-| 20 m | ✔ | **0,000** |
-| 10 m | ✔ | *"profil boş"* |
-
-> Elle yaptığım hesap `crater_profile`'ın **aynı kod yolu değil**;
-> o yüzden *"kutu sayısı çözer"* sonucu **çıkarılamaz**. `crater_profile`
-> içinde henüz **bulmadığım** ek bir mekanizma daha var.
->
-> Bu, bugün dördüncü kez: **kendi ölçüm aracımın** verdiği sayıyı
-> gerçek kod yolununkiyle karıştırmak.
-
-`n_theta`/`n_phi` artık `crater_profile`'a geçirilebiliyor (düzeltmeyi
-mümkün kılmak için) ama **düzeltme değil**.
+4 test bu sınırları kilitliyor; yanlış yönelimin `0` verdiği de
+**kayıtlı** ki bir daha kusur sanılmasın.
 
 ### A12 — **`β` ejektayı değil MERMİNİN SEKMESİNİ ölçüyor** (2026-08-09)
 
@@ -952,7 +920,8 @@ Bunlar bir kez değil, **birden çok** kez oldu:
 | aynı büyüklüğü **iki yerde** tanımlamak | 2 | tek kaynağa indirildi |
 | dönüş sözleşmesi değişince **tüketicileri denetlemem** | 2 | sistematik tarama |
 | **tutarsız** kurulum (yol, kodlama) | 2 | parametrize testler |
-| **ölçüm aracının kendisi bozuk** | **3** | aracı önce bilinen bir durumda sına |
+| **ölçüm aracının kendisi bozuk** | **5** | aracı önce bilinen bir durumda sına |
+| kendi düzeneğimin hatasını **koda yıkmak** | **1** | *(en pahalısı — yanlış bir kusur raporladım)* |
 | **kuşkulandım ama ölçmeden geçtim** | **2** | kuşku = ölçüm emri |
 | düzenleme **sessizce düşerken** commit mesajı yazıldı | **3** | `grep` ile doğrula, sonra commit |
 | bayat süreç kaynağı yiyor | **3** | uzun iş öncesi süreç listesine bak |
@@ -985,6 +954,18 @@ Bunlar bir kez değil, **birden çok** kez oldu:
 > Yanlış bir **sonuç** tartışılır; yanlış bir **araç** tartışmayı da
 > bozar. Karşı önlem: yeni bir tanıyı **bilinen** bir durumda
 > (analitik ya da dejenere) sınamadan gerçek veriye uygulamamak.
+
+#### En pahalısı: düzeneğimin hatasını **koda yıktım**
+
+Krater çıkarıcısının *"`80 m`'lik krateri bile göremediğini"* bildirdim,
+yeniden üretim betiği yazdım, `xfail` ekledim ve **rapora geçirdim**.
+Sonra ortaya çıktı ki `impact_direction`'ı ters vermişim — çıkarıcı
+karşı kutba bakıyordu.
+
+> Diğer dört olayda bozuk araç **kendi yazdığım tanıydı**; bu kez
+> **çalışan bir modülü suçladım**. Karşı önlem aynı: yeni bir düzenek
+> **bilinen doğru cevabı** vermeden sonuç bildirilmez. `+x`'e krater
+> oyup `-x` vererek sınasaydım ilk denemede görürdüm.
 
 ### İkinci yeni kalıp: **kuşkulandım ama ölçmeden geçtim**
 

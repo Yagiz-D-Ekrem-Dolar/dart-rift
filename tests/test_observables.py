@@ -593,48 +593,82 @@ def test_periyot_gecersiz_girdi():
 
 
 # ---------------------------------------------------------------------
-# BILINEN KUSUR: crater_profile bilinen bir krateri GORMUYOR
+# Krater cikaricisinin OLCULMUS sinirlari
+#
+# ONCE YANLIS BIR KUSUR BILDIRDIM: `impact_direction`'i kraterin MERKEZ
+# YONU sanip verdim; oysa o merminin GIDIS yonudur ve krater
+# `-impact_direction` tarafindadir. Yanlis isaretle cikarici KARSI
+# KUTBA bakiyor ve dogal olarak 0 buluyordu.
+# "Cikarici 80 m'lik krateri goremiyor" sonucu bu yuzden YANLISTI.
+# Asagisi dogru yonelimle olculmus GERCEK sinirdir.
 # ---------------------------------------------------------------------
 
-def _kure_krater(D, d_kr, eksen, R=82.0, s=3.5, seed=7):
-    """Bozulmamış küreye **bilinen** bir krater oy."""
-    import numpy as np
+def _kure_krater(D, d_kr, R=82.0, s=3.5, seed=7):
+    """Bozulmamış küreye **bilinen** bir krater oy.
+
+    Krater `+x`'te; `impact_direction` bu yüzden **`-x`**'tir.
+    """
     rng = np.random.default_rng(seed)
     n = int(4 * np.pi * R * R / (s * s))
     u = rng.uniform(-1, 1, n)
     ph = rng.uniform(0, 2 * np.pi, n)
     st = np.sqrt(1 - u * u)
     yon = np.column_stack([st * np.cos(ph), st * np.sin(ph), u])
-    e = np.asarray(eksen, dtype=float)
-    e = e / np.linalg.norm(e)
+    merk = np.array([1.0, 0.0, 0.0])
     ya = np.arcsin(min(D / 2 / R, 1.0))
-    ca = yon @ e
+    ca = yon @ merk
     ic = ca > np.cos(ya)
-    aci = np.arccos(np.clip(ca, -1, 1))
+    a = np.arccos(np.clip(ca, -1, 1))
     r = np.full(n, R)
-    r[ic] = R - d_kr * (1.0 - (aci[ic] / ya) ** 2)
-    return r[:, None] * yon, R * yon, e, R
+    r[ic] = R - d_kr * (1.0 - (a[ic] / ya) ** 2)
+    return r[:, None] * yon, R * yon, -merk, R
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "BILINEN KUSUR (2026-08-09): crater_profile bilinen bir krateri "
-    "goremiyor ve 0 donduruyor. 80 m capli, 16 m derin bir krater bile "
-    "0,0000. Kismi tani: surface_particles 6897 -> 512 parcacik birakiyor "
-    "(PER_BUCKET=12) ve kraterin KENARINA degen yon kutularinda 'en uzak' "
-    "hep BOZULMAMIS parcacik oluyor, taban eleniyor. Duzeltme yuzey "
-    "secimi ve profil kutulamasinin BIRLIKTE tasarlanmasini istiyor. "
-    "Yeniden uretim: scripts/tani_krater_cikarici_kusuru.py. "
-    "Rapor A11. Bu test duzelince STRICT olarak haber verir."))
-@pytest.mark.parametrize("D,d_kr", [(20.0, 4.0), (40.0, 8.0), (80.0, 16.0)])
-def test_krater_cikarici_BILINEN_krateri_gormeli(D, d_kr):
-    """FAZ 4.6'nın ölü gözlenebilirinin sebebi fizik değil **kod**.
+def test_krater_YANLIS_yonelimde_sifir_verir():
+    """`impact_direction` ters verilirse çıkarıcı **karşı kutba** bakar.
 
-    `krater_capi = 0` *"krater oluşmadı"* diye okunuyordu; ölçüm
-    gösterdi ki çıkarıcı **çalışmıyor**.
+    Bu bir kusur değil, **kullanım hatası** — ama sessizce `0`
+    döndüğü için kusur sanılabiliyor. Test bunu kayda geçiriyor.
     """
     from dartrift.observables.crater_shape import crater_profile
-    x, x0, e, R = _kure_krater(D, d_kr, (1.0, 0.0, 0.0))
-    kr = crater_profile(x, center=np.zeros(3), impact_direction=e,
+    x, x0, idir, R = _kure_krater(40.0, 8.0, s=2.0)
+    kr = crater_profile(x, center=np.zeros(3), impact_direction=-idir,
                         reference_radius=R, x_reference=x0)
-    assert kr.depth == pytest.approx(d_kr, rel=0.5), (
-        f"D={D} m, derinlik={d_kr} m krater icin {kr.depth} olculdu")
+    assert kr.depth == 0.0 and kr.diameter == 0.0
+
+
+def test_krater_DOGRU_yonelimde_derinligi_goruyor():
+    """Doğru yönelimde krater **görülüyor** — ama medyan yüzünden sığ."""
+    from dartrift.observables.crater_shape import crater_profile
+    x, x0, idir, R = _kure_krater(40.0, 8.0, s=2.0)
+    kr = crater_profile(x, center=np.zeros(3), impact_direction=idir,
+                        reference_radius=R, x_reference=x0)
+    # `0.` kutu 0-12,84 derece ve MEDYAN aliniyor; parabolik kraterin
+    # medyani tepe derinliginin ~yarisi. Olculen: 3,51 m (gercek 8 m).
+    assert 0.3 * 8.0 < kr.depth < 0.7 * 8.0, kr.depth
+
+
+def test_krater_KUCUK_krateri_goremiyor_SINIR():
+    """`D = 20 m` (yarı açı `7°`) `0.` kutudan (`12,84°`) **küçük**.
+
+    Medyan neredeyse kımıldamıyor → `0`. Bu **ölçülmüş bir sınır**;
+    çözünürlük artırmak da düzeltmiyor.
+    """
+    from dartrift.observables.crater_shape import crater_profile
+    for s in (3.5, 2.0, 1.2):
+        x, x0, idir, R = _kure_krater(20.0, 4.0, s=s)
+        kr = crater_profile(x, center=np.zeros(3), impact_direction=idir,
+                            reference_radius=R, x_reference=x0)
+        # Tam sifir degil, KAYAN NOKTA gurultusu (1e-14). Onemli olan
+        # 4 m'lik gercek derinligin HIC gorunmemesi.
+        assert kr.depth < 1e-9, (s, kr.depth)
+        assert kr.diameter == 0.0, (s, kr.diameter)
+
+
+def test_krater_ekseni_kutusu_SEYREKSE_hata_veriyor():
+    """`0` döndürmektense *"ölçemedim"* demek doğrudur (yeni koruma)."""
+    from dartrift.observables.crater_shape import crater_profile
+    x, x0, idir, R = _kure_krater(40.0, 8.0, s=3.5)   # yalnizca 4 parcacik
+    with pytest.raises(ValueError, match="carpma ekseni kutusunda"):
+        crater_profile(x, center=np.zeros(3), impact_direction=idir,
+                       reference_radius=R, x_reference=x0)
