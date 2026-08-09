@@ -367,6 +367,36 @@ geçiyor. Kusur artık `strict xfail` olarak kilitli
 (`test_krater_cikarici_BILINEN_krateri_gormeli`) — düzeltilince test
 **kendiliğinden haber verecek**.
 
+#### ⚠ *"Daha çok kutu çözer"* dedim — **çözmüyor**
+
+Yön kutusu sayısını artırınca kraterin görüneceğini düşündüm ve
+**elle** hesapladığım `0.` kutu medyanı bunu destekliyordu:
+
+| `n_theta` | elle hesaplanan derinlik (`D = 40 m`) |
+|---|---|
+| 16 (varsayılan) | `nan` (kutuda `< 5` parçacık) |
+| 32 | 4,344 |
+| 48 | 4,777 |
+| 96 | 4,595 |
+
+Ama **gerçek API üzerinden** aynı ayarlarla:
+
+| `D` | `n_theta = 48`, eşleşmiş `outer_angle` | sonuç |
+|---|---|---|
+| 40 m | ✔ | **0,000** |
+| 20 m | ✔ | **0,000** |
+| 10 m | ✔ | *"profil boş"* |
+
+> Elle yaptığım hesap `crater_profile`'ın **aynı kod yolu değil**;
+> o yüzden *"kutu sayısı çözer"* sonucu **çıkarılamaz**. `crater_profile`
+> içinde henüz **bulmadığım** ek bir mekanizma daha var.
+>
+> Bu, bugün dördüncü kez: **kendi ölçüm aracımın** verdiği sayıyı
+> gerçek kod yolununkiyle karıştırmak.
+
+`n_theta`/`n_phi` artık `crater_profile`'a geçirilebiliyor (düzeltmeyi
+mümkün kılmak için) ama **düzeltme değil**.
+
 ### A12 — **`β` ejektayı değil MERMİNİN SEKMESİNİ ölçüyor** (2026-08-09)
 
 > ### ⚠ Bunu *"en ağır yeni bulgu"* diye yazdım — **yeni değil**

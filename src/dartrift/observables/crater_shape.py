@@ -126,6 +126,8 @@ def crater_profile(
     n_bins: int = 20,
     depth_threshold: float = 0.05,
     min_per_bin: int = 5,
+    n_theta: int | None = None,
+    n_phi: int | None = None,
     x_reference: np.ndarray | None = None,
 ) -> CraterShape:
     """Yerel krateri, kuresel bicim degisiminden ayirarak olc.
@@ -164,13 +166,13 @@ def crater_profile(
 
     def _yuzey_profili(pts: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """(yaricap, aci) — carpma eksenine gore, AYNI kutulama ve ayni eksen."""
-        idx = surface_particles(pts, c)
+        idx = surface_particles(pts, c, n_theta=n_theta, n_phi=n_phi)
         rr = pts[idx] - c[None, :]
         dd = np.linalg.norm(rr, axis=1)
         ca = np.clip((rr @ axis) / np.maximum(dd, 1e-300), -1.0, 1.0)
         return dd, np.degrees(np.arccos(ca))
 
-    si = surface_particles(x, c)
+    si = surface_particles(x, c, n_theta=n_theta, n_phi=n_phi)
     rs = x[si] - c[None, :]
     rad = np.linalg.norm(rs, axis=1)
     cosang = np.clip((rs @ axis) / np.maximum(rad, 1e-300), -1.0, 1.0)
