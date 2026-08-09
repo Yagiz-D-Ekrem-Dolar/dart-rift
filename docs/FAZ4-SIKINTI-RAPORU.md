@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-09 · **Kapanan:** 37 · **Açık:** 5
+**Son güncelleme:** 2026-08-09 · **Kapanan:** 37 · **Açık:** 7
 
 ---
 
@@ -228,6 +228,83 @@ noktası, 40 adım) ve **29/29 nokta düştü**.
 > **Duman testi `~2` dakika sürdü ve `~9` saatlik bir GPU koşusunu
 > kurtardı.** Bu, A4'ün (*"GPU yolu hiç koşulmadı"*) neden bir risk
 > olarak yazıldığının kanıtı — risk **gerçekleşti**.
+
+### A11 — **`krater_capi` ölçülemiyor: üç gözlenebilirin ikisi ölü** (2026-08-09)
+
+FAZ 4.6'nın **ilk 3 noktası** çıkınca JSONL okundu:
+
+| `i` | `beta` | `krater_capi` | `ejekta_kutle_kesri` |
+|---|---|---|---|
+| 0 | 1,62077 | **0** | 1,3905e-07 |
+| 1 | 1,56893 | **0** | 1,39056e-07 |
+| 2 | 1,54954 | **0** | 1,39059e-07 |
+
+**Kök neden:** `crater_profile` çapı ancak sapma
+`depth_threshold × R = 0,05 × 82 = 4,1 m`'yi **aşarsa** ölçüyor.
+`t = 0,174 s`'de krater o kadar derin değil.
+
+> **Koşu `~7` saat sonra ölecekti:** sabit gözlenebilirde
+> `Surrogate.sabit` kalkar ve `faz46` *"çıkarım koşturmak boşuna
+> olurdu"* diyerek **durur**.
+
+Bundan **kuşkulanmıştım** ve *"tüm noktalar aynı `t`'de olduğu için
+`C1/C2/C3` yine anlamlı"* diye **geçmiştim**. Yanlış: sabit bir
+gözlenebilir anlamlı değil, **yok**.
+
+**Durum:** koşu `3/60`'ta **durduruldu**.
+
+### A12 — **`β` ejektayı değil MERMİNİN SEKMESİNİ ölçüyor** (2026-08-09, en ağır bulgu)
+
+#### Ölçülen (çıkarım değil)
+
+| | |
+|---|---|
+| kaçan kütle (`t = 0,174 s`) | **`579,44 kg`** |
+| **mermi kütlesi** | **`579,40 kg`** |
+| fark | `%0,007` |
+
+**Kaçan madde merminin kendisi.** Hedeften ejekta **yok**. FAZ 4.5'te
+`β`, `t = 0,0406 s`'de atlayıp `4,63 s`'ye kadar `2,18e-13` düzlükte
+kaldı — o süre boyunca kontrol yüzeyini geçen **yeni hiçbir şey yok**.
+
+#### Neden — tanımdan
+
+Ejekta ölçütü: `d > 2R = 164 m` **ve** `v_r > v_kaçış`. Hedef maddesi
+`R = 82 m`'den başlıyor, yani **en az `82 m` yol almalı**:
+
+| ejekta hızı | `164 m`'ye varış |
+|---|---|
+| `100 m/s` | 0,82 s |
+| `10 m/s` | **8,2 s** |
+| `5 m/s` | **16,4 s** |
+| `1 m/s` | **82 s** |
+
+Mermi kırıntısı `km/s` — **anında** geçiyor. Krater ejektası `m/s`.
+
+#### Etkisi: ADR-0043'ün bedel modeli eksik varsayıma dayanıyor
+
+ADR-0043 §2 *"ensemble koşu süresi `~1 s`"* diyor ve `9,73` GPU-günlük
+bedel tablosu buna dayanıyor. `1 s`'de yüzeyi geçmek için ejekta
+`≥ 82 m/s` olmalı.
+
+> Gereken süre `4,63 s`'den **büyük**, üst sınırı **bilinmiyor**.
+> Bedeli **`10–20×`** büyütebilir.
+
+#### `B1`, `B2`, `B3` bu ışıkta yeniden okunmalı
+
+| | ne sanılıyordu | ne ölçtüğü |
+|---|---|---|
+| `B1` | ejekta `β`'sı yakınsıyor mu | **mermi sekmesi** yakınsıyor mu |
+| `B2` | `β` yerleşti mi | mermi kırıntısı yüzeyi geçti mi |
+| `B3` | ejekta `β`'sında A′ üstünlüğü | mermi sekmesinde |
+
+Sayılar **doğru**; **iddia ettikleri daha dar**.
+
+#### Ölçülmedi
+
+Hedef maddesi kaçış hızını **aşıyor mu** (yüzeyi geçmemiş olsa da)?
+`v_kaçış = 0,082 m/s` çok küçük. Aşıyorsa sorun **koşu süresi**;
+aşmıyorsa `β ≈ mermi sekmesi` **fiziksel olarak doğru cevap**.
 
 ### A4 — `ileri_kosu`'nun GPU kısmı hiç koşulmadı → **KAPANDI**
 
@@ -652,7 +729,7 @@ yaradığı görünmez:
 |---|---|
 | hata ayıklama turu | **16** |
 | kapanan sıkıntı | **37** |
-| açık sıkıntı | **6** (A5 + A9 + A11 karar, kalanı kota) |
+| açık sıkıntı | **7** (A5 + A9 + A11 + A12 karar, kalanı kota) |
 | **testlerin kör olduğu kusur** | **7** |
 | **tahminimi çürüten ölçüm** | **9** |
 | eklenen gerileme testi | **133** |
