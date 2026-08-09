@@ -671,8 +671,35 @@ pay **`5,7×`**.
 `n_theta = 1024`, `n_phi = 128`, `ejekta_yaricap_carpani = 1.05`
 işlendi. Beş test kilitliyor; biri `n_theta`'yı düşüreni yakalıyor.
 
-**Hâlâ açık:** `krater_capi` (çap) hâlâ `0` okuyor — derinlik kurtarıldı,
-çap kurtarılmadı. `4096`'da 2 m krater kayboluyor: tatlı nokta **dar** ve
+#### Çap: kurtarılabiliyor ama **kullanmıyorum**
+
+Çapın `0` okumasının sebebi ölçüldü: `depth_threshold = 0,05`, `R`'nin
+kesri olduğu için `0,05 × 82 = 4,1 m` sapma istiyor — DART kraterinin
+**kendisi kadar**. Eşik düşürülünce çap geri geliyor:
+
+| eşik | `D = 20` gerçek | `D = 40` gerçek | kratersiz sahnede **hayalî** |
+|---|---|---|---|
+| 0,05 (`4,10 m`) | `0` — kaçırıyor | 14,83 | yok |
+| **0,005** (`0,41 m`) | **19,13** | 28,32 | 6,93 *(yalnız `0,5 m` gürültüde)* |
+| 0,002 (`0,16 m`) | 19,13 | 28,32 | **11,99** |
+
+`0,005` gerçek kraterde çalışıyor ve yüzey gürültüsü `≤ 0,2 m` iken
+hayalî çap üretmiyor. Yine de **gözlenebilir vektörüne koymuyorum**:
+
+1. Çıktı **kaba nicemli** — `D = 20` ve `40` için yalnızca iki ayrık
+   düzey (`19,13` / `28,32`); taşıdığı bilgi az.
+2. `D = 40`'ta **`%29` düşük** yanlı.
+3. Üretim koşusunun yüzey gürültüsü **ölçülmedi**; `0,2 m` sınırının
+   hangi tarafında olduğunu bilmiyorum. Bilmeden açmak, hayalî bir
+   kraterin çıkarıma girmesi demek.
+
+> Bu bir *"çalışmıyor"* değil, **koşulu doğrulanmamış** kaydıdır. Koşul
+> (yüzey gürültüsü `< 0,2 m`) ölçülürse eşik `0,005`'e çekilebilir.
+
+**Sonuç:** FAZ 4.6 **iki** gözlenebilirle yürüyor (`β`, `krater_derinlik`),
+üç değil — ve sebebi ölçülmüş bir sayı.
+
+**Hâlâ açık:** `4096`'da 2 m krater kayboluyor; tatlı nokta **dar** ve
 farklı bir sahne çözünürlüğünde yeniden ölçülmeli.
 
 ---

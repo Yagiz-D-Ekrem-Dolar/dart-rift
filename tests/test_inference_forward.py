@@ -346,3 +346,37 @@ def test_ejekta_suzgeci_hepsini_elerse_hata():
         crater_profile(x, center=np.zeros(3), impact_direction=-ehat,
                        reference_radius=R, x_reference=x0,
                        ejekta_yaricap_carpani=0.1)
+
+
+def test_krater_capi_esigi_HAYALI_krater_sinirini_kilitler():
+    """`depth_threshold` düşürülürse kratersiz cisimde çap uydurulur.
+
+    Ölçüldü (gerçek aşama-2 sahnesi, kratersiz, yüzey gürültüsü `0,5 m`):
+
+        esik 0,05  -> hayali cap yok
+        esik 0,005 -> hayali cap 6,93 m
+        esik 0,002 -> hayali cap 11,99 m
+
+    Bu yüzden `KRATER_AYARLARI_DART` varsayılan `0,05`'te KALIYOR ve çap
+    gözlenebilir vektörüne **girmiyor**. Test, birisi eşiği sessizce
+    düşürürse bunu yakalar.
+    """
+    from dartrift.inference.forward import KRATER_AYARLARI_DART
+    assert "depth_threshold" not in KRATER_AYARLARI_DART, (
+        "esik acikca ayarlanmis — hayali krater denetimi yeniden yapilmali")
+
+    from dartrift.observables.crater_shape import crater_profile
+    R, s = 82.0, 3.5
+    rng = np.random.default_rng(2)
+    n = int(4 * np.pi * R * R / (s * s))
+    u = rng.uniform(-1, 1, n)
+    ph = rng.uniform(0, 2 * np.pi, n)
+    q = np.sqrt(1 - u * u)
+    yon = np.column_stack([q * np.cos(ph), q * np.sin(ph), u])
+    x0 = R * yon
+    r = R + 0.5 * rng.normal(size=n)          # KRATER YOK, sadece gurultu
+    kr = crater_profile(r[:, None] * yon, center=np.zeros(3),
+                        impact_direction=-np.array([0.0, 0.0, 1.0]),
+                        reference_radius=R, x_reference=x0,
+                        **KRATER_AYARLARI_DART)
+    assert kr.diameter == 0.0, f"kratersiz cisimde {kr.diameter} m cap"
