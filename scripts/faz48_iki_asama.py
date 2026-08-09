@@ -63,12 +63,29 @@ from faz44_dart_yakinsama import SAHNE, _malzeme  # noqa: E402
 T1_OLCULEN = 4.767e-3
 
 
-def _cozucu(x, v, m, u, h, alpha0, Y0, device):
+def _mat(gozeneksiz: bool = False):
+    """Malzeme; `gozeneksiz` ise **P-α kapalı**.
+
+    Tanı amaçlı: gözeneklilik şok enerjisini **gözenek çökmesine**
+    yutuyorsa krater kazılmaz. Kapatınca krater oluşuyorsa hipotez
+    doğrulanır. Bu bir model değişikliği **değil**, ayırt edici bir
+    kontrol koludur.
+    """
+    m = _malzeme()
+    if not gozeneksiz:
+        return m
+    import dataclasses
+    return dataclasses.replace(
+        m, porosity=dataclasses.replace(m.porosity, enabled=False))
+
+
+def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None):
     from dartrift.warp_core.solver_solid import WarpSolid3D
     return WarpSolid3D(
         np.ascontiguousarray(x), np.ascontiguousarray(v),
         np.ascontiguousarray(m), np.ascontiguousarray(u),
-        np.ascontiguousarray(h), _malzeme(), RefParams(cfl=0.25),
+        np.ascontiguousarray(h),
+        mat if mat is not None else _malzeme(), RefParams(cfl=0.25),
         alpha0=np.ascontiguousarray(alpha0), Y0=np.ascontiguousarray(Y0),
         device=device, check_every=10 ** 9)
 
@@ -173,6 +190,11 @@ def main() -> int:
     # canlandiklari COZULMUS mermiyle olculmeli.
     ap.add_argument("--iz-every", type=int, default=0,
                     help="asama-2'de her N adimda krater+balistik beta ornekle")
+    # HIPOTEZ SINAVI: gozeneklilik enerjiyi KAZMA yerine SIKISTIRMAYA
+    # goturuyor olabilir. Bu bayrak P-alpha'yi kapatir; krater o zaman
+    # olusuyorsa hipotez dogrulanir (tani amacli, ADR-0043 disi).
+    ap.add_argument("--gozeneksiz", action="store_true",
+                    help="P-alpha gozenekliligi KAPAT (tani kontrol kolu)")
     a = ap.parse_args()
 
     print("=" * 78, flush=True)
@@ -192,7 +214,7 @@ def main() -> int:
     if a.tek_asama:
         print(f"\nKONTROL KOLU: tek asama, lam={a.lam2}, N={a2.n}", flush=True)
         sol = _cozucu(a2.x, a2.v, a2.m, np.zeros(a2.n), a2.h,
-                      a2.alpha0, a2.Y0, a.device)
+                      a2.alpha0, a2.Y0, a.device, mat=_mat(a.gozeneksiz))
         t = _kos(sol, 0.0, a.t_end, a.azami_adim, "tek")
         b = _beta(sol.state_numpy(), a2, p_imp, m_hedef, R)
         print(f"\n  t_sim = {t:.5e}  beta = {b['beta']:.6f}", flush=True)
@@ -220,7 +242,7 @@ def main() -> int:
           f"-- esik 2.0", flush=True)
 
     sol1 = _cozucu(a1.x, a1.v, a1.m, np.zeros(a1.n), a1.h,
-                   a1.alpha0, a1.Y0, a.device)
+                   a1.alpha0, a1.Y0, a.device, mat=_mat(a.gozeneksiz))
     t = _kos(sol1, 0.0, a.t1, a.azami_adim, "a1")
     print(f"  asama-1 bitti: t = {t:.5e} s "
           f"({time.perf_counter() - t0:.1f} s duvar)", flush=True)
@@ -251,7 +273,7 @@ def main() -> int:
     print(f"\nASAMA-2: lam={a.lam2}, N={sahne.n}, t {t:.4e} -> {a.t_end}",
           flush=True)
     sol2 = _cozucu(sahne.x, sahne.v, sahne.m, sahne.e, sahne.h,
-                   sahne.alpha0, sahne.Y0, a.device)
+                   sahne.alpha0, sahne.Y0, a.device, mat=_mat(a.gozeneksiz))
     izler = []
     x0_h = np.array(a1.x, dtype=np.float64, copy=True)   # CARPMA ONCESI (R4)
     # Aktarimdan sonra parcacik kimlikleri degisti; krater referansi
