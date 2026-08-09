@@ -246,6 +246,29 @@ def crater_profile(
             f"profil bos — hicbir kutuda {min_per_bin} parcacik yok "
             f"(n_bins={n_bins} dusurun ya da cozunurlugu artirin)")
 
+    # CARPMA EKSENI KUTUSU (0) GECERSIZSE KRATER OLCULEMEZ.
+    #
+    # Olculdu (2026-08-09): bilinen bir krater (D = 40 m, derinlik 8 m,
+    # 89 parcacik) yerlestirildi ve `depth = 0.0000` raporlandi. Sebep
+    # zincirleme:
+    #   surface_particles 6897 -> 512 parcacik biraktı (PER_BUCKET = 12)
+    #   0. kutuya (aci 9.07 deg) yalnizca 4 parcacik dustu
+    #   min_per_bin = 5 -> kutu NaN -> `valid` disi
+    #   kalan kutular kraterin DISINDA, hepsi prof_r = 82.000
+    #   => dev her yerde 0 => depth = 0
+    #
+    # Yani krater OLUSMADIGI icin degil, CIKARICI GOREMEDIGI icin sifir
+    # cikiyordu -- ve sessizce, makul gorunen bir sayiyla. Krater tam
+    # olarak 0. kutunun icinde oldugundan o kutu gecersizse olcum
+    # ANLAMSIZDIR; `nan` dondurmek `0` dondurmekten dogrudur.
+    if not bool(valid[0]):
+        raise ValueError(
+            f"carpma ekseni kutusunda {int(counts[0])} parcacik var "
+            f"(en az {min_per_bin} gerekir). Krater TAM ORADA oldugu icin "
+            f"olcum ANLAMSIZ olurdu; `0` dondurmek yaniltici olur. "
+            f"Yuzey parcacigi {int(len(rad))}, n_bins={n_bins}. "
+            f"Cozunurlugu artirin ya da n_bins'i dusurun.")
+
     depth = float(np.nanmax(dev))
     # Kenar: eksenden disa dogru giderken sapmanin esigin altina dustugu ILK
     # aci — yani BITISIK krater bolgesinin sonu.

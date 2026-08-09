@@ -590,3 +590,51 @@ def test_periyot_gecersiz_girdi():
         period_change(3.0, DART_MOMENTUM, along_track=2.0)
     with pytest.raises(ValueError, match="along_track = 0"):
         beta_from_period_change(-100.0, DART_MOMENTUM, along_track=0.0)
+
+
+# ---------------------------------------------------------------------
+# BILINEN KUSUR: crater_profile bilinen bir krateri GORMUYOR
+# ---------------------------------------------------------------------
+
+def _kure_krater(D, d_kr, eksen, R=82.0, s=3.5, seed=7):
+    """Bozulmamış küreye **bilinen** bir krater oy."""
+    import numpy as np
+    rng = np.random.default_rng(seed)
+    n = int(4 * np.pi * R * R / (s * s))
+    u = rng.uniform(-1, 1, n)
+    ph = rng.uniform(0, 2 * np.pi, n)
+    st = np.sqrt(1 - u * u)
+    yon = np.column_stack([st * np.cos(ph), st * np.sin(ph), u])
+    e = np.asarray(eksen, dtype=float)
+    e = e / np.linalg.norm(e)
+    ya = np.arcsin(min(D / 2 / R, 1.0))
+    ca = yon @ e
+    ic = ca > np.cos(ya)
+    aci = np.arccos(np.clip(ca, -1, 1))
+    r = np.full(n, R)
+    r[ic] = R - d_kr * (1.0 - (aci[ic] / ya) ** 2)
+    return r[:, None] * yon, R * yon, e, R
+
+
+@pytest.mark.xfail(strict=True, reason=(
+    "BILINEN KUSUR (2026-08-09): crater_profile bilinen bir krateri "
+    "goremiyor ve 0 donduruyor. 80 m capli, 16 m derin bir krater bile "
+    "0,0000. Kismi tani: surface_particles 6897 -> 512 parcacik birakiyor "
+    "(PER_BUCKET=12) ve kraterin KENARINA degen yon kutularinda 'en uzak' "
+    "hep BOZULMAMIS parcacik oluyor, taban eleniyor. Duzeltme yuzey "
+    "secimi ve profil kutulamasinin BIRLIKTE tasarlanmasini istiyor. "
+    "Yeniden uretim: scripts/tani_krater_cikarici_kusuru.py. "
+    "Rapor A11. Bu test duzelince STRICT olarak haber verir."))
+@pytest.mark.parametrize("D,d_kr", [(20.0, 4.0), (40.0, 8.0), (80.0, 16.0)])
+def test_krater_cikarici_BILINEN_krateri_gormeli(D, d_kr):
+    """FAZ 4.6'nın ölü gözlenebilirinin sebebi fizik değil **kod**.
+
+    `krater_capi = 0` *"krater oluşmadı"* diye okunuyordu; ölçüm
+    gösterdi ki çıkarıcı **çalışmıyor**.
+    """
+    from dartrift.observables.crater_shape import crater_profile
+    x, x0, e, R = _kure_krater(D, d_kr, (1.0, 0.0, 0.0))
+    kr = crater_profile(x, center=np.zeros(3), impact_direction=e,
+                        reference_radius=R, x_reference=x0)
+    assert kr.depth == pytest.approx(d_kr, rel=0.5), (
+        f"D={D} m, derinlik={d_kr} m krater icin {kr.depth} olculdu")

@@ -320,6 +320,53 @@ gözlenebilir anlamlı değil, **yok**.
 
 `t = 0,174 s`'de krater **yok** — ne çap ne derinlik olarak.
 
+#### ⚠ KÖK NEDEN BAŞKAYMIŞ: **çıkarıcı krateri göremiyor** (2026-08-09)
+
+*"Krater henüz oluşmadı"* diye yazmıştım. **Ölçüm çürüttü.** Bozulmamış
+bir küreye **bilinen** bir krater oyup çıkarıcıya verdim
+(`scripts/tani_krater_cikarici_kusuru.py`):
+
+| gerçek `D` | gerçek derinlik | **ölçülen derinlik** | **ölçülen çap** |
+|---|---|---|---|
+| 20 m | 4 m | **0,0000** | 0,000 |
+| 40 m | 8 m | **0,0000** | 0,000 |
+| 60 m | 12 m | **0,0000** | 0,000 |
+| **80 m** | **16 m** | **0,0000** | 0,000 |
+
+İki yönelimde de (`+z` ve `+x`) aynı. **`80 m` çaplı, `16 m` derin bir
+krater bile `0` raporlanıyor** — cismin yarısı kadar.
+
+> Yani `krater_capi = 0`, *"krater oluşmadı"* demek **değil**;
+> **çıkarıcı çalışmıyor** demek. FAZ 4.6'nın ölü gözlenebilirinin
+> sebebi fizik değil, **kod**.
+
+**Kısmi tanı** (tam kök neden bulunmadı):
+
+| | |
+|---|---|
+| `surface_particles` | 6897 → **512** parçacık bırakıyor (`PER_BUCKET = 12`) |
+| seçilenler içinde krater parçacığı | **4** (89 krater parçacığından) |
+| profil kutusu 0'ın medyanı | **82,000** — bozulmamış |
+| `bin_counts_min` / `empty_bins` | 2 / 3 |
+
+Yüzey seçimi yön kutularında **en uzak** parçacığı alıyor; kraterin
+kenarına değen kutularda bu hep **bozulmamış** parçacık oluyor, taban
+eleniyor.
+
+**Eklenen koruma (bu kusuru ÇÖZMÜYOR):** çarpma ekseni kutusu geçersizse
+`crater_profile` artık `0` yerine **hata veriyor**. Bu senaryoda kutu
+geçerli olduğu için koruma **devreye girmiyor**; yine de *"ölçemedim"*
+ile *"sıfır"*ı ayırmak doğrudur.
+
+> Gerçek düzeltme yüzey seçimi ve profil kutulamasının **birlikte**
+> tasarlanmasını istiyor; yama işi değil. Yeniden üretim betiği
+> depoda.
+
+**Mevcut testler bu kusuru göremiyordu:** 43 krater/gözlenebilir testi
+geçiyor. Kusur artık `strict xfail` olarak kilitli
+(`test_krater_cikarici_BILINEN_krateri_gormeli`) — düzeltilince test
+**kendiliğinden haber verecek**.
+
 ### A12 — **`β` ejektayı değil MERMİNİN SEKMESİNİ ölçüyor** (2026-08-09)
 
 > ### ⚠ Bunu *"en ağır yeni bulgu"* diye yazdım — **yeni değil**
