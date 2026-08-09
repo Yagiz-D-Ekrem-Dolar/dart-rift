@@ -441,8 +441,41 @@ kopyalanır ve hiçbir momentum atılmaz.
 > Bedeli küçük: `dt` zaten `λ=19` çekirdeğinden geliyor; eklenen
 > parçacıklar aşama-2'nin zaten sahip olduğu parçacıklar.
 
-**Bu ölçülmeden §4'ün önerisi uygulanamaz.** `β = 1,412659` sayısı
-(FAZ 4.8) **geçersizdir** — momentumun `%69`'u eksikken hesaplandı.
+**`β = 1,412659` sayısı (FAZ 4.8, iki seviyeli) GEÇERSİZDİR** —
+momentumun `%69`'u eksikken hesaplandı.
+
+### Düzeltme **uygulandı ve ölçüldü** (2026-08-09)
+
+`refine_scene_ucseviye` + `asama2_sahnesi_ucseviye`:
+
+| | iki seviyeli | **üç seviyeli** |
+|---|---|---|
+| aşama-2'den atılan | 805 parçacık | **0** |
+| birebir kopyalanan | — | **10 366** |
+| sahne momentum hatası | — | **`1,177e-15`** |
+| **momentum kapanışı** | **`6,901e-01`** | **`5,101e-15`** |
+
+**On beş büyüklük mertebesi.** Aktarım artık yalnızca `r < r₁`'i
+kabalaştırıyor; `r₁ < r < r₂` aşama-2 ile **aynı aralıkta** olduğu
+için evrimleşmiş hâliyle **birebir** kopyalanıyor.
+
+Bedeli ölçüldü:
+
+| | değer |
+|---|---|
+| üç seviyeli `N` | **12 705** |
+| aşama-2 `N` | 11 183 |
+| oran | **`1,136×`** |
+| `A1` | **2,0391** ✔ |
+| `h_mermi / çap` | **0,981** ✔ |
+| kurulum süresi | 0,7 s |
+
+> `dt` zaten `λ₁` çekirdeğinden geliyor; orta seviye zaman adımını
+> **değiştirmiyor**. Yani `%13,6` parçacık artışı **tek** ek bedel.
+
+İki seviyeli sürüm **silinmedi** ama `asama2_sahnesi_ucseviye`
+`ucseviye` bayrağı olmayan sahneyi **reddediyor**: sessizce `%69`
+momentum atmaktansa hata vermek doğrudur.
 
 ---
 
