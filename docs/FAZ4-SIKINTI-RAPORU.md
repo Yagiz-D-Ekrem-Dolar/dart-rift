@@ -388,11 +388,37 @@ Hedef maddesi kaçış hızını **aşıyor mu** (yüzeyi geçmemiş olsa da)?
 `v_kaçış = 0,082 m/s` çok küçük. Aşıyorsa sorun **koşu süresi**;
 aşmıyorsa `β ≈ mermi sekmesi` **fiziksel olarak doğru cevap**.
 
-> **Ucuz bir çıkış yolu olabilir:** yerçekimi **kapalı** olduğu için
-> serbest kalmış parçacık **doğru çizgide** gider. O hâlde tek bir
-> durumdan her parçacığın `2R`'yi ne zaman geçeceği
-> **tam olarak** hesaplanır ve `β(t)` geleceğe doğru **koşmadan**
-> çıkarılır. Ölçülüyor.
+#### Balistik kestirim **ölçüldü** — sorunu **ikiye böldü**
+
+Yerçekimi kapalı olduğu için serbest parçacık doğru çizgide gider;
+`|x + vt| = 2R` her parçacık için **tam** çözülür.
+`t = 0,168 s` durumundan (`scripts/faz49_balistik_beta.py`):
+
+| büyüklük | değer |
+|---|---|
+| kaçış hızını aşan **hedef** parçacığı | **18 / 10 380** (`%0,2`) |
+| kütlece | `%0,056` |
+| `v_r` medyanı | **`0,111 m/s`** (`v_kaçış = 0,082`) |
+| balistik geçiş süresi (medyan) | **`795 s`** (min `363`, p90 `1038`) |
+| `β` (şimdi) | `1,61758` |
+| **`β(t→∞)`** (durum donmuş varsayımı) | **`1,69842`** |
+
+**İki ayrı sorun olduğu ortaya çıktı:**
+
+**(1) Geçiş beklemesi — ÇÖZÜLEBİLİR.** `795 s`'lik yolculuğu simüle
+etmeye gerek **yok**; balistik olarak hesaplanıyor. `100 s / 266 gün`
+rakamı bu yüzden **geçersiz**.
+
+**(2) Fırlatma — ÇÖZÜLMEDİ, asıl sorun bu.** Balistik kestirim
+*"durum şu an dondurulursa"* `β = 1,698` diyor. Ama `t = 0,174 s`'de
+krater **oluşmamış** (derinlik = aralığın `%1`'i), yani fırlatılacak
+madde henüz **yok**. Ejektanın `β`'ya toplam katkısı `+0,08` (`%5`).
+
+> Gereken simüle süreyi belirleyen şey **geçiş değil, krater kazısı**.
+> O süre **ölçülmedi**.
+>
+> FAZ 4.5 tam bunu ölçecekti ama `β_bound`'a baktı; o mermi sekmesine
+> kilitlendiği için `t = 0,0406 s` gibi **yanıltıcı** bir sayı verdi.
 
 ### A4 — `ileri_kosu`'nun GPU kısmı hiç koşulmadı → **KAPANDI**
 
