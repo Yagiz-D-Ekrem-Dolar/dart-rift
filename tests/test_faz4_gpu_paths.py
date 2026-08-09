@@ -82,3 +82,60 @@ def test_shock_interface_iki_bolgeli_kosu() -> None:
     assert len(set(ic["m"].round(15))) == 2
     assert r["verdict"] in {"interface_harmless", "interface_costs",
                             "inconclusive"}
+
+
+# ---------------------------------------------------------------------------
+# `--gozeneksiz` kontrol kolu (CPU — GPU gerekmiyor)
+# ---------------------------------------------------------------------------
+
+def _faz48_modulu():
+    import importlib.util as iu
+    from pathlib import Path
+    yol = Path(__file__).resolve().parents[1] / "scripts" / "faz48_iki_asama.py"
+    s = iu.spec_from_file_location("_faz48", yol)
+    m = iu.module_from_spec(s)
+    s.loader.exec_module(m)
+    return m
+
+
+def test_gozeneksiz_kol_t0da_GERILMESIZ_basliyor():
+    """Kontrol kolu cismi patlatarak *"krater oluştu"* dememeli.
+
+    Süreklilik yönteminde başlangıç yoğunluğu `rho0 / alpha0`'dır
+    (`solver_solid.py:133`) ve bu **gözeneklilik kapalıyken de** öyle
+    kalır. `alpha0` düzeltilmezse gözeneksiz kol şöyle başlıyordu:
+
+        alpha0 = 1,15  ->  P = -3,03e9 Pa
+        alpha0 = 1,30  ->  P = -4,74e9 Pa
+
+    `-4,7 GPa` gerilme cismi daha `t = 0`'da parçalar; o kol ejekta
+    üretseydi *"gözeneklilik enerjiyi yutuyormuş"* diye okunurdu.
+    """
+    import numpy as np
+    from dartrift.cpu_reference.materials import tillotson_pressure
+
+    m48 = _faz48_modulu()
+    a0 = np.array([1.0, 1.15, 1.30])
+
+    for gozeneksiz in (False, True):
+        mat = m48._mat(gozeneksiz)
+        av = m48._alpha0_kolu(a0, gozeneksiz)
+        rho = mat.tillotson.rho0 / av
+        arg = rho if gozeneksiz else rho * av
+        P = np.asarray(tillotson_pressure(arg, np.zeros(3), mat.tillotson))
+        if not gozeneksiz:
+            P = P / av
+        assert np.allclose(P, 0.0, atol=1.0), f"gozeneksiz={gozeneksiz}: {P}"
+
+
+def test_duzeltilmemis_alpha0_GERCEKTEN_gerilme_uretiyordu():
+    """Düzeltmenin gerekçesi ölçülmüş bir sayı; kaybolmasın."""
+    import numpy as np
+    from dartrift.cpu_reference.materials import tillotson_pressure
+
+    m48 = _faz48_modulu()
+    mat = m48._mat(True)                      # P-alpha KAPALI
+    rho = mat.tillotson.rho0 / 1.30           # ama alpha0 DUZELTILMEMIS
+    P = float(np.asarray(tillotson_pressure(
+        np.array([rho]), np.array([0.0]), mat.tillotson)).ravel()[0])
+    assert P < -1.0e9, f"beklenen buyuk gerilme, {P:.3e} cikti"

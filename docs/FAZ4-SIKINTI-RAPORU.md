@@ -704,6 +704,47 @@ farklı bir sahne çözünürlüğünde yeniden ölçülmeli.
 
 ---
 
+### A14 — `--gozeneksiz` kontrol kolu **cismi patlatacaktı** (2026-08-09)
+
+Hazırladığım ayırt edici kol şuydu: gözeneklilik şok enerjisini gözenek
+çökmesine yutuyorsa krater kazılmaz; **P-α'yı kapat**, krater oluşursa
+hipotez doğrulanır.
+
+Kol koşulmadan önce denetlendi. **Bozuk çıktı.**
+
+#### Ölçüm
+
+Süreklilik yönteminde başlangıç yoğunluğu `rho0 / alpha0`'dır
+(`solver_solid.py:133`) — ve bu, gözeneklilik **kapalıyken de** öyle
+kalır. Yani P-α'yı kapatmak cismi genişlemiş halde bırakıyor:
+
+| `alpha0` | `ρ` başlangıç | `P` gözenekli | `P` **gözeneksiz** |
+|---|---|---|---|
+| 1,00 | 2700,0 | `0` | `0` |
+| 1,15 | 2347,8 | `0` | **`−3,03e9` Pa** |
+| 1,30 | 2076,9 | `0` | **`−4,74e9` Pa** |
+
+`−4,7 GPa` gerilme cismi daha `t = 0`'da parçalar.
+
+> Kol ejekta üretseydi *"gözeneklilik enerjiyi yutuyormuş"* diye
+> okuyacaktım. Oysa cisim yalnızca **kendi başlangıç gerilmesinden**
+> patlamış olacaktı. Hipotezi doğrulayan sahte bir kanıt.
+
+#### Düzeltme ve **kalan** kusur
+
+`--gozeneksiz` artık `alpha0 = 1` de yapıyor; iki kol da `t = 0`'da
+gerilmesiz. İki test kilitliyor (biri düzeltilmemiş halin gerçekten
+`< −1 GPa` verdiğini).
+
+Ama kol **tek değişkenli değil ve olamaz**: gözeneklilik başlangıç
+durumuna gömülü. `alpha0 = 1` seçmek yığın yoğunluğunu da
+`2077 → 2700 kg/m³` çıkarıyor — aynı hacimde **daha ağır** hedef.
+
+**Kusursuz kontrol yok.** Var olanların en iyisi *"katı, gerilmesiz
+hedef"* ve karşılaştırma bu farkı **belirterek** okunmalı.
+
+---
+
 ## 2. KAPANAN sıkıntılar — kronolojik
 
 ### Ölçüm tasarımı (1–4)

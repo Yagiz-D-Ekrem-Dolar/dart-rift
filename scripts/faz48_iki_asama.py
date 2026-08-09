@@ -70,6 +70,22 @@ def _mat(gozeneksiz: bool = False):
     yutuyorsa krater kazılmaz. Kapatınca krater oluşuyorsa hipotez
     doğrulanır. Bu bir model değişikliği **değil**, ayırt edici bir
     kontrol koludur.
+
+    ## Tek başına YETMEZ — `_alpha0_kolu` ile birlikte kullanılmalı
+
+    Süreklilik yönteminde başlangıç yoğunluğu `rho0 / alpha0`'dır
+    (`solver_solid.py:133`) ve bu **gözeneklilik kapalıyken de** öyle
+    kalır. Yani `alpha0 = 1,30`'luk bir sahnede P-α'yı kapatmak cismi
+    `rho = 2077`'de, yani **genişlemiş** halde bırakır. Ölçüldü:
+
+    | `alpha0` | `P` gözenekli | `P` **gözeneksiz** |
+    |---|---|---|
+    | 1,15 | `0` | **`-3,03e9` Pa** |
+    | 1,30 | `0` | **`-4,74e9` Pa** |
+
+    `-4,7 GPa` gerilme cismi daha `t = 0`'da parçalar. O kol ejekta
+    üretseydi *"gözeneklilik enerjiyi yutuyormuş"* diye okunurdu — oysa
+    cisim yalnızca kendi başlangıç gerilmesinden patlamış olurdu.
     """
     m = _malzeme()
     if not gozeneksiz:
@@ -77,6 +93,21 @@ def _mat(gozeneksiz: bool = False):
     import dataclasses
     return dataclasses.replace(
         m, porosity=dataclasses.replace(m.porosity, enabled=False))
+
+
+def _alpha0_kolu(alpha0, gozeneksiz: bool):
+    """Gözeneksiz kolda `alpha0 = 1` — cisim **gerilmesiz** başlasın.
+
+    Bu, kolu tek değişkenli yapmaz ve yapamaz: gözeneklilik başlangıç
+    durumuna **gömülü**. `alpha0 = 1` seçmek yığın yoğunluğunu da
+    `2077 → 2700 kg/m³` çıkarır, yani aynı hacimde daha ağır bir hedef.
+
+    > Kusursuz kontrol YOK. Var olanların en iyisi *"katı, gerilmesiz
+    > hedef"*; karşılaştırma bu farkı **belirterek** okunmalı.
+    """
+    if not gozeneksiz:
+        return alpha0
+    return np.ones_like(np.asarray(alpha0, dtype=np.float64))
 
 
 def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None):
@@ -227,7 +258,8 @@ def main() -> int:
     if a.tek_asama:
         print(f"\nKONTROL KOLU: tek asama, lam={a.lam2}, N={a2.n}", flush=True)
         sol = _cozucu(a2.x, a2.v, a2.m, np.zeros(a2.n), a2.h,
-                      a2.alpha0, a2.Y0, a.device, mat=_mat(a.gozeneksiz))
+                      _alpha0_kolu(a2.alpha0, a.gozeneksiz), a2.Y0, a.device,
+                      mat=_mat(a.gozeneksiz))
         t = _kos(sol, 0.0, a.t_end, a.azami_adim, "tek")
         b = _beta(sol.state_numpy(), a2, p_imp, m_hedef, R)
         print(f"\n  t_sim = {t:.5e}  beta = {b['beta']:.6f}", flush=True)
@@ -255,7 +287,8 @@ def main() -> int:
           f"-- esik 2.0", flush=True)
 
     sol1 = _cozucu(a1.x, a1.v, a1.m, np.zeros(a1.n), a1.h,
-                   a1.alpha0, a1.Y0, a.device, mat=_mat(a.gozeneksiz))
+                   _alpha0_kolu(a1.alpha0, a.gozeneksiz), a1.Y0, a.device,
+                   mat=_mat(a.gozeneksiz))
     t = _kos(sol1, 0.0, a.t1, a.azami_adim, "a1")
     print(f"  asama-1 bitti: t = {t:.5e} s "
           f"({time.perf_counter() - t0:.1f} s duvar)", flush=True)
@@ -286,7 +319,8 @@ def main() -> int:
     print(f"\nASAMA-2: lam={a.lam2}, N={sahne.n}, t {t:.4e} -> {a.t_end}",
           flush=True)
     sol2 = _cozucu(sahne.x, sahne.v, sahne.m, sahne.e, sahne.h,
-                   sahne.alpha0, sahne.Y0, a.device, mat=_mat(a.gozeneksiz))
+                   _alpha0_kolu(sahne.alpha0, a.gozeneksiz), sahne.Y0, a.device,
+                   mat=_mat(a.gozeneksiz))
     izler = []
     x0_h = np.array(a1.x, dtype=np.float64, copy=True)   # CARPMA ONCESI (R4)
     # Aktarimdan sonra parcacik kimlikleri degisti; krater referansi
