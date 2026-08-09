@@ -652,7 +652,7 @@ yaradığı görünmez:
 |---|---|
 | hata ayıklama turu | **16** |
 | kapanan sıkıntı | **37** |
-| açık sıkıntı | **6** (A5 + A9 + A10 karar, kalanı kota) |
+| açık sıkıntı | **6** (A5 + A9 + A11 karar, kalanı kota) |
 | **testlerin kör olduğu kusur** | **7** |
 | **tahminimi çürüten ölçüm** | **9** |
 | eklenen gerileme testi | **133** |
