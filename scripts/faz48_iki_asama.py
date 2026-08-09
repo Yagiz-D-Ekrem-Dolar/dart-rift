@@ -73,8 +73,12 @@ def _cozucu(x, v, m, u, h, alpha0, Y0, device):
         device=device, check_every=10 ** 9)
 
 
-def _kos(sol, t_bas: float, t_end: float, azami: int, etiket: str) -> float:
-    """`t_end`'e kadar ilerlet; son adım **kırpılır**."""
+def _kos(sol, t_bas: float, t_end: float, azami: int, etiket: str,
+         ornekle=None, her: int = 0) -> float:
+    """`t_end`'e kadar ilerlet; son adım **kırpılır**.
+
+    `ornekle(adim, t, st)` verilirse her `her` adımda çağrılır.
+    """
     t = float(t_bas)
     for adim in range(1, azami + 1):
         dt = sol.compute_dt()
@@ -82,13 +86,49 @@ def _kos(sol, t_bas: float, t_end: float, azami: int, etiket: str) -> float:
             dt = t_end - t
         sol.step(dt)
         t += dt
-        if adim % 500 == 0:
+        son = t >= t_end * (1.0 - 1e-12)
+        if ornekle is not None and her > 0 and (adim % her == 0 or son):
+            st = sol.state_numpy()
+            if not np.all(np.isfinite(st["v"])):
+                raise RuntimeError(f"{etiket} PATLADI (adim {adim})")
+            ornekle(adim, t, st)
+        elif adim % 500 == 0:
             print(f"    {etiket} adim {adim:6d}  t={t:.5e}", flush=True)
-        if t >= t_end * (1.0 - 1e-12):
+        if son:
             break
     if not np.all(np.isfinite(sol.state_numpy()["v"])):
         raise RuntimeError(f"{etiket} PATLADI (t={t:.4e})")
     return t
+
+
+def _iz_ornegi(st, *, hedef, R, v_esc, ehat, p_imp, x0) -> dict:
+    """Krater + **balistik** `β` — `2R`'ye varis BEKLENMEDEN.
+
+    `momentum_transfer`'in ejekta olcutu `d > 2R` istiyor ve hedef
+    maddesinin oraya varmasi `~795 s` suruyor (rapor A12). Yercekimi
+    kapali oldugu icin `r > R` ve `v_r > v_kacis` yeterli: o parcacik
+    bir daha yavaslamaz.
+    """
+    from dartrift.observables.crater_shape import crater_profile
+    x, v, m = st["x"], st["v"], st["m"]
+    r = np.linalg.norm(x, axis=1)
+    vr = np.einsum("ij,ij->i", v, x / np.maximum(r, 1e-300)[:, None])
+    kacan = (~hedef) | (hedef & (r > R) & (vr > v_esc))
+    p_ej = np.sum(m[kacan, None] * v[kacan], axis=0)
+    d = {"beta_bal": 1.0 - float(np.dot(p_ej, ehat)) / p_imp,
+         "n_hedef_ejekta": int((hedef & kacan).sum()),
+         "hedef_ejekta_kutle": float(m[hedef & kacan].sum())}
+    try:
+        kr = crater_profile(x[hedef], center=np.zeros(3),
+                            impact_direction=ehat, reference_radius=R,
+                            x_reference=x0[hedef])
+        d["krater_derinlik"] = float(kr.depth)
+        d["krater_cap"] = float(kr.diameter)
+    except Exception as e:                                 # noqa: BLE001
+        d["krater_derinlik"] = float("nan")
+        d["krater_cap"] = float("nan")
+        d["krater_hata"] = str(e)[:80]
+    return d
 
 
 def _beta(st, sahne_gibi, p_imp, m_hedef, R) -> dict:
@@ -114,6 +154,11 @@ def main() -> int:
     ap.add_argument("--tek-asama", action="store_true",
                     help="kontrol kolu: lam=2 ile TEK BASINA t_end'e git")
     ap.add_argument("--out", default=str(REPO.parent / "faz48_sonuc.json"))
+    # IZLEME: asama-2 boyunca krater + balistik beta ornekle. FAZ 4.6'nin
+    # gozlenebilirleri `t = 0,2 s`'de OLU (rapor A11/A12); ne zaman
+    # canlandiklari COZULMUS mermiyle olculmeli.
+    ap.add_argument("--iz-every", type=int, default=0,
+                    help="asama-2'de her N adimda krater+balistik beta ornekle")
     a = ap.parse_args()
 
     print("=" * 78, flush=True)
@@ -193,7 +238,35 @@ def main() -> int:
           flush=True)
     sol2 = _cozucu(sahne.x, sahne.v, sahne.m, sahne.e, sahne.h,
                    sahne.alpha0, sahne.Y0, a.device)
-    t2 = _kos(sol2, t, a.t_end, a.azami_adim, "a2")
+    izler = []
+    x0_h = np.array(a1.x, dtype=np.float64, copy=True)   # CARPMA ONCESI (R4)
+    # Aktarimdan sonra parcacik kimlikleri degisti; krater referansi
+    # ASAMA-1'in baslangic konumlarindan ALINAMAZ. Bu yuzden aktarim
+    # SONRASI konumlar referans aliniyor ve bunun ne oldugu yaziliyor:
+    # "t1'den t_end'e olan degisim", mutlak krater DEGIL.
+    x_ref2 = np.array(sahne.x, dtype=np.float64, copy=True)
+    hedef2 = ~np.asarray(sahne.is_impactor, dtype=bool)
+    v_esc = escape_speed(m_hedef, R)
+    ehat = np.asarray(p_imp) / float(np.linalg.norm(p_imp))
+    P = float(np.linalg.norm(p_imp))
+
+    def _ornek(adim, tt, st):
+        d = _iz_ornegi(st, hedef=hedef2, R=R, v_esc=v_esc, ehat=ehat,
+                       p_imp=P, x0=x_ref2)
+        d.update(adim=adim, t=tt)
+        izler.append(d)
+        with iz_yolu.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(d) + "\n")
+        print(f"    a2 {adim:6d} t={tt:.4e} beta_bal={d['beta_bal']:.5f} "
+              f"hedef_ej={d['n_hedef_ejekta']:5d} "
+              f"derinlik={d['krater_derinlik']:.4f}", flush=True)
+
+    iz_yolu = Path(a.out).with_suffix(".izler.jsonl")
+    iz_yolu.parent.mkdir(parents=True, exist_ok=True)
+    if iz_yolu.exists():
+        iz_yolu.unlink()
+    t2 = _kos(sol2, t, a.t_end, a.azami_adim, "a2",
+              ornekle=_ornek if a.iz_every > 0 else None, her=a.iz_every)
     b = _beta(sol2.state_numpy(), sahne, p_imp, m_hedef, R)
 
     print(f"\nSONUC ({time.perf_counter() - t0:.1f} s duvar)", flush=True)
@@ -211,6 +284,7 @@ def main() -> int:
          "A1": A1, "A1_gecti": bool(A1 >= 2.0),
          "N_asama1": a1.n, "N_asama2": sahne.n,
          "aktarim": {k: v for k, v in d.items() if k != "atama"},
+         "izler": izler,
          "duvar_s": time.perf_counter() - t0, **b}, indent=2, default=float))
     print(f"\nyazildi: {a.out}", flush=True)
     return 0
