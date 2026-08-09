@@ -71,7 +71,7 @@ def _mat(gozeneksiz: bool = False):
     doğrulanır. Bu bir model değişikliği **değil**, ayırt edici bir
     kontrol koludur.
 
-    ## Tek başına YETMEZ — `_alpha0_kolu` ile birlikte kullanılmalı
+    ## Tek başına YETMEZ — `_sahne_kolu` ile birlikte kullanılmalı
 
     Süreklilik yönteminde başlangıç yoğunluğu `rho0 / alpha0`'dır
     (`solver_solid.py:133`) ve bu **gözeneklilik kapalıyken de** öyle
@@ -86,6 +86,9 @@ def _mat(gozeneksiz: bool = False):
     `-4,7 GPa` gerilme cismi daha `t = 0`'da parçalar. O kol ejekta
     üretseydi *"gözeneklilik enerjiyi yutuyormuş"* diye okunurdu — oysa
     cisim yalnızca kendi başlangıç gerilmesinden patlamış olurdu.
+
+    `_sahne_kolu` sahneyi **katı** kurarak bunu çözer; oradaki tabloya
+    bakın (yalnızca `alpha0 = 1` demek de yetmiyor).
     """
     m = _malzeme()
     if not gozeneksiz:
@@ -95,19 +98,57 @@ def _mat(gozeneksiz: bool = False):
         m, porosity=dataclasses.replace(m.porosity, enabled=False))
 
 
-def _alpha0_kolu(alpha0, gozeneksiz: bool):
-    """Gözeneksiz kolda `alpha0 = 1` — cisim **gerilmesiz** başlasın.
+#: Katı bazalt yoğunluğu — gözeneksiz kolun yığın yoğunluğu.
+RHO0_KATI = 2700.0
 
-    Bu, kolu tek değişkenli yapmaz ve yapamaz: gözeneklilik başlangıç
-    durumuna **gömülü**. `alpha0 = 1` seçmek yığın yoğunluğunu da
-    `2077 → 2700 kg/m³` çıkarır, yani aynı hacimde daha ağır bir hedef.
 
-    > Kusursuz kontrol YOK. Var olanların en iyisi *"katı, gerilmesiz
-    > hedef"*; karşılaştırma bu farkı **belirterek** okunmalı.
+def _sahne_kolu(gozeneksiz: bool) -> dict:
+    """Gözeneksiz kolda sahne de **katı** kurulmalı; yalnızca `alpha0 = 1`
+    demek YETMEZ.
+
+    ## Neden
+
+    Parçacık kütlesi yığın yoğunluğundan gelir (`m = rho_yigin · V`) ama
+    süreklilik yönteminde `rho` **bağımsız** bir durum değişkenidir ve
+    `rho0 / alpha0` ile kurulur (`solver_solid.py:133`). İkisi ayrı ayrı
+    ayarlanınca uyuşmazlar:
+
+    | kol | `m / V` | `rho` başlangıç | uyum |
+    |---|---|---|---|
+    | gözenekli | 1800 | 1800 | ✔ |
+    | *yalnızca* `alpha0 = 1` | **1800** | **2700** | ✘ `%50` |
+    | katı sahne (**bu**) | 2700 | 2700 | ✔ |
+
+    `%50`'lik bir `ρ`–`m` uyuşmazlığı SPH'de hacim elemanını (`m/ρ`)
+    bozar: parçacıklar uzayı doldurmaz ve basınç gradyanı yanlış ölçeklenir.
+    İlk düzeltmem (yalnızca `alpha0 = 1`) tam bunu yapıyordu — bir tuzağı
+    başkasıyla değiştirmiş oluyordu.
+
+    ## `boulder_alpha0` da `1` olmalı
+
+    `matrix_alpha0_for_bulk_density(2700, 2700, 1.05, 0.25)` **çözülmüyor**
+    (matris distansiyonu `0,9844 < 1` çıkıyor): gözenekli bloklarla katı
+    yığın yoğunluğuna ulaşılamaz. `boulder_alpha0 = 1,0` ile
+    `matris_alpha0 = 1,0` tam çıkıyor.
+
+    > Kol yine de **tek değişkenli değil**: hedef `%50` daha ağır. Bu,
+    > "gözeneksiz Dimorphos"un kaçınılmaz sonucu. Karşılaştırma bu farkı
+    > **belirterek** okunmalı (rapor A14).
     """
     if not gozeneksiz:
-        return alpha0
-    return np.ones_like(np.asarray(alpha0, dtype=np.float64))
+        return dict(SAHNE)
+    return {**SAHNE, "bulk_density": RHO0_KATI, "boulder_alpha0": 1.0}
+
+
+def _alpha0_denetle(alpha0, gozeneksiz: bool):
+    """Gözeneksiz kolda sahne gerçekten katı mı — sessizce geçmesin."""
+    a = np.asarray(alpha0, dtype=np.float64)
+    if gozeneksiz and not np.allclose(a, 1.0, atol=1e-9):
+        raise ValueError(
+            f"gozeneksiz kol ama alpha0 != 1 (min {a.min():.4f}, "
+            f"max {a.max():.4f}) — sahne KATI kurulmamis, cisim t=0'da "
+            f"gerilmede baslar (rapor A14)")
+    return a
 
 
 def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None):
@@ -245,7 +286,8 @@ def main() -> int:
     print("FAZ 4.8 — IKI ASAMALI KOSU (ADR-0043)", flush=True)
     print("=" * 78, flush=True)
 
-    kaba = build_scene(spacing=7.0, device="cpu", **SAHNE)
+    kaba = build_scene(spacing=7.0, device="cpu",
+                       **_sahne_kolu(a.gozeneksiz))
     mesh = _build_mesh("icosphere", radius=SAHNE["radius"], subdiv=4)
     R = float(kaba.target_radius)
     t0 = time.perf_counter()
@@ -258,7 +300,7 @@ def main() -> int:
     if a.tek_asama:
         print(f"\nKONTROL KOLU: tek asama, lam={a.lam2}, N={a2.n}", flush=True)
         sol = _cozucu(a2.x, a2.v, a2.m, np.zeros(a2.n), a2.h,
-                      _alpha0_kolu(a2.alpha0, a.gozeneksiz), a2.Y0, a.device,
+                      _alpha0_denetle(a2.alpha0, a.gozeneksiz), a2.Y0, a.device,
                       mat=_mat(a.gozeneksiz))
         t = _kos(sol, 0.0, a.t_end, a.azami_adim, "tek")
         b = _beta(sol.state_numpy(), a2, p_imp, m_hedef, R)
@@ -287,7 +329,7 @@ def main() -> int:
           f"-- esik 2.0", flush=True)
 
     sol1 = _cozucu(a1.x, a1.v, a1.m, np.zeros(a1.n), a1.h,
-                   _alpha0_kolu(a1.alpha0, a.gozeneksiz), a1.Y0, a.device,
+                   _alpha0_denetle(a1.alpha0, a.gozeneksiz), a1.Y0, a.device,
                    mat=_mat(a.gozeneksiz))
     t = _kos(sol1, 0.0, a.t1, a.azami_adim, "a1")
     print(f"  asama-1 bitti: t = {t:.5e} s "
@@ -319,7 +361,7 @@ def main() -> int:
     print(f"\nASAMA-2: lam={a.lam2}, N={sahne.n}, t {t:.4e} -> {a.t_end}",
           flush=True)
     sol2 = _cozucu(sahne.x, sahne.v, sahne.m, sahne.e, sahne.h,
-                   _alpha0_kolu(sahne.alpha0, a.gozeneksiz), sahne.Y0, a.device,
+                   _alpha0_denetle(sahne.alpha0, a.gozeneksiz), sahne.Y0, a.device,
                    mat=_mat(a.gozeneksiz))
     izler = []
     x0_h = np.array(a1.x, dtype=np.float64, copy=True)   # CARPMA ONCESI (R4)

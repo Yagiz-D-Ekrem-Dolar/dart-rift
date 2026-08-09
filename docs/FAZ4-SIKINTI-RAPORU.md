@@ -730,18 +730,42 @@ kalır. Yani P-α'yı kapatmak cismi genişlemiş halde bırakıyor:
 > okuyacaktım. Oysa cisim yalnızca **kendi başlangıç gerilmesinden**
 > patlamış olacaktı. Hipotezi doğrulayan sahte bir kanıt.
 
-#### Düzeltme ve **kalan** kusur
+#### İlk düzeltmem de kusurluydu — bir tuzağı başkasıyla değiştirdim
 
-`--gozeneksiz` artık `alpha0 = 1` de yapıyor; iki kol da `t = 0`'da
-gerilmesiz. İki test kilitliyor (biri düzeltilmemiş halin gerçekten
-`< −1 GPa` verdiğini).
+Önce yalnızca `alpha0 = 1` yaptım. Gerilme gitti ama **yeni** bir
+tutarsızlık geldi: parçacık kütlesi yığın yoğunluğundan gelir
+(`m = ρ_yığın · V`), oysa `ρ` bağımsız bir durum değişkeni ve
+`rho0/alpha0` ile kurulur. İkisini ayrı ayrı ayarlayınca uyuşmuyorlar:
 
-Ama kol **tek değişkenli değil ve olamaz**: gözeneklilik başlangıç
-durumuna gömülü. `alpha0 = 1` seçmek yığın yoğunluğunu da
-`2077 → 2700 kg/m³` çıkarıyor — aynı hacimde **daha ağır** hedef.
+| kol | `m/V` | `ρ` başlangıç | uyum |
+|---|---|---|---|
+| gözenekli | 1537,2 | 1537,2 | ✔ |
+| *yalnızca* `alpha0 = 1` | **1537,2** | **2700** | ✘ **`%76`** |
+| **katı sahne** (son hâl) | 2700 | 2700 | ✔ |
 
-**Kusursuz kontrol yok.** Var olanların en iyisi *"katı, gerilmesiz
-hedef"* ve karşılaştırma bu farkı **belirterek** okunmalı.
+SPH'de hacim elemanı `m/ρ`'dur; `%76`'lık uyuşmazlık parçacıkların
+uzayı doldurmamasına ve basınç gradyanının yanlış ölçeklenmesine yol
+açardı.
+
+#### Son hâl
+
+`--gozeneksiz` artık **sahneyi** katı kuruyor:
+`bulk_density = 2700`, `boulder_alpha0 = 1,0`. İkincisi zorunlu —
+`matrix_alpha0_for_bulk_density(2700, 2700, 1,05, 0,25)` **çözülmüyor**
+(matris distansiyonu `0,9844 < 1`): gözenekli bloklarla katı yığın
+yoğunluğuna ulaşılamıyor.
+
+Ölçülen son durum: iki kolda da `m/V = ρ` ve `P(t=0) = 0`.
+`_alpha0_denetle` sahne katı kurulmamışsa **hata veriyor**.
+
+#### Kalan kusur — kapatılamaz
+
+Kol **tek değişkenli değil ve olamaz**: gözeneklilik başlangıç durumuna
+gömülü. Katı hedef aynı hacimde **`%76` daha ağır**.
+
+**Kusursuz kontrol yok.** Var olanların en iyisi *"katı, gerilmesiz,
+tutarlı hedef"* ve karşılaştırma bu farkı **belirterek** okunmalı —
+`faz48_gozeneklilik_karsilastir.py` bunu belgesinde söylüyor.
 
 ---
 

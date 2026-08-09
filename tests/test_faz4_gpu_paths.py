@@ -98,34 +98,67 @@ def _faz48_modulu():
     return m
 
 
-def test_gozeneksiz_kol_t0da_GERILMESIZ_basliyor():
+def test_gozeneksiz_kol_sahnesi_KATI_ve_TUTARLI():
     """Kontrol kolu cismi patlatarak *"krater oluştu"* dememeli.
 
-    Süreklilik yönteminde başlangıç yoğunluğu `rho0 / alpha0`'dır
-    (`solver_solid.py:133`) ve bu **gözeneklilik kapalıyken de** öyle
-    kalır. `alpha0` düzeltilmezse gözeneksiz kol şöyle başlıyordu:
+    İki ayrı tuzak ölçüldü (rapor A14):
 
-        alpha0 = 1,15  ->  P = -3,03e9 Pa
-        alpha0 = 1,30  ->  P = -4,74e9 Pa
+    1. Sadece P-α'yı kapatmak: `rho` başlangıcı `rho0/alpha0` kaldığı
+       için cisim `-4,74 GPa` gerilmede başlıyordu.
+    2. Sadece `alpha0 = 1` demek: gerilme gitti ama `m/V = 1537` iken
+       `rho = 2700` oldu — SPH hacim elemanı `%76` yanlış.
 
-    `-4,7 GPa` gerilme cismi daha `t = 0`'da parçalar; o kol ejekta
-    üretseydi *"gözeneklilik enerjiyi yutuyormuş"* diye okunurdu.
+    Doğrusu sahneyi **katı** kurmak. Bu test ikisini birden sınar:
+    `alpha0 = 1`, `m/V == rho` ve `P(t=0) == 0`.
     """
     import numpy as np
     from dartrift.cpu_reference.materials import tillotson_pressure
+    from dartrift.setup.rubble_generator import particle_volume
+    from dartrift.setup.scene import build_scene
 
     m48 = _faz48_modulu()
-    a0 = np.array([1.0, 1.15, 1.30])
+    V = particle_volume(7.0)
 
     for gozeneksiz in (False, True):
+        kb = build_scene(spacing=7.0, device="cpu",
+                         **m48._sahne_kolu(gozeneksiz))
+        a0 = np.asarray(kb.alpha0)
         mat = m48._mat(gozeneksiz)
-        av = m48._alpha0_kolu(a0, gozeneksiz)
-        rho = mat.tillotson.rho0 / av
-        arg = rho if gozeneksiz else rho * av
-        P = np.asarray(tillotson_pressure(arg, np.zeros(3), mat.tillotson))
+        rho_bas = mat.tillotson.rho0 / a0
+
+        # (a) gozeneksiz kolda sahne gercekten kati mi
+        if gozeneksiz:
+            assert np.allclose(a0, 1.0), f"alpha0 {a0.min()}..{a0.max()}"
+            m48._alpha0_denetle(a0, True)          # hata vermemeli
+
+        # (b) kutle ile yogunluk UYUSUYOR mu (SPH hacim elemani).
+        # YALNIZCA HEDEF: mermi kendi (cok daha ince) araligiyla kuruldu,
+        # onun kutlesini hedefin hucre hacmine bolmek anlamsiz. Bu ayrimi
+        # testin kendisi yakaladi -- elle bakarken medyan gizlemisti.
+        hedef = ~np.asarray(kb.is_impactor, dtype=bool)
+        mv = np.asarray(kb.m)[hedef] / V
+        assert np.allclose(mv, rho_bas[hedef], rtol=1e-9), (
+            f"gozeneksiz={gozeneksiz}: m/V {np.median(mv):.1f} != "
+            f"rho {np.median(rho_bas[hedef]):.1f}")
+
+        # (c) t=0 gerilmesiz mi
+        arg = rho_bas if gozeneksiz else rho_bas * a0
+        P = np.asarray(tillotson_pressure(arg, np.zeros(len(a0)),
+                                          mat.tillotson))
         if not gozeneksiz:
-            P = P / av
-        assert np.allclose(P, 0.0, atol=1.0), f"gozeneksiz={gozeneksiz}: {P}"
+            P = P / a0
+        assert np.allclose(P, 0.0, atol=1.0), f"P max {np.abs(P).max():.3e}"
+
+
+def test_alpha0_denetle_kati_olmayan_sahneyi_YAKALAR():
+    """Sahne katı kurulmadıysa gözeneksiz kol sessizce koşmamalı."""
+    import numpy as np
+    import pytest as _pt
+    m48 = _faz48_modulu()
+    with _pt.raises(ValueError, match="alpha0 != 1"):
+        m48._alpha0_denetle(np.array([1.0, 1.5]), True)
+    # gozenekli kolda ayni dizi SORUN DEGIL
+    m48._alpha0_denetle(np.array([1.0, 1.5]), False)
 
 
 def test_duzeltilmemis_alpha0_GERCEKTEN_gerilme_uretiyordu():
