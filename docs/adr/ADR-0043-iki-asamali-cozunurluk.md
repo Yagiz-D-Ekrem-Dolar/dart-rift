@@ -385,6 +385,67 @@ koruyor.
 
 ---
 
+## 4f. ⚠ ŞEMANIN KENDİSİ KUSURLU: `r_iç` ile `t₁` **çelişiyor** (2026-08-09)
+
+FAZ 4.8 gerçek sahnede koştu ve **momentum kapanışı `0,690`** verdi —
+yani momentumun `%69`'u kayıp. Kök neden ölçüldü:
+
+| `t₁ = 4,767e-3 s`'de momentum | oran |
+|---|---|
+| **tüm sahne** | `1,000 × p_mermi` ✔ korunuyor |
+| **ince bölge** (`r < 3 m`) — *aktarılan* | **`0,310`** |
+| **kaba bölge** — *atılan* | **`0,690`** |
+
+Bozulmanın yayılımı (`v > 1e-3 m/s` olan parçacıklar):
+
+| | çarpma noktasına uzaklık |
+|---|---|
+| medyan | 3,04 m |
+| p90 | **34,5 m** |
+| en uzak | **48,6 m** |
+| şok yolu `c·t₁` | 14,3 m |
+
+> `t₁`'de bozulma `~35–48 m`'ye yayılmış; `r_iç = 3 m` bunun **onda
+> biri**. Aşama-1'in ince bölgesi momentumun yalnızca `%31`'ini
+> taşıyor.
+
+### İki gereksinim **birbiriyle çelişiyor**
+
+| gereksinim | istediği |
+|---|---|
+| aşama-1 **ucuz** olsun | `r_iç` **küçük** (§3: `3 m`) |
+| bağlanma **bitsin** | `t₁` **büyük** (`4,767e-3 s`) |
+
+Ama `t₁` büyüdükçe bozulma `r_iç`'in dışına taşıyor. **İki seviyeli**
+bir sahnede bu ikisi aynı anda sağlanamaz.
+
+### Bu bir uygulama kusuru **değil**, tasarım kusuru
+
+Aktarım aşama-1'in ince bölgesini alıp aşama-2'nin **dinlenmedeki**
+kaba bölgesine ekliyor. Aşama-1'in kaba bölgesi (`%69` momentum)
+**atılıyor**, çünkü aşama-2'nin `3 < r < 25 m` bölgesi `3,5 m`
+aralıklı — aşama-1'in orada `7 m` aralığı var, yani **daha kaba**.
+Kabadan inceye geçiş **iyi tanımlı değil**.
+
+### Çözüm: aşama-1 **üç seviyeli** olmalı
+
+```
+asama-1:  r < 3 m      lam=19   (mermi cozulmus)
+          3 < r < 25 m lam=2    (asama-2 ile AYNI)
+          r > 25 m     lam=1
+```
+
+O zaman aktarım yalnızca `r < 3 m`'yi kabalaştırır; gerisi **birebir**
+kopyalanır ve hiçbir momentum atılmaz.
+
+> Bedeli küçük: `dt` zaten `λ=19` çekirdeğinden geliyor; eklenen
+> parçacıklar aşama-2'nin zaten sahip olduğu parçacıklar.
+
+**Bu ölçülmeden §4'ün önerisi uygulanamaz.** `β = 1,412659` sayısı
+(FAZ 4.8) **geçersizdir** — momentumun `%69`'u eksikken hesaplandı.
+
+---
+
 ## 5. Uygulanması gereken — ~~**mevcut değil**~~ **YAZILDI**
 
 Bu seçenek bir **kabalaştırma** adımı istiyor: aşama-1'in ince
