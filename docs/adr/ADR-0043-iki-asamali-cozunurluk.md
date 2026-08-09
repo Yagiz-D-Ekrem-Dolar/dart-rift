@@ -47,6 +47,30 @@ ayrıştırıldı:
 
 Yani pahalı çözünürlük **sürekli** taşınmak zorunda değil.
 
+### ⚠ `~1 s` **ölçülmüş değil** — bütün §3 buna dayanıyor (2026-08-09)
+
+Tablodaki *"ensemble koşu süresi `~1 s`"* satırı bir **varsayım**.
+§3'ün bütün bedel tablosu (`9,73` GPU-günü) ve §4'ün *"`%4,7`'ye mal
+oluyor"* sonucu **o sayıdan** türüyor.
+
+Ölçülenler onu **desteklemiyor** (rapor A11/A12):
+
+| ölçüm | `t = 0,174 s`'de |
+|---|---|
+| kaçan kütle | `579,44 kg` = **merminin kendisi** (`579,40 kg`) |
+| krater derinliği | `0,035 m` = parçacık aralığının **`%1`**'i |
+| kaçış hızını aşan hedef parçacığı | **18 / 10 380** |
+
+Yani `1 s`'lik bir koşu **kraterin oluşmasına bile yetmiyor**;
+ejektanın `β`'ya katkısı `+0,08` (`%5`).
+
+> **Gereken süre ölçülüyor** (`scripts/faz410_firlatma_suresi.py`,
+> balistik `β`'nın durulması). Sonuç `1 s`'ten büyük çıkarsa §3'ün
+> bedel tablosu **orantılı olarak** büyür ve §4'ün önerisi yeniden
+> değerlendirilmelidir.
+>
+> `100 s` çıkarsa `9,73` GPU-günü `~970` olur — bütçenin `32` katı.
+
 ---
 
 ## 3. Üç seçenek — ölçülen bedeller (300 koşu, GPU-günü)
