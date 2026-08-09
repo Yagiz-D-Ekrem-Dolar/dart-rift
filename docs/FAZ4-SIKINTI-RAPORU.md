@@ -825,6 +825,27 @@ okunur oldu.
 > Bu bir tahmin, sonuç değil. Sıçramanın tekrar edip etmediği
 > `faz48_v2`'nin cevaplayacağı **ayırt edici** soru.
 
+#### `faz48_v2` koştu — tahminim **yarı** doğru çıktı
+
+| tahmin | sonuç |
+|---|---|
+| krater **erken** görünür | ✔ `t = 0,066 s`'de `6,61 m` |
+| `t = 4,4` sıçraması **tekrarlamaz** | ✔ tekrarlamadı |
+| değer **sürekli** büyür | ✘ **YANLIŞ** — nicemli |
+
+Düzeltme *görünürlüğü* kurtardı, *niceliği* kurtarmadı. 82 örnekte:
+
+| büyüklük | davranış |
+|---|---|
+| **çap** | yalnızca **iki değer**: `6,93` (21 örnek), `12,00` (61) |
+| derinlik | 74 farklı değer ama `19` adet `> 0,5 m` sıçrama, en büyüğü **`2,43 m`** |
+
+Çap `~1 bit` bilgi taşıyor. Derinlik `~13 m` sinyalde `±%18` sıçrıyor.
+
+> `GOZLENEBILIRLER`'in kullandığı alan **`krater_capi`** — yani tam da
+> iki seviyeli olan. Bu, ADR-0045'in eksik ölçümlerinden birini
+> kapatıyor: çap bu çözünürlükte **çıkarım gözlenebiliri olamaz**.
+
 ---
 
 ## 2. KAPANAN sıkıntılar — kronolojik

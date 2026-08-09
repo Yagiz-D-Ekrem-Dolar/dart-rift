@@ -103,8 +103,25 @@ gürültüsü `< 0,2 m` ise `0,005` eşiği hayalî çap üretmiyor. O sayı
 | # | ölçüm | durum |
 |---|---|---|
 | 1 | üretim koşusunun **yüzey gürültüsü** | **ölçülmedi** |
-| 2 | `2R`'ye varan gerçek bir kraterin oluşup oluşmadığı | FAZ 4.8 sürüyor |
+| 2 | gerçek koşuda çapın **çözünürlüğü** | **ÖLÇÜLDÜ** (aşağıda) |
 | 3 | Hera'nın çap belirsizliği (dış kaynak) | girilmedi |
 
-**1 ve 2 olmadan bu ADR kapatılmamalı.** Şu an bir seçeneği kilitlemek,
-ölçülmemiş bir şeye dayanarak kilitlemek olur.
+### 2 kapandı: çap **iki seviyeli**
+
+`faz48_v2` (`t = 5 s`, düzeltilmiş ayarlar, 82 örnek):
+
+| büyüklük | benzersiz değer |
+|---|---|
+| **çap** | **2** — `6,93` (21 kez), `12,00` (61 kez) |
+| derinlik | 74, ama `19` sıçrama `> 0,5 m`, en büyüğü `2,43 m` |
+
+Çap `~1 bit` bilgi taşıyor. Üç parametreyi bir bitle ayırmak mümkün
+değil; **S1 bu çözünürlükte elenmiştir** — hayalî krater riski yüzünden
+değil, taşıdığı bilgi yetersiz olduğu için.
+
+Geriye **S2** (derinlik, `±%18` sıçramalı) ve **S3** (iki gözlenebilir)
+kalıyor. Eğilimim hâlâ **S3**; S2'nin `±%18`'i ölçülmüş bir gürültü ve
+`β`'nın bit düzeyinde kararlılığıyla kıyaslanınca zayıf kalıyor.
+
+**1 olmadan ADR yine de kapatılmamalı** — ama artık kapanışa bir ölçüm
+daha yakın.
