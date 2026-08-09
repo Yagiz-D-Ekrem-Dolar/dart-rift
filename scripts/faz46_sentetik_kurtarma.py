@@ -95,6 +95,82 @@ def ileri_kosu(x: np.ndarray, device: str, steps: int,
                          sahne_taban=SAHNE, ilerleme=_ilerleme)
 
 
+def _sure_denetimi(a) -> dict:
+    """`--steps` FAZ 4.5'in ölçtüğü durulma zamanına **yetiyor mu**?
+
+    ## Neden gerekli
+
+    `--steps 3000`, `dt ≈ 2,6e-5` ile `t ≈ 0,078 s` demek. FAZ 4.4 aynı
+    sahnede `0,2 s`'ye `8000` adımda gitti.
+
+    Erken kesilmiş bir koşu `β`'yı **sistematik olarak** küçük verir ve
+    bütün tasarım noktalarını **aynı yönde** kaydırır. Vekil bunu bir
+    kusur olarak göremez (`q2` yüksek kalır, yüzey düzgündür); posterior
+    dar **ama yanlış** çıkar. Tam olarak ADR-0011 §3'ün dersi.
+
+    > Kontrol **koşudan önce** yapılıyor: `~3` saatlik GPU'yu harcayıp
+    > sonucun geçersiz olduğunu görmek pahalı.
+
+    Dosya verilmezse denetim **yapılamaz** ve bu **yazılır** — sessizce
+    geçilmez.
+    """
+    out = {"denetlendi": False, "kisa_kosu": None, "neden": ""}
+    if a.kuru:
+        out["neden"] = "kuru kip — süre denetimi anlamsız"
+        return out
+    if not a.faz45:
+        out["neden"] = ("`--faz45` verilmedi — koşu süresinin yeterliliği "
+                        "DENETLENMEDI")
+        print("\n[0] SURE DENETIMI YAPILMADI: " + out["neden"], flush=True)
+        return out
+
+    veri = json.loads(Path(a.faz45).read_text(encoding="utf-8"))
+    tani = veri.get("beta_bound_settling_diag") or {}
+    t_dur = veri.get("beta_bound_settling_time_s")
+    out["denetlendi"] = True
+    out["faz45_t_durulma"] = t_dur
+    out["faz45_sabit_seri"] = bool(tani.get("sabit", False))
+    print("\n[0] SURE DENETIMI (FAZ 4.5: " + str(a.faz45) + ")", flush=True)
+
+    if tani.get("sabit"):
+        out["neden"] = ("FAZ 4.5'te `β_bound` baştan sona SABIT — durulma "
+                        "zamanı anlamlı değil, denetim yapılamıyor")
+        print("    " + out["neden"], flush=True)
+        return out
+    if t_dur is None or not np.isfinite(t_dur):
+        out["neden"] = "FAZ 4.5 durulmadı — karşılaştırılacak zaman yok"
+        print("    " + out["neden"], flush=True)
+        return out
+
+    # FAZ 4.5 AYNI sahneyi kosuyor; adim->zaman orani ORADAN okunuyor.
+    t_son, adim_son = veri.get("t_sim_end"), veri.get("steps_done")
+    if not (t_son and adim_son):
+        out["neden"] = "FAZ 4.5 çıktısında `t_sim_end`/`steps_done` yok"
+        print("    " + out["neden"], flush=True)
+        return out
+    dt_ort = float(t_son) / float(adim_son)
+    t_kestirim = dt_ort * a.steps
+    out["t_kestirim_s"] = t_kestirim
+    out["kisa_kosu"] = bool(t_kestirim < t_dur)
+    print(f"    durulma (FAZ 4.5)  = {t_dur:.4e} s", flush=True)
+    print(f"    bu kosu (kestirim) = {t_kestirim:.4e} s "
+          f"({a.steps} adim x {dt_ort:.3e} s)", flush=True)
+    if out["kisa_kosu"]:
+        gereken = int(np.ceil(t_dur / dt_ort))
+        out["onerilen_steps"] = gereken
+        out["neden"] = f"koşu durulmadan bitiyor; `--steps {gereken}` gerekir"
+        print("    KISA KOSU: " + out["neden"], flush=True)
+        if not a.kisa_kosuya_izin:
+            raise SystemExit(
+                "\nFAZ 4.6 DURDURULDU: " + out["neden"] + ".\n"
+                "  Erken kesilen kosu beta'yi SISTEMATIK olarak kucuk verir\n"
+                "  ve posterior dar AMA YANLIS cikar (ADR-0011 §3).\n"
+                "  Bilerek kisa kosmak icin: --kisa-kosuya-izin")
+    else:
+        print("    YETERLI", flush=True)
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--kuru", action="store_true",
@@ -108,12 +184,20 @@ def main() -> int:
     ap.add_argument("--spacing", type=float, default=7.0)
     ap.add_argument("--lam", type=int, default=2)
     ap.add_argument("--out", default=str(REPO.parent / "faz46_sonuc.json"))
+    # FAZ 4.5'in cikti dosyasi. Verilirse `--steps`in YETERLI olup
+    # olmadigi ONCEDEN denetlenir; bkz. `_sure_denetimi`.
+    ap.add_argument("--faz45", default=None,
+                    help="FAZ 4.5 sonuc JSON'u — kosu suresini dogrular")
+    ap.add_argument("--kisa-kosuya-izin", action="store_true",
+                    help="FAZ 4.5 durulma zamanina ULASILMASA da kos")
     a = ap.parse_args()
 
     print("=" * 78, flush=True)
     print(f"FAZ 4.6 — SENTETIK KURTARMA (G4-C){'  [KURU KIP]' if a.kuru else ''}",
           flush=True)
     print("=" * 78, flush=True)
+
+    kisa = _sure_denetimi(a)
 
     # --- 1) tasarim
     x_kenar = factorial_design(DART_UZAYI, 3)
@@ -268,6 +352,10 @@ def main() -> int:
         "c3_kosuldu": v.c3_kosuldu, "c3_gecti": v.c3_gecti,
         "c3_ayrinti": v.c3_ayrinti,
         "G4C_gecti": v.gecti,
+        # SURE DENETIMI ciktiya YAZILIR. Denetlenmeden kosulmus bir
+        # ensemble ile durulmaya kadar kosulmus olan ayni sayilmamali;
+        # `kuru: true`nun yaptigi ayrimin aynisi.
+        "sure_denetimi": kisa,
     }, indent=2))
     print(f"\nyazildi: {a.out}", flush=True)
     return 0
