@@ -39,7 +39,8 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["refine_scene", "refine_scene_local", "RefinedScene"]
+__all__ = ["refine_scene", "refine_scene_local",
+           "refine_scene_ucseviye", "RefinedScene"]
 
 #: Tam ince sahnenin parçacık sayısı `mesh_hacmi / V_p` ile orantılı;
 #: sabit `1,0` çünkü `particle_volume` zaten FCC paketlemeyi taşıyor.
@@ -394,3 +395,126 @@ def refine_scene_local(kaba, mesh, r_ince: float, lam: float,
             "n_cikarilan_kaba": int(len(cikarilan_x)),
         },
     )
+
+
+def refine_scene_ucseviye(kaba, mesh, r1: float, lam1: float,
+                          r2: float, lam2: float,
+                          rho0_solid: float = 2700.0) -> RefinedScene:
+    """**Üç seviyeli** sahne — ADR-0043 §4f'nin gerektirdiği kurulum.
+
+    ## Neden iki seviye yetmiyor
+
+    İki seviyeli aşama-1 (`λ=19`, `r_iç=3 m`) ile FAZ 4.8 koştu ve
+    **momentum kapanışı `0,690`** verdi. Ölçüldü: `t₁ = 4,767e-3 s`'de
+
+    | bölge | momentum |
+    |---|---|
+    | ince (`r < 3 m`) — aktarılan | **`0,310`** |
+    | kaba — **atılan** | **`0,690`** |
+
+    Bozulma `t₁`'de `~35–48 m`'ye yayılmış; `r_iç = 3 m` bunun onda
+    biri. Aktarım aşama-1'in kaba bölgesini atıyordu çünkü orada
+    aşama-1 (`7 m`) aşama-2'den (`3,5 m`) **daha kaba** — kabadan
+    inceye geçiş iyi tanımlı değil.
+
+    ## Yapılan
+
+    ```
+    r < r1        lam1  (mermi cozulmus)
+    r1 < r < r2   lam2  (asama-2 ile AYNI aralik)
+    r > r2        kaba  (degismemis)
+    ```
+
+    Böylece aktarım yalnızca `r < r1`'i kabalaştırır; `r1 < r < r2`
+    aşama-2'yle **birebir aynı çözünürlükte** olduğu için kopyalanır
+    ve **hiçbir momentum atılmaz**.
+
+    `dt` zaten `lam1` çekirdeğinden geliyor, yani eklenen orta seviye
+    zaman adımını **değiştirmiyor**; yalnızca parçacık sayısını artırıyor.
+    """
+    from .rubble_generator import lattice_points, particle_volume
+    from .shape_mesh import inside_points
+
+    if not (0.0 < r1 < r2):
+        raise ValueError(f"0 < r1 < r2 gerekir; r1={r1}, r2={r2} geldi")
+    if lam1 <= lam2:
+        raise ValueError(f"lam1 > lam2 gerekir (ic bolge DAHA ince); "
+                         f"lam1={lam1}, lam2={lam2} geldi")
+
+    # 1) TABAN: iki seviyeli sahne (lam2, r2). Bu, ASAMA-2 ile ayni
+    #    cozunurlugu `r2` icinde zaten kuruyor.
+    taban = refine_scene_local(kaba, mesh, r_ince=r2, lam=lam2,
+                               rho0_solid=rho0_solid)
+    s1 = float(kaba.spacing) / float(lam1)
+    mp = np.asarray(kaba.impact_point, dtype=np.float64)
+
+    # 2) Cekirdegi (r < r1) SIL ve lam1 kafesiyle yeniden kur.
+    #    Mermi DOKUNULMAZ: kendi ayriklastirmasi var.
+    imp = np.asarray(taban.is_impactor, dtype=bool)
+    d_t = np.linalg.norm(np.asarray(taban.x) - mp[None, :], axis=1)
+    silinen = (~imp) & (d_t < r1)
+    tut = ~silinen
+
+    pay = 2.0 * s1
+    pts = lattice_points(mp - (r1 + pay), mp + (r1 + pay), s1, "fcc")
+    if len(pts) == 0:
+        raise ValueError("çekirdek kafesi boş — r1 çok küçük olabilir")
+    pts = pts[np.linalg.norm(pts - mp[None, :], axis=1) < r1]
+    if len(pts) == 0:
+        raise ValueError(f"r1={r1} içinde kafes noktası yok")
+    x_c = pts[inside_points(mesh, pts)]
+    if len(x_c) == 0:
+        raise ValueError("çekirdek mesh'in tamamen dışında")
+
+    # 3) alpha0/Y0 en yakin KABA parcaciktan (kaya bloku yapisi korunsun).
+    #    PARCALI -- `N x M x 3` asla parcasiz kurulmaz.
+    k_hedef = ~np.asarray(kaba.is_impactor, dtype=bool)
+    hedef_x = np.asarray(kaba.x)[k_hedef]
+    idx = np.empty(len(x_c), dtype=np.int64)
+    for b in range(0, len(x_c), 2048):
+        idx[b:b + 2048] = np.argmin(np.linalg.norm(
+            x_c[b:b + 2048, None, :] - hedef_x[None, :, :], axis=2), axis=1)
+    a0_c = np.asarray(kaba.alpha0)[k_hedef][idx]
+    y0_c = np.asarray(kaba.Y0)[k_hedef][idx]
+    blok_c = np.asarray(kaba.is_boulder)[k_hedef][idx]
+    m_c = (rho0_solid / a0_c) * particle_volume(s1, "fcc")
+
+    n_c = len(x_c)
+
+    def _kat(cekirdek, ad):
+        return np.concatenate([cekirdek, np.asarray(getattr(taban, ad))[tut]])
+
+    x = _kat(x_c, "x")
+    v = _kat(np.zeros_like(x_c), "v")
+    m = _kat(m_c, "m")
+    alpha0 = _kat(a0_c, "alpha0")
+    Y0 = _kat(y0_c, "Y0")
+    is_boulder = _kat(blok_c, "is_boulder")
+    is_imp = np.concatenate([np.zeros(n_c, bool), imp[tut]])
+    # Mermi `lam1` cozunurlugunde olmali (A1 orada saglaniyor).
+    h_taban = np.asarray(taban.h)[tut].copy()
+    h_taban[imp[tut]] = 2.0 * s1
+    h = np.concatenate([np.full(n_c, 2.0 * s1), h_taban])
+    # `is_fine` = EN INCE seviye (cekirdek + mermi) -- aktarilacak kume.
+    is_fine = np.concatenate([np.ones(n_c, bool), imp[tut]])
+
+    m_yeni = float(np.sum(m[~is_imp]))
+    m_kaba = float(np.sum(np.asarray(kaba.m)[k_hedef]))
+    tani = dict(taban.diagnostics)
+    tani.update({
+        "ucseviye": True, "r1": float(r1), "lam1": float(lam1),
+        "r2": float(r2), "lam2": float(lam2),
+        "s1": s1, "s2": float(taban.spacing_fine),
+        "n_cekirdek": n_c, "n_orta_ve_kaba": int(tut.sum()),
+        "n_silinen": int(silinen.sum()), "n_toplam": len(m),
+        "hedef_kutle_sapmasi": abs(m_yeni - m_kaba) / m_kaba,
+        "h_min": float(h.min()), "h_max": float(h.max()),
+    })
+    return RefinedScene(
+        x=x, v=v, m=m, alpha0=alpha0, Y0=Y0, h=h, is_impactor=is_imp,
+        is_boulder=is_boulder, is_fine=is_fine,
+        spacing_coarse=float(kaba.spacing), spacing_fine=s1,
+        target_radius=float(kaba.target_radius), impact_point=mp,
+        impact_direction=np.asarray(kaba.impact_direction),
+        surface_normal=np.asarray(kaba.surface_normal),
+        diagnostics=tani)

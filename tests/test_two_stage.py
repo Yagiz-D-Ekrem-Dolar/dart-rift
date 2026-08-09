@@ -176,3 +176,71 @@ def test_komsu_CEVRE_ile_sayiliyor():
     t = _kur().diagnostics
     assert t["komsu"]["n_cevre"] == t["n_asama2_tutulan"]
     assert t["komsu"]["komsu_medyan"] > 30, t["komsu"]
+
+
+# ------------------------------ UC SEVIYELI gecis (ADR-0043 §4f)
+
+def _a1_uc(n_ince=300, n_dis=800, seed=5):
+    """Üç seviyeli aşama-1 yerine geçen asgari nesne + durumu."""
+    rng = np.random.default_rng(seed)
+    n = n_ince + n_dis
+
+    class _A1:
+        pass
+
+    a = _A1()
+    a.m = np.full(n, 0.5)
+    a.alpha0 = np.full(n, 1.5)
+    a.Y0 = np.full(n, 2.0e5)
+    a.is_boulder = np.zeros(n, bool)
+    a.is_impactor = np.zeros(n, bool)
+    a.h = np.full(n, 7.0)
+    a.is_fine = np.concatenate([np.ones(n_ince, bool), np.zeros(n_dis, bool)])
+    a.diagnostics = {"ucseviye": True, "s2": 3.5}
+    durum = {"x": np.vstack([rng.normal(0, 3.0, (n_ince, 3)),
+                             rng.uniform(-40, 40, (n_dis, 3))]),
+             "v": rng.normal(0, 40.0, (n, 3)),
+             "u": rng.uniform(1e3, 1e5, n)}
+    return a, durum
+
+
+def test_ucseviye_SAHNE_MOMENTUMU_tam_korunuyor():
+    """İki seviyelinin `%69` kaybettiği yer — burada **sıfır** olmalı."""
+    from dartrift.setup.two_stage import asama2_sahnesi_ucseviye
+    a1, d = _a1_uc()
+    t = asama2_sahnesi_ucseviye(a1, d).diagnostics
+    assert t["sahne_momentum_hatasi"] < 1e-13, t["sahne_momentum_hatasi"]
+    assert t["sahne_kutle_hatasi"] < 1e-14
+    assert t["n_asama2_atilan"] == 0        # <-- ATILAN YOK
+
+
+def test_ucseviye_yalnizca_CEKIRDEGI_kabalastiriyor():
+    from dartrift.setup.two_stage import asama2_sahnesi_ucseviye
+    a1, d = _a1_uc(n_ince=300, n_dis=800)
+    s = asama2_sahnesi_ucseviye(a1, d)
+    t = s.diagnostics
+    assert t["n_asama1_ince"] == 300
+    assert t["n_kopyalanan"] == 800          # birebir
+    assert t["n_aktarilan"] < 300            # kabalastirildi
+    assert t["n_toplam"] == t["n_aktarilan"] + 800
+    # Kopyalananlarin durumu DEGISMEMELI.
+    nk = t["n_aktarilan"]
+    np.testing.assert_array_equal(s.x[nk:], d["x"][300:])
+    np.testing.assert_array_equal(s.v[nk:], d["v"][300:])
+
+
+def test_IKI_seviyeli_sahne_REDDEDILIYOR():
+    """Sessizce `%69` momentum atmaktansa hata vermek doğrudur."""
+    from dartrift.setup.two_stage import asama2_sahnesi_ucseviye
+    a1, d = _a1_uc()
+    a1.diagnostics = {"ucseviye": False}
+    with pytest.raises(ValueError, match="üç seviyeli olmalı"):
+        asama2_sahnesi_ucseviye(a1, d)
+
+
+def test_ucseviye_patlamis_durumu_reddediyor():
+    from dartrift.setup.two_stage import asama2_sahnesi_ucseviye
+    a1, d = _a1_uc()
+    d["v"][3] = np.inf
+    with pytest.raises(ValueError, match="sonlu değil"):
+        asama2_sahnesi_ucseviye(a1, d)

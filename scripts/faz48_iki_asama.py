@@ -50,9 +50,11 @@ for _akis in (sys.stdout, sys.stderr):
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
 from dartrift.observables.momentum_transfer import (  # noqa: E402
     escape_speed, momentum_transfer)
-from dartrift.setup.refine import refine_scene_local  # noqa: E402
+from dartrift.setup.refine import (refine_scene_local,  # noqa: E402
+                                   refine_scene_ucseviye)
 from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
-from dartrift.setup.two_stage import asama2_sahnesi  # noqa: E402
+from dartrift.setup.two_stage import (  # noqa: E402
+    asama2_sahnesi_ucseviye)
 
 sys.path.insert(0, str(REPO / "scripts"))
 from faz44_dart_yakinsama import SAHNE, _malzeme  # noqa: E402
@@ -142,7 +144,11 @@ def main() -> int:
         return 0
 
     # ---------------------------------------------------------- ASAMA 1
-    a1 = refine_scene_local(kaba, mesh, r_ince=a.r_ince1, lam=a.lam1)
+    # UC SEVIYELI (ADR-0043 §4f). Iki seviyelide t1'de momentumun %69'u
+    # ince bolgenin DISINDA kaliyor ve aktarimda ATILIYORDU
+    # (momentum kapanisi 0.690 OLCULDU).
+    a1 = refine_scene_ucseviye(kaba, mesh, r1=a.r_ince1, lam1=a.lam1,
+                               r2=a.r_ince2, lam2=a.lam2)
     ince1 = np.asarray(a1.is_fine, dtype=bool)
     mermi = np.asarray(a1.is_impactor, dtype=bool)
     cap = 2.0 * float(np.max(np.linalg.norm(
@@ -162,15 +168,15 @@ def main() -> int:
     st1 = sol1.state_numpy()
 
     # ------------------------------------------------------ KABALASTIR
-    sahne = asama2_sahnesi(st1, ince1, a1.m, a1.alpha0, a1.Y0,
-                           a1.is_boulder, a2, a.r_ince1,
-                           a1_is_impactor=a1.is_impactor)
+    sahne = asama2_sahnesi_ucseviye(a1, st1)
     d = sahne.diagnostics
-    print(f"\nAKTARIM (Lagrange'ci):", flush=True)
-    print(f"  {d['n_asama1_ince']} ince -> {d['n_aktarilan']} parcacik",
+    print(f"\nAKTARIM (Lagrange'ci, UC SEVIYELI):", flush=True)
+    print(f"  {d['n_asama1_ince']} cekirdek -> {d['n_aktarilan']} parcacik",
           flush=True)
-    print(f"  asama-2'den atilan (cifte sayim) = {d['n_asama2_atilan']}",
-          flush=True)
+    print(f"  birebir kopyalanan = {d['n_kopyalanan']}   "
+          f"atilan = {d['n_asama2_atilan']}", flush=True)
+    print(f"  SAHNE momentum hatasi = {d['sahne_momentum_hatasi']:.3e}  "
+          f"kutle = {d['sahne_kutle_hatasi']:.3e}", flush=True)
     print(f"  toplam N = {d['n_toplam']}", flush=True)
     print(f"  korunum: kutle {d['kutle_hata']:.2e}  "
           f"momentum {d['momentum_hata']:.2e}  enerji {d['enerji_hata']:.2e}",

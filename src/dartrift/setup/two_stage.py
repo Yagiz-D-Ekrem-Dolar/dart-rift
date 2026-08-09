@@ -37,7 +37,7 @@ import numpy as np
 
 from .coarsen import coarsen_to_sites, komsu_sagligi, sites_from_cloud
 
-__all__ = ["asama2_sahnesi", "IkiAsamaSahne"]
+__all__ = ["asama2_sahnesi", "asama2_sahnesi_ucseviye", "IkiAsamaSahne"]
 
 
 class IkiAsamaSahne:
@@ -177,6 +177,96 @@ def asama2_sahnesi(a1_durum: dict, a1_ince_maske, a1_m, a1_alpha0, a1_Y0,
         # sonuc veriyordu (on ucusta medyan 27, <30 orani 1.000).
         "komsu": komsu_sagligi(kaba["x"], h=2.0 * s2,
                                cevre=np.asarray(a2.x)[tut]),
+    })
+    return IkiAsamaSahne(x=x, v=v, m=m, e=e, h=h, alpha0=alpha0, Y0=Y0,
+                         is_boulder=blok, is_impactor=is_imp, kaynak=kaynak,
+                         diagnostics=tani)
+
+
+def asama2_sahnesi_ucseviye(a1, a1_durum: dict) -> IkiAsamaSahne:
+    """**Üç seviyeli** aşama-1'den aşama-2'ye geçiş — momentum kaybı yok.
+
+    ## İki seviyeli sürümün kusuru (ADR-0043 §4f)
+
+    :func:`asama2_sahnesi` aşama-1'in **yalnızca ince** bölgesini alıp
+    aşama-2'nin **dinlenmedeki** sahnesine ekliyordu. Aşama-1'in kaba
+    bölgesi atılıyordu ve ölçüldü ki `t₁`'de momentumun **`%69`**'u
+    tam oradaydı → `momentum_kapanis = 0,690`.
+
+    ## Üç seviyelide sorun **ortadan kalkıyor**
+
+    `refine_scene_ucseviye` ile `r₁ < r < r₂` bölgesi zaten aşama-2 ile
+    **aynı aralıkta** (`s₂`). O yüzden:
+
+    | bölge | ne yapılır |
+    |---|---|
+    | `r < r₁` (çekirdek + mermi) | Lagrange'cı **kabalaştırma** → `s₂` |
+    | geri kalan | **birebir kopyalanır** (evrimleşmiş hâliyle) |
+
+    Aşama-2'nin ayrı bir sahnesine **hiç ihtiyaç yok**; dolayısıyla
+    çifte sayım da, atılan momentum da yok.
+
+    > Momentum kapanışı artık **kabalaştırmanın** korunumuyla sınırlı
+    > (`~1e-15`), geometriyle değil.
+    """
+    tani_a1 = getattr(a1, "diagnostics", {}) or {}
+    if not tani_a1.get("ucseviye"):
+        raise ValueError("`a1` üç seviyeli olmalı — `refine_scene_ucseviye` "
+                         "ile kurun (iki seviyelide momentumun %69'u atılır, "
+                         "ADR-0043 §4f)")
+    s2 = float(tani_a1["s2"])
+    ince = np.asarray(a1.is_fine, dtype=bool)
+    if not ince.any():
+        raise ValueError("aşama-1'de ince parçacık yok")
+    for ad in ("x", "v", "u"):
+        if ad not in a1_durum:
+            raise KeyError(f"aşama-1 durumunda `{ad}` yok — "
+                           f"anahtarlar: {sorted(a1_durum)}")
+    x1 = np.asarray(a1_durum["x"], dtype=np.float64)
+    v1 = np.asarray(a1_durum["v"], dtype=np.float64)
+    e1 = np.asarray(a1_durum["u"], dtype=np.float64)
+    if not (np.all(np.isfinite(x1)) and np.all(np.isfinite(v1))):
+        raise ValueError("aşama-1 durumu sonlu değil — koşu patlamış")
+    m1 = np.asarray(a1.m, dtype=np.float64)
+
+    kaba = coarsen_to_sites(
+        x1[ince], v1[ince], m1[ince], e1[ince],
+        sites_from_cloud(x1[ince], s2),
+        alpha0=np.asarray(a1.alpha0)[ince], Y0=np.asarray(a1.Y0)[ince],
+        is_boulder=np.asarray(a1.is_boulder)[ince])
+
+    dis = ~ince                       # zaten `s2` cozunurlugunde
+    nk = len(kaba["m"])
+    x = np.concatenate([kaba["x"], x1[dis]])
+    v = np.concatenate([kaba["v"], v1[dis]])
+    m = np.concatenate([kaba["m"], m1[dis]])
+    e = np.concatenate([kaba["e"], e1[dis]])
+    alpha0 = np.concatenate([kaba["alpha0"], np.asarray(a1.alpha0)[dis]])
+    Y0 = np.concatenate([kaba["Y0"], np.asarray(a1.Y0)[dis]])
+    blok = np.concatenate([kaba["is_boulder"],
+                           np.asarray(a1.is_boulder, bool)[dis]])
+    h = np.concatenate([np.full(nk, 2.0 * s2), np.asarray(a1.h)[dis]])
+    is_imp = np.concatenate([np.zeros(nk, bool),
+                             np.asarray(a1.is_impactor, bool)[dis]])
+    kaynak = np.concatenate([np.zeros(nk, np.int8),
+                             np.ones(int(dis.sum()), np.int8)])
+
+    # MOMENTUM DEFTERI: hicbir sey atilmadigi icin TAM tutmali.
+    p_once = np.sum(m1[:, None] * v1, axis=0)
+    p_sonra = np.sum(m[:, None] * v, axis=0)
+    olcek = max(float(np.linalg.norm(p_once)), 1e-300)
+    tani = dict(kaba["korunum"])
+    tani.update({
+        "ucseviye": True,
+        "n_asama1_ince": int(ince.sum()), "n_aktarilan": nk,
+        "n_kopyalanan": int(dis.sum()), "n_toplam": len(m),
+        "n_asama2_atilan": 0,          # <-- artik ATILAN YOK
+        "s_asama2": s2,
+        "sahne_momentum_hatasi": float(np.linalg.norm(p_sonra - p_once)
+                                       / olcek),
+        "sahne_kutle_hatasi": abs(float(m.sum()) - float(m1.sum()))
+                              / max(float(m1.sum()), 1e-300),
+        "komsu": komsu_sagligi(kaba["x"], h=2.0 * s2, cevre=x1[dis]),
     })
     return IkiAsamaSahne(x=x, v=v, m=m, e=e, h=h, alpha0=alpha0, Y0=Y0,
                          is_boulder=blok, is_impactor=is_imp, kaynak=kaynak,
