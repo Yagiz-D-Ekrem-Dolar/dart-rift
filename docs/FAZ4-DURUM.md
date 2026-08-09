@@ -90,7 +90,51 @@ gibi görüyor.
 > geçerli ama **iddiaları dar**: hepsi merminin sekmesini ölçüyor.
 
 **Sonuç:** `A1` düzelmeden FAZ 4.6'nın gözlenebilirleri anlamlı
-değil. FAZ 4.8 (iki aşama, `A1 = 2,04`) bu yüzden koşuluyor.
+değil. FAZ 4.8 (iki aşama, `A1 = 2,04`) bu yüzden koşuldu.
+
+---
+
+## 1d. `A1` çözüldü — ama gözlenebilirler hâlâ ölü (2026-08-09)
+
+### `A1` **geçilebilir** ve geçmek **fark yaratıyor**
+
+| kol | `A1` | `β` | **`n_ejekta`** | momentum kapanışı |
+|---|---|---|---|---|
+| tek aşama (`λ=2`) | 0,2146 | 1,617583 | **803** | 1,36e-14 |
+| **üç seviyeli iki aşama** | **2,0391** | **1,411216** | **28** | **1,31e-14** |
+
+`803` merminin tamamı: çözülmemiş mermi **tamamen sekiyor**.
+Çözülmüşte **gömülüyor**. Rejim değişikliği, `%12,8`'lik fark değil.
+
+### Ama `t ≈ 1,2 s`'ye kadar hâlâ ejekta yok
+
+| `t` | `β_bal` | hedef ejektası | krater derinliği |
+|---|---|---|---|
+| 0,127 s | 1,41122 | 28 | 0,0348 |
+| 0,616 s | 1,41122 | 28 | 0,0354 |
+| **1,227 s** | **1,41122** | **28** | 0,0352 |
+
+`hedef_ejekta = 28 < 32` (aktarılan çekirdek sayısı) — sayılan hâlâ
+**merminin kırıntısı**. `β_bal` **bit düzeyinde** sabit.
+
+> Mermiyi çözmek `β`'yı değiştirdi ama **ejekta üretmedi**. `t = 1,2 s`
+> ensemble için öngörülen sürenin tamamı; orada bile krater ve ejekta
+> **yok**.
+
+### Krater çıkarıcısı **çalışıyor** — denetlendi
+
+Bir ara *"çıkarıcı krateri göremiyor"* diye kusur bildirdim; **yanlıştı**
+(kendi sınavımda `impact_direction`'ı ters verdim).
+
+| | |
+|---|---|
+| `crater_shape.py:154` | `axis = -d_imp` — işareti **kendi içinde** çeviriyor |
+| gerçek sahnede `0.` kutu | **13** yüzey parçacığı (`min_per_bin = 5`) |
+| sonuç | ölçüm **yapılıyor**; `0,035 m` çünkü **krater yok** |
+
+**Ölçülmüş sınırlar** (kusur değil): `0.` kutu `12,84°` geniş ve
+**medyan** alınıyor → parabolik kraterin tepe derinliğinin ~yarısı
+okunuyor; `D < 20 m` krater hiç görünmüyor.
 
 ---
 
