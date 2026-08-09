@@ -187,5 +187,31 @@ görmek için nokta **elle** koşuldu.
    ölçülmeli. `boulder_alpha0`, `β`'yı `f_boulder` kadar etkilemiyorsa
    uzay dejenere olur ve `C2` düşer.
 
+   **UCUZ SONDAJ DENENDİ ve YETMEDİ (2026-08-09).** `spacing = 14 m`,
+   `300` adım, 6 nokta:
+
+   | `boulder_α₀` | `f_bl` | `N` | `β` | krater | ejekta |
+   |---|---|---|---|---|---|
+   | 1,00 | 0,10 | — | **düştü** (*"profil boş"*) | — | — |
+   | 1,00 | 0,40 | 1983 | 1,18788 | **0,0000** | **0,00000** |
+   | 1,15 | 0,10 | — | **düştü** | — | — |
+   | 1,15 | 0,40 | 1983 | **1,00000** | 0,0000 | 0,00000 |
+   | 1,30 | 0,10 | — | **düştü** | — | — |
+   | 1,30 | 0,40 | 1983 | **1,00000** | 0,0000 | 0,00000 |
+
+   > **Sonuç okunamaz.** `β = 1,00000` *tam olarak* demek **hiç ejekta
+   > saptanmadı** demek — yani duyarsızlık değil **çözünürlük yetersizliği**.
+   > Krater ve ejekta gözlenebilirleri sıfır; `f_bl = 0,10` noktalarında
+   > çıkarıcı *"profil boş"* diyor.
+   >
+   > `1,18788` ile `1,00000` arasındaki farkı *"`boulder_α₀` etkili"*
+   > diye okumak **yanlış** olurdu: fark yalnızca *"ejekta saptandı /
+   > saptanmadı"* eşiğidir.
+
+   **Ucuz bir sondaj yok.** Madde 2, gerçek çözünürlükte (`spacing = 7`,
+   `r_iç = 25`, `λ = 2`) ve durulmaya yeten adımla ölçülmeli — yani
+   FAZ 4.6'nın kendi maliyetiyle. Bu deneme, tekrarlanmasın diye
+   **kaydedildi**.
+
 > Bu ikisi ölçülmeden FAZ 4.6 koşulmamalıdır: yanlış bir uzayda
 > `~9` saat GPU harcamak, bu ADR'nin **tam olarak** önlediği şey.
