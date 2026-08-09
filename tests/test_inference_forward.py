@@ -164,3 +164,46 @@ def test_TASARIMIN_TAMAMI_duserse_kok_neden_yaziliyor() -> None:
               "faz46_sentetik_kurtarma.py").read_text(encoding="utf-8")
     assert "TASARIMIN TAMAMI dustu" in kaynak
     assert "COK seyreldi" in kaynak
+
+
+# ------------------------- krater ayarlari (olculmus kisit)
+
+def test_KRATER_AYARLARI_DART_gercekten_isi_degistiriyor():
+    """Varsayılan kutulama `16 m`'lik krateri **göremiyor**; ayarlı görüyor.
+
+    Bu bir *"parametre ekledim"* testi değil: iki ayarın **farklı**
+    sonuç verdiğini ölçüyor. Aynı sonucu verseydi ayar eklemek boşuna
+    olurdu.
+    """
+    from dartrift.inference.forward import KRATER_AYARLARI_DART
+    from dartrift.observables.crater_shape import crater_profile
+    R, s, D, d_kr = 82.0, 2.0, 16.0, 3.0
+    rng = np.random.default_rng(7)
+    n = int(4 * np.pi * R * R / (s * s))
+    u = rng.uniform(-1, 1, n)
+    ph = rng.uniform(0, 2 * np.pi, n)
+    q = np.sqrt(1 - u * u)
+    yon = np.column_stack([q * np.cos(ph), q * np.sin(ph), u])
+    merk = np.array([1.0, 0.0, 0.0])
+    ya = np.arcsin(D / 2 / R)
+    ca = yon @ merk
+    ic = ca > np.cos(ya)
+    a = np.arccos(np.clip(ca, -1, 1))
+    r = np.full(n, R)
+    r[ic] = R - d_kr * (1.0 - (a[ic] / ya) ** 2)
+    x, x0 = r[:, None] * yon, R * yon
+
+    ort = dict(center=np.zeros(3), impact_direction=-merk,
+               reference_radius=R, x_reference=x0)
+    vars_ = crater_profile(x, **ort)
+    ayar = crater_profile(x, **ort, **KRATER_AYARLARI_DART)
+    assert vars_.depth == 0.0, "varsayilan gormeliydi mi? olcum degisti"
+    assert ayar.depth > 0.5 * d_kr, (ayar.depth, d_kr)
+
+
+def test_krater_ayarlari_VARSAYILAN_davranisi_bozmuyor():
+    """`krater_ayarlari=None` eski yolu **aynen** korumalı."""
+    from dartrift.inference.forward import gozlenebilirleri_cikar
+    import inspect
+    p = inspect.signature(gozlenebilirleri_cikar).parameters
+    assert p["krater_ayarlari"].default is None

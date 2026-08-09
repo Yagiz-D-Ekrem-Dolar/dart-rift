@@ -89,9 +89,29 @@ def sahne_parametreleri(theta, taban: dict | None = None, *,
     return kw
 
 
+#: Krater çıkarıcısının **varsayılan** ayarları kraterin ölçeğine göre
+#: kaba. Ölçüldü (2026-08-09): bilinen `D = 16 m`, derinlik `3 m` krater
+#:
+#: | `outer` | `n_bins` | `n_theta` | ölçülen derinlik |
+#: |---|---|---|---|
+#: | 60° | 20 | vars. | **0,000** |
+#: | 20° | 10 | 48 | 0,991 |
+#: | **12°** | **8** | **64** | **2,082** (gerçek `3,0`) |
+#:
+#: Beklenen DART krateri `10–25 m` (Holsapple mukavemet rejimi), yani
+#: varsayılan `60°` kutulaması onu **göremez**. Bu ayarlar kratere
+#: uydurulmuş hâldir.
+#:
+#: > `s = 3,5 m`'de (ensemble çözünürlüğü) en iyi hâlde `%24` geri
+#: > geliyor; bu ayarlar gözlenebiliri **kullanılabilir** yapar,
+#: > **doğru** yapmaz. Daha ince yüzey gerekir.
+KRATER_AYARLARI_DART = {"outer_angle_deg": 12.0, "n_bins": 8,
+                        "n_theta": 64, "n_phi": 128}
+
+
 def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,
                            target_radius, is_impactor, impact_direction,
-                           x_reference) -> np.ndarray:
+                           x_reference, krater_ayarlari=None) -> np.ndarray:
     """Son durumdan üç gözlenebilir — `GOZLENEBILIRLER` sırasında.
 
     Patlamış bir koşu **sessizce** sayı döndürmez: `nan` görünürse
@@ -132,7 +152,8 @@ def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,
         st["x"][hedef], center=np.zeros(3),
         impact_direction=np.asarray(impact_direction, dtype=np.float64),
         reference_radius=float(target_radius),
-        x_reference=np.asarray(x_reference, dtype=np.float64)[hedef])
+        x_reference=np.asarray(x_reference, dtype=np.float64)[hedef],
+        **(krater_ayarlari or {}))
     y = np.array([float(mt.beta), float(kr.diameter),
                   float(mt.ejecta_fraction)], dtype=np.float64)
     if not np.all(np.isfinite(y)):
@@ -208,7 +229,8 @@ def ileri_kosu(x, *, material, device: str, steps: int, r_ince: float,
 def ileri_kosu_ikiasama(x, *, material, device: str, t1: float, t_end: float,
                         r1: float, lam1: float, r2: float, lam2: float,
                         spacing: float, sahne_taban: dict,
-                        azami_adim: int = 200000, ilerleme=None) -> np.ndarray:
+                        azami_adim: int = 200000, ilerleme=None,
+                        krater_ayarlari=KRATER_AYARLARI_DART) -> np.ndarray:
     """İki aşamalı ileri model — **çözülmüş mermiyle**.
 
     ## Neden gerekli
@@ -293,7 +315,8 @@ def ileri_kosu_ikiasama(x, *, material, device: str, t1: float, t_end: float,
                 sol2.state_numpy(), impactor_momentum=a1.impactor_momentum,
                 target_mass=a1.target_mass, target_radius=a1.target_radius,
                 is_impactor=sahne.is_impactor,
-                impact_direction=a1.impact_direction, x_reference=x0)
+                impact_direction=a1.impact_direction, x_reference=x0,
+                krater_ayarlari=krater_ayarlari)
             if ilerleme:
                 ilerleme(i, len(x), f"tamam (A1 gecti, N={sahne.n})")
         except (RuntimeError, ValueError, KeyError) as e:
