@@ -216,3 +216,41 @@ def test_kosucu_TANILARI_ust_duzeye_yaziyor() -> None:
               "faz44_dart_yakinsama.py").read_text(encoding="utf-8")
     for k in ("dikis_en_yakin_oran", "tasarruf"):
         assert f'"{k}": ' in kaynak, k
+
+
+# ------------------------------ TANILAR: "neden kosulmadi" gorunur olsun
+
+def test_tani_kaynaklari_DOGRU_dosyadan_okunuyor():
+    """`B2_sabit_seri` `faz45`'ten gelir; hepsini `faz44`'ten okumak onu
+    sessizce **düşürürdü**."""
+    from dartrift.validation.g4_gate import TANI_KAYNAGI, degerlendir
+    r = degerlendir(faz44={"esit_t_sim": True},
+                    faz45={"B2_sabit_seri": True, "B4_enerji_egim": 0.3})
+    # `_al` her seyi float'a ceviriyor (np.bool_ dahil), yani bool -> 1.0.
+    assert r.tanilar["esit_t_sim"] == 1.0
+    assert r.tanilar["B2_sabit_seri"] == 1.0
+    assert TANI_KAYNAGI["B2_sabit_seri"] == "faz45"
+    # `faz45` verilmezse `B2_sabit_seri` HIC gorunmemeli.
+    yalniz44 = degerlendir(faz44={"esit_t_sim": True})
+    assert "B2_sabit_seri" not in yalniz44.tanilar
+
+
+def test_tanilar_KAPIYI_gecirmiyor_ve_dusurmuyor():
+    """Tanılar ölçüt **değil** — sonucu değiştirmemeli."""
+    from dartrift.validation.g4_gate import degerlendir
+    a = degerlendir(faz44={"A1_mermi_parcacik_cap": 3.0})
+    b = degerlendir(faz44={"A1_mermi_parcacik_cap": 3.0, "esit_t_sim": False,
+                           "dikis_en_yakin_oran": 0.01})
+    assert a.gecti == b.gecti
+    # `dusenler`/`kosulmayanlar` zaten KIMLIK dizesi donduruyor.
+    assert a.dusenler == b.dusenler
+    assert a.kosulmayanlar == b.kosulmayanlar
+    # Tanilar RAPORDA gorunuyor ama karara girmiyor.
+    assert "esit_t_sim" in b.tanilar and "esit_t_sim" not in a.tanilar
+
+
+def test_her_TANI_icin_kaynak_gecerli():
+    """`TANI_KAYNAGI` bilinmeyen bir kaynak gösterirse `KeyError` olurdu."""
+    from dartrift.validation.g4_gate import TANI_KAYNAGI, TANILAR
+    assert set(TANI_KAYNAGI) <= set(TANILAR)
+    assert set(TANI_KAYNAGI.values()) <= {"faz44", "faz45", "faz46"}

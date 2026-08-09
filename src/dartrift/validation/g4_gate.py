@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 __all__ = ["Olcut", "G4Rapor", "degerlendir", "KOSULLU_KABULLER", "TANILAR",
+           "TANI_KAYNAGI",
            "A1_MERMI_PARCACIK", "A2_R_INCE_CARPANI", "A3_KUTLE_SAPMASI",
            "B1_BETA_FARKI", "B4_ENERJI_EGIM"]
 
@@ -94,7 +95,21 @@ TANILAR = {
     "tasarruf": (
         "A′'nın parçacık tasarrufu (her yeri inceltmeye göre)",
         "yüksek olması iyi; ölçülen 6,87× (s = 7,0/3,5, r_iç = 25)"),
+    # --- NEDEN kosulmadi: bir olcut `kosulmadi` diyorsa SEBEBI gorunsun.
+    # Bunlar OLCUT DEGIL; kapiyi gecirmez ya da dusurmez.
+    "esit_t_sim": (
+        "FAZ 4.4 kolları aynı `t_sim`'e ulaştı mı",
+        "`0` ise B1 ve B3 **yazılmaz** — farklı `t`'deki `β`'lar "
+        "yakınsama ölçmez (sıkıntı A6)"),
+    "B2_sabit_seri": (
+        "`β_bound` baştan sona sabit mi kaldı",
+        "`1` ise B2 **yazılmaz** — sabit seride `durulmuş` boş bir "
+        "kanıttır (sıkıntı 33)"),
 }
+
+#: `TANILAR`ın hangi kaynaktan okunacağı. Hepsini `faz44`'ten okumak
+#: `B2_sabit_seri`'yi sessizce **düşürürdü** (o `faz45`'ten gelir).
+TANI_KAYNAGI = {"esit_t_sim": "faz44", "B2_sabit_seri": "faz45"}
 
 
 @dataclass(frozen=True)
@@ -266,7 +281,9 @@ def degerlendir(faz44: dict | None = None, faz45: dict | None = None,
         Olcut("C3", "gürültüyle genişleme (1 = evet)",
               _al(faz46, "c3_gecti"), 1.0, ">="),
     ]
-    tanilar = {k: _al(faz44, k) for k in TANILAR}
+    _kaynak = {"faz44": faz44, "faz45": faz45, "faz46": faz46}
+    tanilar = {k: _al(_kaynak[TANI_KAYNAGI.get(k, "faz44")], k)
+               for k in TANILAR}
     tanilar = {k: v for k, v in tanilar.items() if v is not None}
     # KURU KIP bir kanit DEGILDIR: G4-C olcutleri kosulmamis sayilir.
     if faz46 is not None and bool(faz46.get("kuru", False)):
