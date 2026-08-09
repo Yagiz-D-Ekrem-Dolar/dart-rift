@@ -276,3 +276,84 @@ def test_dikis_kalitesi_parcali_tek_blokla_AYNI():
     np.fill_diagonal(D, np.inf)
     assert a["en_yakin"] == float(D.min())
     assert a["n_kusak"] == int(kus.sum())
+
+
+# ------------------------- UC SEVIYELI sahne (ADR-0043 §4f)
+
+def _uc_sahne(r1=6.0, lam1=6.0, r2=25.0, lam2=2.0):
+    import numpy as np
+
+    from dartrift.setup.refine import refine_scene_ucseviye
+    from dartrift.setup.scene import _build_mesh, build_scene
+    kaba = build_scene(spacing=14.0, device="cpu", radius=82.0,
+                       bulk_density=1800.0, root_seed=20260801,
+                       model_class="M1", f_boulder=0.25, q=3.0,
+                       n_impactor=200, r_min=14.0, r_max=42.0)
+    mesh = _build_mesh("icosphere", radius=82.0, subdiv=3)
+    return kaba, refine_scene_ucseviye(kaba, mesh, r1=r1, lam1=lam1,
+                                       r2=r2, lam2=lam2)
+
+
+def test_ucseviye_UC_AYRI_h_seviyesi_var():
+    """Şemanın tanımı: üç çözünürlük. İkiye düşerse `%69` kaybı geri gelir."""
+    import numpy as np
+    _, rs = _uc_sahne()
+    h = np.unique(np.round(np.asarray(rs.h), 9))
+    assert len(h) == 3, f"3 seviye bekleniyordu, {len(h)} var: {h}"
+    d = rs.diagnostics
+    assert h.min() == pytest.approx(2.0 * d["s1"])
+    assert d["s1"] < d["s2"] < rs.spacing_coarse
+
+
+def test_ucseviye_ORTA_seviye_asama2_ile_AYNI_aralik():
+    """Aktarımın birebir kopyalanabilmesi **buna** bağlı."""
+    import numpy as np
+
+    from dartrift.setup.refine import refine_scene_local
+    from dartrift.setup.scene import _build_mesh, build_scene
+    kaba, rs = _uc_sahne()
+    mesh = _build_mesh("icosphere", radius=82.0, subdiv=3)
+    a2 = refine_scene_local(kaba, mesh, r_ince=25.0, lam=2.0)
+    assert rs.diagnostics["s2"] == pytest.approx(a2.spacing_fine)
+
+
+def test_ucseviye_KUTLE_kaba_sahneyle_tutuyor():
+    import numpy as np
+    kaba, rs = _uc_sahne()
+    assert rs.diagnostics["hedef_kutle_sapmasi"] < 5.0e-3
+    imp = np.asarray(rs.is_impactor, bool)
+    assert float(rs.m[imp].sum()) == pytest.approx(
+        float(np.asarray(kaba.m)[np.asarray(kaba.is_impactor, bool)].sum()),
+        rel=1e-12)
+
+
+def test_ucseviye_MERMI_en_ince_h_aliyor():
+    """`A1` mermiye bağlı; mermi orta seviyede kalırsa çözülmez."""
+    import numpy as np
+    _, rs = _uc_sahne()
+    imp = np.asarray(rs.is_impactor, bool)
+    assert np.all(rs.h[imp] == pytest.approx(2.0 * rs.diagnostics["s1"]))
+
+
+def test_ucseviye_is_fine_CEKIRDEK_ve_MERMI():
+    """Aktarılacak küme tam olarak bu; yanlışsa momentum yine kaybolur."""
+    import numpy as np
+    _, rs = _uc_sahne()
+    ince = np.asarray(rs.is_fine, bool)
+    imp = np.asarray(rs.is_impactor, bool)
+    assert np.all(ince[imp]), "mermi ince kumede olmali"
+    # Ince olan HER parcacik en ince `h`ye sahip olmali.
+    assert np.all(rs.h[ince] == pytest.approx(2.0 * rs.diagnostics["s1"]))
+    # Ince OLMAYAN hicbiri en ince `h`ye sahip OLMAMALI.
+    assert not np.any(rs.h[~ince] == pytest.approx(2.0 * rs.diagnostics["s1"]))
+
+
+@pytest.mark.parametrize("kw,mesaj", [
+    (dict(r1=30.0, r2=25.0), "0 < r1 < r2"),
+    (dict(r1=0.0), "0 < r1 < r2"),
+    (dict(lam1=2.0, lam2=2.0), "lam1 > lam2"),
+    (dict(lam1=1.5, lam2=2.0), "lam1 > lam2"),
+])
+def test_ucseviye_gecersiz_girdiler(kw, mesaj):
+    with pytest.raises(ValueError, match=mesaj):
+        _uc_sahne(**kw)
