@@ -414,6 +414,22 @@ rakamı bu yüzden **geçersiz**.
 krater **oluşmamış** (derinlik = aralığın `%1`'i), yani fırlatılacak
 madde henüz **yok**. Ejektanın `β`'ya toplam katkısı `+0,08` (`%5`).
 
+#### Düzeltme: o `18` parçacık **ejekta değilmiş**
+
+`faz49_balistik_beta.py` ölçütü yalnızca `v_r > v_kaçış` idi — **konum
+şartı yoktu**. FAZ 4.10 `r > R` şartını ekleyince:
+
+| ölçüt | `t ≈ 0,2 s`'de hedef ejektası |
+|---|---|
+| `v_r > v_kaçış` (konum şartsız) | **18** parçacık → `β(∞) = 1,698` |
+| `v_r > v_kaçış` **ve** `r > R` | **0** parçacık → `β = 1,61758` |
+
+O `18` parçacık cismin **içinde** (`r ≤ R`), basınç dalgasıyla dışarı
+salınan maddeydi — **iç titreşim**, ejekta değil.
+
+> Yani `+0,08`'lik *"ejekta katkısı"* da **yokmuş**. `t = 0,225 s`'de
+> hedeften ayrılmış **tek bir parçacık bile yok**; `β` tamamen mermi.
+
 > Gereken simüle süreyi belirleyen şey **geçiş değil, krater kazısı**.
 > O süre **ölçülmedi**.
 >
