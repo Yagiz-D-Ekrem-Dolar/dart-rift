@@ -107,38 +107,51 @@ def sahne_parametreleri(theta, taban: dict | None = None, *,
 #: > **doğru** yapmaz. Daha ince yüzey gerekir.
 #: DART geometrisi icin krater cikarici ayarlari.
 #:
-#: ## `n_theta = 64` ILK SURUMDE YANLISTI — duzeltildi
+#: ## Iki kez yanlis yazdim; ucuncusu OLCUMLE dogrulandi
 #:
-#: `outer_angle_deg` ve `n_bins` ayarlanmisti ama BAGLAYICI KISIT
-#: gozden kacmisti. `surface_particles` `cos(theta)`da esit kutular
-#: kullanir, yani kutuptaki kutu acisal olarak DEVDIR:
+#: **1. surum** `n_theta = 64`: `surface_particles` `cos(theta)`da esit
+#: kutular kullanir, kutup kutusu `14,36 deg` ve `D = 20 m` kraterin
+#: yari-acisi `7,00 deg` -- krater TEK KUTUYA sigiyordu. Gercek derinlik
+#: `2 -> 12 m` degisirken olculen **sabit `1,1975`** (rapor A13).
 #:
-#:     n_theta =   64  ->  kutup kutusu 14,36 deg
-#:     n_theta =  256  ->                7,17 deg
-#:     n_theta = 1024  ->                3,58 deg
+#: **2. surum** `n_theta = 1024`: kutup kutusu `3,58 deg` oldu ama izgara
+#: (`131 072`) parcacik sayisini (`10 410`) GECTI. Olculdu (A16):
 #:
-#: `D = 20 m` kraterin yari-acisi `7,00 deg`. `n_theta = 64`'te krater
-#: TEK BIR KUTUNUN ICINDE kayboluyordu. Olculdu (DART asama-2 sahnesi,
-#: gercek derinlik 2 -> 12 m, yani 6 KAT):
+#:     n_theta =   16 -> "yuzey" 512/10410,  medyan r = 81,26 (gercek 81,94)
+#:     n_theta = 1024 -> "yuzey" 9970/10410, medyan r = 66,91, p10 = 39,34
 #:
-#:     n_theta = 64   ->  olculen SABIT 1,1975 m   (derinlikten BAGIMSIZ)
-#:     n_theta = 1024 ->  2,46 / 4,93 / 7,48 m     (2/5/10 m icin)
+#: Her parcacik kendi kutusunun "en disi" olur ve **yuzey = butun cisim**.
+#: Krateri "goruyor" ama olctugu sey yuzey DEGIL. Kabuk testlerimde
+#: gecmesinin sebebi kabukta her parcacigin zaten yuzeyde olmasiydi.
 #:
-#: Sabit cikti bir gozlenebilir degildir. `256` hala yetmiyor (7,17 >
-#: 7,00); `4096` ise kutu basina parcacik biterek 2 m'yi kaybediyor.
-#: Tatlı nokta DAR ve olculerek secildi.
+#: Iki gereksinim CELISIYOR ve `10 410` parcacikla ayni anda saglanamaz:
+#: kutup kutusu `< 7 deg` icin `n_theta > 256`, kutu basina `~12`
+#: parcacik icin `n_theta ~ 20`.
 #:
-#: `ejekta_yaricap_carpani` olmadan bu ayarlar da ise yaramaz: ucustaki
-#: ejekta krater kutularini kapatir (bkz. `crater_profile` belgesi).
+#: **3. surum (bu)** `kutulama = "eksen"`: kuresel izgara HIC
+#: kullanilmiyor; parcaciklar carpma ekseninden aciya gore esit acili
+#: halkalara bolunuyor. Uretim sahnesinde olculdu (`lam = 2`, ek maliyet
+#: YOK; kuresel kip ayni sahnede dokuz ayarin hepsinde REDDEDIYORDU):
 #:
-#: Gurultu tabani bu ayarlarla OLCULDU (kratersiz gercek sahne, yuzey
-#: gurultusu 0 -> 0,5 m, 3 tohum): **en kotu 0,43 m**. `2 m` krater
-#: `2,46` okundugu icin pay `5,7x`.
+#:     gercek   nb=4    nb=6    nb=8
+#:     2 m     1,844   1,977   2,015
+#:     5 m     4,340   4,793   4,882
+#:    10 m     8,499   9,486   9,660
+#:
+#: Kutu sayisi arttikca gercege TEK DUZE yaklasiyor. Gurultu tabani
+#: `0,25 m` (yuzey gurultusu `0,2 m` iken).
+#:
+#: `n_theta`/`n_phi` ARTIK VERILMIYOR: eksen kipinde kullanilmiyorlar ve
+#: birakmak "ayarlanmis" izlenimi verirdi.
+#:
+#: > Cap bu ayarlarla da OLU: olculen sey esik gecisi, cap degil
+#: > (ADR-0045 §5). Yasayan gozlenebilir DERINLIK.
 KRATER_AYARLARI_DART = {"outer_angle_deg": 12.0, "n_bins": 8,
-                        "n_theta": 1024, "n_phi": 128,
+                        "kutulama": "eksen", "yuzdelik": 95.0,
                         "ejekta_yaricap_carpani": 1.05}
 
-#: Yukaridaki secimin dayandigi olcum — testler bunu kilitler.
+#: A13'un (yanlis) gerekcesinin olcusu — testler `n_theta = 64`'un neden
+#: yetmedigini kilitliyor. Eksen kipinde bu esik ARTIK BAGLAYICI DEGIL.
 KRATER_KUTUP_KUTUSU_ESIGI_DEG = 7.0
 
 

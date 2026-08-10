@@ -166,220 +166,142 @@ def test_TASARIMIN_TAMAMI_duserse_kok_neden_yaziliyor() -> None:
     assert "COK seyreldi" in kaynak
 
 
-# ------------------------- krater ayarlari (olculmus kisit)
+# ------------------- krater ayarlari (UC KEZ yazildi, bkz. A13/A16)
 
-def test_KRATER_AYARLARI_DART_gercekten_isi_degistiriyor():
-    """Varsayılan kutulama `16 m`'lik krateri **göremiyor**; ayarlı görüyor.
+def _kraterli_dolu_kure(derinlik, R=82.0, D=20.0, s=3.5, tohum=5, gurultu=0.0):
+    """DOLU kure + paraboloid krater.
 
-    Bu bir *"parametre ekledim"* testi değil: iki ayarın **farklı**
-    sonuç verdiğini ölçüyor. Aynı sonucu verseydi ayar eklemek boşuna
-    olurdu.
+    **KABUK KULLANMIYOR.** A16'nin dersi tam buydu: kabukta her parcacik
+    zaten yuzeydedir, yani yuzey cikariminin bozuk olmasi GORUNMEZ.
+    Kabuk fiksturuyle `n_theta = 1024`'un dejenere oldugunu hic
+    goremedim.
     """
-    from dartrift.inference.forward import KRATER_AYARLARI_DART
-    from dartrift.observables.crater_shape import crater_profile
-    R, s, D, d_kr = 82.0, 2.0, 16.0, 3.0
-    rng = np.random.default_rng(7)
-    n = int(4 * np.pi * R * R / (s * s))
-    u = rng.uniform(-1, 1, n)
-    ph = rng.uniform(0, 2 * np.pi, n)
-    q = np.sqrt(1 - u * u)
-    yon = np.column_stack([q * np.cos(ph), q * np.sin(ph), u])
-    merk = np.array([1.0, 0.0, 0.0])
-    ya = np.arcsin(D / 2 / R)
-    ca = yon @ merk
-    ic = ca > np.cos(ya)
-    a = np.arccos(np.clip(ca, -1, 1))
-    r = np.full(n, R)
-    r[ic] = R - d_kr * (1.0 - (a[ic] / ya) ** 2)
-    x, x0 = r[:, None] * yon, R * yon
+    rng = np.random.default_rng(tohum)
+    k = int(R // s)
+    g = np.arange(-k, k + 1) * s
+    X, Y, Z = np.meshgrid(g, g, g, indexing="ij")
+    p3 = np.column_stack([X.ravel(), Y.ravel(), Z.ravel()])
+    p3 = p3 + rng.normal(scale=0.25 * s, size=p3.shape)
+    r0 = np.linalg.norm(p3, axis=1)
+    ic = (r0 > 0.0) & (r0 <= R)
+    x0, r0 = p3[ic], r0[ic]
+    yon = x0 / r0[:, None]
+    eh = np.array([0.0, 0.0, 1.0])
+    th = np.arccos(np.clip(yon @ eh, -1, 1))
+    thc = np.arcsin(D / (2 * R))
+    taban = R - derinlik * (1.0 - (th / thc) ** 2)
+    r = np.where(th < thc, np.minimum(r0, taban), r0)
+    if gurultu:
+        r = r + gurultu * rng.normal(size=len(r))
+    return r[:, None] * yon, x0, eh, R
 
-    ort = dict(center=np.zeros(3), impact_direction=-merk,
-               reference_radius=R, x_reference=x0)
-    vars_ = crater_profile(x, **ort)
-    ayar = crater_profile(x, **ort, **KRATER_AYARLARI_DART)
-    assert vars_.depth == 0.0, "varsayilan gormeliydi mi? olcum degisti"
-    assert ayar.depth > 0.5 * d_kr, (ayar.depth, d_kr)
+
+def test_KRATER_AYARLARI_DART_eksen_kipinde():
+    """Ayarlar `kutulama = "eksen"` kullanmali ve `n_theta` TASIMAMALI.
+
+    `n_theta` iki kez yanlis secildi (A13: `64` krateri goremiyor;
+    A16: `1024` izgarayi parcacik sayisinin ustune cikarip *"yuzey =
+    butun cisim"* yapiyor). Eksen kipinde o parametre KULLANILMIYOR;
+    birakmak "ayarlanmis" izlenimi verirdi.
+    """
+    from dartrift.inference.forward import KRATER_AYARLARI_DART as K
+    assert K["kutulama"] == "eksen"
+    assert "n_theta" not in K and "n_phi" not in K
+    assert K["ejekta_yaricap_carpani"] == 1.05
+    # Esik acikca ayarlanmis OLMAMALI: hayali cap denetimi ona bagli.
+    assert "depth_threshold" not in K
 
 
 def test_krater_ayarlari_VARSAYILAN_davranisi_bozmuyor():
-    """`krater_ayarlari=None` eski yolu **aynen** korumalı."""
+    """`krater_ayarlari=None` eski yolu **aynen** korumali."""
     from dartrift.inference.forward import gozlenebilirleri_cikar
     import inspect
     p = inspect.signature(gozlenebilirleri_cikar).parameters
     assert p["krater_ayarlari"].default is None
 
 
-def test_KRATER_AYARLARI_DART_yanlis_pozitif_URETMIYOR():
-    """İnce kutulama `surface_particles`'ın uyardığı tuzağa düşüyor mu?
+def test_KRATER_AYARLARI_DART_derinligi_GERCEKTEN_izliyor():
+    """Uretim ayarlariyla derinlik gercek derinlikle degismeli.
 
-    Belge diyor ki kutu başına `~1` parçacık kalınca *"kutudaki en
-    uzak"* rastgele bir parçacık olur ve ölçülen yüzey `0,75 R`'ye
-    iner — **hayalî bir krater** üretir. `KRATER_AYARLARI_DART`
-    `n_theta = 64` kullanıyor ve `s = 3,5 m`'de bu **`0,84`
-    parçacık/kutu** demek, yani tam o bölge.
-
-    Ölçüldü: **düşmüyor**, çünkü `x_reference` çıkarması yanlılığı
-    götürüyor (R4'ün `x_reference`'ı zorunlu yapmasının sebebi).
-    """
-    from dartrift.inference.forward import KRATER_AYARLARI_DART
-    from dartrift.observables.crater_shape import crater_profile
-    R = 82.0
-    for s in (3.5, 2.0):
-        rng = np.random.default_rng(11)
-        n = int(4 * np.pi * R * R / (s * s))
-        u = rng.uniform(-1, 1, n)
-        ph = rng.uniform(0, 2 * np.pi, n)
-        q = np.sqrt(1 - u * u)
-        yon = np.column_stack([q * np.cos(ph), q * np.sin(ph), u])
-        x0 = R * yon
-        for gur, kur in ((0.0, 0.0), (0.20, 0.0), (0.20, -0.5)):
-            r = R + kur + gur * rng.normal(size=n)
-            kr = crater_profile(r[:, None] * yon, center=np.zeros(3),
-                                impact_direction=np.array([-1.0, 0.0, 0.0]),
-                                reference_radius=R, x_reference=x0,
-                                **KRATER_AYARLARI_DART)
-            # KRATERSIZ cisimde derinlik GURULTU duzeyinde kalmali.
-            assert kr.depth < 0.5, (s, gur, kur, kr.depth)
-            assert kr.diameter == 0.0, (s, gur, kur, kr.diameter)
-
-
-# ---------------------------------------------------------------------------
-# KRATER_AYARLARI_DART duzeltmesi: `n_theta = 64` krateri OLCEMIYORDU
-# ---------------------------------------------------------------------------
-
-def _kraterli_kabuk(derinlik, R=82.0, D=20.0, s=3.5, tohum=5):
-    """Yaricapi `R` olan kabuga `D` capinda paraboloid krater kaz."""
-    rng = np.random.default_rng(tohum)
-    n = int(4 * np.pi * R * R / (s * s))
-    u = rng.uniform(-1, 1, n)
-    ph = rng.uniform(0, 2 * np.pi, n)
-    q = np.sqrt(1 - u * u)
-    yon = np.column_stack([q * np.cos(ph), q * np.sin(ph), u])
-    ehat = np.array([0.0, 0.0, 1.0])
-    th = np.arccos(np.clip(yon @ ehat, -1, 1))
-    th_c = np.arcsin(D / (2 * R))
-    taban = R - derinlik * (1.0 - (th / th_c) ** 2)
-    r = np.where(th < th_c, np.minimum(R, taban), R)
-    return r[:, None] * yon, R * yon, ehat, R
-
-
-def test_krater_ayarlari_kutup_kutusu_kraterden_KUCUK_olmali():
-    """Bagli kisit: kutuptaki `cos(theta)` kutusu krater konisinden dar mi?
-
-    `surface_particles` `cos(theta)`da esit kutular kullanir, yani kutup
-    kutusu acisal olarak en genis olandir. Krater TAM KUTUPTA oldugu icin
-    o kutu kraterden genisse krater tek kutuya sigar ve GORUNMEZ.
-    """
-    from dartrift.inference.forward import (KRATER_AYARLARI_DART,
-                                            KRATER_KUTUP_KUTUSU_ESIGI_DEG)
-    nth = KRATER_AYARLARI_DART["n_theta"]
-    kutup_deg = np.degrees(np.arccos(1.0 - 2.0 / nth))
-    assert kutup_deg < KRATER_KUTUP_KUTUSU_ESIGI_DEG, (
-        f"n_theta={nth} -> kutup kutusu {kutup_deg:.2f} deg, krater "
-        f"yari-acisi {KRATER_KUTUP_KUTUSU_ESIGI_DEG} deg")
-    # Eski deger bu sinavi GECEMEZ — duzeltmenin gerekcesi budur.
-    assert np.degrees(np.arccos(1.0 - 2.0 / 64)) > KRATER_KUTUP_KUTUSU_ESIGI_DEG
-
-
-def test_krater_derinligi_GERCEK_derinlikle_degisiyor():
-    """Gozlenebilir olmanin sarti: girdi degisince cikti DEGISMELI.
-
-    Duzeltmeden once `n_theta = 64` ile olculen derinlik, gercek derinlik
-    `2 -> 12 m` (6 KAT) degisirken **sabit 1,1975 m** kaliyordu. Sabit bir
-    sayi hicbir parametre hakkinda bilgi tasimaz.
+    A13'un `n_theta = 64`'u ayni sahnede **sabit `1,1975`** veriyordu;
+    A16'nin `1024`'u yuzey yerine butun cismi olcuyordu. Eksen kipinde
+    olculdu (uretim sahnesi, `nb = 8`): `2 -> 2,015`, `5 -> 4,882`,
+    `10 -> 9,660`.
     """
     from dartrift.inference.forward import KRATER_AYARLARI_DART
     from dartrift.observables.crater_shape import crater_profile
 
-    okunan = []
+    olculen = []
     for derin in (2.0, 5.0, 10.0):
-        x, x0, ehat, R = _kraterli_kabuk(derin)
-        kr = crater_profile(x, center=np.zeros(3), impact_direction=-ehat,
+        x, x0, eh, R = _kraterli_dolu_kure(derin)
+        kr = crater_profile(x, center=np.zeros(3), impact_direction=-eh,
                             reference_radius=R, x_reference=x0,
                             **KRATER_AYARLARI_DART)
-        okunan.append(kr.depth)
-
-    assert okunan[0] < okunan[1] < okunan[2], f"tek duze artmiyor: {okunan}"
-    # Olculdu: oran ucunde de 0,823 — dogrusal ve yanliligi sabit.
-    for derin, d in zip((2.0, 5.0, 10.0), okunan):
-        assert 0.6 < d / derin < 1.1, f"gercek {derin}, olculen {d}"
+        olculen.append(kr.depth)
+    assert olculen[0] < olculen[1] < olculen[2], olculen
 
 
-def test_eski_n_theta_64_ayni_krateri_OLCEMIYOR():
-    """Duzeltmenin gerekcesi kalici olarak kayitli.
-
-    Ayni sahne, tek fark `n_theta`: eski deger olcumu REDDEDIYOR (ya da
-    sabit sayi veriyor). Bu test duserse birisi `n_theta`yi geri
-    dusurmustur.
-    """
+def test_KRATER_AYARLARI_DART_yanlis_pozitif_URETMIYOR():
+    """Kratersiz DOLU cisimde ne derinlik ne cap uydurulmali."""
     from dartrift.inference.forward import KRATER_AYARLARI_DART
     from dartrift.observables.crater_shape import crater_profile
 
-    eski = {**KRATER_AYARLARI_DART, "n_theta": 64}
-    x, x0, ehat, R = _kraterli_kabuk(5.0)
-    with pytest.raises(ValueError, match="carpma ekseni kutusunda"):
-        crater_profile(x, center=np.zeros(3), impact_direction=-ehat,
-                       reference_radius=R, x_reference=x0, **eski)
+    for gur in (0.05, 0.2):
+        x, x0, eh, R = _kraterli_dolu_kure(0.0, gurultu=gur, tohum=3)
+        kr = crater_profile(x, center=np.zeros(3), impact_direction=-eh,
+                            reference_radius=R, x_reference=x0,
+                            **KRATER_AYARLARI_DART)
+        assert kr.depth < 1.5, (gur, kr.depth)
+        assert kr.diameter == 0.0, (gur, kr.diameter)
 
 
-def test_ejekta_suzgeci_referansa_UYGULANMIYOR():
-    """Suzgec her ikisine uygulanirsa sonuc ozdes sifir olur.
+def test_kuresel_kip_DOLU_cisimde_yuzeyi_bulamiyor():
+    """A16'nin cekirdegi: `n_theta = 64` DOLU cisimde REDDETMIYOR.
 
-    Kazilan parcaciklar suzulunce geriye kalanlar zaten taban altindadir;
-    onlarin CARPMA ONCESI konumu da ayni yerdedir. Yani referans = olcum
-    ve krater kaybolur. Bu, olcerek bulundu.
+    Ilk yazdigimda "reddediyor" varsaydim — **yanlis**. Kabukta
+    reddediyor (koniye 1 parcacik duser), dolu cisimde ise sessizce bir
+    sayi donduruyor. Sessiz yanlis sayi, reddetmekten **daha kotudur**.
+
+    Olculebilir ifade: cikarilan "yuzey" kumesinin medyan yaricapi
+    gercek yuzeyden cok asagida. Olculdu (`N = 10 410`, `R = 81,94`):
+
+    | `n_theta` | "yuzey"/toplam | medyan `r` |
+    |---|---|---|
+    | 16 | 0,05 | 81,26 |
+    | 64 | 0,58 | 72,18 |
+    | 1024 | 0,96 | 66,91 |
     """
-    from dartrift.observables.crater_shape import crater_profile
-    x, x0, ehat, R = _kraterli_kabuk(5.0)
-    kr = crater_profile(x, center=np.zeros(3), impact_direction=-ehat,
-                        reference_radius=R, x_reference=x0,
-                        outer_angle_deg=12.0, n_bins=8, n_theta=1024,
-                        n_phi=128, ejekta_yaricap_carpani=1.05)
-    assert kr.depth > 1.0
-    assert kr.diagnostics["ejekta_suzgeci"] == 1.05
+    from dartrift.observables.crater_shape import surface_particles
+
+    x, x0, eh, R = _kraterli_dolu_kure(0.0)
+    onceki = None
+    for nth in (16, 64, 1024):
+        idx = surface_particles(x0, np.zeros(3), n_theta=nth, n_phi=2 * nth)
+        med = float(np.median(np.linalg.norm(x0[idx], axis=1)))
+        oran = len(idx) / len(x0)
+        if nth == 16:
+            assert med > 0.95 * R, f"n_theta=16 yuzey bulamadi: {med}"
+        if nth == 1024:
+            assert oran > 0.9, f"dejenerasyon beklenirdi, oran {oran}"
+            assert med < 0.9 * R, f"medyan {med}, R {R}"
+        if onceki is not None:
+            assert med < onceki, "n_theta buyudukce medyan DUSMELI"
+        onceki = med
 
 
 def test_ejekta_suzgeci_hepsini_elerse_hata():
-    from dartrift.observables.crater_shape import crater_profile
-    x, x0, ehat, R = _kraterli_kabuk(2.0)
-    with pytest.raises(ValueError, match="TUM"):
-        crater_profile(x, center=np.zeros(3), impact_direction=-ehat,
-                       reference_radius=R, x_reference=x0,
-                       ejekta_yaricap_carpani=0.1)
+    """Suzgec her seyi elerse hata; `0,1 x R` DOLU cismi bosaltmaz.
 
-
-def test_krater_capi_esigi_HAYALI_krater_sinirini_kilitler():
-    """`depth_threshold` düşürülürse kratersiz cisimde çap uydurulur.
-
-    Ölçüldü (gerçek aşama-2 sahnesi, kratersiz, yüzey gürültüsü `0,5 m`):
-
-        esik 0,05  -> hayali cap yok
-        esik 0,005 -> hayali cap 6,93 m
-        esik 0,002 -> hayali cap 11,99 m
-
-    Bu yüzden `KRATER_AYARLARI_DART` varsayılan `0,05`'te KALIYOR ve çap
-    gözlenebilir vektörüne **girmiyor**. Test, birisi eşiği sessizce
-    düşürürse bunu yakalar.
+    Ilk halinde `0,1` yazdim ve "TUM parcaciklari eledi" hatasini
+    bekledim — kabuk aliskanligi. Dolu cisimde merkeze yakin parcaciklar
+    kaliyor ve baska bir hata (`profil bos`) cikiyor.
     """
-    from dartrift.inference.forward import KRATER_AYARLARI_DART
-    assert "depth_threshold" not in KRATER_AYARLARI_DART, (
-        "esik acikca ayarlanmis — hayali krater denetimi yeniden yapilmali")
-
     from dartrift.observables.crater_shape import crater_profile
-    R, s = 82.0, 3.5
-    rng = np.random.default_rng(2)
-    n = int(4 * np.pi * R * R / (s * s))
-    u = rng.uniform(-1, 1, n)
-    ph = rng.uniform(0, 2 * np.pi, n)
-    q = np.sqrt(1 - u * u)
-    yon = np.column_stack([q * np.cos(ph), q * np.sin(ph), u])
-    x0 = R * yon
-    r = R + 0.5 * rng.normal(size=n)          # KRATER YOK, sadece gurultu
-    kr = crater_profile(r[:, None] * yon, center=np.zeros(3),
-                        impact_direction=-np.array([0.0, 0.0, 1.0]),
-                        reference_radius=R, x_reference=x0,
-                        **KRATER_AYARLARI_DART)
-    assert kr.diameter == 0.0, f"kratersiz cisimde {kr.diameter} m cap"
+    x, x0, eh, R = _kraterli_dolu_kure(2.0)
+    with pytest.raises(ValueError, match="TUM"):
+        crater_profile(x, center=np.zeros(3), impact_direction=-eh,
+                       reference_radius=R, x_reference=x0,
+                       ejekta_yaricap_carpani=1.0e-4)
 
 
 def test_iki_ileri_kosu_yolu_krateri_AYNI_olcuyor():
