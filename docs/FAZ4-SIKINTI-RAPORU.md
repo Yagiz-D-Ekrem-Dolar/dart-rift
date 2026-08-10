@@ -901,9 +901,52 @@ yani tam da kutuların en geniş olduğu yerde. Doğru kutulama **çarpma
 ekseninden açıya** göre olmalı: o zaman kutup bölgesi `131k` küresel
 kutu gerektirmeden ince örneklenir.
 
-**Durum:** A13'ün `n_theta = 1024` seçimi **geri alınmalı**;
-ADR-0045'in S1/S2 elemeleri bu bozuk çıkarıcıya dayandığı için
-**yeniden ölçülmeli**.
+**Durum:** A13'ün `n_theta = 1024` seçimi **geri alındı**.
+`KRATER_AYARLARI_DART` artık `kutulama = "eksen"` kullanıyor;
+`n_theta`/`n_phi` **hiç verilmiyor** (o kipte kullanılmıyorlar ve
+bırakmak *"ayarlanmış"* izlenimi verirdi).
+
+#### Çare: `kutulama = "eksen"`
+
+Küresel ızgara hiç kullanılmıyor; parçacıklar çarpma ekseninden açıya
+göre eşit açılı halkalara bölünüyor ve her halkanın yüzeyi `p95` ile
+kestiriliyor. Üretim sahnesinde, **ek maliyet olmadan**:
+
+| gerçek | `nb = 4` | `nb = 6` | `nb = 8` |
+|---|---|---|---|
+| 2 m | 1,844 | 1,977 | **2,015** |
+| 5 m | 4,340 | 4,793 | **4,882** |
+| 10 m | 8,499 | 9,486 | **9,660** |
+
+Küresel kip aynı sahnede **dokuz ayarın hepsinde** reddediyordu.
+
+#### İlk güvenilir DART krateri ölçümü
+
+`faz48_v2`'nin kaydedilmiş son durumunda (`t = 5 s`), yeni kiple:
+
+| `n_bins` | `p90` | `p95` | `p99` |
+|---|---|---|---|
+| 4 | 12,283 | 14,346 | 14,488 |
+| 6 | 12,557 | **14,780** | 14,916 |
+| 8 | 14,103 | **14,782** | 14,931 |
+
+`p95`'te `nb = 6` ve `8` **dört hanede uyuşuyor**. Eski bozuk kip aynı
+duruma `7,30`–`16,62` arası veriyordu.
+
+> **DART krateri `t = 5 s`'de `≈ 14,8 m` derin.** Sentetik kalibrasyonun
+> `−%4` yanlılığıyla gerçek değer `≈ 15,4 m`.
+
+Üç çekince, hiçbiri gizlenmiyor:
+
+1. Ölçülen şey `t₁ = 4,77e-3 s`'ten `t = 5 s`'e olan **değişim**
+   (aktarım parçacık kimliklerini değiştirdiği için `t = 0` referansı
+   kullanılamıyor).
+2. **Tek koşu, nominal parametreler** — belirsizlik bandı yok.
+3. Yerçekimi **kapalı**; krater büyümesini durduran örtü yükü yok, yani
+   bu sayı üst sınıra yakın olmalı.
+
+`kuresel` bileşen `p99`'da `−0,160 m` — cisim küresel olarak neredeyse
+hiç değişmemiş, yani ölçülen şey **yerel** krater (ADR-0039'un amacı).
 
 ---
 
