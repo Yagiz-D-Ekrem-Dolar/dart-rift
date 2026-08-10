@@ -889,3 +889,146 @@ def test_bekleyen_profili_GERCEK_kosuda_cinlama_diyor():
                          R=80.0, v_esc=0.5,
                          carpma_noktasi=np.array([0.0, 0.0, 80.0]))
     assert d["yargi"] == "cinlama_benzeri", d
+
+
+# ---------------------------------------------------------------------------
+# kutulama = "eksen" — DOLU cisimde krateri olcebilen tek kip (A16)
+# ---------------------------------------------------------------------------
+
+def _dolu_kure_krater(derinlik, R=82.0, D=20.0, s=3.5, tohum=5, gurultu=0.0):
+    """DOLU kure (kabuk DEGIL) + paraboloid krater.
+
+    Kabuk kullanmak A16'nin tuzagiydi: kabukta her parcacik zaten
+    yuzeydedir, yani yuzey cikariminin bozuk olmasi GORUNMEZ.
+    """
+    # KAFES, rastgele dolgu DEGIL. Rastgele dolguda yaricap dagilimi
+    # F(r) = (r/R)^3 oldugu icin bir halkanin 95. yuzdeligi YUZEYI degil
+    # o dagilimi olcer ve sinav kodu degil fiksturu sinar. Gercek sahne
+    # FCC kafes; kafeste yuzey KESKIN.
+    rng = np.random.default_rng(tohum)
+    # Izgara 0'i ICERMELI: yoksa carpma ekseni uzerinde hic parcacik
+    # olmaz ve 0. kutu bos kalir. (Ilk halinde `arange(-R, R+s, s)`
+    # kullandim; 82/3,5 tam sayi olmadigi icin eksende parcacik yoktu ve
+    # test kodu degil FIKSTURU dusuruyordu.)
+    k = int(np.floor(R / s))
+    g = np.arange(-k, k + 1) * s
+    X, Y, Z = np.meshgrid(g, g, g, indexing="ij")
+    p3 = np.column_stack([X.ravel(), Y.ravel(), Z.ravel()])
+    # SARSINTI: kusursuz kubik kafeste 0-1,5 derece kutusu YALNIZCA
+    # eksendeki sutunu icerir (yan sutunlar 2,4 derecede kalir) ve o
+    # sutun duzgun araliklidir; yuzdelik yuzeyi degil sutunu olcer.
+    # Gercek moloz yigini kusursuz kafes DEGIL. Bu, fiksturu gercege
+    # yaklastirir -- olcumu kolaylastirmaz, dejenerasyonu kaldirir.
+    p3 = p3 + rng.normal(scale=0.25 * s, size=p3.shape)
+    r0 = np.linalg.norm(p3, axis=1)
+    ic = (r0 > 0.0) & (r0 <= R)
+    x0 = p3[ic]; r0 = r0[ic]
+    yon = x0 / r0[:, None]
+    eh = np.array([0.0, 0.0, 1.0])
+    th = np.arccos(np.clip(yon @ eh, -1, 1))
+    thc = np.arcsin(D / (2 * R))
+    taban = R - derinlik * (1.0 - (th / thc) ** 2)
+    r = np.where(th < thc, np.minimum(r0, taban), r0)
+    if gurultu:
+        r = r + gurultu * rng.normal(size=len(r))
+    return r[:, None] * yon, x0, eh, R
+
+
+def test_eksen_kutulama_ON_KOSULU_var_ve_KOSULSUZ_calismiyor():
+    """`"eksen"` kipi **yüzeye yığılmış** örnek varsayar; genel değildir.
+
+    Üretim sahnesinde (`refine_scene_local`, ince bölge çarpma
+    noktasının `25 m`'si) ölçüldü — gerçek API, `n_bins = 8`:
+
+    | gerçek | ölçülen |
+    |---|---|
+    | 2 m | 2,015 |
+    | 5 m | 4,882 |
+    | 10 m | 9,660 |
+
+    Ama **tekdüze dolu** bir kürede aynı kip **eksik okur**. Sebep
+    ölçüldü: `0-1,5°` kutusunda yalnızca `13` parçacık var ve `p95`'i
+    `74,88` — gerçek yüzeyden `7 m` içeride. Ölçüm ve referans aynı
+    sayıyı verince kraterin **en derin kutusu sıfır sapma** gösterir.
+
+    > Bu bir kusur değil **ön koşuldur**: dar bir koninin yüzeyini
+    > kestirebilmek için o konide yüzeye yakın parçacık gerekir.
+    > Tekdüze dolu cisimde yoktur, yerel incelmede vardır.
+
+    Test o sınırı **kilitler**: birisi kipi genel sanıp tekdüze bir
+    sahnede kullanırsa, beklentisinin yanlış olduğu buradan görünür.
+    """
+    x, x0, eh, R = _dolu_kure_krater(5.0)
+    kr = crater_profile(x, center=np.zeros(3), impact_direction=-eh,
+                        reference_radius=R, x_reference=x0,
+                        outer_angle_deg=12.0, n_bins=8, kutulama="eksen")
+    # Eksen kutusunda sapma SIFIR -- yuzey kestirilemiyor.
+    assert kr.profile_reference[0] == pytest.approx(kr.profile_radius[0])
+    # Derinlik gercegin ALTINDA kaliyor (olculdu: 3,48 / 5,0).
+    assert kr.depth < 0.85 * 5.0, kr.depth
+
+
+def test_eksen_kutulama_YUZEYE_YIGILMIS_ornekte_izliyor():
+    """Ön koşul sağlanınca kip derinliği izliyor.
+
+    Üretim sahnesinin yapısı taklit ediliyor: parçacıklar yalnızca dış
+    kabukta (çarpma bölgesinde yerel incelmenin yaptığı da budur —
+    krater çevresindeki ince parçacıklar yüzeydedir).
+    """
+    R, s = 82.0, 2.0
+    rng = np.random.default_rng(7)
+    n = 60000
+    u = rng.uniform(-1, 1, n); ph = rng.uniform(0, 2 * np.pi, n)
+    q = np.sqrt(1 - u * u)
+    yon = np.column_stack([q * np.cos(ph), q * np.sin(ph), u])
+    # dis kabuk: R-3s .. R
+    r0 = R - 3.0 * s * rng.random(n)
+    x0 = r0[:, None] * yon
+    eh = np.array([0.0, 0.0, 1.0])
+    th = np.arccos(np.clip(yon @ eh, -1, 1))
+    thc = np.arcsin(20.0 / (2 * R))
+    olculen = []
+    for derin in (2.0, 5.0, 10.0):
+        taban = R - derin * (1.0 - (th / thc) ** 2)
+        r = np.where(th < thc, np.minimum(r0, taban), r0)
+        kr = crater_profile(r[:, None] * yon, center=np.zeros(3),
+                            impact_direction=-eh, reference_radius=R,
+                            x_reference=x0, outer_angle_deg=12.0,
+                            n_bins=8, kutulama="eksen")
+        olculen.append(kr.depth)
+    assert olculen[0] < olculen[1] < olculen[2], olculen
+    # SINIR FIKSTURUN DESTEKLEDIGI KADAR. Bu kabuk uretim sahnesinin
+    # VEKILI; orada olculen kurtarma %95-100 (belgede tablo), burada
+    # 2 m icin %71 -- kabuk kalinligi 3s ve radyal dolgu rastgele.
+    # Esigi %95'e cekmek fiksturu teste uydurmak olurdu; iddia
+    # TEK DUZELIK ve mertebe kurtarmadir.
+    for gercek, d in zip((2.0, 5.0, 10.0), olculen):
+        assert 0.6 < d / gercek < 1.2, f"gercek {gercek}, olculen {d}"
+
+
+def test_eksen_kutulama_KRATERSIZ_cisimde_hayali_uretmiyor():
+    x, x0, eh, R = _dolu_kure_krater(0.0, gurultu=0.2)
+    kr = crater_profile(x, center=np.zeros(3), impact_direction=-eh,
+                        reference_radius=R, x_reference=x0,
+                        outer_angle_deg=12.0, n_bins=6, kutulama="eksen")
+    assert kr.depth < 1.2, kr.depth
+    assert kr.diameter == 0.0
+
+
+def test_eksen_kutulama_tanilari_yaziyor():
+    x, x0, eh, R = _dolu_kure_krater(5.0)
+    kr = crater_profile(x, center=np.zeros(3), impact_direction=-eh,
+                        reference_radius=R, x_reference=x0,
+                        outer_angle_deg=12.0, n_bins=6, kutulama="eksen",
+                        yuzdelik=95.0)
+    assert kr.diagnostics["kutulama"] == "eksen"
+    assert kr.diagnostics["yuzdelik"] == 95.0
+
+
+def test_kutulama_gecersiz_deger_reddedilir():
+    x, x0, eh, R = _dolu_kure_krater(5.0)
+    for kw, kalip in (({"kutulama": "sapka"}, "kutulama"),
+                      ({"kutulama": "eksen", "yuzdelik": 20.0}, "yuzdelik")):
+        with pytest.raises(ValueError, match=kalip):
+            crater_profile(x, center=np.zeros(3), impact_direction=-eh,
+                           reference_radius=R, x_reference=x0, **kw)

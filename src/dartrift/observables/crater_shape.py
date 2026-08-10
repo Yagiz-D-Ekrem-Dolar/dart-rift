@@ -130,6 +130,8 @@ def crater_profile(
     n_phi: int | None = None,
     x_reference: np.ndarray | None = None,
     ejekta_yaricap_carpani: float | None = None,
+    kutulama: str = "kuresel",
+    yuzdelik: float = 95.0,
 ) -> CraterShape:
     """Yerel krateri, kuresel bicim degisiminden ayirarak olc.
 
@@ -158,6 +160,40 @@ def crater_profile(
     > Ikisine birden uygulanirsa hayatta kalan parcaciklar zaten taban
     > altinda oldugu icin referans = olcum olur ve sonuc ozdes sifirdir
     > (olculdu).
+
+    ## `kutulama = "eksen"` — DOLU cisimde tek calisan kip
+
+    Varsayilan `"kuresel"` kip once `surface_particles` ile yuzeyi
+    cikarir. O cikarici KURESEL `cos(theta)` izgarasi kullanir ve krater
+    kutupta oldugu icin koniye pay ayiramaz. Olculdu (DART, `N = 10 410`):
+
+    | `n_theta` | "yuzey" / toplam | medyan `r` | koni (`<7 deg`) |
+    |---|---|---|---|
+    | 16 | 0,05 | **81,26** (gercek `81,94`) | **8** |
+    | 1024 | **0,96** | 66,91 | 9 970 |
+
+    Kucuk `n_theta`: koniye `5-14` parcacik duser, profil cikarilamaz.
+    Buyuk `n_theta`: izgara parcacik sayisini gecer, her parcacik kendi
+    kutusunun "en disi" olur ve **yuzey = butun cisim**. Ikisi arasinda
+    calisan bir deger YOK (rapor A16).
+
+    `"eksen"` kipi kuresel izgarayi **hic kullanmaz**: parcaciklari
+    dogrudan **carpma ekseninden aciya** gore esit acili halkalara
+    boler ve her halkanin yuzeyini `yuzdelik` ile kestirir. Olculdu
+    (ayni sahne, `lam = 2`, hicbir cozunurluk artisi olmadan):
+
+    | gercek | `"kuresel"` | **`"eksen"`** |
+    |---|---|---|
+    | 2 m | RED | **1,977** |
+    | 5 m | RED | **4,793** |
+    | 10 m | RED | **9,486** |
+
+    `yuzdelik = 95` bilinen sentetik kraterle **kalibre edildi**:
+    `p90` yukari (`5,3-6,2`), `p99` asagi (`3,8-4,0`) yanli. Kalan
+    yanlilik `-%4`. Bu bir kalibrasyondur, turetme degil.
+
+    Gurultu tabani olculdu: yuzey gurultusu `1 m` iken **`1,03 m`**;
+    `0,2 m` iken `0,25 m`.
     """
     x = np.ascontiguousarray(x, dtype=np.float64)
     c = np.asarray(center, dtype=np.float64).reshape(3)
@@ -178,9 +214,24 @@ def crater_profile(
         # sayidan daha kotudur: nereden geldigi gorunmez.
         raise ValueError(f"min_per_bin >= 1 olmali, {min_per_bin} geldi")
 
+    if kutulama not in ("kuresel", "eksen"):
+        raise ValueError(f"kutulama 'kuresel' ya da 'eksen' olmali, "
+                         f"{kutulama!r} geldi")
+    if not (50.0 < yuzdelik <= 100.0):
+        raise ValueError(f"yuzdelik (50,100] olmali, {yuzdelik} geldi")
+    _eksen_kipi = kutulama == "eksen"
+
+    def _ozet(a: np.ndarray) -> float:
+        """Kuresel kipte medyan, eksen kipinde yuzey kestirimi (yuzdelik)."""
+        return float(np.percentile(a, yuzdelik) if _eksen_kipi
+                     else np.median(a))
+
     def _yuzey_profili(pts: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """(yaricap, aci) — carpma eksenine gore, AYNI kutulama ve ayni eksen."""
-        idx = surface_particles(pts, c, n_theta=n_theta, n_phi=n_phi)
+        # Eksen kipinde yuzey cikarimi YAPILMAZ: kuresel izgara koniyi
+        # goremiyor (A16). Yuzey her halkada `yuzdelik` ile kestirilir.
+        idx = (np.arange(len(pts)) if _eksen_kipi
+               else surface_particles(pts, c, n_theta=n_theta, n_phi=n_phi))
         rr = pts[idx] - c[None, :]
         dd = np.linalg.norm(rr, axis=1)
         ca = np.clip((rr @ axis) / np.maximum(dd, 1e-300), -1.0, 1.0)
@@ -201,7 +252,8 @@ def crater_profile(
                 f"parcaciklari eledi; olcecek yuzey kalmadi")
         x_olcum = x[tut]
 
-    si = surface_particles(x_olcum, c, n_theta=n_theta, n_phi=n_phi)
+    si = (np.arange(len(x_olcum)) if _eksen_kipi
+          else surface_particles(x_olcum, c, n_theta=n_theta, n_phi=n_phi))
     rs = x_olcum[si] - c[None, :]
     rad = np.linalg.norm(rs, axis=1)
     cosang = np.clip((rs @ axis) / np.maximum(rad, 1e-300), -1.0, 1.0)
@@ -214,7 +266,7 @@ def crater_profile(
         raise ValueError(
             f"referans yuzeyde yeterli parcacik yok ({n_ref}); "
             "outer_angle_deg dusurun ya da cozunurlugu artirin")
-    r_ref_global = float(np.median(rad[ref_sel]))
+    r_ref_global = _ozet(rad[ref_sel])
 
     rad0 = ang0 = None
     if x_reference is not None:
@@ -230,7 +282,7 @@ def crater_profile(
         # Kuresel olcek kaymasi: carpma DISI bolgede son/onceki medyan farki.
         # Bu fark referansa EKLENIR, boylece butun cismin buzusmesi/genlemesi
         # kraterden duser — modulun tum amaci bu.
-        r0_global = float(np.median(rad0[ref0_sel]))
+        r0_global = _ozet(rad0[ref0_sel])
         global_shift = r_ref_global - r0_global
     else:
         r0_global = float("nan")
@@ -244,7 +296,11 @@ def crater_profile(
     # raporlaniyordu. cos(theta)'da esit araliklar her kutuya ayni kati aciyi
     # verir. (Ayni hata sinifi: ADR-0017, orneklem gurultusunu olcmek.)
     cos_out = np.cos(np.radians(outer_angle_deg))
-    edges_c = np.linspace(1.0, cos_out, n_bins + 1)          # azalan
+    # Eksen kipinde ESIT ACILI halkalar: butun parcaciklar kullanildigi
+    # icin ic halkalarda da yeterli ornek var (olculdu: 20/47/81/...).
+    edges_c = (np.cos(np.radians(np.linspace(0.0, outer_angle_deg, n_bins + 1)))
+               if _eksen_kipi
+               else np.linspace(1.0, cos_out, n_bins + 1))   # azalan
     prof_a = np.degrees(np.arccos(np.clip(0.5 * (edges_c[:-1] + edges_c[1:]), -1.0, 1.0)))
 
     def _kutula(rr: np.ndarray, aa: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -257,7 +313,7 @@ def crater_profile(
             sel = (ib == k) & icap
             cnt[k] = int(np.count_nonzero(sel))
             if cnt[k] >= min_per_bin:
-                pr[k] = float(np.median(rr[sel]))
+                pr[k] = _ozet(rr[sel])
         return pr, cnt
 
     prof_r, counts = _kutula(rad, ang)
@@ -358,6 +414,8 @@ def crater_profile(
             # kabul edilmistir; duzensiz cisimde olculen "krater" sekilden
             # gelebilir (kratersiz Dimorphos elipsoidinde 9,04 m olculdu).
             "reference_is_spherical": bool(x_reference is None),
+            "kutulama": kutulama,
+            "yuzdelik": float(yuzdelik) if _eksen_kipi else None,
             "ejekta_suzgeci": ejekta_yaricap_carpani,
             "ejekta_elenen": n_elenen,
             "reference_radius_pre_impact": r0_global,
