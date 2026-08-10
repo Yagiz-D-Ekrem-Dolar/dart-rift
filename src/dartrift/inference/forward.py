@@ -89,22 +89,6 @@ def sahne_parametreleri(theta, taban: dict | None = None, *,
     return kw
 
 
-#: Krater çıkarıcısının **varsayılan** ayarları kraterin ölçeğine göre
-#: kaba. Ölçüldü (2026-08-09): bilinen `D = 16 m`, derinlik `3 m` krater
-#:
-#: | `outer` | `n_bins` | `n_theta` | ölçülen derinlik |
-#: |---|---|---|---|
-#: | 60° | 20 | vars. | **0,000** |
-#: | 20° | 10 | 48 | 0,991 |
-#: | **12°** | **8** | **64** | **2,082** (gerçek `3,0`) |
-#:
-#: Beklenen DART krateri `10–25 m` (Holsapple mukavemet rejimi), yani
-#: varsayılan `60°` kutulaması onu **göremez**. Bu ayarlar kratere
-#: uydurulmuş hâldir.
-#:
-#: > `s = 3,5 m`'de (ensemble çözünürlüğü) en iyi hâlde `%24` geri
-#: > geliyor; bu ayarlar gözlenebiliri **kullanılabilir** yapar,
-#: > **doğru** yapmaz. Daha ince yüzey gerekir.
 #: DART geometrisi icin krater cikarici ayarlari.
 #:
 #: ## Iki kez yanlis yazdim; ucuncusu OLCUMLE dogrulandi
@@ -278,7 +262,8 @@ def ileri_kosu_ikiasama(x, *, material, device: str, t1: float, t_end: float,
                         r1: float, lam1: float, r2: float, lam2: float,
                         spacing: float, sahne_taban: dict,
                         azami_adim: int = 200000, ilerleme=None,
-                        krater_ayarlari=KRATER_AYARLARI_DART) -> np.ndarray:
+                        krater_ayarlari=KRATER_AYARLARI_DART,
+                        durum_kaydi=None) -> np.ndarray:
     """İki aşamalı ileri model — **çözülmüş mermiyle**.
 
     ## Neden gerekli
@@ -302,6 +287,17 @@ def ileri_kosu_ikiasama(x, *, material, device: str, t1: float, t_end: float,
     Üç seviyelide `5,10e-15` (ADR-0043 §4f).
 
     > Düşen nokta **atlanmaz**: `nan` döner ve çağıran taraf sayar.
+
+    ## `durum_kaydi` neden var
+
+    `durum_kaydi(i, theta, st, sahne, x_referans, a1)` verilirse her noktanın
+    **son durumu** çağırana geçer. Bu bir kolaylık değil, ölçülmüş bir
+    ihtiyaç: bu turda **üç kez** kaydedilmiş bir duruma ihtiyaç duydum
+    (`kacis_bekleyenler`, krater çıkarıcı sınırları, `Y0` duyarlılığı) ve
+    elimde yalnızca özet vardı — her seferinde saatlerce yeniden koşmak
+    gerekti. Diziler `~1 MB`, koşu saatler.
+
+    > Yeni bir gözlenebilir sorusu **koşu gerektirmemeli**.
     """
     from ..cpu_reference.sph_ref import RefParams
     from ..setup.refine import refine_scene_ucseviye
@@ -359,8 +355,11 @@ def ileri_kosu_ikiasama(x, *, material, device: str, t1: float, t_end: float,
                 Y0=np.ascontiguousarray(sahne.Y0), device=device,
                 check_every=10 ** 9)
             _ilerlet(sol2, t1, t_end, "asama-2")
+            st_son = sol2.state_numpy()
+            if durum_kaydi is not None:
+                durum_kaydi(i, th, st_son, sahne, x0, a1)
             Y[i] = gozlenebilirleri_cikar(
-                sol2.state_numpy(), impactor_momentum=a1.impactor_momentum,
+                st_son, impactor_momentum=a1.impactor_momentum,
                 target_mass=a1.target_mass, target_radius=a1.target_radius,
                 is_impactor=sahne.is_impactor,
                 impact_direction=a1.impact_direction, x_reference=x0,
