@@ -1,7 +1,7 @@
 # ADR-0045 — Krater gözlenebiliri: **çap mı derinlik mi?**
 
 **Tarih:** 2026-08-09
-**Durum:** **ÖNERİ** — karar verilmedi
+**Durum:** **KABUL EDİLDİ** — S3 (iki gözlenebilir); S1 ve S2 ölçümle elendi
 **İlgili:** [ADR-0039](ADR-0039-krater-olcutu-yanliliktan-ayristirilir.md) ·
 FAZ 4.6 · [rapor A11/A13](../FAZ4-SIKINTI-RAPORU.md)
 
@@ -119,9 +119,51 @@ gürültüsü `< 0,2 m` ise `0,005` eşiği hayalî çap üretmiyor. O sayı
 değil; **S1 bu çözünürlükte elenmiştir** — hayalî krater riski yüzünden
 değil, taşıdığı bilgi yetersiz olduğu için.
 
-Geriye **S2** (derinlik, `±%18` sıçramalı) ve **S3** (iki gözlenebilir)
-kalıyor. Eğilimim hâlâ **S3**; S2'nin `±%18`'i ölçülmüş bir gürültü ve
-`β`'nın bit düzeyinde kararlılığıyla kıyaslanınca zayıf kalıyor.
+### S2 de elendi: derinlik **yakınsamıyor**
 
-**1 olmadan ADR yine de kapatılmamalı** — ama artık kapanışa bir ölçüm
-daha yakın.
+`faz48_v2`'nin kaydedilmiş son durumunda (`t = 5 s`) aynı duruma 18
+farklı ayar uygulandı:
+
+| `n_theta` | `n_bins = 6` | `8` | `12` |
+|---|---|---|---|
+| 256 | 11,84 | 14,19 | 11,96 |
+| 1024 | 8,73 | **13,92** | 16,54 |
+| 4096 | 7,32 | 7,45 | 13,94 |
+
+Derinlik **`7,30` – `16,62 m`** (2,3 kat), çap `5,62` – `13,85` (2,5 kat).
+
+**Hiçbir yönde yakınsama yok:**
+
+* `n_bins` 6 → 8 → 12 (`n_theta = 1024` sabit): `8,73 → 13,92 → 16,54`
+* `n_theta` 256 → 1024 → 4096 (`n_bins = 8` sabit): `14,19 → 13,92 → 7,45`
+
+> Yakınsamayan bir sayı **ölçüm değildir**. Kutulamayı sıklaştırınca
+> değişmeye devam ediyorsa, ölçülen şey kraterin derinliği değil
+> **kutulamanın kendisidir**.
+
+Ejekta süzgeci `t = 5 s`'de artık fark yaratmıyor (`< %1`) — beklendiği
+gibi, ejekta çoktan uzaklaşmış. Süzgeç erken zamanların ilacıydı.
+
+---
+
+## 6. Karar: **S3**
+
+Üç seçenekten ikisi **ölçümle** elendi:
+
+| | eleme gerekçesi |
+|---|---|
+| S1 (çap) | 82 örnekte **2 değer** → `~1 bit` |
+| S2 (derinlik) | ayarlara göre **2,3 kat** değişiyor, yakınsamıyor |
+| **S3** (iki gözlenebilir) | ayakta |
+
+FAZ 4.6 **`β` + `ejekta_kutle_kesri`** ile yürüyecek. Üç parametre iki
+gözlenebilirle eksik belirlenmiş; **C1 (3/3 kapsama) düşecek** ve bu
+düşüş **dürüst**: sahte bir üçüncü gözlenebilirle geçmekten iyidir
+(ADR-0040, *"kriter düşebilmelidir"*).
+
+> Kalan eksik ölçüm (yüzey gürültüsü, Hera belirsizliği) artık kararı
+> **değiştirmiyor**: iki seçenek de eşiğe bakmadan elendi. O yüzden ADR
+> kapatılabilir.
+
+**Yeniden açma şartı:** çarpma bölgesinde yüzey çözünürlüğü
+`s ≲ 1 m`'ye inerse (şu an `3,5 m`) her iki eleme de yeniden ölçülmeli.
