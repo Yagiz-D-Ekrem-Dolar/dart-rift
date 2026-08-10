@@ -51,6 +51,7 @@ koşulardan gelir; iş numaraları yazılıdır.
 | **[043](KAYIT-043_2026-08-09_lagrange-aktarimi-engeli-kaldirdi.md)** | 09.08 | **Lagrange'cı aktarım engeli kaldırdı**: ısıya dönen `%99,3 → %2,88`, atama mesafesi `4,35 → 0,73` hücre · `λ=19` arayüzü **ölçülemedi** (referans `608³`) · çıkarım hattı ilk kez uçtan uca sınandı |
 | **[044](KAYIT-044_2026-08-09_gate-6-7-ve-iki-asama-kuruldu.md)** | 09.08 | **G4'te 6/7 geçti** (B2, B4 eklendi; `A1` tek düşen) · **ADR-0044 KABUL**: çıkarım uzayı `ρ_yığın` ile tutarsızdı, `29/29` nokta düşüyordu · iki aşama **uçtan uca kuruldu** · `WarpSPH1D` continuity yolu hiç çalışmamış |
 | **[045](KAYIT-045_2026-08-09_mermiyi-cozmek-rejimi-degistiriyor.md)** | 09.08 | **Mermiyi çözmek REJİMİ değiştiriyor**: `n_ejekta` `803 → 28` (tamamen seken top → gömülen mermi) · `A1 ≥ 2` eşiği ölçümle haklı çıktı · üç seviyeli aşama-1 momentum kapanışını `0,690 → 5,1e-15` yaptı |
+| **[046](KAYIT-046_2026-08-10_gozlenebilirler-duyarli-Y0-gorunmez.md)** | 10.08 | **`Y0` çıkarılamaz**: dört mertebe değişiyor, `β` `0,001` oynuyor; iki köşe yalnızca `Y0`'da farklı ve ejekta `0,1 kg` bile değişmiyor · `β` `%2,0` yayılımla **duyarlı** (`f_boulder`, `boulder_alpha0`) · `ejekta_kutle_kesri` **bilgi taşıyor** — `%50` katı blok köşesinde `91,3 kg` gerçek hedef ejektası (ADR-0045 §7 düzeltmesi) · `β` `t=0,2`'de `t=5,0`'la **bit düzeyinde aynı** → ensemble 25 kat ucuz |
 
 > 017/018 numaraları kronolojiyle ters: 018 (2. tur) 017'den (3. tur) **önce**
 > yaşandı ama sonra yazıldı. Numaralar yazım sırasını, tablo yaşanma sırasını

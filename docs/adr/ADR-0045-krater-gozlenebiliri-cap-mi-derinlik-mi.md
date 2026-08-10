@@ -196,7 +196,7 @@ oran                 = 1.000000
 |---|---|---|
 | `krater_capi` | **ölü** | 82 örnekte 2 değer |
 | `krater_derinlik` | **ölü** | ayarlara göre 2,3 kat, yakınsamıyor |
-| `ejekta_kutle_kesri` | **ölü** | tam olarak mermi kütlesi |
+| `ejekta_kutle_kesri` | **ölü** *(→ §9'da DÜZELTİLDİ)* | tam olarak mermi kütlesi |
 | `beta` | **ölçülüyor** | FAZ 4.11 sürüyor |
 
 **Üç parametre, en iyi ihtimalle bir gözlenebilir.** G4-C'nin
@@ -262,3 +262,25 @@ cisimde eksik okuyor (`5 m → 3,48`), çünkü dar konide yüzeye yakın
 parçacık yok. Üretim sahnesi yerel incelme kullandığı için koşul
 **sağlanıyor**; sağlanmadığı yerde kip kullanılmamalı. Test bunu
 kilitliyor.
+
+
+---
+
+## 9. §7 DÜZELTMESİ — `ejekta_kutle_kesri` **bilgi taşıyor**
+
+§7'de tek bir sahnede ölçüp *"tam olarak mermi kütlesi, hiçbir bilgi
+taşımıyor"* dedim. FAZ 4.11 dokuz köşede ölçtü
+([KAYIT-046](../defter/KAYIT-046_2026-08-10_gozlenebilirler-duyarli-Y0-gorunmez.md)):
+
+* yedi köşede kaçan kütle `579,2 kg` = merminin kendisi — §7 **doğru**,
+* iki köşede `670,7 kg` → **`91,3 kg` gerçek hedef ejektası**.
+
+O iki köşe `boulder_alpha0 = 1,0` **ve** `f_boulder = 0,50`, yani
+`%50` **katı** blok. Gözeneklilik düşünce gerçek ejekta çıkıyor.
+
+> Hatam yöntemsel: **tek noktada ölçüp uzayın tamamı için karar verdim.**
+> §7'nin kendisi *"elemek ile seçmek aynı kanıt standardını ister"*
+> diyordu; o standardı elemede de tutmam gerekiyordu.
+
+Gözlenebilir **ölü değil ama zayıf**: iki seviyeli bir eşik göstergesi,
+sürekli bir ölçü değil.
