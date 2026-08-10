@@ -1,7 +1,7 @@
 # ADR-0045 — Krater gözlenebiliri: **çap mı derinlik mi?**
 
 **Tarih:** 2026-08-09
-**Durum:** **DÜZELTİLDİ** — S3 seçildi, sonra S3'ün ikinci gözlenebiliri de ölü çıktı (§7). Geriye **tek** gözlenebilir kaldı.
+**Durum:** **YENİDEN AÇILDI** (§8) — S2'yi eleyen ölçüm **bozuk bir çıkarıcıyla** yapılmıştı; düzeltilince derinlik yakınsıyor.
 **İlgili:** [ADR-0039](ADR-0039-krater-olcutu-yanliliktan-ayristirilir.md) ·
 FAZ 4.6 · [rapor A11/A13](../FAZ4-SIKINTI-RAPORU.md)
 
@@ -211,3 +211,54 @@ da çözünürlük değil, **gözlenebilir sayısı**.
 Gözlenebilir vektörünün yeniden tasarlanması ayrı bir ADR gerektirir.
 Bu ADR **krater** gözlenebilirini karara bağladı (ikisi de ölü) ve o
 kısmı geçerlidir.
+
+
+---
+
+## 8. YENİDEN AÇILDI — S2'yi eleyen ölçüm **bozuk çıkarıcıyla** yapıldı
+
+§5'te derinliği *"ayarlara göre 2,3 kat, yakınsamıyor"* diye eledim.
+O tablo `kutulama = "kuresel"` ile alındı ve rapor A16 gösterdi ki o kip
+dolu cisimde **hiçbir ayarda** çalışmıyor:
+
+* küçük `n_theta` → koniye `5-14` parçacık düşer,
+* büyük `n_theta` → ızgara parçacık sayısını geçer, *"yüzey = bütün
+  cisim"* olur (`n_theta = 1024`'te `9970/10410`, medyan `r = 66,9`).
+
+Yani elediğim şey **derinlik değil, bozuk bir ölçüm**di.
+
+### `kutulama = "eksen"` ile aynı sahne
+
+Küresel ızgara hiç kullanılmıyor; parçacıklar çarpma ekseninden açıya
+göre eşit açılı halkalara bölünüyor. Aynı sahne, aynı çözünürlük
+(`λ = 2`), hiçbir ek maliyet yok:
+
+| gerçek | `nb = 4` | `nb = 6` | `nb = 8` |
+|---|---|---|---|
+| 2 m | 1,844 | 1,977 | **2,015** |
+| 5 m | 4,340 | 4,793 | **4,882** |
+| 10 m | 8,499 | 9,486 | **9,660** |
+
+Kutu sayısı arttıkça gerçeğe **tek düze** yaklaşıyor. Gürültü tabanı
+`0,25 m` (yüzey gürültüsü `0,2 m` iken). Hayalî çap üretmiyor.
+
+### Güncel durum
+
+| gözlenebilir | durum |
+|---|---|
+| `krater_capi` | **ölü** — 2 değer; yeni kipte de çap = eşik geçişi, çap değil |
+| **`krater_derinlik`** | **YAŞIYOR** — yakınsıyor, `%±3` yanlı, tabanı `0,25 m` |
+| `ejekta_kutle_kesri` | **ölü** — tam olarak mermi kütlesi (§7) |
+| `beta` | FAZ 4.11 ölçüyor |
+
+Yani gözlenebilir sayısı `1`'den **`2`'ye** çıktı (`β` + derinlik).
+Üç parametre için hâlâ eksik ama G4-C artık *"hiç ölçülemez"*
+durumunda değil.
+
+### Ön koşul — kayıt altında
+
+`"eksen"` kipi **yüzeye yığılmış** örnek istiyor. Tekdüze dolu bir
+cisimde eksik okuyor (`5 m → 3,48`), çünkü dar konide yüzeye yakın
+parçacık yok. Üretim sahnesi yerel incelme kullandığı için koşul
+**sağlanıyor**; sağlanmadığı yerde kip kullanılmamalı. Test bunu
+kilitliyor.
