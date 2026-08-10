@@ -848,6 +848,65 @@ Düzeltme *görünürlüğü* kurtardı, *niceliği* kurtarmadı. 82 örnekte:
 
 ---
 
+### A16 — A13'ün `n_theta = 1024` düzeltmesi de **yanlış** (2026-08-10)
+
+`surface_particles` `N/PER_BUCKET` kadar kutu seçer (`~867`, yani
+`n_theta ≈ 20`) çünkü kutu başına `~12` parçacık gerekir. A13'te
+krateri görebilmek için `n_theta`'yı **1024**'e çıkardım. Ölçtüm:
+
+| `n_theta` | kutu | "yüzey" sayısı | oran | medyan `r` |
+|---|---|---|---|---|
+| 16 | 512 | 512 | 0,05 | **81,26** |
+| 64 | 8 192 | 6 038 | 0,58 | 72,18 |
+| **1024** | 131 072 | **9 970** | **0,96** | **66,91** |
+| 4096 | 524 288 | 10 306 | 0,99 | 66,64 |
+
+Gerçek yüzey `R = 81,94 m`. `n_theta = 1024`'te "yüzey" kümesi cismin
+**%96'sı** ve medyanı `66,91` — 10. yüzdelik `39,34`, yani merkeze
+yakın.
+
+> `surface_particles` kutu sayısı parçacık sayısını geçince
+> **dejenere** oluyor: her parçacık kendi kutusunun en dışı olur ve
+> "yüzey" = **bütün cisim**. `1024` krateri *"görüyor"* ama ölçtüğü şey
+> yüzey değil.
+
+#### Doğrulamam neden geçti
+
+İki sınavda da:
+
+* **Kabuk testleri** — kabukta *her parçacık zaten yüzeydedir*, aşırı
+  kutulama zararsız. Bu yüzden `2/5/10 m → 1,65/4,11/8,23` doğrusal
+  çıktı.
+* **Dolu sahne testi** — parçacıkları `3R`'ye taşıyıp süzünce krater
+  sinyali yine göründü, ama **yanlış sebeple**: yüzey/iç karışımının
+  kayması yüzünden.
+
+Kabuk, dolu cismin vekili değilmiş. Aradaki fark tam da ölçülmek
+isteneni yok ediyor.
+
+#### İki gereksinim **çelişiyor**
+
+| gereksinim | gerekli `n_theta` |
+|---|---|
+| kutup kutusu `<` krater yarı-açısı (`7°`) | `> 256` |
+| kutu başına `≳ 12` parçacık | `≈ 20` |
+
+`10 410` parçacıkla ikisi **aynı anda sağlanamaz**. Bu bir ayar
+seçimiyle çözülmez.
+
+#### Kök neden ve doğru çare
+
+`surface_particles` **küresel `cos θ`**'da kutuluyor. Krater kutupta,
+yani tam da kutuların en geniş olduğu yerde. Doğru kutulama **çarpma
+ekseninden açıya** göre olmalı: o zaman kutup bölgesi `131k` küresel
+kutu gerektirmeden ince örneklenir.
+
+**Durum:** A13'ün `n_theta = 1024` seçimi **geri alınmalı**;
+ADR-0045'in S1/S2 elemeleri bu bozuk çıkarıcıya dayandığı için
+**yeniden ölçülmeli**.
+
+---
+
 ## 2. KAPANAN sıkıntılar — kronolojik
 
 ### Ölçüm tasarımı (1–4)
