@@ -1,7 +1,7 @@
 # ADR-0045 — Krater gözlenebiliri: **çap mı derinlik mi?**
 
 **Tarih:** 2026-08-09
-**Durum:** **KABUL EDİLDİ** — S3 (iki gözlenebilir); S1 ve S2 ölçümle elendi
+**Durum:** **DÜZELTİLDİ** — S3 seçildi, sonra S3'ün ikinci gözlenebiliri de ölü çıktı (§7). Geriye **tek** gözlenebilir kaldı.
 **İlgili:** [ADR-0039](ADR-0039-krater-olcutu-yanliliktan-ayristirilir.md) ·
 FAZ 4.6 · [rapor A11/A13](../FAZ4-SIKINTI-RAPORU.md)
 
@@ -167,3 +167,47 @@ düşüş **dürüst**: sahte bir üçüncü gözlenebilirle geçmekten iyidir
 
 **Yeniden açma şartı:** çarpma bölgesinde yüzey çözünürlüğü
 `s ≲ 1 m`'ye inerse (şu an `3,5 m`) her iki eleme de yeniden ölçülmeli.
+
+
+---
+
+## 7. DÜZELTME — S3'ü **ölçmeden** seçmişim (aynı gün)
+
+§6'da S1 ve S2'yi ölçümle eledim ve geriye kalanı seçtim. **S3'ün
+kendisini denetlemedim.** Yirmi dakika sonra denetledim:
+
+```
+kacan kutle          = 579.4000000000001 kg
+mermi kutlesi        = 579.4000          kg
+oran                 = 1.000000
+```
+
+`ejekta_kutle_kesri` **merminin kendisidir**. Hedeften kaçan madde
+`t = 5 s`'de tam olarak **sıfır**. Mermi kütlesi DART görevinin sabiti;
+`θ`'nın hiçbir bileşeni onu değiştirmez.
+
+> Eleme yöntemim kusurluydu: *"ikisi elendi, üçüncü ayakta"* dedim ama
+> ayakta olduğunu **varsaydım**. Elemek ile seçmek aynı kanıt standardını
+> ister.
+
+### Geriye kalan
+
+| gözlenebilir | durum | gerekçe |
+|---|---|---|
+| `krater_capi` | **ölü** | 82 örnekte 2 değer |
+| `krater_derinlik` | **ölü** | ayarlara göre 2,3 kat, yakınsamıyor |
+| `ejekta_kutle_kesri` | **ölü** | tam olarak mermi kütlesi |
+| `beta` | **ölçülüyor** | FAZ 4.11 sürüyor |
+
+**Üç parametre, en iyi ihtimalle bir gözlenebilir.** G4-C'nin
+*"3/3 parametre kurtarıldı"* ölçütü bu ileri modelle **karşılanamaz** —
+`β` duyarlı çıksa bile bir sayı üç bilinmeyeni belirlemez.
+
+Bu, FAZ 4.6'nın neden bitmediğinin cevabıdır: eksik olan koşu süresi ya
+da çözünürlük değil, **gözlenebilir sayısı**.
+
+### Karar bu ADR'nin kapsamını aşıyor
+
+Gözlenebilir vektörünün yeniden tasarlanması ayrı bir ADR gerektirir.
+Bu ADR **krater** gözlenebilirini karara bağladı (ikisi de ölü) ve o
+kısmı geçerlidir.
