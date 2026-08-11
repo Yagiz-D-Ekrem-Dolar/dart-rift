@@ -22,11 +22,12 @@ saatler alırdı. Bu ayrım o hatayı saniyede yakalar.
 
 ## Doğrulanmamış olan
 
-`ileri_kosu`'nun GPU kısmı **koşulmadı** — TRUBA kotası dolu
-(`7.200.096 / 7.200.000 cpu-dk`; 1 dakikalık `echo` işi bile
-`AssocGrpCPUMinutesLimit` ile bloke). Yapısı
-`scripts/faz44_dart_yakinsama.py`'deki **koşulmuş** döngüyle aynı
-tutuldu, ama bu bir kanıt değildir ve öyle sunulmuyor.
+`ileri_kosu` (tek aşamalı) GPU'da **koşulmadı**. Yapısı
+`scripts/faz44_dart_yakinsama.py`'deki koşulmuş döngüyle aynı tutuldu
+ama bu bir kanıt değildir.
+
+`ileri_kosu_ikiasama` **koştu** (2026-08-10, FAZ 4.11/4.12): iki kez
+9 nokta, `0/9` düşen. Yani iki aşamalı yol artık kanıtlı.
 """
 from __future__ import annotations
 
@@ -37,7 +38,21 @@ __all__ = ["sahne_parametreleri", "gozlenebilirleri_cikar", "ileri_kosu",
            "GOZLENEBILIRLER"]
 
 #: Gözlenebilir adları — `gozlenebilirleri_cikar` bu **sırada** döner.
-GOZLENEBILIRLER = ("beta", "krater_capi", "ejekta_kutle_kesri")
+#:
+#: ## `krater_capi` → `krater_derinlik` (2026-08-10, ADR-0045 §8/§10)
+#:
+#: Çap **ölçümle ölü** çıktı: FAZ 4.11'in dokuz köşesinde de `0`, ve
+#: `faz48_v2`'nin 82 örneğinde yalnızca **iki değer** (`6,93` / `12,00`).
+#: Ölçtüğü şey çap değil, `depth_threshold` geçişi.
+#:
+#: Derinlik ise `kutulama = "eksen"` düzeltmesinden sonra **yaşıyor**:
+#: bağıl yayılım `%20,7` (çap `0`, `β` `%2,0`) ve sentetik kraterde
+#: `2/5/10 m → 2,015/4,882/9,660`.
+#:
+#: > Ölü bir sütun sessiz bir arıza: `fit_surrogate` onu `sabit` diye
+#: > işaretler, `guvenilir=False` döner ve koşucu **DURDURULDU** der.
+#: > Yani çapı bırakmak FAZ 4.6'yı hiç koşturmamak demekti.
+GOZLENEBILIRLER = ("beta", "krater_derinlik", "ejekta_kutle_kesri")
 
 
 def sahne_parametreleri(theta, taban: dict | None = None, *,
@@ -184,7 +199,7 @@ def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,
         reference_radius=float(target_radius),
         x_reference=np.asarray(x_reference, dtype=np.float64)[hedef],
         **(krater_ayarlari or {}))
-    y = np.array([float(mt.beta), float(kr.diameter),
+    y = np.array([float(mt.beta), float(kr.depth),
                   float(mt.ejecta_fraction)], dtype=np.float64)
     if not np.all(np.isfinite(y)):
         raise RuntimeError(

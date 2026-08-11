@@ -56,12 +56,22 @@ def main() -> int:
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--t-end", type=float, default=0.2)
     ap.add_argument("--nokta", type=int, default=9)
+    ap.add_argument("--n-lhs", type=int, default=0,
+                    help="koselerin USTUNE bu kadar LHS noktasi ekle "
+                         "(FAZ 4.6'nin egitim kumesi icin)")
+    ap.add_argument("--root-seed", type=int, default=20260810)
     ap.add_argument("--durum-dizin", default=str(Path.home() / "faz412_durumlar"))
     ap.add_argument("--out", default=str(Path.home() / "faz412.json"))
     a = ap.parse_args()
 
     uzay = DART_UZAYI_S3
     X = koseler(uzay, a.nokta)
+    if a.n_lhs > 0:
+        # Koseler duyarliligi, LHS ic yapiyi verir. Vekil ikisine de
+        # ihtiyac duyar: kose olmadan ucdegerler, LHS olmadan egrilik
+        # ogrenilemez.
+        from dartrift.inference.design import lhs_design
+        X = np.vstack([X, lhs_design(uzay, a.n_lhs, root_seed=a.root_seed)])
     dz = Path(a.durum_dizin); dz.mkdir(parents=True, exist_ok=True)
     print("=" * 78, flush=True)
     print(f"FAZ 4.12 — Y0 DERINLIKTE GORUNUYOR MU  ({len(X)} nokta, "

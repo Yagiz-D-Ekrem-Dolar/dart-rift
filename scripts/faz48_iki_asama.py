@@ -140,6 +140,15 @@ def _sahne_kolu(gozeneksiz: bool) -> dict:
     return {**SAHNE, "bulk_density": RHO0_KATI, "boulder_alpha0": 1.0}
 
 
+def _sahne_Y0(kw: dict, Y0: float | None) -> dict:
+    """`--Y0` verilirse matris mukavemetini ez."""
+    if Y0 is None:
+        return kw
+    if Y0 <= 0.0:
+        raise ValueError(f"Y0 pozitif olmali, {Y0} geldi")
+    return {**kw, "matrix_Y0": float(Y0)}
+
+
 def _alpha0_denetle(alpha0, gozeneksiz: bool):
     """Gözeneksiz kolda sahne gerçekten katı mı — sessizce geçmesin."""
     a = np.asarray(alpha0, dtype=np.float64)
@@ -284,6 +293,12 @@ def main() -> int:
     # HIPOTEZ SINAVI: gozeneklilik enerjiyi KAZMA yerine SIKISTIRMAYA
     # goturuyor olabilir. Bu bayrak P-alpha'yi kapatir; krater o zaman
     # olusuyorsa hipotez dogrulanir (tani amacli, ADR-0043 disi).
+    # ADR-0046'nin 2. eksik olcumu: Y0 hangi `t`'de gorunur olur?
+    # FAZ 4.11/4.12 t = 0,2 s'de Y0'i GORMEDI (dort mertebe -> beta 0,001,
+    # derinlik 0,077 m). Mukavemet kraterin GEC evresinde belirleyici
+    # oldugu icin uzun kosuda gorunebilir; bu bayrak onu sinamak icin.
+    ap.add_argument("--Y0", type=float, default=None,
+                    help="matris Y0'i ez (Pa); ADR-0046 olcumu icin")
     ap.add_argument("--gozeneksiz", action="store_true",
                     help="P-alpha gozenekliligi KAPAT (tani kontrol kolu)")
     a = ap.parse_args()
@@ -293,7 +308,7 @@ def main() -> int:
     print("=" * 78, flush=True)
 
     kaba = build_scene(spacing=7.0, device="cpu",
-                       **_sahne_kolu(a.gozeneksiz))
+                       **_sahne_Y0(_sahne_kolu(a.gozeneksiz), a.Y0))
     mesh = _build_mesh("icosphere", radius=SAHNE["radius"], subdiv=4)
     R = float(kaba.target_radius)
     t0 = time.perf_counter()
