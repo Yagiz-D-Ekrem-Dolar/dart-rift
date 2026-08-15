@@ -611,8 +611,30 @@ olur). Bu, ADR ile ayrıca karara bağlanmalı.
    > parçacık blok sınırına düşüyor ve `7 m`'lik komşudan örnekleme
    > onları çözemiyor. `f_boulder` çıkarımın **üç parametresinden biri**.
 
-   **Dinamik etkisi hâlâ ölçülmedi**: bu sapmanın `β`'ya ne yaptığı
-   ayrı bir koşu ister.
+   **✔ DİNAMİK ETKİSİ HESAPLANDI (2026-08-11)** — ayrı koşu gerekmedi.
+   FAZ 4.12 `f_boulder` duyarlılığını ölçtü (40 nokta, iki aşamalı
+   model): tam aralık üzerinden `Δβ = −0,01575`, `Δ`derinlik `= −1,499 m`,
+   yani birim `f_boulder` başına `dβ/df = −0,0350` ve
+   `d(derinlik)/df = −3,330 m`.
+
+   Yukarıdaki geometrik sapmalar buna çarpılınca (`f = 0,25` nominali):
+
+   | `λ` | `f_blok` sapması | `Δf` | **`Δβ`** | **`Δ`derinlik** |
+   |---|---|---|---|---|
+   | 2 | `%3,02` | 0,00755 | `2,64e-4` (β'nın `%0,019`'u) | `0,025 m` |
+   | 6 | `%6,45` | 0,01613 | `5,64e-4` (`%0,040`) | `0,054 m` |
+
+   İkisi de ölçülmüş gürültü tabanının (`0,25 m`) **onda biri**;
+   DART'ın `β` belirsizliğinin (`~%5 = 0,0705`) `%0,4`'ü.
+
+   > **Blok sınırı sapması dinamik olarak ihmal edilebilir.** Bu madde
+   > kilit için engel değil.
+
+   *İki çekince, gizlenmiyor:*
+   1. Bu bir **doğrusal kestirim**, doğrudan koşu değil. Duyarlılık
+      köşe ortalamalarından geldi ve aradaki eğrilik ölçülmedi.
+   2. Duyarlılık `λ = 2`'de ölçüldü; `λ = 6` satırı onun **aynı**
+      kaldığını varsayıyor. `λ = 6`'da ayrı ölçülmedi.
 5. ~~**(YENİ, §4c)** **Lagrange'cı hedef site üretimi.**~~
    **✔ ÖLÇÜLDÜ (§4d):** yazıldı (`sites_from_cloud`) ve ölçülen `t₁`'de
    ısıya dönen oran `%99,3 → %2,88`, atama mesafesi `4,35 → 0,73`
@@ -620,7 +642,9 @@ olur). Bu, ADR ile ayrıca karara bağlanmalı.
    *Kalan:* ek parçacıkların aşama-2 kafesiyle **dikişi** ölçülmedi ve
    site sayısına **üst sınır konmadı** (`t₁=1e-2 s` → 210).
 
-> **Durum (2026-08-09):** 1, 2 ve 5 **ölçüldü**; 4'ün geometrik yarısı
-> ölçüldü. **3 hiç ölçülmedi** ve kilit için hâlâ şart. Özellikle 3: A′'nın
+> **Durum (2026-08-11):** 1, 2, 4 ve 5 **ölçüldü**; 4'ün dinamik yarısı
+> duyarlılıktan hesaplandı ve **ihmal edilebilir** çıktı. **3 hâlâ
+> ölçülmedi** ama artık kuyrukta (`faz43f`, iş `1494651`); kilit için
+> tek kalan şart odur. Özellikle 3: A′'nın
 > arayüz davranışı yüksek oranda **bilinmiyor** ve KAYIT-024 gürültünün
 > oranla **büyüdüğünü** ölçtü.
