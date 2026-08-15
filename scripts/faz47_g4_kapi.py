@@ -27,18 +27,46 @@ for _akis in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):        # yeniden yonlendirilmis olabilir
         pass
 
+from dartrift.validation.g4_ozet import (  # noqa: E402
+    faz44_ozet, faz45_ozet)
 from dartrift.validation.g4_gate import degerlendir  # noqa: E402
 
 
-def _oku(p: str | None) -> dict | None:
+def _oku(p: str | None, ozetle=None) -> dict | None:
+    """JSON oku; HAM koşu çıktısıysa kapı anahtarlarına **özetle**.
+
+    ## Düzeltilen kusur
+
+    Bu fonksiyon eskiden ham dosyayı **olduğu gibi** döndürüyordu ve
+    `faz44_ozet`/`faz45_ozet` hiç çağrılmıyordu. Kapı ise üst düzeyde
+    `A1_mermi_parcacik_cap` gibi anahtarlar arıyor; ham çıktıda o
+    değerler `sonuclar` altında iç içe.
+
+    Sonuç: `A1`–`B4`'ün **yedisi birden** *"KOSULMADI"* çıkıyordu ve
+    bu, ölçüm yapılmamış gibi görünüyordu — oysa ölçümler vardı,
+    yalnızca dönüştürülmüyorlardı.
+
+    > Sessiz bir *"koşulmadı"*, yanlış bir sayıdan daha az zararlı ama
+    > yine de yanlış: kapı raporu ölçülmüş bir şeyi ölçülmemiş gösteriyordu.
+
+    Ham biçim `sonuclar` anahtarıyla tanınıyor. Zaten özetlenmiş bir
+    dosya verilirse **dokunulmuyor** (aksi hâlde özet, özetin üstüne
+    uygulanıp boş dönerdi).
+    """
     if not p:
         return None
     f = Path(p)
     if not f.is_file():
         print(f"    yok: {p}  -> ilgili olcutler KOSULMADI", flush=True)
         return None
+    ham = json.loads(f.read_text(encoding="utf-8"))
+    if ozetle is not None and isinstance(ham, dict) and "sonuclar" in ham:
+        ozet = ozetle(ham)
+        print(f"    okundu + OZETLENDI: {p}  "
+              f"({len(ozet)} kapi anahtari)", flush=True)
+        return ozet
     print(f"    okundu: {p}", flush=True)
-    return json.loads(f.read_text(encoding="utf-8"))
+    return ham
 
 
 def main() -> int:
@@ -53,7 +81,9 @@ def main() -> int:
     print("FAZ 4.7 — G4 KAPI RAPORU", flush=True)
     print("=" * 78, flush=True)
     print("\n[1] olcum ciktilari", flush=True)
-    r = degerlendir(_oku(a.faz44), _oku(a.faz45), _oku(a.faz46))
+    r = degerlendir(_oku(a.faz44, faz44_ozet),
+                    _oku(a.faz45, faz45_ozet),
+                    _oku(a.faz46))
 
     print("\n[2] olcutler", flush=True)
     for o in r.tum_olcutler:

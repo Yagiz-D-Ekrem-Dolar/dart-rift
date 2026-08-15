@@ -254,3 +254,42 @@ def test_her_TANI_icin_kaynak_gecerli():
     from dartrift.validation.g4_gate import TANI_KAYNAGI, TANILAR
     assert set(TANI_KAYNAGI) <= set(TANILAR)
     assert set(TANI_KAYNAGI.values()) <= {"faz44", "faz45", "faz46"}
+
+
+def test_faz47_HAM_ciktiyi_OZETLIYOR():
+    """Kapı koşucusu ham çıktıyı kapı anahtarlarına çevirmeli.
+
+    Bulunan kusur: `_oku` ham dosyayı **olduğu gibi** döndürüyordu ve
+    `faz44_ozet`/`faz45_ozet` hiç çağrılmıyordu. Kapı üst düzeyde
+    `A1_mermi_parcacik_cap` arıyor; ham çıktıda o değer `sonuclar`
+    altında iç içe. Sonuç: `A1`–`B4`'ün **yedisi birden** *"KOSULMADI"*
+    çıkıyordu — ölçümler vardı, dönüştürülmüyorlardı.
+    """
+    import importlib.util as iu
+    from pathlib import Path
+    yol = Path(__file__).resolve().parents[1] / "scripts" / "faz47_g4_kapi.py"
+    s = iu.spec_from_file_location("_faz47", yol)
+    m = iu.module_from_spec(s)
+    s.loader.exec_module(m)
+
+    kaynak = yol.read_text(encoding="utf-8")
+    assert "faz44_ozet" in kaynak and "faz45_ozet" in kaynak, \
+        "ozet fonksiyonlari cagrilmiyor"
+    # `_oku` ozetleyiciyi kabul etmeli
+    import inspect
+    assert "ozetle" in inspect.signature(m._oku).parameters
+
+
+def test_faz47_ozetlenmis_dosyaya_DOKUNMUYOR(tmp_path):
+    """Zaten özetlenmiş bir dosyaya özet uygulanırsa boş dönerdi."""
+    import importlib.util as iu, json
+    from pathlib import Path
+    yol = Path(__file__).resolve().parents[1] / "scripts" / "faz47_g4_kapi.py"
+    s = iu.spec_from_file_location("_faz47b", yol)
+    m = iu.module_from_spec(s)
+    s.loader.exec_module(m)
+
+    p = tmp_path / "ozet.json"
+    p.write_text(json.dumps({"A1_mermi_parcacik_cap": 2.04}), encoding="utf-8")
+    d = m._oku(str(p), lambda h: {})       # ozetleyici bos donse bile
+    assert d == {"A1_mermi_parcacik_cap": 2.04}, d
