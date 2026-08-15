@@ -6,15 +6,27 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-09 · **Kapanan:** 37 · **Açık:** 7
+**Son güncelleme:** 2026-08-11 · **Kapanan:** 23 (bölüm 2) + 11 (bölüm 1) · **Açık:** 6 — A2, A3, A9, A11, A12, A17
 
 ---
 
 ## 1. AÇIK sıkıntılar
 
+> ### Sayaç düzeltmesi (2026-08-11)
+>
+> Başlık `Kapanan: 37` diyordu. Saydım: bölüm 2'de **`1`–`23`** arası
+> `23` giriş var, `37` değil — ve bölüm 1'de `11` kapanmış başlık.
+> Eski sayı ya bayatmış ya da başka bir şeyi sayıyordu; **kaynağını
+> bulamadım**, o yüzden sessizce değiştirmek yerine buraya yazıyorum.
+>
+> Başlık artık iki bölümü **ayrı** veriyor ve açıkların **adını**
+> listeliyor; böylece bir sonraki sefer sayının nereden geldiği
+> tartışılmaz.
+
+
 Bunlar bugün çözülemez ve **nedeni dışsal** ya da **ölçüm gerektiriyor**.
 
-### A1 — TRUBA kotası dolu (**en önemli engel**)
+### A1 — TRUBA kotası dolu → **KAPANDI** (2026-08-11)
 
 | | |
 |---|---|
@@ -26,6 +38,20 @@ Bunlar bugün çözülemez ve **nedeni dışsal** ya da **ölçüm gerektiriyor*
 | **karar sınaması** | 1 dk, 16 çekirdek, 1 GPU, sadece `echo` → **bloke** |
 | **etkilenen** | FAZ 4.4, 4.5, 4.6, 4.7 (**dört ölçüm**) |
 | **durum** | iş **1460742** kuyrukta; kota yenilenince kendiliğinden koşacak |
+
+> **KAPANDI (2026-08-11): kota açıldı.**
+>
+> | | önce | sonra |
+> |---|---|---|
+> | limit | `7 200 000` | **`37 200 000`** |
+> | kullanılan | `7 200 096` (**aşılmış**) | `7 235 503` |
+>
+> Kuyruktaki işler artık `AssocGrpCPUMinutesLimit` değil `(Priority)`
+> ile bekliyor — yani **sıra**, engel değil. Aynı gün dört iş gönderildi
+> ve üçü koştu (`0/40` düşen ensemble dahil).
+>
+> Yan bulgu: `kolyoz-cuda` çekirdek sayısının **16'nın katı** olmasını
+> istiyor; `-n 4` ile `CPU count specification invalid` alınır.
 
 > Bu bir kod sorunu değil. Etrafından **dolaşılmadı**.
 
@@ -41,7 +67,7 @@ Boşluk 3 `λ = 2` (8:1) oranında kapandı; ADR-0026 daha yükseğini
 istiyor. Koşul kapı raporunda **listeleniyor** ve kapı geçse bile
 kalacak.
 
-### A5 — **G4-A1 düştü: mermi çözülmemiş** (2026-08-08, en önemli teknik bulgu)
+### A5 — **G4-A1 düştü: mermi çözülmemiş** → **KAPANDI** (2026-08-09)
 
 | | |
 |---|---|
@@ -51,6 +77,20 @@ kalacak.
 | **ölçülmüş `λ`** | boşluk 3: `2` (8:1); KAYIT-033: `≤ 3` |
 | **bedel** | `r_iç = 3 m` ile `96` GPU-günü — bütçenin **3,2 katı** |
 | **bedelin kaynağı** | parçacık `1,13×`, **`dt` cezası `9,3×`** |
+
+> **KAPANDI: iki aşamalı şema `A1`'i geçiriyor.**
+>
+> | kurulum | `A1` | |
+> |---|---|---|
+> | tek aşama (`λ=2`) | `0,215` | düşük |
+> | **iki aşama** (`λ1=19` çekirdek → kabalaştırma → `λ2=2`) | **`2,0391`** | **geçti** |
+>
+> Ve geçmenin **fark yarattığı** ölçüldü (KAYIT-045): `n_ejekta`
+> `803 → 28`. Çözülmemiş mermide **tamamı sekiyor**, çözülmüşte
+> gömülüyor — `%12`'lik bir fark değil **rejim değişikliği**.
+>
+> Maliyet de tahminin altında kaldı: `96` GPU-günü değil, iki aşamalı
+> nokta H100'de **`33 s`** (`t_end = 0,2 s`).
 
 > **Tek global zaman adımlı şemada bu bedel küçültülemez.** Çözümü
 > bireysel/blok zaman adımı — bu kod tabanında **yok**.
@@ -614,7 +654,7 @@ GPU'suz sınanıyor) ama sıfırlanamadı.
 
 ---
 
-### A13 — **`KRATER_AYARLARI_DART` krateri ölçemiyordu; `n_theta` yanlıştı** (2026-08-09)
+### A13 — `KRATER_AYARLARI_DART` krateri ölçemiyordu → **KAPANDI** (A16/eksen kipi)
 
 > ### ⚠ Bu benim **kendi** düzeltmemin kusuru
 >
@@ -704,7 +744,7 @@ farklı bir sahne çözünürlüğünde yeniden ölçülmeli.
 
 ---
 
-### A14 — `--gozeneksiz` kontrol kolu **cismi patlatacaktı** (2026-08-09)
+### A14 — `--gozeneksiz` kolu cismi patlatacaktı → **KAPANDI** (katı sahne)
 
 Hazırladığım ayırt edici kol şuydu: gözeneklilik şok enerjisini gözenek
 çökmesine yutuyorsa krater kazılmaz; **P-α'yı kapat**, krater oluşursa
@@ -769,7 +809,7 @@ tutarlı hedef"* ve karşılaştırma bu farkı **belirterek** okunmalı —
 
 ---
 
-### A15 — Uzun koşunun krater sütunu **ejektayı ölçüyordu** (2026-08-09)
+### A15 — Uzun koşunun krater sütunu ejektayı ölçüyordu → **KAPANDI**
 
 `faz48 --t-end 5.0` bitti (`9805,5 s` duvar). Krater sütunu:
 
@@ -848,7 +888,7 @@ Düzeltme *görünürlüğü* kurtardı, *niceliği* kurtarmadı. 82 örnekte:
 
 ---
 
-### A16 — A13'ün `n_theta = 1024` düzeltmesi de **yanlış** (2026-08-10)
+### A16 — A13'ün `n_theta = 1024` düzeltmesi de yanlış → **KAPANDI** (eksen kipi)
 
 `surface_particles` `N/PER_BUCKET` kadar kutu seçer (`~867`, yani
 `n_theta ≈ 20`) çünkü kutu başına `~12` parçacık gerekir. A13'te
