@@ -138,6 +138,57 @@ okunuyor; `D < 20 m` krater hiç görünmüyor.
 
 ---
 
+## 1e. FAZ 4 **bitiş durumu** (2026-08-11)
+
+TRUBA kotası açıldı (`7,2M → 37,2M` CPU-dakika) ve ölçümler koştu.
+
+### Biten
+
+| iş | sonuç |
+|---|---|
+| FAZ 4.11 gözlenebilir duyarlılığı | `β` `%2,0`, derinlik `%20,7`, çap **ölü** |
+| FAZ 4.12 `Y0` duyarlılığı | `Y0` görünmez (etki diğerlerinin `%5`'i) |
+| ADR-0046 kanıtı | `Y0` `t = 20 s`'de de yok (`0,0966 m` < taban `0,25 m`) |
+| **FAZ 4.6 (G4-C)** | **koştu**: 40 nokta, iki aşamalı model, `0/40` düşen |
+| FAZ 4.7 kapı raporu | C tarafı üretildi; A/B **kaynak bekliyor** |
+
+### G4-C sonucu — **geçmedi**, ve nedeni öngörülmüştü
+
+| ölçüt | değer | |
+|---|---|---|
+| C1 kapsama | 3/3 | GEÇTİ |
+| **C2** en dar bant / önsel | **0,907** | **DÜŞTÜ** (`< 0,50`) |
+| C3 gürültüyle genişleme | 1,11× | GEÇTİ |
+
+> C1'in geçmesi **aldatıcı**: `Y0` bandı `3513 – 2,15e6`, dört
+> mertebelik önselin **üç mertebesi**. O genişlikte bir bandın gerçeği
+> içermesi bilgi değil.
+
+C2'nin düşmesi **fizikten** geliyor, kusurdan değil: Jacobian'ın koşul
+sayısı `79,5` ve `Y0` gözlenemeyen alt uzayda. Öngörülen yerden düştü.
+
+### Bitmeyen — ve **neden**
+
+| iş | engel |
+|---|---|
+| G4 kapısı A/B ölçütleri | `beta_son` içeren FAZ 4.4/4.5 çıktısı TRUBA'da **yoktu**; yeniden gönderildi (`1494650`), **kuyrukta** |
+| ADR-0043 madde 3 (`λ=19` arayüzü) | gönderildi (`1494651`), **kuyrukta** |
+| ADR-0043 madde 4 dinamik yarısı | blok sınırı sapmasının `β`'ya etkisi — ölçülmedi |
+| ADR-0046 kapsam kararı | **kullanıcının** — kod uzayı sessizce daraltmıyor |
+
+> Küme doymuş durumda (52 alloc, boş düğüm yok); işler `(Priority)` ile
+> bekliyor. Bu bir hata değil, **sıra**.
+
+### Bu turda düzeltilen iki **sessiz** kusur
+
+1. `faz47_g4_kapi.py` ham koşu çıktısını **özetlemiyordu** → `A1`–`B4`'ün
+   yedisi birden *"koşulmadı"* çıkıyordu. Ölçümler vardı, dönüşmüyordu.
+2. `A1` `faz44`'ten (yakınsama kolları) okunuyordu; çıkarım **iki
+   aşamalı** modelle koşuluyor. `--faz48` eklendi ve değişiklik
+   `KOSULLU_KABULLER`'e yazıldı — sessiz değil.
+
+---
+
 ## 2. Neden koşulmadı — dışsal engel, **kanıtlanmış**
 
 | kontrol | sonuç |
