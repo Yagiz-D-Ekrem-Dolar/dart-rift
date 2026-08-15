@@ -189,11 +189,30 @@ Dört mertebe mukavemet farkı, gürültü tabanının **altında** iz
 bırakıyor. **S3 elendi:** daha uzun koşmak `Y0`'yı görünür kılmıyor —
 en azından `20 s`'ye kadar, ki bu `t = 0,2 s`'nin **100 katı**.
 
-> Yan gözlem: düşük `Y0` kolunda `β` **oynak** (`1,375`–`1,504`),
-> yüksek `Y0` kolunda bit düzeyinde **sabit** (`1,41230`). Yani `Y0`
-> `β`'nın **varyansını** etkiliyor, ortalamasını değil. Bu bir
-> gözlenebilir değil gürültü; ölçüt derinlik üzerineydi ve o ölçüt
-> **değiştirilmedi**.
+> Yan gözlem: düşük `Y0` kolunda `β` **oynak** (`1,357`–`1,504`; 82
+> örnekte 46 farklı değer), yüksek `Y0` kolunda neredeyse **sabit**
+> (`1,41230`–`1,42016`; 4 farklı değer). Yani `Y0` `β`'nın
+> **varyansını** etkiliyor, ortalamasını değil.
+
+#### Karşı sinyal arandı ve **ölçüldü** — yargıyı değiştirmiyor
+
+Sonuçları okurken ejekta sayısında bir fark gördüm: `y0lo`'da
+`n_hedef_ejekta` bir noktada `32` eşiğini **aştı**, `y0hi`'de hiç
+aşmadı. Ölçütüm derinlik üzerineydi; **ölçütü değiştirmek yerine bu
+gözlemi niceledim**:
+
+| | `y0lo` | `y0hi` |
+|---|---|---|
+| `n_hedef_ejekta` aralığı | 28 – **34** | 28 – 29 |
+| `> 32` olan örnek | **1 / 82** | 0 / 82 |
+| iki kol arası ortalama fark | `0,82` parçacık | (aynı) |
+
+Tepe **tek örnek** (`t = 17,36`, `34` parçacık) ve sürekli değil.
+`28` parçacık üzerinden ortalama fark `0,82`.
+
+> Yani `Y0`'nın ejekta sayısına etkisi **ölçülebilir ama minik** ve
+> derinlik yargısıyla **tutarlı**. Ölçütü sonradan ejekta sayısına
+> çevirip *"görünür"* demek, ölçütü veriye uydurmak olurdu.
 
 ### 7b. Ölçüm 1 neden **gereksiz** kaldı
 
