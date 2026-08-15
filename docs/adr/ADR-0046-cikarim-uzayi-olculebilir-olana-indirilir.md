@@ -1,7 +1,7 @@
 # ADR-0046 — Çıkarım uzayı **ölçülebilir olana** indirilir
 
 **Tarih:** 2026-08-10
-**Durum:** **ÖNERİ** — karar verilmedi
+**Durum:** **KANIT TAMAMLANDI** (§7) — üç ölçümün ikisi kapandı, üçüncüsü kararı değiştirmiyor. **Kapsam kararı kullanıcının.**
 **İlgili:** [ADR-0030](ADR-0030-kutle-gozeneklilikten-turer.md) ·
 [ADR-0044](ADR-0044-cikarim-parametre-uzayi-tutarsiz.md) ·
 [ADR-0040](ADR-0040-kriter-dusebilmelidir.md) ·
@@ -158,10 +158,88 @@ iki ucu). O ölçüm gelince uzay genişletilebilir.
 
 | # | ölçüm | durum |
 |---|---|---|
-| 1 | `matrix_alpha0` serbest bırakılınca koşul sayısı | **ölçülmedi** |
-| 2 | `Y0`'nın görünür olduğu `t` (iki uçlu uzun koşu) | **ölçülmedi** |
+| 1 | `matrix_alpha0` serbest bırakılınca koşul sayısı | **gereksiz** (§7) |
+| 2 | `Y0`'nın görünür olduğu `t` (iki uçlu uzun koşu) | **ÖLÇÜLDÜ** (§7) |
 | 3 | Hera'nın `f_boulder` belirsizliği (dış kaynak) | girilmedi |
 
 **1 olmadan S1 kapatılmamalı:** tek parametreye indirmek koşullanmayı
 düzeltiyor mu, yoksa yalnızca soruyu küçültüyor mu — bu ölçülebilir ve
 ölçülmelidir.
+
+
+---
+
+## 7. Ölçümler tamamlandı — TRUBA, 11.08.2026
+
+### 7a. `Y0` `t = 20 s`'de **hâlâ görünmüyor**
+
+İki koşu, tek fark `Y0` (`10³` / `10⁷ Pa`), `t_end = 20 s`, 82 örnek.
+Ölçüt **veriye bakılmadan** yazılmıştı (`docs/TRUBA-KUYRUK-11-08.md`):
+ayrılma `> 1 m` ise görünür, `< 0,25 m` (ölçülmüş gürültü tabanı) ise
+görünmez.
+
+| | |
+|---|---|
+| derinlik farkı, **20 s boyunca en büyük** | **`0,0966 m`** |
+| derinlik farkı, son | `0,0247 m` |
+| `β` farkı, son | `0,00109` |
+| hedef ejektası | `28 / 28` |
+
+Dört mertebe mukavemet farkı, gürültü tabanının **altında** iz
+bırakıyor. **S3 elendi:** daha uzun koşmak `Y0`'yı görünür kılmıyor —
+en azından `20 s`'ye kadar, ki bu `t = 0,2 s`'nin **100 katı**.
+
+> Yan gözlem: düşük `Y0` kolunda `β` **oynak** (`1,375`–`1,504`),
+> yüksek `Y0` kolunda bit düzeyinde **sabit** (`1,41230`). Yani `Y0`
+> `β`'nın **varyansını** etkiliyor, ortalamasını değil. Bu bir
+> gözlenebilir değil gürültü; ölçüt derinlik üzerineydi ve o ölçüt
+> **değiştirilmedi**.
+
+### 7b. Ölçüm 1 neden **gereksiz** kaldı
+
+`matrix_alpha0`'ı serbest bırakmanın koşullanmayı düzeltip
+düzeltmediğini ölçmeyi planlamıştım. Gerek kalmadı: fark
+**Jacobian'da**, koordinatlarda değil.
+
+Ölçeklenmiş tekil değerler `s₁ = 0,14297`, `s₂ = 0,00222`. Bir yönde
+parametre belirsizliği `σ / sᵢ` (önsel kutu biriminde):
+
+| gözlem gürültüsü `σ` | yön 1 | yön 2 |
+|---|---|---|
+| `%0,05` | 0,003 | 0,225 |
+| `%1` | **0,070** | 4,507 |
+| `%5` | 0,350 | **22,5** |
+
+2. yönü kurtarmak `σ < %0,067` ister; DART'ın `β` ölçümü `~%5`.
+**75 kat** fark. Hiçbir yeniden parametrelendirme bunu kapatmaz —
+koordinat değiştirmek tekil değerleri değiştirmez.
+
+Boş uzay yönünün en büyük bileşeni **`Y0` (`0,81`)**: `Y0` gözlenemeyen
+alt uzayın içinde.
+
+### 7c. G4-C gerçek veriyle koştu
+
+40 nokta, iki aşamalı ileri model, `0/40` düşen:
+
+| ölçüt | değer | sonuç |
+|---|---|---|
+| C1 kapsama | 3/3 | GEÇTİ |
+| C2 en dar bant / önsel | **0,907** | **DÜŞTÜ** (`< 0,50` gerek) |
+| C3 gürültüyle genişleme | 1,11× | GEÇTİ |
+
+> C1'in geçmesi **aldatıcı**: `Y0` bandı `3513 – 2,15e6`, yani dört
+> mertebelik önselin **üç mertebesi**. O kadar geniş bir bandın gerçeği
+> içermesi bilgi değil.
+
+C2 tam da beklenen yerden düştü ve düşme miktarı Jacobian'dan
+öngörülebiliyordu.
+
+### 7d. Karar
+
+Ölçüm tarafı bitti: **S3 elendi, S2'nin ön koşulu ölçüldü ve gereksiz
+çıktı, S1 ayakta.**
+
+**Ama S1 bilimsel iddiayı daraltıyor** (*"iç yapıyı çıkardık"* →
+*"matris gözenekliliğini çıkardık"*) ve bu bir ölçüm değil **kapsam**
+kararıdır. Bu ADR onu **kullanıcıya bırakıyor**; kod hiçbir yerde
+uzayı sessizce daraltmıyor.
