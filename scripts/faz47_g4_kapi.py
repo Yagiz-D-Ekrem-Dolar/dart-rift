@@ -74,6 +74,11 @@ def main() -> int:
     ap.add_argument("--faz44", default=None)
     ap.add_argument("--faz45", default=None)
     ap.add_argument("--faz46", default=None)
+    # A1 KAYNAGI: `faz44` yakinsama kollarini olcuyor, oysa `A1`
+    # cikarimin kullandigi SAHNEYI sormali. Ensemble iki asamali
+    # modelle kosuldugu icin `A1` oradan gelmeli.
+    ap.add_argument("--faz48", default=None,
+                    help="iki asamali kosu ciktisi; A1 BURADAN okunur")
     ap.add_argument("--out", default=str(REPO / "docs" / "G4-KAPI-RAPORU.md"))
     a = ap.parse_args()
 
@@ -81,9 +86,18 @@ def main() -> int:
     print("FAZ 4.7 — G4 KAPI RAPORU", flush=True)
     print("=" * 78, flush=True)
     print("\n[1] olcum ciktilari", flush=True)
-    r = degerlendir(_oku(a.faz44, faz44_ozet),
-                    _oku(a.faz45, faz45_ozet),
-                    _oku(a.faz46))
+    o44 = _oku(a.faz44, faz44_ozet)
+    o48 = _oku(a.faz48)
+    if o48 is not None and "A1" in o48:
+        eski = (o44 or {}).get("A1_mermi_parcacik_cap")
+        o44 = dict(o44 or {})
+        o44["A1_mermi_parcacik_cap"] = float(o48["A1"])
+        print(f"    A1 KAYNAGI = faz48 (iki asamali uretim modeli): "
+              f"{o48['A1']:.4f}"
+              + (f"   [faz44'un kendi degeri {eski:.4f} KULLANILMADI]"
+                 if eski is not None else "   [faz44'te A1 yoktu]"),
+              flush=True)
+    r = degerlendir(o44, _oku(a.faz45, faz45_ozet), _oku(a.faz46))
 
     print("\n[2] olcutler", flush=True)
     for o in r.tum_olcutler:

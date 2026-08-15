@@ -293,3 +293,30 @@ def test_faz47_ozetlenmis_dosyaya_DOKUNMUYOR(tmp_path):
     p.write_text(json.dumps({"A1_mermi_parcacik_cap": 2.04}), encoding="utf-8")
     d = m._oku(str(p), lambda h: {})       # ozetleyici bos donse bile
     assert d == {"A1_mermi_parcacik_cap": 2.04}, d
+
+
+def test_A1_kaynagi_faz48_oldugunda_KABULLERDE_yaziyor():
+    """`A1`'in kaynağı değiştiyse rapor bunu **söylemeli**.
+
+    `faz44` yakınsama **kollarını** ölçüyor (tekdüze / iki bölgeli);
+    `A1` ise çıkarımın kullandığı **sahneyi** sormalı ve ensemble iki
+    aşamalı modelle koşuldu. `faz44`'ün kendi `A1`'i `0,215`, üretimde
+    `2,0391` — aradaki fark ölçüt için hayati.
+
+    Sessiz bir kaynak değişikliği, yanlış bir sayı kadar zararlıdır:
+    okuyan `A1`'in nereden geldiğini bilmeden *"geçti"* görür.
+    """
+    from dartrift.validation.g4_gate import KOSULLU_KABULLER
+    metin = " ".join(KOSULLU_KABULLER)
+    assert "faz48" in metin and "A1" in metin, \
+        "A1 kaynak degisikligi kosullu kabullerde yazili degil"
+
+
+def test_faz47_faz48_bayragi_var():
+    import importlib.util as iu
+    from pathlib import Path
+    yol = Path(__file__).resolve().parents[1] / "scripts" / "faz47_g4_kapi.py"
+    kaynak = yol.read_text(encoding="utf-8")
+    assert "--faz48" in kaynak
+    # Degistirilen deger GORUNUR olmali: eski deger de basiliyor mu
+    assert "KULLANILMADI" in kaynak

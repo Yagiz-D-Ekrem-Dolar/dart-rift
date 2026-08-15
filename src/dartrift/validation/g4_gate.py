@@ -55,6 +55,13 @@ KOSULLU_KABULLER = (
     "Krater ve ejekta gozlenebilirleri `t = 0,2 s`'de OLU (derinlik = "
     "parcacik araliginin %1'i). Gereken simule sure OLCULMEDI "
     "(rapor A11).",
+    # --- 2026-08-11: A1 KAYNAGI DEGISTI, sessizce degil.
+    "`A1` **faz44'ten degil** iki asamali uretim modelinden (`faz48`) "
+    "okunuyor. Gerekce: `faz44` yakinsama KOLLARINI olcuyor (tekduze / "
+    "iki bolgeli), oysa `A1` cikarimin kullandigi SAHNEYI sormali ve "
+    "ensemble iki asamali modelle kosuldu. `faz44`in kendi `A1`i "
+    "`0,215` (tek asama); uretimde `2,0391`. Rapor hangi kaynaktan "
+    "geldigini `--faz48` verildiginde ACIKCA yazar."
 )
 
 
