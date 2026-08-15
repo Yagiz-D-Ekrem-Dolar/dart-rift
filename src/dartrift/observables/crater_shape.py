@@ -132,6 +132,7 @@ def crater_profile(
     ejekta_yaricap_carpani: float | None = None,
     kutulama: str = "kuresel",
     yuzdelik: float = 95.0,
+    esik_kipi: str = "yaricap",
 ) -> CraterShape:
     """Yerel krateri, kuresel bicim degisiminden ayirarak olc.
 
@@ -194,6 +195,23 @@ def crater_profile(
 
     Gurultu tabani olculdu: yuzey gurultusu `1 m` iken **`1,03 m`**;
     `0,2 m` iken `0,25 m`.
+
+    ## `esik_kipi` — capin OLCULEBILMESI icin
+
+    Kenar esigi varsayilan olarak **cismin yaricapinin** kesri:
+    `thr = depth_threshold * R`. `depth_threshold = 0,05` ve `R = 82 m`
+    icin bu **`4,10 m`** demek — DART kraterinin kendi derinligi
+    kadar. Sonuc: kenar hep 0.-1. kutuda kalir ve cap ya `0` cikar ya da
+    iki ayrik degere nicemlenir (olculdu: 82 ornekte `6,93` ve `12,00`).
+
+    `esik_kipi = "derinlik"` esigi **kraterin kendi derinligine**
+    baglar (`thr = depth_threshold * depth`), yani olcek-bagimsiz yapar.
+    Paraboloid bir kraterde `dev` tepe derinligin `%10`'una
+    `theta = 0,949 * theta_c`'de duser, yani olculen cap gercegin
+    `~%95`'i olur — sabit ve **duzeltilebilir** bir yanlilik.
+
+    > Varsayilan DEGISMEDI: `"yaricap"`. Eski cagrilarin sonucu aynen
+    > korunuyor.
     """
     x = np.ascontiguousarray(x, dtype=np.float64)
     c = np.asarray(center, dtype=np.float64).reshape(3)
@@ -366,7 +384,14 @@ def crater_profile(
     # olculdu: %3 yuzey puruzluluguyle bile ayrismadilar. Ama duzensiz cisimde
     # ya da uzakta ikinci bir cukur varsa, en-dis kural kraterin capini o
     # gurultuye kadar SISIRIR. Bitisiklik sarti bunu imkansiz kilar.
-    thr = depth_threshold * r_ref_global
+    if esik_kipi not in ("yaricap", "derinlik"):
+        raise ValueError(f"esik_kipi 'yaricap' ya da 'derinlik' olmali, "
+                         f"{esik_kipi!r} geldi")
+    # "yaricap": esik CISMIN yaricapina bagli -> kucuk kraterde capi
+    # olculemez yapar. "derinlik": kraterin KENDI derinligine bagli,
+    # olcek-bagimsiz.
+    thr = (depth_threshold * depth if esik_kipi == "derinlik"
+           else depth_threshold * r_ref_global)
     inside = valid & (dev > thr)
     if np.any(inside) and inside[0]:
         bitisik = int(np.argmax(~inside)) if not np.all(inside) else n_bins
@@ -404,6 +429,8 @@ def crater_profile(
             "reference_radius_measured": r_ref_global,
             "outer_angle_deg": float(outer_angle_deg),
             "depth_threshold": float(depth_threshold),
+            "esik_kipi": esik_kipi,
+            "kenar_esigi_m": float(thr),
             "depth_over_reference_radius": float(depth / r_ref_global),
             "empty_bins": int(np.count_nonzero(~valid)),
             "min_per_bin": int(min_per_bin),
