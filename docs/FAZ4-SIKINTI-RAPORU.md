@@ -320,6 +320,39 @@ noktası, 40 adım) ve **29/29 nokta düştü**.
 
 ### A11 — **`krater_capi` ölçülemiyor: üç gözlenebilirin ikisi ölü** (2026-08-09)
 
+> ### Kök neden bulundu, düzeltildi — ama **yetmedi** (2026-08-11)
+>
+> Kenar eşiği cismin yarıçapının kesriydi (`thr = depth_threshold × R`
+> `= 4,10 m`), yani DART kraterinin **kendi derinliği** kadar. Ölçek
+> bağımsız hâle getirildi (`esik_kipi = "derinlik"`).
+>
+> **Sentetik kraterde işe yaradı:**
+>
+> | `D` / `d` | yarıçap kipi | derinlik kipi |
+> |---|---|---|
+> | 20 / 8 | 10,78 | **19,12** (`%96`) |
+> | 20 / 3 | **0,00** | 14,95 |
+> | 10 / 3 | **0,00** | 2,99 |
+>
+> **Gerçek ensemble'da işe YARAMADI.** 40 kaydedilmiş durumun
+> hepsinde çap **`6,69 m`** — tek değer, sıfır yayılım. İki kipte de.
+>
+> Sebep: kenar açısal kutu kenarına çakılı ve `n_bins = 8` × `12°`
+> `= 1,5°`'lik kutular çapta **`±4,3 m`** belirsizlik demek.
+> Parametrelerin yarattığı oynama bundan **küçük**, yani kenar hiç
+> kutu değiştirmiyor.
+>
+> `n_bins > 8` **reddediyor** (eksen kutusunda parçacık bitiyor), yani
+> bu çözünürlükte daha ince kutulanamaz.
+>
+> **Nicel gereksinim:** çapın gözlenebilir olması için kraterin açısal
+> yarıçapı önsel kutu boyunca `> 1,5°` oynamalı. Bu, koni içinde
+> `~3×` daha çok yüzey parçacığı ister → çarpma bölgesinde
+> `λ ≈ 3,5` (şu an `2`).
+>
+> **A11 AÇIK kalıyor.** Düzeltme gerçek ama yetersiz; kalan engel
+> çözünürlük.
+
 FAZ 4.6'nın **ilk 3 noktası** çıkınca JSONL okundu:
 
 | `i` | `beta` | `krater_capi` | `ejekta_kutle_kesri` |
