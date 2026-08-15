@@ -950,6 +950,62 @@ hiç değişmemiş, yani ölçülen şey **yerel** krater (ADR-0039'un amacı).
 
 ---
 
+### A17 — Motor `β`'yı gözlemin **2,3 katı altında** üretiyor (2026-08-11)
+
+Bu bir faz meselesi değil, **motorun kendi kusuru**: ürettiği momentum
+aktarımı gerçek ölçümün çok altında.
+
+| kaynak | `β` |
+|---|---|
+| ölçülen periyot değişimi `−33,0 ± 1,0` dk → türetilen | **`3,2225`** |
+| yayımlanan (Cheng ve diğerleri 2023) | `3,6` |
+| **motorun ürettiği**, 40 nokta, **tüm önsel kutusu** | **`1,410 – 1,438`** |
+
+Hiçbir parametre birleşimi gözlemi üretmiyor. Kutunun tamamı gözlemin
+`2,2`–`2,5` katı **altında**.
+
+#### Eksik olan ne kadar
+
+`β = 1 + |p_ejekta · ê| / p_mermi`:
+
+| | `p_ejekta` |
+|---|---|
+| gözlem | `7,913e6 kg m/s` |
+| motor | `1,464e6` |
+| **eksik** | **`6,449e6`** = merminin **`1,81` katı** |
+
+`1 m/s`'lik ejekta için bu, hedefin **`%0,15`**'i (`6,45e6 kg`).
+
+#### Sebep: fizik var, **sayamıyoruz**
+
+| | |
+|---|---|
+| motorun "kaçtı" saydığı kütle | `579,4 kg` = **merminin kendisi** |
+| hedeften kaçan | `0 – 91,3 kg` (dokuz köşe) |
+| içeride dışarı giden ("bekleyen") | `2786` parçacık `≈ %26` |
+| bekleyenin kaba momentumu | `4,2e8` = **gerekenin `65` katı** |
+
+Ejekta ölçütü maddenin `r > R`'yi geçmesini istiyor; geçiş süresi medyan
+**`57–75 s`**. Koşular `0,2`–`20 s`. Yani ölçüt, motorun **ürettiği**
+maddeyi görmüyor.
+
+> **Bekleyeni doğrudan saymak savunulamaz:** `bekleyen_profili` o
+> maddenin çarpma noktasında **seyrek**, uzakta **yoğun** olduğunu
+> ölçtü — kazı değil cismin **çınlaması**.
+
+#### Bu neden motor kusuru sayılıyor
+
+Motorun ana ürünü `β`. Ürettiği `β` gözlemin yarısından azsa, motor
+**henüz bitmemiştir** — çözünürlük, gözlenebilir seçimi ve çıkarım
+uzayı düzeltilse bile.
+
+**Açık:** ejekta ölçütünün mü yoksa fiziğin mi eksik olduğu ayrıştırılmadı.
+İkisini ayıran ölçüm, geçiş süresinden **belirgin biçimde uzun** bir tek
+koşudur (`t ≳ 150 s`); `β` oraya doğru tırmanıyorsa ölçüt sorunu,
+düzleşiyorsa model-form sorunu. **Koşulmadı.**
+
+---
+
 ## 2. KAPANAN sıkıntılar — kronolojik
 
 ### Ölçüm tasarımı (1–4)
