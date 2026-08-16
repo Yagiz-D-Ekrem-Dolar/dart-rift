@@ -320,3 +320,33 @@ def test_faz47_faz48_bayragi_var():
     assert "--faz48" in kaynak
     # Degistirilen deger GORUNUR olmali: eski deger de basiliyor mu
     assert "KULLANILMADI" in kaynak
+
+
+def test_B2_yolda_madde_varsa_YAZILMIYOR():
+    """`β` düz olabilir çünkü **bitti**, ya da çünkü **daha başlamadı**.
+
+    Ölçüldü (A9): DART koşusunda `t = 20 s`'de `2786` parçacık hâlâ
+    yolda, geçiş süresi medyan `57–75 s`. O seride `β` bit düzeyinde
+    düzdü ve eski ölçüt *"durulmuş"* diyordu.
+    """
+    from dartrift.validation.g4_ozet import faz45_ozet
+    temel = {"beta_bound_settled": True,
+             "beta_bound_settling_diag": {"sabit": False}}
+    yolda = faz45_ozet({**temel, "n_bekleyen_son": 2786})
+    assert "B2_durulmus" not in yolda, "yolda madde varken B2 yazilmamali"
+    assert yolda["B2_yolda_madde"] == 2786
+    bos = faz45_ozet({**temel, "n_bekleyen_son": 0})
+    assert bos["B2_durulmus"] == 1.0
+
+
+def test_B2_tani_yoksa_BAYRAK_kalkiyor():
+    """Eski koşular tanıyı taşımıyor: `B2` yazılır ama **işaretlenir**.
+
+    Bilinmeyeni sessizce *"geçti"* saymak A9'un şikâyetiydi; burada
+    geçiyor ama **görünür** biçimde denetlenmemiş sayılıyor.
+    """
+    from dartrift.validation.g4_ozet import faz45_ozet
+    o = faz45_ozet({"beta_bound_settled": True,
+                    "beta_bound_settling_diag": {"sabit": False}})
+    assert o["B2_durulmus"] == 1.0
+    assert o["B2_gecis_denetlenmedi"] is True

@@ -150,13 +150,52 @@ def faz45_ozet(ham: dict) -> dict:
     Böyle bir seride `B2`'yi `1,0` yazmak kapıyı **boş bir kanıtla**
     geçirirdi. Anahtar hiç yazılmıyor → kapı `koşulmadı` diyor. Bu,
     `esit_t_mi`'nin `B1`/`B3` için yaptığının aynısı (sıkıntı A6).
+
+    ## `B2` **yolda madde** varken de yazılmaz (A9)
+
+    Serinin düz olmasının iki sebebi var ve seriden ayırt edilemezler:
+    kazı bitti, ya da madde henüz `r > R`'yi geçmedi. İkincisinde `β`
+    düzdür ama **yerleşmemiştir**. Ölçüldü: DART koşusunda `t = 20 s`'de
+    `2786` parçacık hâlâ yolda, geçiş süresi medyan `57–75 s`.
+
+    Ham çıktı bu tanıyı taşıyorsa kullanılır. **Taşımıyorsa** `B2` yine
+    yazılır ama `B2_gecis_denetlenmedi` bayrağı kalkar — bilinmeyeni
+    sessizce *"geçti"* saymak tam da A9'un şikâyetiydi.
     """
     out: dict = {}
     tani = ham.get("beta_bound_settling_diag") or {}
     sabit = bool(tani.get("sabit", False))
     out["B2_sabit_seri"] = sabit
+
+    # --- YOLDA MADDE SINAVI (sikinti A9'un kapanisi)
+    #
+    # Serinin duz olmasinin IKI sebebi var ve seriden ayirt edilemezler:
+    # kazi bitti, ya da madde henuz `r > R`'yi gecmedi. Ikincisinde
+    # `beta` duzdur ama YERLESMEMISTIR. Olculdu: DART kosusunda
+    # `t = 20 s`'de 2786 parcacik hala yolda, gecis suresi medyan 57-75 s.
+    #
+    # Ham cikti bu taniyi tasiyorsa kullanilir; TASIMIYORSA B2 yine
+    # yazilir ama `B2_gecis_denetlenmedi` bayragi kalkar. Bilinmeyeni
+    # sessizce "gecti" saymak tam da A9'un sikayetiydi.
+    bek = None
+    for anahtar in ("n_bekleyen_son", "n_bekleyen", "bekleyen_son"):
+        if anahtar in ham:
+            v = ham[anahtar]
+            bek = int(v[-1]) if isinstance(v, (list, tuple)) and v else (
+                int(v) if isinstance(v, (int, float)) else None)
+            break
+    out["B2_gecis_denetlenmedi"] = bek is None
+    if bek is not None:
+        out["B2_yolda_madde"] = int(bek)
+
     if "beta_bound_settled" in ham and not sabit:
-        out["B2_durulmus"] = 1.0 if bool(ham["beta_bound_settled"]) else 0.0
+        durulmus = bool(ham["beta_bound_settled"])
+        if bek is not None and bek > 0:
+            # Yolda madde VAR: seri duz olsa da B2 yazilmaz -> kapi
+            # "kosulmadi" der. `esit_t_mi`nin B1/B3 icin yaptiginin aynisi.
+            pass
+        else:
+            out["B2_durulmus"] = 1.0 if durulmus else 0.0
     egim = ham.get("energy_drift_loglog_slope")
     if egim is not None and np.isfinite(egim):
         out["B4_enerji_egim"] = float(egim)
