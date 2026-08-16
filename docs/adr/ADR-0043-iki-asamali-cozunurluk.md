@@ -598,6 +598,42 @@ olur). Bu, ADR ile ayrıca karara bağlanmalı.
    mu? Büyümüyorsa `λ = 19` için **dolaylı kanıt** (ispat **değil**);
    büyüyorsa bu madde **düşer**. Sonuç ne olursa olsun `λ = 19`
    **ölçülmemiş** kalır ve betik bunu her koşuda basıyor.
+
+   **✔ ÖLÇÜLDÜ (2026-08-11, TRUBA)** — ama önce bir engel çıktı.
+
+   İlk koşuda **beş kolun beşi de** `belirsiz` döndü:
+   *"cephe DOYGUN (`r_measured` yok)"*. Gözenekli malzemede şok cephesi
+   yarıçapı doygunlaşıyor (KAYIT-036 §3) ve `judge` ona bakıyor.
+
+   Çare kodun kendi mesajında yazılıydı: `judge_momentum`. Aynı parantez
+   mantığı, ama gözlenebilir **iletilen radyal momentum** — bir eşik
+   değil **integral**, doygunlaşacak tavanı yok. Kollar `p_iletilen`'i
+   zaten hesaplıyordu, yani **yeniden koşu gerekmedi**.
+
+   | `λ` | kütle oranı | parantez konumu | yargı |
+   |---|---|---|---|
+   | 2 | 8:1 | 0,0936 | `arayuz_zararsiz` |
+   | 3 | 27:1 | 0,1051 | `arayuz_zararsiz` |
+   | 4 | 64:1 | 0,0954 | `arayuz_zararsiz` |
+   | 6 | 216:1 | 0,0819 | `arayuz_zararsiz` |
+   | 8 | **512:1** | **0,0733** | `arayuz_zararsiz` |
+
+   *Konum:* iki bölgeli kolun referans parantezindeki yeri
+   (`0` = ince uçta, `1` = kaba uçta). Taşma büyürse konum **kabaya
+   kayar**.
+
+   **`log(λ)`'ya göre eğim: `−0,018`** — yani taşma `λ` ile
+   **büyümüyor**, hafifçe **azalıyor**. Kütle oranı `8:1`'den `512:1`'e,
+   yani **64 kat** artarken konum `0,073`–`0,105` bandında kalıyor.
+
+   > **Bu, ADR'nin istediği dolaylı kanıttır.** `λ = 19` (`6478:1`)
+   > hâlâ **ölçülmedi** ve ölçülemez (tekdüze ince referans `28,1 M`
+   > parçacık ister). Ama ölçülen aralıkta bozulma **yok** ve eğilim
+   > bozulma yönünde **değil**.
+
+   Betiğe kalıcı düzeltme yapıldı: cephe doygunsa **kendiliğinden**
+   momentum ölçütüne geçiyor. İlk koşunun hiçbir şey ölçememesinin
+   sebebi buydu.
 4. ~~**Blok sınırlarının kaba çözünürlükte kalmasının etkisi** (§4b)~~
    **◐ GEOMETRİK YARISI ÖLÇÜLDÜ** (`scripts/faz43e_blok_sinirlari.py`,
    `r_iç = 25 m`, 7 blok):
@@ -642,9 +678,18 @@ olur). Bu, ADR ile ayrıca karara bağlanmalı.
    *Kalan:* ek parçacıkların aşama-2 kafesiyle **dikişi** ölçülmedi ve
    site sayısına **üst sınır konmadı** (`t₁=1e-2 s` → 210).
 
-> **Durum (2026-08-11):** 1, 2, 4 ve 5 **ölçüldü**; 4'ün dinamik yarısı
-> duyarlılıktan hesaplandı ve **ihmal edilebilir** çıktı. **3 hâlâ
-> ölçülmedi** ama artık kuyrukta (`faz43f`, iş `1494651`); kilit için
-> tek kalan şart odur. Özellikle 3: A′'nın
+> **Durum (2026-08-11): BEŞ ŞARTIN BEŞİ DE ÖLÇÜLDÜ.**
+>
+> | # | konu | sonuç |
+> |---|---|---|
+> | 1 | `t₁` | `4,767e-3 s` (tahminin `4,8` katı, bedel `+%4,7`) |
+> | 2 | kabalaştırma hatası | üçü de `≤ 6e-15` |
+> | 3 | `λ = 19` arayüzü | eğilim **bozulmuyor** (`8:1 → 512:1`, eğim `−0,018`) |
+> | 4 | blok sınırları | geometrik ölçüldü; dinamik etki `Δβ = 2,64e-4` — **ihmal edilebilir** |
+> | 5 | Lagrange'cı siteler | ısıya dönen `%99,3 → %2,88` |
+>
+> **Kilit için ölçüm engeli kalmadı.** Kalan tek çekince şu ve
+> gizlenmiyor: `λ = 19` **doğrudan** ölçülemedi; madde 3'ün kanıtı
+> `8:1`–`512:1` aralığındaki eğilimdir, `6478:1`'de ölçüm değildir. Özellikle 3: A′'nın
 > arayüz davranışı yüksek oranda **bilinmiyor** ve KAYIT-024 gürültünün
 > oranla **büyüdüğünü** ölçtü.

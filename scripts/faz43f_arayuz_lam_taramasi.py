@@ -46,6 +46,7 @@ for _akis in (sys.stdout, sys.stderr):
         pass
 
 from dartrift.validation.solid_interface import (BASALT_SOLID,  # noqa: E402
+                                                 judge_momentum,
                                                  run_solid_interface)
 
 #: 4 GiB'lik yerel kartin pratik siniri. Asilirsa kol KOSULMAZ ve
@@ -94,12 +95,39 @@ def main() -> int:
                   flush=True)
             sonuclar[str(lam)] = {"yargi": "olculemedi", "neden": str(e)}
             continue
+        # CEPHE DOYGUNSA MOMENTUMA GEC.
+        #
+        # `judge` cephe yaricapina bakiyor ve gozenekli malzemede o
+        # yaricap DOYGUNLASIYOR (KAYIT-036 §3): `r_measured` None olur,
+        # yargi `belirsiz` cikar ve tarama HICBIR SEY olcmez. Ilk kosuda
+        # bes kolun besi de boyle dustu.
+        #
+        # `judge_momentum` ayni parantez mantigini **iletilen radyal
+        # momentum** uzerinde kuruyor; o bir esik degil INTEGRAL, yani
+        # doygunlasacak tavani yok. Kollar zaten `p_iletilen` hesapliyor,
+        # bu yuzden YENIDEN KOSU GEREKMIYOR.
+        if y.get("yargi") == "belirsiz" and "DOYGUN" in str(y.get("neden", "")):
+            ym = judge_momentum(y["tekduze_kaba"], y["iki_bolgeli"],
+                                y["tekduze_ince"], lam=lam,
+                                r_inner=a.r_ic, t_end=a.t_end,
+                                etiket=f"lam{lam}_momentum")
+            ym["cephe_doygun_momentuma_gecildi"] = True
+            ym["cephe_yargisi"] = y
+            y = ym
         y["lam"] = lam
         y["ref_N"] = ref_n
         sonuclar[str(lam)] = y
         gen = y.get("parantez_genisligi_rel", float("nan"))
+        # `tasma_rel` yalnizca cephe yolunda var; momentum yolunda
+        # olcut, iki bolgeli kolun PARANTEZ ICINDEKI konumudur.
+        if "tasma_rel" in y:
+            olcu = 100.0 * y["tasma_rel"]
+        else:
+            lo, hi = y["parantez"]
+            olcu = 100.0 * (y["iki_bolgeli_p"] - lo) / max(hi - lo, 1e-300)
+            y["parantez_konumu"] = olcu / 100.0
         print(f"{lam:4d} {lam ** 3:9d} {ref_n:11,d} {y['yargi']:>13} "
-              f"{100 * y['tasma_rel']:9.4f} {100 * gen:14.4f}", flush=True)
+              f"{olcu:9.4f} {100 * gen:14.4f}", flush=True)
 
     print("-" * 78, flush=True)
     olculen = [(int(k), v) for k, v in sonuclar.items()
