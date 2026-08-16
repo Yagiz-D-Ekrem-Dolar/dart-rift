@@ -180,3 +180,37 @@ def lhs_design(space: ParamSpace, n: int, root_seed: int = 0,
         katman = (np.arange(n) + g.random(n)) / n
         u[:, j] = g.permutation(katman)
     return space.from_unit(u)
+
+
+#: **ADR-0046 KARARI (2026-08-11): çıkarım uzayı ölçülebilir olana indirildi.**
+#:
+#: `DART_UZAYI_S3`'ün üç parametresi **yapısı gereği tek boyutlu** çıktı.
+#: Ölçülen gerekçe (FAZ 4.11/4.12, KAYIT-046):
+#:
+#: * `Y0` dört mertebe (`10³→10⁷ Pa`) değişirken `β` `0,001`, derinlik
+#:   `0,077 m` oynuyor — `t = 20 s`'de bile. `Y0` **gözlenemeyen alt
+#:   uzayda** (boş uzay yönünün en büyük bileşeni, `0,81`).
+#: * Kalan ikisinin `2×2` Jacobian'ının **koşul sayısı `79,5`**; ikinci
+#:   yönü kurtarmak `%0,067` gözlem kesinliği ister, DART'ın `β` ölçümü
+#:   `~%5`.
+#: * Kök neden: `ρ_yığın` ADR-0030 gereği **sabit**, dolayısıyla üretici
+#:   `matrix_alpha0`'ı `(boulder_alpha0, f_boulder)`'dan **türetiyor**.
+#:   Derinlik ile matris `α₀` korelasyonu `r = −0,9932`.
+#:
+#: Yani çarpma **matris gözenekliliğini** hissediyor; ona nasıl
+#: varıldığını hissetmiyor. Serbest bırakılan şey artık doğrudan o.
+#:
+#: **Sınırlar keyfi değil:** mevcut ensemble'ın `(boulder_alpha0,
+#: f_boulder)` kutusunun ürettiği matris `α₀` aralığıdır
+#: (`1,5122 – 3,0000`). Dışına çıkmak **dışdeğerleme** olurdu.
+#:
+#: > **Bilimsel iddia daraldı ve bu gizlenmiyor:** *"iç yapıyı
+#: > çıkardık"* değil **"matris gözenekliliğini çıkardık"**.
+#: > `f_boulder` (Hera'nın görüntüleyeceği büyüklük) artık serbest
+#: > değil. Bunun bedeli ADR-0046 §4'te yazılı.
+DART_UZAYI_S1 = ParamSpace(
+    names=("matrix_alpha0",),
+    lo=(1.5122,),
+    hi=(3.0000,),
+    log=(False,),
+)
