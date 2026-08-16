@@ -98,12 +98,49 @@ On ölçütün **onu da** `koşulmadı`. Kapı raporu üretildi ve
 > **Bedel kaydedildi:** bilimsel iddia *"iç yapıyı çıkardık"*tan
 > **"matris gözenekliliğini çıkardık"**a daraldı. `f_boulder` artık
 > serbest değil ve Hera onu görüntüleyecek.
-### A3 — ADR-0041 ve ADR-0042 **koşullu**
+### A3 — ADR-0041 ve ADR-0042 **koşullu** (yarısı kapandı)
 
 Ölçümler **küp geometrisinde** yapıldı, DART geometrisinde değil.
 Boşluk 3 `λ = 2` (8:1) oranında kapandı; ADR-0026 daha yükseğini
 istiyor. Koşul kapı raporunda **listeleniyor** ve kapı geçse bile
 kalacak.
+
+> ### İkinci yarısı **kapandı**: oran artık `512:1`'e kadar ölçülü
+>
+> *"`λ = 2` yetersiz"* şikâyeti 2026-08-11'de karşılandı
+> (ADR-0043 §7 madde 3): `λ` `2 → 8` tarandı, yani kütle oranı
+> **`8:1 → 512:1`** (`64` kat).
+>
+> | `λ` | oran | parantez konumu | yargı |
+> |---|---|---|---|
+> | 2 | 8:1 | 0,0936 | `arayuz_zararsiz` |
+> | 8 | **512:1** | **0,0733** | `arayuz_zararsiz` |
+>
+> `log(λ)` eğimi **`−0,018`**: taşma oranla **büyümüyor**.
+>
+> `λ = 19` (`6478:1`) hâlâ **ölçülemez** (tekdüze ince referans
+> `28,1 M` parçacık ister) ve bu çekince duruyor.
+>
+> ### İlk yarısı için **DART geometrisinde kanıt var** — ama dolaylı
+>
+> Üretim koşularının aktarım tanıları (DART geometrisi, `λ₁ = 19`
+> çekirdek + `λ₂ = 2`):
+>
+> | | ölçülen |
+> |---|---|
+> | sahne momentum hatası | `8,76e-15` |
+> | sahne kütle hatası | `1,14e-16` |
+> | kabalaştırma kütle / momentum / enerji | `2,27e-15` / `1,02e-14` / `1,89e-16` |
+> | dikişte en yakın komşu / ince aralık | `0,652` (eşik `0,5`) |
+> | komşu medyanı | `74,5` (min `27`, çok yalnız oran **`0`**) |
+> | ısıya dönen kinetik | `%2,50` |
+>
+> Yani DART geometrisinde **korunum ve komşu sağlığı** ölçülü ve iyi.
+>
+> **Ama bu, ADR-0041/0042'nin kendi iddialarını doğrulamaz.** O ADR'ler
+> `h` ilkesi ve `Ω` birimi hakkında; korunumun iyi olması onları
+> sınamaz. A3'ün bu yarısı **açık kalıyor** ve kapatmak için o
+> sınavların DART geometrisinde tekrarı gerekir.
 
 ### A5 — **G4-A1 düştü: mermi çözülmemiş** → **KAPANDI** (2026-08-09)
 
