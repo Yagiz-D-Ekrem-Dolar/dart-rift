@@ -421,6 +421,53 @@ noktası, 40 adım) ve **29/29 nokta düştü**.
 > **A11 AÇIK kalıyor.** Düzeltme gerçek ama yetersiz; kalan engel
 > çözünürlük.
 
+> ### Çözünürlük gereksinimi **ölçüldü** (2026-08-11)
+>
+> #### Önce bir ölçümümü geri alıyorum
+>
+> İlk taramada *"`λ` artınca koni **boşalıyor**"* diye bir tablo
+> çıkardım (`207 → 55 → 66 → 79`). **Yanlıştı.** Aynı çağrıyı iki
+> yazımla, tek betikte tekrarlayınca sayılar tutarlı çıktı ve
+> ince/kaba ayrışmasıyla da doğrulandı:
+>
+> | `λ` | koni içi | ince + kaba |
+> |---|---|---|
+> | 2,0 | **207** | 195 + 12 |
+> | 3,0 | 653 | 641 + 12 |
+> | 4,0 | **1518** | 1506 + 12 |
+>
+> Koni `λ` ile **doluyor**, boşalmıyor. Yanlış tablonun kaynağını
+> bulamadım; `refine_scene_local`'in girdisini değiştirmediğini ayrıca
+> sınadım (üst üste çağrılar birebir aynı). Sonuç: o tablo ve ona
+> dayanan *"boşalıyor"* yorumu **geçersiz**.
+>
+> #### Doğru sonuç: `λ` **daha ince kutulamayı açıyor**
+>
+> Sentetik `D = 20 m`, derinlik `5 m` krater; ölçülen çap / gerçek:
+>
+> | `λ` | `nb = 8` | `nb = 12` | `nb = 16` |
+> |---|---|---|---|
+> | 2,0 | 0,75 | **RED** | **RED** |
+> | 3,0 | **0,96** | 0,78 | RED |
+> | 4,0 | 0,75 | 0,92 | **0,90** |
+>
+> Kazanç kurtarma oranında değil **nicemlemede**: `λ = 2`'de yalnızca
+> `nb = 8` çalışıyor (`±1,5°` → çapta **`±4,3 m`**); `λ = 4`'te
+> `nb = 16` açılıyor (`±0,75°` → **`±2,1 m`**).
+>
+> #### Yine de yeterli olduğu **gösterilmedi**
+>
+> Nicemleme yarıya iniyor ama parametrelerin çapta yarattığı oynama
+> `~1,4 m` mertebesinde kestiriliyor (derinliğin `%20` yayılımından),
+> yani **hâlâ nicemlemenin altında** olabilir. Kesin cevap `λ = 4`'te
+> gerçek bir ensemble ister.
+>
+> **Maliyet ölçüldü:** `λ = 4` → `N` `10 380 → 17 072` (`1,64×`) ve
+> `dt` cezasıyla birlikte `~3,3×`. 40 noktalık ensemble `~73 dk`.
+>
+> Bu bir **üretim çözünürlüğü değişikliği** olur ve ADR-0043 `λ₂ = 2`'yi
+> kilitledi; tek taraflı değiştirmiyorum.
+
 FAZ 4.6'nın **ilk 3 noktası** çıkınca JSONL okundu:
 
 | `i` | `beta` | `krater_capi` | `ejekta_kutle_kesri` |
