@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-11 · **Kapanan:** 23 (bölüm 2) + 11 (bölüm 1) · **Açık:** 6 — A2, A3, A9, A11, A12, A17
+**Son güncelleme:** 2026-08-11 · **Kapanan:** 23 (bölüm 2) + 12 (bölüm 1) · **Açık:** 5 — A2, A3, A11, A12, A17
 
 ---
 
@@ -232,7 +232,7 @@ ve ölçüldü — **çelişki Euler'ci aktarımın çelişkisiymiş**:
 **Kalan (ölçülmedi):** ek parçacıkların (40 / 210) aşama-2 kafesiyle
 **dikişi**, ve site sayısına **üst sınır** yok.
 
-### A9 — **`β` bir BASAMAK: `B2` geçiyor ama zayıf kanıt** (2026-08-09)
+### A9 — `β` bir BASAMAK, `B2` zayıf kanıt → **KAPANDI** (2026-08-11)
 
 > ### ⚠ Bu maddeyi önce **fazla güçlü** yazdım
 >
@@ -256,6 +256,36 @@ bir **basamak fonksiyonu**:
 **Geçişten sonraki yayılım: `2,18e-13`** — 397 örnek, `4,6` saniyelik
 simüle süre, **bit düzeyinde** düz. FAZ 4.4 aynı sahnede `0,052 → 0,200 s`
 için bağımsız olarak aynı değeri vermişti (`5,6e-16`).
+
+> ### KAPANDI: ölçüt ikinci şart kazandı (2026-08-11)
+>
+> Zayıflığın kaynağı şuydu: `β`'nın düz olmasının **iki** sebebi var ve
+> seriden ayırt edilemiyorlar.
+>
+> | sebep | `β` düz mü | gerçekten durdu mu |
+> |---|---|---|
+> | kazı bitti, kaçan kaçtı | evet | **evet** |
+> | madde **yolda**, `r > R`'yi geçmedi | evet | **hayır** |
+>
+> Ayıran ölçüm bulundu ve kodlandı: içeride dışarı doğru giden madde
+> (`kacis_bekleyenler`). `durulma_yolda_madde_ile()` her ikisini
+> **birlikte** istiyor:
+>
+> ```
+> durulmus_gercek = durulmus  VE  yolda madde yok
+> ```
+>
+> Ve DART koşusunda bu ölçüt **düşüyor**: `t = 20 s`'de `2786` parçacık
+> hâlâ yolda, geçiş süresi medyan `57–75 s`. Yani `β`'nın düzlüğü
+> *"bitti"* değil **"daha başlamadı"** demekmiş — A9'un sezgisi
+> doğruymuş, kanıtı şimdi var.
+>
+> **Üçüncü hâl korundu:** eski koşular `n_bekleyen` taşımıyor; o zaman
+> `durulmus_gercek = None` döner — `True` de `False` de değil.
+> Bilinmeyeni *"geçti"* saymak tam da A9'un şikâyet ettiği şeydi.
+>
+> Dört test kilitliyor, `bekleyen_esigi` varsayılanı `0`: tek parçacık
+> bile yoldaysa durulmuş sayılmaz; gevşetmek **bilinçli** bir karar.
 
 Yani `β` **relakse olmuyor**; bir kez **atlıyor** ve donuyor.
 

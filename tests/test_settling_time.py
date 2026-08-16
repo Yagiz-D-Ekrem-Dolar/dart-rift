@@ -213,3 +213,62 @@ def test_sabit_esigi_MIKRO_degisimi_sabit_saymiyor():
     t = np.linspace(0.0, 1.0, 40)
     assert is_settled(t, 1.0 + 1e-9 * np.linspace(0, 1, 40))["sabit"] is False
     assert is_settled(t, 1.0 + 1e-15 * np.linspace(0, 1, 40))["sabit"] is True
+
+
+# ---------------------------------------------------------------------------
+# A9: `beta` duz olabilir cunku BITTI, ya da cunku DAHA BASLAMADI
+# ---------------------------------------------------------------------------
+
+def _basamak_seri(n=50):
+    """FAZ 4.5'in olctugu bicim: uc ornek `1,0`, sonra sabit `1,5836`."""
+    t = np.linspace(0.0, 5.0, n)
+    b = np.full(n, 1.583620)
+    b[:3] = 1.0
+    return t, b
+
+
+def test_yolda_madde_varsa_DURULMADI():
+    """Seri bit düzeyinde düz ama madde hâlâ yolda → **durulmadı**.
+
+    Ölçüldü: DART koşusunda `t = 20 s`'de `2786` parçacık içeride,
+    dışarı doğru, `v_r > v_kaçış`; geçiş süresi medyan `57–75 s`.
+    Yani `β`'nın düzlüğü *"bitti"* değil *"daha başlamadı"* demekti.
+    """
+    from dartrift.validation.settling_time import durulma_yolda_madde_ile
+    t, b = _basamak_seri()
+    d = durulma_yolda_madde_ile(t, b, np.full(len(t), 2786))
+    assert d["durulmus"] is True, "seri duz, eski olcut geciyor"
+    assert d["yolda_madde_var"] is True
+    assert d["durulmus_gercek"] is False
+    assert "yolda madde" in d["gerekce"]
+
+
+def test_yolda_madde_yoksa_DURULDU():
+    from dartrift.validation.settling_time import durulma_yolda_madde_ile
+    t, b = _basamak_seri()
+    d = durulma_yolda_madde_ile(t, b, np.zeros(len(t), dtype=int))
+    assert d["durulmus_gercek"] is True
+
+
+def test_tani_yoksa_NE_EVET_NE_HAYIR():
+    """Eski koşular `n_bekleyen` taşımıyor — bilinmeyeni `geçti` sayma.
+
+    A9'un şikâyeti tam buydu: kanıtı olmayan bir *"durulmuş"* yazmak
+    kapıyı boş bir kanıtla geçirmek olur.
+    """
+    from dartrift.validation.settling_time import durulma_yolda_madde_ile
+    t, b = _basamak_seri()
+    d = durulma_yolda_madde_ile(t, b, None)
+    assert d["durulmus_gercek"] is None
+    assert "DENETLENEMEDI" in d["gerekce"]
+
+
+def test_esik_ayarlanabilir_ama_varsayilan_SIFIR():
+    """`bekleyen_esigi` varsayılanı `0`: tek parçacık bile yoldaysa
+    durulmuş sayılmaz. Gevşetmek **bilinçli** bir karar olmalı."""
+    from dartrift.validation.settling_time import durulma_yolda_madde_ile
+    t, b = _basamak_seri()
+    nb = np.full(len(t), 5)
+    assert durulma_yolda_madde_ile(t, b, nb)["durulmus_gercek"] is False
+    assert durulma_yolda_madde_ile(
+        t, b, nb, bekleyen_esigi=10)["durulmus_gercek"] is True

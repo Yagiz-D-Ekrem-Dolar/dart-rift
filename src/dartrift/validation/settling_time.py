@@ -64,7 +64,7 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["settling_time", "is_settled"]
+__all__ = ["settling_time", "is_settled", "durulma_yolda_madde_ile"]
 
 
 def is_settled(t, b, pencere_frac: float = 0.3, tol: float = 0.02) -> dict:
@@ -180,3 +180,62 @@ def settling_time(t, b, adim=None, pencere_frac: float = 0.3,
     # yalnizca son birkac noktanin yakinligidir, gercek bir plato degil.
     sonuc["plato_pencereden_genis"] = bool(tt[k] <= d["pencere_t"][0])
     return sonuc
+
+
+def durulma_yolda_madde_ile(t, beta, n_bekleyen, *, adim=None,
+                            bekleyen_esigi: int = 0, **kw) -> dict:
+    """`β` **duruldu** demek için seri yetmez: yolda madde olmamalı.
+
+    ## Neden gerekli (rapor A9)
+
+    `β` bir **basamak fonksiyonu**: FAZ 4.5'te ilk üç örnekte tam
+    `1,000000` (ejekta **yok**), sonra `t = 4,056e-2 s`'de `1,583620`'ye
+    atlıyor ve `397` örnek boyunca **bit düzeyinde** düz kalıyor
+    (`yayilim = 2,18e-13`).
+
+    Seriye bakan bir ölçüt buna *"duruldu"* der. Ama düzlüğün iki çok
+    farklı sebebi olabilir:
+
+    | sebep | `β` düz mü | gerçekten durdu mu |
+    |---|---|---|
+    | kazı bitti, kaçan her şey kaçtı | evet | **evet** |
+    | madde **yolda**, henüz `r > R`'yi geçmedi | evet | **hayır** |
+
+    İkisi seriden ayırt **edilemez**. Ayıran şey içeride dışarı doğru
+    giden madde olup olmadığıdır (`kacis_bekleyenler`).
+
+    Ölçüldü: DART koşusunda `t = 20 s`'de `2786` parçacık hâlâ yolda ve
+    geçiş süresi medyan `57–75 s`. Yani `β`'nın düzlüğü *"bitti"*
+    değil *"daha başlamadı"* demekti.
+
+    ## `n_bekleyen` yoksa **"denetlenemedi"**
+
+    Eski koşular bu tanıyı taşımıyor. O zaman `durulmus_gercek` **`None`**
+    döner — `True` de `False` de değil. Bilinmeyeni `geçti` saymak, tam
+    da A9'un şikâyet ettiği şeydir.
+    """
+    import numpy as np
+
+    d = settling_time(t, beta, adim=adim, **kw)
+    if n_bekleyen is None:
+        d.update(durulmus_gercek=None, bekleyen_son=None,
+                 yolda_madde_var=None,
+                 gerekce="n_bekleyen yok -> DENETLENEMEDI")
+        return d
+    nb = np.asarray(n_bekleyen)
+    if nb.size == 0:
+        d.update(durulmus_gercek=None, bekleyen_son=None,
+                 yolda_madde_var=None, gerekce="n_bekleyen bos")
+        return d
+    son = int(nb.ravel()[-1])
+    yolda = bool(son > bekleyen_esigi)
+    d.update(
+        bekleyen_son=son,
+        yolda_madde_var=yolda,
+        durulmus_gercek=bool(d["durulmus"] and not yolda),
+        gerekce=("yolda madde var -> seri duz olsa da DURULMADI"
+                 if yolda else
+                 "seri durulmus ve yolda madde yok" if d["durulmus"]
+                 else d.get("neden", "seri durulmamis")),
+    )
+    return d
