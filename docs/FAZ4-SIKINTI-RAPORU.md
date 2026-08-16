@@ -60,6 +60,25 @@ Bunlar bugün çözülemez ve **nedeni dışsal** ya da **ölçüm gerektiriyor*
 On ölçütün **onu da** `koşulmadı`. Kapı raporu üretildi ve
 `GEÇİLEMEDİ` diyor (çıkış kodu 1). A1 çözülmeden değişmez.
 
+
+> ### Kapı **tam olarak** değerlendirildi (2026-08-11)
+>
+> Artık *"koşulmadı"* kalan ölçüt **yok**. `10` ölçütün `9`'u geçti:
+>
+> | grup | sonuç |
+> |---|---|
+> | G4-A (A1, A2, A3) | **GEÇTİ** — `A1 = 2,039` |
+> | G4-B (B1, B2, B3, B4) | **GEÇTİ** — `B1 = 8,4e-4` |
+> | G4-C (C1, C3) | GEÇTİ |
+> | **C2** | **`0,907` DÜŞTÜ** (eşik `< 0,50`) |
+>
+> Bunu mümkün kılan iki ölçüm bu turda tamamlandı: FAZ 4.4 **eşit
+> `t_sim`** ile yeniden koştu (`B1`/`B3` o yüzden boştu) ve `A1` iki
+> aşamalı üretim modelinden okunmaya başlandı.
+>
+> **A2 açık kalıyor** çünkü kapı hâlâ geçmedi. Ama sebebi artık tek ve
+> ölçülmüş: koşul sayısı `79,5`, `Y0` gözlenemeyen alt uzayda. Çare bir
+> ölçüm değil **kapsam kararıdır** (ADR-0046).
 ### A3 — ADR-0041 ve ADR-0042 **koşullu**
 
 Ölçümler **küp geometrisinde** yapıldı, DART geometrisinde değil.
