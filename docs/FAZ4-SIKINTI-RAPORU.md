@@ -1140,10 +1140,50 @@ Motorun ana ürünü `β`. Ürettiği `β` gözlemin yarısından azsa, motor
 **henüz bitmemiştir** — çözünürlük, gözlenebilir seçimi ve çıkarım
 uzayı düzeltilse bile.
 
-**Açık:** ejekta ölçütünün mü yoksa fiziğin mi eksik olduğu ayrıştırılmadı.
-İkisini ayıran ölçüm, geçiş süresinden **belirgin biçimde uzun** bir tek
-koşudur (`t ≳ 150 s`); `β` oraya doğru tırmanıyorsa ölçüt sorunu,
-düzleşiyorsa model-form sorunu. **Koşulmadı.**
+#### Kök neden bulundu: **`β` yerçekimsiz cisimde iyi tanımlı değil**
+
+`y0lo`'nun son durumunda (`t = 20 s`) ölçüldü:
+
+| | |
+|---|---|
+| momentum korunumu | `1,000000` ✔ |
+| **iç dolaşım / net** | **`250` kat** (`±8,9e8` vs `3,56e6`) |
+| kütle merkezinin KE'si | `1521 J` |
+| **iç hareketin KE'si** | toplamın **`%100,00`**'ü |
+
+Bekleyen madde ayrıştırılınca: `+4,14e8` ileri (mermi yönü),
+`−3,53e8` geri (ejekta yönü). Geri akış tek başına gerekenin **`55`
+katı** — hepsi kaçsaydı `β ≈ 100` olurdu.
+
+> `β` *"cisimden ne kadar momentum ayrıldı"* diye soruyor. Model net
+> momentumun **250 katını** içeride dolaştırıyor ve bir parçacığın
+> ayrılıp ayrılmadığı onu **tutan** şeye bağlı — o da **yerçekimi**, ve
+> **kapalı**. `v_kaçış = 0,082 m/s` simüle **edilmeyen** bir fiziğin
+> eşiği.
+
+Bu, `beta_bal_bandi`'nin neden `−43,8` verdiğini de açıklıyor ve o
+geri almanın doğru olduğunu doğruluyor.
+
+#### ADR-0028 yerçekimini **fizik yüzünden kapatmamış**
+
+| | s/adım | enerji hatası |
+|---|---|---|
+| yerçekimsiz | 0,150 | `1,4558e-02` |
+| yerçekimli | 2,36 | **`1,4558e-02`** |
+
+Enerji hatası **birebir aynı** — yerçekimi kararlılığı bozmuyor.
+Gerekçe `15,7` katlık **maliyet**ti. H100 yerel GPU'dan `~15` kat hızlı,
+yani o ceza artık donanımla karşılanıyor.
+
+**Açık:** yerçekimi açık/kapalı ayırt edici koşu **gönderildi**
+(iş `1501136`, `t_end = 0,2 s`, iki kol). Ölçüt veriye bakılmadan
+yazıldı:
+
+| gözlenen | sonuç |
+|---|---|
+| yerçekimli `β > 2,0` | yerçekimi **eksik halka**, ADR-0028 açılmalı |
+| fark `< %10` | yerçekimi sebep **değil**, başka yerde ara |
+| arası | belirsiz |
 
 ---
 
