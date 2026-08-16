@@ -1175,15 +1175,40 @@ Enerji hatası **birebir aynı** — yerçekimi kararlılığı bozmuyor.
 Gerekçe `15,7` katlık **maliyet**ti. H100 yerel GPU'dan `~15` kat hızlı,
 yani o ceza artık donanımla karşılanıyor.
 
-**Açık:** yerçekimi açık/kapalı ayırt edici koşu **gönderildi**
-(iş `1501136`, `t_end = 0,2 s`, iki kol). Ölçüt veriye bakılmadan
-yazıldı:
+#### Yerçekimi sınandı — `t = 0,2 s`'de **fark yok**
+
+Ölçüt veriye bakılmadan yazılmıştı; sonuç:
+
+| kol | `β` | `n_ejekta` | duvar |
+|---|---|---|---|
+| yerçekimi **kapalı** | `1,411216` | 28 | `41,9 s` |
+| yerçekimi **açık** | `1,411216` | 28 | `67,9 s` |
+
+**Bit düzeyinde aynı.** Ölçüt *"fark `< %10` → yerçekimi sebep değil"*
+diyordu ve uygulanıyor.
+
+Geriye dönünce makul: `t = 0,2 s`'de yerçekiminin verebileceği hız
+`g·t ≈ 5e-5 m/s`, ejektanınki `m/s` mertebesinde. **`0,2` saniyede
+yerçekimi hiçbir şeyi geri çekemez.**
+
+> Yan ölçüm: maliyet cezası ADR-0028'in ölçtüğü `15,7×` değil,
+> burada **`1,6×`**. Donanım ve iki aşamalı şema farkı.
+
+#### Ama bu, uzun sürede de fark olmadığını göstermez
+
+`t = 100 s`'de `g·t ≈ 0,025 m/s`, yani `v_kaçış`ın (`0,082`) **aynı
+mertebesi**; geçiş süresi medyanı da `57–75 s`. Ayrım ancak orada
+görünebilir.
+
+İki kol gönderildi (`1501241` yerçekimli, `1501242` kontrol),
+`t_end = 100 s`. Ölçüt yine önden:
 
 | gözlenen | sonuç |
 |---|---|
-| yerçekimli `β > 2,0` | yerçekimi **eksik halka**, ADR-0028 açılmalı |
-| fark `< %10` | yerçekimi sebep **değil**, başka yerde ara |
-| arası | belirsiz |
+| iki kolun `β` farkı `> %10` | yerçekimi uzun sürede **belirleyici** |
+| fark `< %10` | yerçekimi sebep **değil** — başka yerde ara |
+
+Ayrıca izlenen: `β` gözlemin `3,2225`'ine doğru **tırmanıyor mu**.
 
 ---
 
