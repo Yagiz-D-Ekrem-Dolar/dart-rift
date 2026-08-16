@@ -63,7 +63,7 @@ from faz44_dart_yakinsama import SAHNE, _malzeme  # noqa: E402
 T1_OLCULEN = 4.767e-3
 
 
-def _mat(gozeneksiz: bool = False):
+def _mat(gozeneksiz: bool = False, yercekimli: bool = False):
     """Malzeme; `gozeneksiz` ise **P-α kapalı**.
 
     Tanı amaçlı: gözeneklilik şok enerjisini **gözenek çökmesine**
@@ -90,10 +90,20 @@ def _mat(gozeneksiz: bool = False):
     `_sahne_kolu` sahneyi **katı** kurarak bunu çözer; oradaki tabloya
     bakın (yalnızca `alpha0 = 1` demek de yetmiyor).
     """
+    import dataclasses
     m = _malzeme()
+    if yercekimli:
+        # ADR-0028 yercekimini FIZIK yuzunden degil MALIYET yuzunden
+        # kapatmisti: enerji hatasi birebir ayni (1,4558e-02), ama kosu
+        # 15,7 kat yavas. Rapor A17 gosterdi ki bedeli agir: `beta`
+        # "cisimden ne kadar momentum ayrildi" diye soruyor ve
+        # yercekimsiz bir cisimde AYRILMA tanimsiz -- `v_kacis` simule
+        # EDILMEYEN bir fizigin esigi. t = 20 s'de ic dolasim net
+        # momentumun 250 KATI ve kinetik enerjinin %100'u ic hareket.
+        m = dataclasses.replace(
+            m, gravity=dataclasses.replace(m.gravity, enabled=True))
     if not gozeneksiz:
         return m
-    import dataclasses
     return dataclasses.replace(
         m, porosity=dataclasses.replace(m.porosity, enabled=False))
 
@@ -299,6 +309,9 @@ def main() -> int:
     # oldugu icin uzun kosuda gorunebilir; bu bayrak onu sinamak icin.
     ap.add_argument("--Y0", type=float, default=None,
                     help="matris Y0'i ez (Pa); ADR-0046 olcumu icin")
+    ap.add_argument("--yercekimli", action="store_true",
+                    help="yercekimini AC (ADR-0028 maliyet yuzunden "
+                         "kapatmisti; rapor A17)")
     ap.add_argument("--gozeneksiz", action="store_true",
                     help="P-alpha gozenekliligi KAPAT (tani kontrol kolu)")
     a = ap.parse_args()
@@ -322,7 +335,7 @@ def main() -> int:
         print(f"\nKONTROL KOLU: tek asama, lam={a.lam2}, N={a2.n}", flush=True)
         sol = _cozucu(a2.x, a2.v, a2.m, np.zeros(a2.n), a2.h,
                       _alpha0_denetle(a2.alpha0, a.gozeneksiz), a2.Y0, a.device,
-                      mat=_mat(a.gozeneksiz))
+                      mat=_mat(a.gozeneksiz, a.yercekimli))
         t = _kos(sol, 0.0, a.t_end, a.azami_adim, "tek")
         b = _beta(sol.state_numpy(), a2, p_imp, m_hedef, R)
         print(f"\n  t_sim = {t:.5e}  beta = {b['beta']:.6f}", flush=True)
@@ -351,7 +364,7 @@ def main() -> int:
 
     sol1 = _cozucu(a1.x, a1.v, a1.m, np.zeros(a1.n), a1.h,
                    _alpha0_denetle(a1.alpha0, a.gozeneksiz), a1.Y0, a.device,
-                   mat=_mat(a.gozeneksiz))
+                   mat=_mat(a.gozeneksiz, a.yercekimli))
     t = _kos(sol1, 0.0, a.t1, a.azami_adim, "a1")
     print(f"  asama-1 bitti: t = {t:.5e} s "
           f"({time.perf_counter() - t0:.1f} s duvar)", flush=True)
@@ -383,7 +396,7 @@ def main() -> int:
           flush=True)
     sol2 = _cozucu(sahne.x, sahne.v, sahne.m, sahne.e, sahne.h,
                    _alpha0_denetle(sahne.alpha0, a.gozeneksiz), sahne.Y0, a.device,
-                   mat=_mat(a.gozeneksiz))
+                   mat=_mat(a.gozeneksiz, a.yercekimli))
     izler = []
     x0_h = np.array(a1.x, dtype=np.float64, copy=True)   # CARPMA ONCESI (R4)
     # Aktarimdan sonra parcacik kimlikleri degisti; krater referansi
