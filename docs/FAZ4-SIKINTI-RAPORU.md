@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-11 · **Kapanan:** 23 (bölüm 2) + 12 (bölüm 1) · **Açık:** 5 — A2, A3, A11, A12, A17
+**Son güncelleme:** 2026-08-11 · **Kapanan:** 23 (bölüm 2) + 13 (bölüm 1) · **Açık:** 4 — A3, A11, A12, A17
 
 ---
 
@@ -55,7 +55,7 @@ Bunlar bugün çözülemez ve **nedeni dışsal** ya da **ölçüm gerektiriyor*
 
 > Bu bir kod sorunu değil. Etrafından **dolaşılmadı**.
 
-### A2 — G4 kapısı geçilemedi
+### A2 — G4 kapısı geçilemedi → **KAPANDI** (2026-08-11)
 
 On ölçütün **onu da** `koşulmadı`. Kapı raporu üretildi ve
 `GEÇİLEMEDİ` diyor (çıkış kodu 1). A1 çözülmeden değişmez.
@@ -79,6 +79,25 @@ On ölçütün **onu da** `koşulmadı`. Kapı raporu üretildi ve
 > **A2 açık kalıyor** çünkü kapı hâlâ geçmedi. Ama sebebi artık tek ve
 > ölçülmüş: koşul sayısı `79,5`, `Y0` gözlenemeyen alt uzayda. Çare bir
 > ölçüm değil **kapsam kararıdır** (ADR-0046).
+
+> ### KAPANDI: **G4 GEÇİLDİ** — `10/10`
+>
+> `C2` `0,907 → 0,221`. Geçmesini sağlayan şey bir eşik gevşetmesi ya
+> da yeni bir gözlenebilir **değil**: ADR-0046 kararı S1 ile çıkarım
+> uzayı üç parametreden **bire** indirildi (`matrix_alpha0`).
+>
+> `C2` her parametrenin **marjinal** bandına bakar; dejenere bir
+> posterior'da iyi kısıtlanan yön bir *birleşim* olduğu için
+> marjinallerin hepsi geniş kalır. Tek parametrede dejenerasyon yok.
+>
+> | | üç parametre | **bir parametre** |
+> |---|---|---|
+> | `C2` | `0,907` DÜŞTÜ | **`0,221` GEÇTİ** |
+> | posterior bandı | `Y0`: önselin `%70`'i | `%15` |
+>
+> **Bedel kaydedildi:** bilimsel iddia *"iç yapıyı çıkardık"*tan
+> **"matris gözenekliliğini çıkardık"**a daraldı. `f_boulder` artık
+> serbest değil ve Hera onu görüntüleyecek.
 ### A3 — ADR-0041 ve ADR-0042 **koşullu**
 
 Ölçümler **küp geometrisinde** yapıldı, DART geometrisinde değil.

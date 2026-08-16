@@ -2,17 +2,31 @@
 
 > **Üretildi:** 2026-08-11, TRUBA `kolyoz-cuda` (H100).
 > **Kaynaklar:** `faz44_esit.json` (eşit `t_sim`), `faz45_durulma.json`,
-> `faz46_g4c.json` (iki aşamalı ensemble, 40 nokta), `y0lo.json` (`A1`).
+> `faz46_g4c_s1.json` (indirgenmiş uzay; ham ensemble
+> `g4c_ensemble.json`, iki aşamalı, 40 nokta), `y0lo.json` (`A1`).
 > Bu dosya `scripts/faz47_g4_kapi.py` tarafından **üretilir**; elle
 > düzenlenmez.
 
-**Sonuç:** **GEÇİLEMEDİ**
+**Sonuç:** **GEÇİLDİ** — `10` ölçütün **`10`'u** geçti.
 
-- **düşen ölçütler:** C2
-
-> Kısmi geçiş yoktur. Bir ölçüt koşulmadıysa **geçmemiş** sayılır.
-> Bu koşuda **koşulmayan ölçüt kalmadı** — onu da yazmak gerekiyor:
-> `10` ölçütün `9`'u geçti, `1`'i düştü.
+> Kısmi geçiş yoktur; koşulmayan ölçüt de **geçmemiş** sayılır. Bu
+> koşuda koşulmayan ölçüt **yok**.
+>
+> ### Geçişin **bedeli** açıkça yazılıdır
+>
+> `C2` ilk değerlendirmede `0,907` ile **düşmüştü**. Geçmesini sağlayan
+> şey bir eşik gevşetmesi ya da yeni bir gözlenebilir **değil**:
+> çıkarım uzayı üç parametreden **bire** indirildi (ADR-0046 kararı S1,
+> `matrix_alpha0`).
+>
+> Gerekçe ölçümdür: `Y0` gözlenemeyen alt uzayda, kalan ikisinin koşul
+> sayısı `79,5`, ve `ρ_yığın` sabitken üretici `matrix_alpha0`'ı zaten
+> **türetiyor** (derinlik ile korelasyon `r = −0,9932`).
+>
+> **Bilimsel iddia daraldı:** *"iç yapıyı çıkardık"* değil
+> **"matris gözenekliliğini çıkardık"**. `f_boulder` artık serbest
+> değil ve Hera onu görüntüleyecek. Bu kapının geçmesi o kaybı
+> **telafi etmez**.
 
 ## G4-A — mermi çözülüyor — GEÇTİ
 
@@ -31,15 +45,40 @@
 | B3 | A′, ince kola tek `h`'den yakın (1 = evet) | `>= 1` | `1` | **GECTI** |
 | B4 | enerji sapması log-log eğim | `< 1` | `-0.00238537` | **GECTI** |
 
-## G4-C — parametreler geri bulunuyor — GEÇMEDİ
+## G4-C — parametreler geri bulunuyor — GEÇTİ
+
+**Uzay: `DART_UZAYI_S1 = (matrix_alpha0,)`**, `1,5122 – 3,0000`
+(mevcut ensemble'ın **ürettiği** aralık; dışına çıkmak dışdeğerleme
+olurdu).
 
 | # | ölçüt | eşik | ölçülen | durum |
 |---|---|---|---|---|
-| C1 | parametre kapsaması (3/3) | `>= 1` | `1` | **GECTI** |
-| C2 | en dar bant / önsel | `< 0.5` | `0.906948` | **DUSTU** |
+| C1 | parametre kapsaması | `>= 1` | `1` | **GECTI** |
+| C2 | en dar bant / önsel | `< 0.5` | `0.221142` | **GECTI** |
 | C3 | gürültüyle genişleme (1 = evet) | `>= 1` | `1` | **GECTI** |
 
-### `C2` neden düştü — **ölçülmüş yapısal sebep**
+| | |
+|---|---|
+| gerçek `matrix_alpha0` | `2,2561` |
+| posterior `%68` bandı | `[2,1278 – 2,3516]` |
+| bant / önsel | **`0,1504`** |
+| gürültüyle büyüme | `4,24×` |
+
+Vekil kalitesi: `krater_derinlik` `q2 = 0,907`, `beta` `q2 = 0,749`,
+`ejekta_kutle_kesri` `q2 = 0,308` (**yetersiz** — posterior'a katkısı
+zayıf, kaydedildi).
+
+### Üç parametreli sonuç **silinmedi**
+
+İlk değerlendirme (`DART_UZAYI_S3`, `faz46_g4c.json`):
+`C1 = 1` geçti, **`C2 = 0,907` düştü**, `C3` geçti.
+
+> Ve `C1`'in orada geçmesi **aldatıcıydı**: `Y0` bandı `3513 – 2,15e6`,
+> dört mertebelik önselin **üç mertebesi**. O genişlikte bir bandın
+> gerçeği içermesi bilgi değildir. Bu, `C1` ölçütünün dejenere
+> posterior'da ayırt edici olmadığını gösteriyor ve **kayıtlıdır**.
+
+### `C2`'nin ilk düşüşü — **ölçülmüş yapısal sebep**
 
 Bu bir aksaklık değil. Ölçüldü (FAZ 4.11/4.12, KAYIT-046):
 
@@ -59,8 +98,13 @@ derinlik ile matris `α₀` korelasyonu `r = −0,9932`. Üç parametreli uzay
 > `3513 – 2,15e6`, yani dört mertebelik önselin **üç mertebesi**. O
 > genişlikte bir bandın gerçeği içermesi bilgi değildir.
 
-Çare bir ölçüm değil **kapsam kararıdır** (ADR-0046) ve bu belge onu
-vermez.
+Çare bir ölçüm değil **kapsam kararıydı** ve ADR-0046'da S1 olarak
+verildi: uzay `matrix_alpha0`'a indirildi. `C2` `0,907 → 0,221`.
+
+> `C2` düzeldi çünkü **dejenerasyon kalktı**, ölçüm iyileşti diye
+> değil. `C2` her parametrenin **marjinal** bandına bakar; dejenere bir
+> posterior'da iyi kısıtlanan yön bir *birleşim* olduğu için
+> marjinallerin hepsi geniş kalır.
 
 ## Tanılar — **ölçüt değil**
 
