@@ -1292,7 +1292,56 @@ görünebilir.
 | iki kolun `β` farkı `> %10` | yerçekimi uzun sürede **belirleyici** |
 | fark `< %10` | yerçekimi sebep **değil** — başka yerde ara |
 
-Ayrıca izlenen: `β` gözlemin `3,2225`'ine doğru **tırmanıyor mu**.
+#### Sonuç: `t = 100 s`'de de yerçekimi sebep **değil**
+
+| | yerçekimli | yerçekimsiz |
+|---|---|---|
+| `β` | `1,40921` | `1,41122` |
+| `n_ejekta` | 30 | 28 |
+| bekleyen | 2269 | 2312 |
+| krater derinliği | **`13,45 m`** | **`15,28 m`** |
+
+`β` farkı **`%0,14`** — ölçütün `%10`'unun çok altında. **Yerçekimi
+elendi.**
+
+> Yerçekimi **derinliği** etkiliyor (`%12` daha sığ — sıkıştırıyor) ama
+> `β`'yı etkilemiyor. İkisi ayrı büyüklükler ve ayrı davranıyorlar.
+
+#### Koşu süresi de elendi
+
+`t_end` `0,2 → 100 s`, yani **`500` kat**. `β` `1,41`'de kaldı.
+Gözlem `3,2225` istiyor.
+
+> İki en makul aday — **yetersiz süre** ve **eksik yerçekimi** — ölçümle
+> **elendi**. Kalan şey model-form: motor gerçekten az ejekta üretiyor.
+
+#### Üçüncü aday: ejekta **parçacık kütlesiyle nicemli**
+
+| | |
+|---|---|
+| hedef parçacık kütlesi (medyan) | `3,73e5 kg` |
+| gereken ejekta (`1 m/s` için) | `6,45e6 kg` = **`17` parçacık** |
+| `2R` ölçütüyle ölçülen hedef ejektası | `0` – `91 kg` |
+| `r > R` ölçütüyle (nokta 6) | **`3,98e4 kg`** — bir parçacık `3,91e4` |
+
+Yani gerçek bir hedef parçacığı **yüzeyi geçmiş ama `2R`'yi
+geçmemiş**. Üretim ölçütü onu saymıyor.
+
+`3,98e4 kg` bile gerekenin **`%0,6`**'sı — hâlâ `170` kat eksik. Yani
+nicemleme bir **taban** koyuyor ama açığın tamamını açıklamıyor.
+
+> ### `91,3 kg` iddiam **şüpheli** — düzeltme
+>
+> ADR-0045 §9'da bunu *"gerçek hedef ejektası"* diye yazdım. Kaçan
+> parçacıkların kütleleri incelenince `579,400` (nokta 0) ile
+> `670,697` (nokta 4) arasındaki fark, kabalaştırmanın karıştırdığı
+> mermi+çekirdek parçacıklarından geliyor olabilir — `2R` ölçütünde
+> hangi parçacığın ne olduğu artık ayırt **edilemiyor** (aktarımdan
+> sonra `is_impactor` boş).
+>
+> **Ayrıştırılmadı.** O yüzden `91,3 kg`'ı *"gerçek hedef ejektası"*
+> diye okumayı geri alıyorum; kesin olan tek şey `r > R` ölçütünde
+> nokta 6'da `3,91e4 kg`'lık **bir parçacığın** yüzeyi geçtiği.
 
 ---
 

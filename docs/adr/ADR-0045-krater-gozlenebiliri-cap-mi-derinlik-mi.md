@@ -1,7 +1,8 @@
 # ADR-0045 — Krater gözlenebiliri: **çap mı derinlik mi?**
 
 **Tarih:** 2026-08-09
-**Durum:** **YENİDEN AÇILDI** (§8) — S2'yi eleyen ölçüm **bozuk bir çıkarıcıyla** yapılmıştı; düzeltilince derinlik yakınsıyor.
+**Durum:** **YENİDEN AÇILDI** (§8) · §9'un yorumu §10'da **geri alındı**
+**Not:** (§8) — S2'yi eleyen ölçüm **bozuk bir çıkarıcıyla** yapılmıştı; düzeltilince derinlik yakınsıyor.
 **İlgili:** [ADR-0039](ADR-0039-krater-olcutu-yanliliktan-ayristirilir.md) ·
 FAZ 4.6 · [rapor A11/A13](../FAZ4-SIKINTI-RAPORU.md)
 
@@ -284,3 +285,36 @@ O iki köşe `boulder_alpha0 = 1,0` **ve** `f_boulder = 0,50`, yani
 
 Gözlenebilir **ölü değil ama zayıf**: iki seviyeli bir eşik göstergesi,
 sürekli bir ölçü değil.
+
+
+---
+
+## 10. §9 DÜZELTMESİ — `91,3 kg`'ı *"hedef ejektası"* saymam **erken**di
+
+§9'da iki köşede `670,7 kg` kaçtığını gördüm ve farkı (`91,3 kg`)
+*"gerçek hedef ejektası"* diye yazdım. Kaydedilmiş durumları
+inceleyince bunun **kanıtlanmadığını** gördüm:
+
+* Kaçan parçacıkların kütleleri `0,72` ile `55,75 kg` arasında —
+  hepsi **kabalaştırılmış mermi/çekirdek** mertebesinde.
+* Aktarımdan sonra `is_impactor` **hiçbir parçacıkta yok**, yani
+  `2R` ölçütünde hangi parçacığın mermi hangisinin hedef olduğu
+  **ayırt edilemiyor**.
+* Hedef parçacığının medyan kütlesi `3,73e5 kg`; `91,3 kg` onun
+  **on binde ikisi**. Hiçbir tam hedef parçacığı bu kadar hafif değil.
+
+Yani `91,3 kg` bir **kütle defteri farkı** olabilir, ejekta değil.
+**Ayrıştırılmadı** ve o yüzden iddiayı geri alıyorum.
+
+### Kesin olan ne
+
+`r > R` ölçütüyle (üretimin `2R`'si değil) nokta 6'da `3,91e4 kg`'lık
+**bir parçacık** yüzeyi geçmiş. Bu gerçek bir hedef parçacığı ve
+üretim ölçütü onu **saymıyor** — çünkü `2R`'yi geçmemiş.
+
+> Ders yine aynı: `670,7` ile `579,4` arasındaki farkı ejekta saymak,
+> **iki sayının farkını bir fiziksel büyüklük sanmak**tı. Parçacık
+> kütlelerine bakmak yeterliydi ve bakmamıştım.
+
+`ejekta_kutle_kesri`'nin *"iki seviyeli eşik göstergesi"* olduğu
+gözlemi **duruyor**; yorumu (`91,3 kg` hedef ejektası) duruyor değil.
