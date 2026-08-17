@@ -1409,6 +1409,69 @@ anatomisi üzerine değil: anatomi imkânı gösteriyor, `β` gerçekleşmeyi
 | `β < 1,8` ve durulmuş | salınım; anlık momentum aldatıcıydı, **model-form** |
 | arası | kısmi boşalma; `t_end` daha da büyütülmeli |
 
+#### ⚠ *"Yerçekimi elendi"* de **YANLIŞTI** — aynı hata, ikinci kez
+
+Yerçekimi sınavı `t = 100 s`'de yapıldı ve `%0,14` fark çıktı. Ama:
+
+| | |
+|---|---|
+| yığın yoğunluğu | `1808,2 kg/m³` |
+| **serbest düşme zamanı** `t_ff` | **`1562,2 s`** |
+| `R / v_kaçış` | `994,5 s` |
+| sınav yapıldığı an | `t/t_ff = ` **`0,064`** |
+
+> `t/t_ff = 0,064`'te yerçekimi **etkisiz olmak zorundadır**. `%0,14`
+> ölçüp *"yerçekimi elendi"* demek, sınavı etkisiz olduğu yerde
+> yapmaktı. `600 s`'de `t/t_ff = 0,384` — yerçekimi orada
+> **belirleyici**.
+
+Yerçekimli kol `6:19:12`, yerçekimsiz `3:39:22` (`1,73×`). `600 s` için
+yerçekimli koşu `~36 sa` eder ve `24 sa` sınırına **sığmaz**. Bu yüzden
+koşu yerine **enerji ölçütü** hesaplandı (küresel potansiyel,
+`Φ_i = −G[M(<r_i)/r_i + Σ_{r_j>r_i} m_j/r_j]`):
+
+| kol (`t = 100 s`) | `E > 0` kütle | eksenel momentum | `β_enerji` |
+|---|---|---|---|
+| yerçekimli | `%93,06` | `−3,4645e6` | `1,9731` |
+| yerçekimsiz | `%93,78` | `−2,5517e6` | `1,7167` |
+
+`%93` **bağsız** çıkıyor. Bu tek başına gövdenin dağıldığı anlamına
+gelmiyor — ve nedeni A17'nin kilidi.
+
+#### Kök neden adayı: **cismi tutan şey yerçekimi değil mukavemet**
+
+| | enerji (J/kg) | `GM/R`'ye oran |
+|---|---|---|
+| yerçekimsel bağlanma `GM/R` | `3,394e-3` | 1 |
+| `Y0 = 1 Pa` | `5,53e-4` | `0,163` |
+| `Y0 = 100 Pa` | `5,53e-2` | `16,3` |
+| **`Y0 = 3513 Pa`** (en düşük sınanan) | `1,943` | **`572`** |
+| `Y0 = 2,15e6 Pa` | `1189` | `3,50e5` |
+
+Rejim geçişi `Y0/ρ ≈ GM/R`'de, yani **`Y0 ≈ 6,14 Pa`**.
+
+> **FAZ 4.12 yanlış aralıkta ölçtü.** `Y0`'ı `3513 → 2,15e6 Pa` taradı;
+> o aralıkta mukavemet/yerçekimi oranı `572` ile `350 000` arasında —
+> **baştan sona aynı rejimde**. *"β `Y0`'a duyarsız"* bulgusu
+> *"`Y0` önemsiz"* demiyor, **"aralık tek rejimde"** diyor.
+
+Gerçek Dimorphos kohezyonu **~Pa** mertebesinde kestiriliyor: fiziksel
+çalışma noktası geçişin tam üzerinde ve orası **hiç sınanmadı** —
+geçişin `572` katı üstünden başladık.
+
+> Bu, KAYIT-029'un dersinin **üçüncü** kez tekrarı: *"bir büyüklüğün
+> nasıl davrandığını, ilgilenilen çalışma noktasını içermeyen bir
+> aralıkta ölçerek söyleyemezsin."* Daha önce `r_dep/r_şok` ve
+> `r_iç/r_dış`'ta oldu; şimdi `Y0`'da.
+
+İş `1506779` üç kolu (`Y0 = 1 / 10 / 100 Pa`) geçişin iki yanına
+yerleştiriyor. Ölçüt önden yazıldı:
+
+| gözlenen | çıkarım |
+|---|---|
+| `Y0 = 1 Pa`'da `\|p_eksen\|` temelin `1,5` katını geçerse veya `β > 2,0` | **mukavemet rejimi** sebeptir |
+| üç kolun üçü de temele bit düzeyinde yakınsa | `Y0` da değil |
+
 #### Üçüncü aday: ejekta **parçacık kütlesiyle nicemli**
 
 | | |
