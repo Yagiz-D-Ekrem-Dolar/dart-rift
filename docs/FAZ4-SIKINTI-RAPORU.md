@@ -1307,13 +1307,48 @@ elendi.**
 > Yerçekimi **derinliği** etkiliyor (`%12` daha sığ — sıkıştırıyor) ama
 > `β`'yı etkilemiyor. İkisi ayrı büyüklükler ve ayrı davranıyorlar.
 
-#### Koşu süresi de elendi
+#### ⚠ *"Koşu süresi de elendi"* dedim — **YANLIŞTI**
 
-`t_end` `0,2 → 100 s`, yani **`500` kat**. `β` `1,41`'de kaldı.
-Gözlem `3,2225` istiyor.
+`t_end` `0,2 → 100 s` (`500` kat) ve `β` `1,41`'de kaldı; bundan
+*"süre sebep değil"* diye çıkardım. **Erken karardı.**
 
-> İki en makul aday — **yetersiz süre** ve **eksik yerçekimi** — ölçümle
-> **elendi**. Kalan şey model-form: motor gerçekten az ejekta üretiyor.
+`t = 100 s`'deki durumu ölçtüm:
+
+| | |
+|---|---|
+| `r > R` geçen | **187** parçacık (`t = 0,2 s`'de `28`'di) |
+| `r > 2R` geçen | `28` (= merminin kendisi) |
+| dışarı giden iç madde | `2847`, medyan `r = 57,7 m`, `v_r = 0,193 m/s` |
+| **`2R`'ye varış süresi** | **`~550 s`** |
+
+**Üretim ölçütü `2R`'ye bakıyor** (`momentum_transfer`'in
+`control_radius = 2R`'si) ve hedef maddesi oraya **henüz varmamış** —
+`5,5` kat eksik.
+
+> Hedef maddesi `R`'yi **geçiyor** (`28 → 187`) ama `2R`'yi geçmiyor.
+> Yani `β`'nın sabit kalması *"ejekta yok"* değil **"ejekta sayılmıyor"**
+> demek olabilir ve ben ikisini ayırmadan karar verdim.
+
+`t_end = 600 s` gönderildi (iş `1506765`), ölçüt yine önden yazıldı:
+
+| gözlenen | sonuç |
+|---|---|
+| `β > 2,5` | süre **yetersizdi**, model gözlemi üretiyor |
+| `β < 1,8` ve durulmuş | süre değil, **model-form** kesinleşir |
+| arası | kısmi; `t_end` daha da büyütülmeli |
+
+#### Elenenler ve elenmeyenler — güncel
+
+| aday | durum |
+|---|---|
+| yerçekimi | **elendi** (`%0,14` fark, `t = 100 s`) |
+| gözeneklilik | **zayıf** — katı sahnede `β` `1,411 → 1,517` (`+%7,5`), gereken `2,3×` |
+| çözünürlük | **elendi** — `λ₂` `2 → 4`: parçacık `28 → 150` ama momentum `1,46e6 → 1,21e6` (`−%17`), yani **yakınsamış** |
+| **koşu süresi** | **AÇIK** — `2R` varış süresi `~550 s`, koşulan `100 s` |
+
+Ejekta yönlülüğü de ölçüldü: kaçan maddenin **tamamı** geri gidiyor
+(`p_ileri = 0`, iptal `%0`). Yani ejekta kusursuz yönlü; sorun yön
+değil **miktar**.
 
 #### Üçüncü aday: ejekta **parçacık kütlesiyle nicemli**
 
