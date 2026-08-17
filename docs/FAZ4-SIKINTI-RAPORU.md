@@ -1350,6 +1350,65 @@ Ejekta yönlülüğü de ölçüldü: kaçan maddenin **tamamı** geri gidiyor
 (`p_ileri = 0`, iptal `%0`). Yani ejekta kusursuz yönlü; sorun yön
 değil **miktar**.
 
+#### Momentum anatomisi — **gereken momentum motorda var**
+
+`scripts/a17_momentum_anatomisi.py` tek bir `β` sayısının karıştırdığı
+üç soruyu ayırıyor. `t = 100 s` durumunda:
+
+| soru | ölçüm |
+|---|---|
+| **momentum var mı?** | dışa giden `4790` parçacık, `2,02e9 kg`, eksenel net **`−1,1813e7`** — gerekenin (`7,91e6`) **`1,49` katı** |
+| **yönlü mü?** | genel yönlülük `0,0206` → ezici çoğunluk **eş yönlü çınlama** |
+| **çıkıyor mu?** | `r > 2R`: `28` (= mermi). **Hayır.** |
+
+Korunum sağlam: `|p_toplam| = 3,5604e6` = merminin momentumu.
+
+> Yani A17 **ters yönde** okunmuş: motor az momentum üretmiyor,
+> ürettiği yönlü momentum **gövdeden çıkmıyor**.
+
+Yönlülük kabuk kabuk bakınca nerede olduğunu söylüyor:
+
+| `r/R` | `n` | yönlülük |
+|---|---|---|
+| `0,00 – 0,25` | 81 | **`0,3150`** |
+| `0,25 – 0,50` | 494 | `0,0063` |
+| `0,50 – 0,75` | 1415 | `0,0440` |
+| `0,75 – 1,00` | 2732 | `0,0692` |
+
+Yönlü kısım **iç** kabukta; dış kabuk neredeyse tamamen eş yönlü. Kazı
+akışı hâlâ gövdenin içinde.
+
+#### Ama bir **çınlama imzası** var — ve kestirimi zayıflatıyor
+
+Hız bantlarında eksenel momentumun **işareti dönüyor**:
+
+| `v_r` (m/s) | `n` | kütle (kg) | `p_eksen` |
+|---|---|---|---|
+| `0 – 0,1` | 2660 | `1,06e9` | **`+9,28e6`** |
+| `0,1 – 0,5` | 1559 | `6,85e8` | **`−1,74e7`** |
+| `0,5 – 2` | 473 | `2,28e8` | `+2,52e6` |
+| **`2 – 10`** | **68** | `4,04e7` | **`−1,14e7`** |
+| `10 – 100` | 2 | `1,25e6` | `+3,65e6` |
+| `> 100` | 28 | `579 kg` | `+1,46e6` (mermi) |
+
+`v_kaçış = 0,0824 m/s`. `2–10 m/s` bandı kaçıştan `25–120` kat hızlı ve
+tek başına gerekenin `1,44` katını taşıyor.
+
+> **Çekince — kendi kestirimime karşı:** dört işaret dönüşü var. Madde
+> tutarlı bir tabaka halinde değil **salınım** halinde. O yüzden anlık
+> `−1,1813e7`, kaçacak momentumun **üst sınırı değil**; salınımın o
+> fazdaki değeri. `1,49 kat` bir *imkân*, bir *garanti* değil.
+
+Bu yüzden `600 s` koşusunun ölçütü **`β` üzerine** yazıldı, momentum
+anatomisi üzerine değil: anatomi imkânı gösteriyor, `β` gerçekleşmeyi
+ölçüyor.
+
+| `600 s`'de gözlenen | çıkarım |
+|---|---|
+| `β > 2,5` | salınım **değil** akış; süre yetersizdi |
+| `β < 1,8` ve durulmuş | salınım; anlık momentum aldatıcıydı, **model-form** |
+| arası | kısmi boşalma; `t_end` daha da büyütülmeli |
+
 #### Üçüncü aday: ejekta **parçacık kütlesiyle nicemli**
 
 | | |
