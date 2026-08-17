@@ -18,8 +18,9 @@ kapatıyor.
 Üç fark var ve üçü de `N_komşu`'yu etkiliyor:
 
 1. **Serbest yüzey.** Küp periyodik/geniş; DART bir küre. Yüzeydeki
-   eksik komşuluk yapay bir düşük yoğunluk üretir. İç bölge maskesi bu
-   yüzden zorunlu (`--ic-frac`).
+   eksik komşuluk yapay bir düşük yoğunluk üretir, o yüzden bir iç
+   bölge maskesi zorunlu — ama maskenin **nereye** konduğu kritik ve
+   ilk sürümde yanlış kondu; bkz. [`_ic_maske`][].
 2. **Parçacık başına `h`** (A′, ADR-0041). Küpte `h` tek bir skalerdi.
    `h ∝ s` ve `m ∝ s³ρ` olduğu için `N_komşu` **tasarımca** ince ve
    kaba bölgede aynı kalmalı — ama bu bir *tasarım niyeti*, ölçüm
@@ -71,11 +72,49 @@ from dartrift.setup.refine import refine_scene_ucseviye  # noqa: E402
 from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
 from dartrift.setup.two_stage import asama2_sahnesi_ucseviye  # noqa: E402
 from dartrift.validation.h_policy import (  # noqa: E402
-    KUP_SALINIMI, KUP_TARAMA_KAPSAMI, dart_salinim_ozeti,
+    KUP_SALINIMI, KUP_TARAMA_KAPSAMI, SUPPORT_OVER_H, dart_salinim_ozeti,
     judge_dart_salinimi, neighbour_count)
 
 from faz44_dart_yakinsama import SAHNE  # noqa: E402
 from faz48_iki_asama import T1_OLCULEN, _cozucu, _kos, _mat  # noqa: E402
+
+
+def _ic_maske(x, h, R: float, ic_frac: float) -> np.ndarray:
+    """İç bölge: **çekirdek desteği cisme sığan** parçacıklar.
+
+    ## Neden `r ≤ ic_frac·R` değil
+
+    İlk sürümde küpün tarifi (`ic_frac = 0,6`) aynen kullanıldı ve
+    salınım `1,000×` ölçüldü — `101` örnek, `207 252` değer, hepsi
+    `379,1`. Bu bir sonuç değil **maske hatasıydı**:
+
+    | | küp (Sedov) | DART |
+    |---|---|---|
+    | enerji nerede | **merkez** | **yüzey** |
+    | `r ≤ 0,6R` neyi kapsar | şok bölgesini | **hiç şok görmeyen çekirdeği** |
+
+    Krater `~10–15 m` derinlikte, cisim `R = 82 m`; `0,6R = 49 m`'nin
+    içinde `∇·v ≈ 0` olduğu için `ρ` başlangıç değerinde kalıyor ve
+    her matris parçacığının `ρ`'su **aynı** (`ρ₀/α₀`). Dolayısıyla
+    `N_komşu` da aynı. Ölçüm çalışma noktasını kaçırmıştı.
+
+    ## Kullanılan ölçüt
+
+    `r_i + destek·h_i ≤ R` — yani parçacığın çekirdek desteği serbest
+    yüzeyi kesmiyorsa iç sayılır. Bu **parçacık başına uyarlanır**:
+    ince bölgede `h` küçük olduğu için krater çevresi **dahil** olur,
+    kaba bölgede `h = 14 m` olduğu için yüzeyden uzak durulur.
+
+    Amaç yüzeydeki eksik komşuluğun yapay düşük yoğunluğunu dışlamak;
+    amaç şok görmüş bölgeyi dışlamak **değil**.
+
+    `ic_frac` geriye dönük uyumluluk için tutuluyor: `< 1` verilirse
+    eski davranış (küresel kesme) uygulanır ve çıktı bunu **söyler**.
+    """
+    r = np.linalg.norm(x, axis=1)
+    if ic_frac < 1.0:
+        return r <= ic_frac * R
+    return (r + SUPPORT_OVER_H * np.asarray(h, dtype=np.float64)) <= R
 
 
 def _sayilan(st, h, R, ic_frac: float, mermi: np.ndarray | None) -> dict:
@@ -93,8 +132,7 @@ def _sayilan(st, h, R, ic_frac: float, mermi: np.ndarray | None) -> dict:
 
     Pahalı (ağaç kurar); yalnızca birkaç anda çağrılır.
     """
-    r = np.linalg.norm(st["x"], axis=1)
-    maske = r <= ic_frac * R
+    maske = _ic_maske(st["x"], h, R, ic_frac)
     if mermi is not None:
         maske &= ~mermi
     if int(maske.sum()) < 32:
@@ -113,8 +151,7 @@ def _ornek(st, h, R, ic_frac: float, ince: np.ndarray | None,
     ve `β` tartışmasında görüldüğü gibi kendi başına bir topluluk. Onu
     içeri katmak salınımı hedefin değil merminin salınımı yapardı.
     """
-    r = np.linalg.norm(st["x"], axis=1)
-    maske = r <= ic_frac * R
+    maske = _ic_maske(st["x"], h, R, ic_frac)
     if mermi is not None:
         maske &= ~mermi
     if int(maske.sum()) < 32:
@@ -143,8 +180,9 @@ def main() -> int:
     ap.add_argument("--azami-adim", type=int, default=200000)
     ap.add_argument("--her", type=int, default=25,
                     help="kac adimda bir ornekle")
-    ap.add_argument("--ic-frac", type=float, default=0.6,
-                    help="yuzey disla: r <= ic_frac*R")
+    ap.add_argument("--ic-frac", type=float, default=1.0,
+                    help="1.0 -> destek olcutu (r + 2h <= R, ONERILEN); "
+                         "<1 -> eski kuresel kesme r <= ic_frac*R")
     ap.add_argument("--out", default=str(REPO.parent / "faz49_komsu.json"))
     a = ap.parse_args()
 

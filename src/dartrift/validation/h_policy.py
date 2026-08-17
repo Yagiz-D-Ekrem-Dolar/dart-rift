@@ -89,7 +89,7 @@ import numpy as np
 __all__ = ["neighbour_count", "OMEGA_IS_UNITY_WHEN_H_FIXED", "n_sides_for_swing",
            "measure_density_swing", "run_fixed_h_sweep", "judge",
            "KUP_TARAMA_KAPSAMI", "KUP_SALINIMI", "dart_salinim_ozeti",
-           "judge_dart_salinimi"]
+           "judge_dart_salinimi", "SUPPORT_OVER_H"]
 
 #: KAYIT-035'te **küp** (Sedov) geometrisinde ölçülen çalışma aralığı.
 #: ADR-0042'nin kanıtı bu aralıkta kuruldu.

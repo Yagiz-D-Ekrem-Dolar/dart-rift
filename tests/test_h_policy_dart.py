@@ -109,3 +109,41 @@ def test_parcacik_basina_h_ile_komsu_sayisi_olcekten_bagimsiz() -> None:
         nk = float(neighbour_count(rho, h, m))
         assert nk == pytest.approx(
             (4.0 / 3.0) * np.pi * (2.0 * 2.0) ** 3, rel=1e-12)
+
+
+def test_ic_maske_destek_olcutu_krater_bolgesini_kapsar() -> None:
+    """Maske yüzeyi dışlamalı ama şok bölgesini **dışlamamalı**.
+
+    İlk sürümde küpün `r ≤ 0,6R` tarifi aynen kullanıldı; DART'ta enerji
+    yüzeyde olduğu için o maske tam da şok görmeyen çekirdeği seçti ve
+    salınım `1,000×` ölçüldü. Bu test o hatanın geri gelmesini
+    engelliyor.
+    """
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    from faz49_komsu_salinimi_dart import _ic_maske
+
+    R = 82.0
+    # Ince parcacik (h=1) krater cevresinde r=78 -> 78+2 = 80 <= 82: ICERDE
+    # Kaba parcacik (h=14) ayni yerde -> 78+28 = 106 > 82: DISARIDA
+    x = np.array([[0.0, 0.0, 78.0], [0.0, 0.0, 78.0], [0.0, 0.0, 20.0]])
+    h = np.array([1.0, 14.0, 14.0])
+    m = _ic_maske(x, h, R, ic_frac=1.0)
+    assert m.tolist() == [True, False, True]
+
+    # Eski davranis ic_frac < 1 ile korunuyor: 78 > 0,6*82 = 49,2
+    e = _ic_maske(x, h, R, ic_frac=0.6)
+    assert e.tolist() == [False, False, True]
+
+
+def test_ic_maske_yuzeydeki_parcacigi_disliyor() -> None:
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    from faz49_komsu_salinimi_dart import _ic_maske
+
+    R = 82.0
+    x = np.array([[0.0, 0.0, 82.0], [0.0, 0.0, 0.0]])
+    h = np.array([1.0, 1.0])
+    assert _ic_maske(x, h, R, ic_frac=1.0).tolist() == [False, True]
