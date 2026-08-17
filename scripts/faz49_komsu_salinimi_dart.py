@@ -66,16 +66,43 @@ for _akis in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
-from dartrift.setup.rubble_generator import build_scene  # noqa: E402
-from dartrift.setup.shape_mesh import build_mesh as _build_mesh  # noqa: E402
-from dartrift.setup.two_stage import (  # noqa: E402
-    asama2_sahnesi_ucseviye, refine_scene_ucseviye)
+from dartrift.setup.coarsen import komsu_sagligi  # noqa: E402
+from dartrift.setup.refine import refine_scene_ucseviye  # noqa: E402
+from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
+from dartrift.setup.two_stage import asama2_sahnesi_ucseviye  # noqa: E402
 from dartrift.validation.h_policy import (  # noqa: E402
     KUP_SALINIMI, KUP_TARAMA_KAPSAMI, dart_salinim_ozeti,
     judge_dart_salinimi, neighbour_count)
 
 from faz44_dart_yakinsama import SAHNE  # noqa: E402
 from faz48_iki_asama import T1_OLCULEN, _cozucu, _kos, _mat  # noqa: E402
+
+
+def _sayilan(st, h, R, ic_frac: float, mermi: np.ndarray | None) -> dict:
+    """`2h` yarıçapı içindeki komşuları **fiilen sayar** (çapraz kontrol).
+
+    Analitik `neighbour_count` sayıyı `ρ/m` sayı yoğunluğundan türetiyor.
+    O tahmin tekdüze paketleme varsayar; moloz yığınında ve genleşmiş
+    bölgede tutmayabilir. Üretim aktarım tanısı `komşu medyan = 74,5`
+    verirken nominal kafes `(4/3)π(2h/s)³ ≈ 268` verir — `3,6` kat fark.
+
+    > İki sayı **çelişmiyor**: analitik formül ölçülen `ρ` ile
+    > beslendiğinde fiilî paketlemeyi zaten içerir. Ama farkın büyüklüğü
+    > kaydedilmeli, çünkü küp kanıtı da aynı formülle kuruldu ve
+    > karşılaştırmanın **eşdeğer** olduğunu göstermek gerekiyor.
+
+    Pahalı (ağaç kurar); yalnızca birkaç anda çağrılır.
+    """
+    r = np.linalg.norm(st["x"], axis=1)
+    maske = r <= ic_frac * R
+    if mermi is not None:
+        maske &= ~mermi
+    if int(maske.sum()) < 32:
+        return {}
+    h_med = float(np.median(h[maske]))
+    s = komsu_sagligi(st["x"][maske], h=h_med)
+    return {"sayilan_medyan": float(s.get("komsu_medyan", float("nan"))),
+            "sayilan_h": h_med, "sayilan_n": int(maske.sum())}
 
 
 def _ornek(st, h, R, ic_frac: float, ince: np.ndarray | None,
@@ -162,6 +189,16 @@ def main() -> int:
               f"   kaba ortanca = {o0.get('nk_kaba_ortanca', float('nan')):.1f}",
               flush=True)
         ornek1.append({**o0, "t": 0.0, "asama": 1})
+    # CAPRAZ KONTROL: analitik formulun tekduze-paketleme varsayimi
+    # DART sahnesinde tutuyor mu? Uretim tanisi 74,5 verirken nominal
+    # kafes ~268 veriyor; fark kaydedilmeli.
+    sayim0 = _sayilan(st0, h1, R, a.ic_frac, mermi1)
+    if sayim0:
+        print(f"    CAPRAZ: fiilen sayilan komsu medyani = "
+              f"{sayim0['sayilan_medyan']:.1f}  "
+              f"(analitik {np.median(o0['n_komsu']):.1f}, "
+              f"oran {np.median(o0['n_komsu'])/max(sayim0['sayilan_medyan'],1e-9):.2f}x)",
+              flush=True)
 
     def _al1(adim, tt, st):
         o = _ornek(st, h1, R, a.ic_frac, ince1, mermi1)
@@ -199,6 +236,13 @@ def main() -> int:
     t = _kos(sol2, t, a.t_end, a.azami_adim, "a2", ornekle=_al2, her=a.her)
     print(f"  asama-2 bitti: t={t:.5e}, {len(ornek2)} ornek "
           f"({time.perf_counter() - t0:.1f} s)", flush=True)
+    sayim_son = _sayilan(sol2.state_numpy(), h2, R, a.ic_frac, mermi2)
+    if sayim_son and ornek2:
+        an = float(np.median(ornek2[-1]["n_komsu"]))
+        print(f"    CAPRAZ (son): fiilen sayilan = "
+              f"{sayim_son['sayilan_medyan']:.1f}   analitik = {an:.1f}   "
+              f"oran = {an/max(sayim_son['sayilan_medyan'],1e-9):.2f}x",
+              flush=True)
 
     # ------------------------------------------------------------ YARGI
     def _ozetle(ad, orn):
@@ -248,6 +292,7 @@ def main() -> int:
         "kup_tarama_kapsami": list(KUP_TARAMA_KAPSAMI),
         "ozet_asama1": oz1, "ozet_asama2": oz2, "ozet_tumu": oz,
         "yargi": y,
+        "capraz_sayim_t0": sayim0, "capraz_sayim_son": sayim_son,
         "ornekler_asama1": _kirp(ornek1), "ornekler_asama2": _kirp(ornek2),
         "duvar_s": time.perf_counter() - t0,
     }, indent=2, default=float), encoding="utf-8")
