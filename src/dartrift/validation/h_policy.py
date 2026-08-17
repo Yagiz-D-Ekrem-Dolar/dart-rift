@@ -87,7 +87,17 @@ from __future__ import annotations
 import numpy as np
 
 __all__ = ["neighbour_count", "OMEGA_IS_UNITY_WHEN_H_FIXED", "n_sides_for_swing",
-           "measure_density_swing", "run_fixed_h_sweep", "judge"]
+           "measure_density_swing", "run_fixed_h_sweep", "judge",
+           "KUP_TARAMA_KAPSAMI", "KUP_SALINIMI", "dart_salinim_ozeti",
+           "judge_dart_salinimi"]
+
+#: KAYIT-035'te **küp** (Sedov) geometrisinde ölçülen çalışma aralığı.
+#: ADR-0042'nin kanıtı bu aralıkta kuruldu.
+KUP_SALINIMI = (268.2, 551.5)
+
+#: Aynı kayıtta `dx` taramasının **fiilen kapsadığı** `N_komşu` aralığı.
+#: `judge` kapsama korumasının dayandığı sayılar bunlar (KAYIT-035 §95).
+KUP_TARAMA_KAPSAMI = (56.1, 650.5)
 
 #: `h` sabitken `Ω ≡ 1` **tam olarak** — türetim gereği, ölçüm gereği değil.
 #: Bu bir yaklaşıklık değil: `∂h/∂ρ = 0` çarpanı terimi **kapatır**.
@@ -163,6 +173,97 @@ def measure_density_swing(n_side: int, device: str, t_end: float | None = None,
                 float(np.percentile(rho_son, 99.0)), h, m0)),
             "salinim_p99_p01": float(np.percentile(rho_son, 99.0)
                                      / max(np.percentile(rho_son, 1.0), 1e-300))}
+
+
+def dart_salinim_ozeti(ornekler: list[dict]) -> dict:
+    """DART geometrisinde toplanan `N_komşu` örneklerini tek özete indir.
+
+    `ornekler`'in her öğesi bir zaman örneğidir ve `n_komsu` alanında o
+    andaki **iç bölge** parçacıklarının komşu sayılarını taşır.
+
+    Salınım **zaman ve uzay boyunca birlikte** alınır: ADR-0042'nin
+    kabul ettiği bedel *"`ρ` salınırken `N_komşu` onunla salınır"*
+    olduğu için tek bir anın yayılımı sorunun tamamı değildir.
+    """
+    if not ornekler:
+        raise ValueError("ornek yok")
+    hepsi = np.concatenate([np.asarray(o["n_komsu"], dtype=np.float64).ravel()
+                            for o in ornekler])
+    hepsi = hepsi[np.isfinite(hepsi) & (hepsi > 0.0)]
+    if hepsi.size < 32:
+        raise ValueError(f"gecerli ornek {hepsi.size} < 32")
+    p01, p99 = (float(np.percentile(hepsi, 1.0)),
+                float(np.percentile(hepsi, 99.0)))
+    # Zaman icinde TEK PARCACIGIN gordugu salinim, uzaysal yayilimdan
+    # ayri bir buyukluk: ADR'nin bedeli budur.
+    ort = np.array([float(np.median(np.asarray(o["n_komsu"])))
+                    for o in ornekler], dtype=np.float64)
+    return {
+        "n_ornek": len(ornekler), "n_deger": int(hepsi.size),
+        "N_komsu_p01": p01, "N_komsu_p99": p99,
+        "N_komsu_min": float(hepsi.min()), "N_komsu_max": float(hepsi.max()),
+        "salinim_p99_p01": p99 / max(p01, 1e-300),
+        "ortanca_zaman_min": float(ort.min()),
+        "ortanca_zaman_max": float(ort.max()),
+        "salinim_zamanda": float(ort.max() / max(ort.min(), 1e-300)),
+    }
+
+
+def judge_dart_salinimi(ozet: dict,
+                        kup_salinimi: tuple[float, float] = KUP_SALINIMI,
+                        tarama_kapsami: tuple[float, float]
+                        = KUP_TARAMA_KAPSAMI) -> dict:
+    """ADR-0042'nin **yeniden açılma şartı** DART geometrisinde sağlandı mı?
+
+    ADR şu taahhüdü içeriyor:
+
+    > *"DART kurulumunda ölçülen `N_komşu` salınımı `2,06×`'ı belirgin
+    > biçimde aşarsa … bu ADR yeniden açılır. Ölçüm FAZ 4.4'te DART
+    > geometrisinde tekrarlanacaktır."*
+
+    ### *"Belirgin biçimde"* nasıl sayıya çevrildi
+
+    ADR eşiği **belirsiz** bıraktı; burada keyfî bir çarpan uydurmak
+    yerine ADR'nin **kendi** kapsama mantığı kullanılıyor ([`judge`][]
+    zaten böyle yargılıyor): kanıt, taramanın fiilen kapsadığı
+    `N_komşu` aralığında geçerlidir. DART salınımı o aralığın
+    **içinde** kalıyorsa mevcut kanıt çalışma noktasını kapsıyor;
+    dışına çıkıyorsa kapsamıyor ve yargı orada kurulamaz.
+
+    > Bu bir yorumdur ve **benim yorumumdur**; ADR'nin metni değil.
+    > Sonuç `yorum` alanında açıkça taşınıyor.
+
+    Salınım oranı ayrıca `2,06×` ile karşılaştırılıp raporlanır ama
+    **karar** kapsamaya bağlıdır: oran büyüyüp de aralık içinde
+    kalıyorsa kanıt hâlâ geçerlidir.
+    """
+    alt, ust = float(tarama_kapsami[0]), float(tarama_kapsami[1])
+    p01, p99 = float(ozet["N_komsu_p01"]), float(ozet["N_komsu_p99"])
+    kapsiyor = (p01 >= alt) and (p99 <= ust)
+    kup_oran = float(kup_salinimi[1]) / float(kup_salinimi[0])
+    out = {
+        "tarama_kapsami": [alt, ust],
+        "dart_araligi": [p01, p99],
+        "kanit_kapsiyor": bool(kapsiyor),
+        "kup_salinim_orani": kup_oran,
+        "dart_salinim_orani": float(ozet["salinim_p99_p01"]),
+        "oran_kup_uzerinde_mi": bool(
+            float(ozet["salinim_p99_p01"]) > kup_oran),
+        "yorum": ("'belirgin bicimde' esigi ADR'de tanimsiz; burada "
+                  "ADR'nin kendi kapsama mantigi kullanildi "
+                  "(judge'in aralik korumasi)"),
+    }
+    if kapsiyor:
+        out["karar"] = "kanit_gecerli"
+        out["neden"] = ("DART salinimi kup taramasinin kapsadigi araligin "
+                        "ICINDE; ADR-0042'nin kaniti calisma noktasini "
+                        "kapsiyor")
+    else:
+        out["karar"] = "adr_yeniden_acilmali"
+        out["neden"] = ("DART salinimi taramanin kapsadigi araligin "
+                        "DISINA cikiyor; kanit bu calisma noktasinda "
+                        "kurulmadi (KAYIT-029 dersi)")
+    return out
 
 
 def run_fixed_h_sweep(h_absolute: float, n_sides, device: str,
