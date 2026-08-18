@@ -10,8 +10,9 @@ bu tahmini ESA'nın Hera aracı oraya varıp ölçmeden **önce** kilitlemeyi
 hedefliyoruz.
 
 Bu depo, o çıkarımın dayanacağı **motoru** içerir: deterministik altyapı
-(FAZ 0), SPH şok-fiziği çekirdeği (FAZ 1) ve gerçek malzeme fiziği — dayanım,
-gözeneklilik, öz-yerçekimi (FAZ 2).
+(FAZ 0), SPH şok-fiziği çekirdeği (FAZ 1), gerçek malzeme fiziği — dayanım,
+gözeneklilik, öz-yerçekimi (FAZ 2), çarpma sahnesi (FAZ 3) ve iki aşamalı
+çözünürlük + Bayesçi çıkarım hattı (FAZ 4).
 
 ## Kapı durumu
 
@@ -23,7 +24,41 @@ geçilmez. Kanıtlar TRUBA/ARF-ACC üzerinde, temiz git ağacıyla üretilir.
 | **G0** | Zemin sağlam (altyapı) | **GEÇTİ** | FAZ 1 başlayabilir |
 | **G1** | Şok motoru çalışıyor | **GEÇTİ** | FAZ 2 başlayabilir |
 | **G2** | Gerçek malzeme fiziği | **GEÇTİ** | FAZ 3 başlayabilir |
-| **G3** | Sahne kurulumu | **GEÇTİ** 7/7 | **FAZ 4 başlayabilir** |
+| **G3** | Sahne kurulumu | **GEÇTİ** 7/7 | FAZ 5 değil — önce G4 |
+| **G4** | Çözünürlük + çıkarım | **GEÇTİ** 10/10 | aşağıdaki **bedel** okunmadan değil |
+
+### G4 geçti — ve neyin karşılığında
+
+| # | ölçüt | ölçülen |
+|---|---|---|
+| A1 | mermi çapı / aralık | `2,03906` |
+| A2 | `r_ince / R_mermi` | `66,5573` |
+| A3 | ek yerinde kütle sapması | `3,48e-4` |
+| B1 | ardışık çözünürlükte `β` farkı | `8,43e-4` |
+| B2 | `β` durulmuş | `1` |
+| B3 | A′ ince kola yakın | `1` |
+| B4 | enerji sapması eğimi | `−2,39e-3` |
+| C1 | parametre kapsaması | `1` |
+| **C2** | en dar bant / önsel | **`0,221`** |
+| C3 | gürültüyle genişleme | `1` |
+
+`C2`'yi geçiren şey bir eşik gevşetmesi **değil**: çıkarım uzayı üç
+parametreden **bire** indirildi ([ADR-0046](docs/adr/ADR-0046-cikarim-uzayi-olculebilir-olana-indirilir.md)).
+Bedeli açıkça kayıtlı:
+
+> **İddia daraldı:** *"iç yapıyı çıkardık"* → **"matris gözenekliliğini
+> çıkardık"**. `f_boulder` artık serbest değil — ve Hera onu görüntüleyecek.
+> Kapının geçmesi bu kaybı telafi etmiyor.
+
+> **G4, motorun *yakınsadığını* ve *çıkarımın işlediğini* kanıtlar; motorun
+> *doğru* `β` ürettiğini kanıtlamaz.** İkisi ayrı sorular ve ikincisi açık
+> ([A17](docs/FAZ4-SIKINTI-RAPORU.md)): motor `β ≈ 1,41` üretiyor, ölçülen
+> periyot değişimi `3,2225` istiyor. Aday elemeleri ölçümle yapıldı —
+> koşu süresi (`0,2 → 600 s`, `3000×`), mukavemet (`Y0` `1 → 2,15e6 Pa`,
+> altı mertebe), yerçekimi, gözeneklilik, çözünürlük. Hiçbiri açığı
+> kapatmıyor; hepsi aynı yere çıkıyor: `β`'nın kontrol yüzeyini geçen
+> maddesi hedef ejektası değil **merminin geri sekmesi**
+> ([ADR-0028](docs/adr/ADR-0028-uzun-kosu-kararliligi.md)).
 
 [G3 kanıtı](docs/evidence/G3_GATE_0b88ae9.md) — commit `0b88ae9`, TRUBA / H100,
 iş 1446129, **620 test geçti / 0 kaldı** (`xfail` yok), kapsam **%97,0**,
@@ -240,6 +275,26 @@ gerçek bir çekirdek hatasını kaydeder.
 > senaryo"dur. Hedef şekli analitik bir ikosferdir; gerçek PDS ürünleri depoda
 > yok (G3 kriter C7 **KANITLANAMADI**, bkz. `data_manifest/README.md`). Şekil
 > modeli geldiğinde `shape: obj` yeter — değişecek olan sayılardır, kod değil.
+
+### FAZ 4 — Çözünürlük ve çıkarım (DR-RIFT-P4)
+
+| Modül | İçerik |
+|---|---|
+| `setup/refine` | Yerel incelme; **parçacık başına `h`** (A′ yaklaşımı, [ADR-0041](docs/adr/ADR-0041-yerel-incelme-yaklasimi.md)) |
+| `setup/coarsen` | Lagrange'cı kabalaştırma: kütle/momentum/enerji `~1e-15` korunumlu; `mermi_kesri` **kesir olarak** taşınır |
+| `setup/two_stage` | İki aşamalı koşu ([ADR-0043](docs/adr/ADR-0043-iki-asamali-cozunurluk.md)): `λ₁ = 19` çekirdek → `λ₂ = 2`; üç seviyeli (iki seviyelide momentumun `%69`'u atılıyordu) |
+| `inference/design` | Parametre uzayı, LHS/faktöriyel tasarım |
+| `inference/forward` | İleri model: sahne → `(β, krater_derinlik, ejekta_kutle_kesri)` |
+| `inference/surrogate` | İkinci derece vekil + **kapalı formda LOO** (`q2`); sabit/yetersiz gözlenebilir **durdurur** |
+| `inference/posterior` | Izgara posterior'u, HDI |
+| `inference/recovery` | G4-C yargısı (C1 kapsama / C2 daralma / C3 gürültü tepkisi) |
+| `validation/h_policy` | Sabit `h` yeterli mi — küp **ve** DART geometrisinde ([ADR-0042](docs/adr/ADR-0042-h-sabittir-omega-birimdir.md)) |
+| `validation/g4_gate` | Kapı yargısı + koşullu kabullerin **raporda görünmesi** |
+
+> **`Ω ≡ 1` bir ölçüm değil cebir:** `h` reçeteli olduğu için `∂h/∂ρ = 0` ve
+> zincir kuralı çarpanı terimi kapatır. Ölçülen şey sabit `h`'nin
+> **yeterliliğiydi**; DART geometrisinde `N_komşu` salınımı `1,064×` çıktı —
+> kanıtın kurulduğu küp aralığından (`2,06×`) **daha dar**.
 
 ## Kurulum ve test
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dartrift"
-version = "0.3.0"
+version = "0.4.0"
 description = "DART-RIFT: GPU hizlandirmali, belirlenimci SPH sok-fizigi motoru; Dimorphos ic yapisini DART carpma verisinden olasiliksal cikarir (FAZ 0-3 gecildi; FAZ 4 kapisi G4 gecildi, motor dogrulamasi surüyor)"
 readme = "README.md"
 # UST SINIR GERCEK: hedef ortam NumPy 1.26.4 saglıyor (ADR-0005) ve o
