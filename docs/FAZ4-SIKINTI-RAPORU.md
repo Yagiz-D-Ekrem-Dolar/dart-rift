@@ -1605,8 +1605,47 @@ Böylece `β`'nın payı ilk kez **ayrıştırılabilir**: `p_eksen_mermi` ve
 `p_eksen_hedef` ayrı ayrı ölçülüyor
 (`scripts/a17_momentum_anatomisi.py`, `[3b]` bölümü).
 
-> Bu A17'yi **kapatmıyor**. Kapattığı şey şu: bundan sonra *"ejekta mı,
-> sekme mi"* sorusu tahminle değil **ölçümle** yanıtlanacak.
+#### Ve ölçüldü (iş `1512733`) — **hedef payı tam sıfır**
+
+Beklenti koşudan **önce** yazıldı (*"`hedef_payi ~ 0` çıkmalı; belirgin
+şekilde `> 0` çıkarsa A17 hakkındaki bütün teşhis yanlıştır"*).
+
+| | ölçülen |
+|---|---|
+| taşınan mermi kütlesi | `579,4000 kg` (DART'ın kütlesi) |
+| `mermi_kesri > 0,5` olan | `28` parçacık — kaçan sayıyla **birebir** |
+| taşıma hatası | **`0,000e+00`** (`< 1e-14` değil, **tam**) |
+
+Ayrıştırma:
+
+| | |
+|---|---|
+| kaçan **mermi** kütlesi | `579,40 kg` — sahnedeki merminin **tamamı** |
+| kaçan **hedef** kütlesi | **`0,0000e+00 kg`** |
+| `p_eksen` mermi | `+1,4641e6` |
+| `p_eksen` hedef | **`+0,0000e+00`** |
+| **hedef payı** | **`0,0000`** |
+| `β` (yalnız mermiden) | `1,4112` |
+| `β` katkısı (hedeften) | **`0,0000`** |
+
+> `β = 1,4112`'nin **tamamı** merminin geri sekmesi. Hedef ejektasının
+> katkısı **tam olarak sıfır** — yuvarlama düzeyinde küçük değil,
+> **hiç**. Mermi gelen momentumunun `%41`'ini geri taşıyor.
+
+Bu, kütleden **çıkarılan** sonucun artık **doğrudan ölçülmesi**. Aynı
+zamanda bütün elemelerin neden aynı sonucu verdiğinin açıklaması:
+`Y0`, yerçekimi ve koşu süresi hedefe ait; `β`'nın payında hedeften
+hiçbir şey yok.
+
+> Bu A17'yi **kapatmıyor**. Kapattığı şey şu: *"ejekta mı, sekme mi"*
+> sorusu artık tahminle değil **ölçümle** yanıtlanıyor — ve cevap
+> `0,0000`.
+>
+> Açık kalan asıl soru: gözlemi (`β = 3,2225`) üretecek hedef ejektası
+> için ne gerekiyor. Daha uzun koşu değil (`3000×` ölçüldü), daha zayıf
+> malzeme değil (altı mertebe ölçüldü). Ya gözlenebilirin tanımı
+> (`d > 2R` kontrol yüzeyi) ya da modelin ejekta üretimi değişmeli —
+> ve bu bir **ADR** kararı.
 
 #### Üçüncü aday: ejekta **parçacık kütlesiyle nicemli**
 
