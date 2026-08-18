@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 import sys
-
 from pathlib import Path  # noqa: E402
 
 # Depo koku __file__'DAN turetiliyor, sabit yazilmiyor: depo
@@ -31,7 +30,11 @@ for _akis in (sys.stdout, sys.stderr):
 
 
 from dartrift.validation.h_policy import (  # noqa: E402
-    judge, measure_density_swing, n_sides_for_swing, run_fixed_h_sweep)
+    judge,
+    measure_density_swing,
+    n_sides_for_swing,
+    run_fixed_h_sweep,
+)
 
 DEV = "cuda:0"
 

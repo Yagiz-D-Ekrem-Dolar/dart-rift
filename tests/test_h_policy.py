@@ -4,8 +4,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.validation.h_policy import (OMEGA_IS_UNITY_WHEN_H_FIXED,
-                                          judge, neighbour_count)
+from dartrift.validation.h_policy import OMEGA_IS_UNITY_WHEN_H_FIXED, judge, neighbour_count
 from dartrift.validation.kernel_margin import SUPPORT_OVER_H
 
 

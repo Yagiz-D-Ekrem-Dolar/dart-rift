@@ -52,8 +52,7 @@ for _akis in (sys.stdout, sys.stderr):
         pass
 
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
-from dartrift.setup.coarsen import (coarsen_to_sites,  # noqa: E402
-                                    komsu_sagligi, sites_from_cloud)
+from dartrift.setup.coarsen import coarsen_to_sites, komsu_sagligi, sites_from_cloud  # noqa: E402
 from dartrift.setup.refine import refine_scene_local  # noqa: E402
 from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
 

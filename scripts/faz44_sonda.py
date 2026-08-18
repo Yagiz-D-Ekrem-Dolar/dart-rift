@@ -8,10 +8,9 @@ sonucundan sonrasını hiç görmedim — oysa basaltta ses `r = 0,3`'e
 from __future__ import annotations
 
 import sys
+from pathlib import Path  # noqa: E402
 
 import numpy as np
-
-from pathlib import Path  # noqa: E402
 
 # Depo koku __file__'DAN turetiliyor, sabit yazilmiyor: depo
 # tasindiginda ya da baska bir kullaniciyla kosuldugunda sabit
@@ -31,8 +30,15 @@ for _akis in (sys.stdout, sys.stderr):
 
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
 from dartrift.validation.solid_interface import (  # noqa: E402
-    BASALT_SOLID, CEPHE_ESIKLERI, E_ENJEKTE, H_OVER_DX, KUTU, RHO0,
-    build_two_zone_solid_ic, cephe_yaricapi)
+    BASALT_SOLID,
+    CEPHE_ESIKLERI,
+    E_ENJEKTE,
+    H_OVER_DX,
+    KUTU,
+    RHO0,
+    build_two_zone_solid_ic,
+    cephe_yaricapi,
+)
 
 DEV = "cuda:0"
 N = 32
@@ -49,7 +55,7 @@ def main() -> int:
     print(f"enjeksiyon: {ic['n_injected']} parcacik, "
           f"{float(np.sum(ic['m'][sicak])):.2f} kg, "
           f"ozgul {E_ENJEKTE / float(np.sum(ic['m'][sicak])):.3e} J/kg", flush=True)
-    print(f"basaltta ses ~3162 m/s -> r=0.3'e ~9.5e-5 s\n", flush=True)
+    print("basaltta ses ~3162 m/s -> r=0.3'e ~9.5e-5 s\n", flush=True)
 
     sol = WarpSolid3D(ic["x"], ic["v"], ic["m"], ic["u"], ic["h"],
                       BASALT_SOLID, RefParams(cfl=0.2), device=DEV)

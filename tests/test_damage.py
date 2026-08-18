@@ -534,9 +534,8 @@ class TestFlawVolumeAndCrackPath:
     def test_r_s_geometrik_hacimden_gelir(self):
         """`r_s` gozenekleri SAYAR; katı hacimden hesaplamak %14,5 hizli
         hasar veriyordu."""
+        from dartrift.cpu_reference.materials import MaterialParams, PorosityParams, StrengthParams
         from dartrift.cpu_reference.solid_ref import SolidState, seed_solid_damage
-        from dartrift.cpu_reference.materials import (
-            MaterialParams, PorosityParams, StrengthParams)
 
         n, rho0, alpha = 200, 2700.0, 1.5
         v_geom = 362.04                      # kafeste kapladigi hacim

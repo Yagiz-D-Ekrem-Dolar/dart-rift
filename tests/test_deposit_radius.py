@@ -96,7 +96,7 @@ def test_kinetik_kesir_sok_yaricapindan_DAHA_DUYARLI() -> None:
     karşı.
     """
     rows = [dict(r) for r in OLCULEN]
-    for r, k in zip(rows, [0.224, 0.210, 0.200, 0.195, 0.189, 0.182]):
+    for r, k in zip(rows, [0.224, 0.210, 0.200, 0.195, 0.189, 0.182], strict=False):
         r["kinetic_fraction"] = k
     a = analyse_scan(rows)
     assert a["kinetic_available"] is True

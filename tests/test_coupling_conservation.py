@@ -8,8 +8,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.validation.coupling_conservation import (
-    RHO, measure_coupling_conservation, net_force)
+from dartrift.validation.coupling_conservation import RHO, measure_coupling_conservation, net_force
 
 S, HOS = 1.0, 1.3
 

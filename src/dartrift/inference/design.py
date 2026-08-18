@@ -20,7 +20,7 @@ malzeme aralıkları da logaritmik verilmiştir.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -47,10 +47,10 @@ class ParamSpace:
             raise ValueError("names/lo/hi/log aynı uzunlukta olmalı")
         if n == 0:
             raise ValueError("en az bir parametre gerekir")
-        for a, b, ad in zip(self.lo, self.hi, self.names):
+        for a, b, ad in zip(self.lo, self.hi, self.names, strict=False):
             if not (b > a):
                 raise ValueError(f"{ad}: hi > lo olmalı ({a} → {b})")
-        for a, lg, ad in zip(self.lo, self.log, self.names):
+        for a, lg, ad in zip(self.lo, self.log, self.names, strict=False):
             if lg and a <= 0.0:
                 raise ValueError(f"{ad}: logaritmik parametre pozitif olmalı")
 
@@ -131,8 +131,10 @@ DART_UZAYI = ParamSpace(
 #:
 #: | sınır | gerekçe |
 #: |---|---|
-#: | `boulder_alpha0 ∈ [1,00 , 1,30]` | `1,0` = tam katı blok; `1,30` üstü türetilen matris `α₀`'ı `%67` gözenekliliğin üstüne çıkarır |
-#: | `f_boulder ∈ [0,05 , 0,50]` | alt sınır `0` **olamaz** (M1 blok ister); üst sınır yasak eğrinin (`0,667`) altında |
+#: | `boulder_alpha0 ∈ [1,00 , 1,30]` | `1,0` = tam katı blok; üstü
+#:   türetilen matris `α₀`'ı `%67` gözenekliliğin üstüne çıkarır |
+#: | `f_boulder ∈ [0,05 , 0,50]` | alt sınır `0` **olamaz** (M1 blok
+#:   ister); üst sınır yasak eğrinin (`0,667`) altında |
 #:
 #: **KABUL EDİLDİ (ADR-0044) — çıkarımın VARSAYILAN uzayı budur.**
 #:

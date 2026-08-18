@@ -63,8 +63,7 @@ def test_resolution_scaling_dogrulama() -> None:
 
 def test_shock_interface_iki_bolgeli_kosu() -> None:
     """İki bölgeli Sedov gerçekten koşuyor ve makul bir yarıçap veriyor mu?"""
-    from dartrift.validation.shock_interface import (build_two_zone_sedov_ic,
-                                                     run_shock_interface)
+    from dartrift.validation.shock_interface import build_two_zone_sedov_ic, run_shock_interface
 
     dev = _cuda_ya_da_atla()
     r = run_shock_interface(n_coarse=32, lam=2, r_inner=0.15, device=dev)
@@ -112,6 +111,7 @@ def test_gozeneksiz_kol_sahnesi_KATI_ve_TUTARLI():
     `alpha0 = 1`, `m/V == rho` ve `P(t=0) == 0`.
     """
     import numpy as np
+
     from dartrift.cpu_reference.materials import tillotson_pressure
     from dartrift.setup.rubble_generator import particle_volume
     from dartrift.setup.scene import build_scene
@@ -164,6 +164,7 @@ def test_alpha0_denetle_kati_olmayan_sahneyi_YAKALAR():
 def test_duzeltilmemis_alpha0_GERCEKTEN_gerilme_uretiyordu():
     """Düzeltmenin gerekçesi ölçülmüş bir sayı; kaybolmasın."""
     import numpy as np
+
     from dartrift.cpu_reference.materials import tillotson_pressure
 
     m48 = _faz48_modulu()

@@ -4,10 +4,16 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.validation.solid_interface import (BASALT_SOLID, CEPHE_ESIKLERI,
-                                                 KUTU, RHO0, _malzeme,
-                                                 build_two_zone_solid_ic,
-                                                 cephe_yaricapi, judge)
+from dartrift.validation.solid_interface import (
+    BASALT_SOLID,
+    CEPHE_ESIKLERI,
+    KUTU,
+    RHO0,
+    _malzeme,
+    build_two_zone_solid_ic,
+    cephe_yaricapi,
+    judge,
+)
 
 
 def _uc_kol(n=16, lam=2, r_ic=0.15, per_particle_h=True):

@@ -50,11 +50,14 @@ for _akis in (sys.stdout, sys.stderr):
 
 
 from dartrift.cpu_reference.materials import (  # noqa: E402
-    DamageParams, GravityParams, MaterialParams, PorosityParams,
-    StrengthParams)
+    DamageParams,
+    GravityParams,
+    MaterialParams,
+    PorosityParams,
+    StrengthParams,
+)
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
-from dartrift.observables.momentum_transfer import (  # noqa: E402
-    escape_speed, momentum_transfer)
+from dartrift.observables.momentum_transfer import escape_speed, momentum_transfer  # noqa: E402
 from dartrift.setup.refine import refine_scene  # noqa: E402
 from dartrift.setup.scene import build_scene  # noqa: E402
 

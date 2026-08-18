@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 import sys
-
 from pathlib import Path  # noqa: E402
 
 # Depo koku __file__'DAN turetiliyor, sabit yazilmiyor: depo
@@ -32,7 +31,10 @@ for _akis in (sys.stdout, sys.stderr):
 
 
 from dartrift.validation.solid_interface import (  # noqa: E402
-    BASALT_SOLID, _malzeme, run_solid_interface)
+    BASALT_SOLID,
+    _malzeme,
+    run_solid_interface,
+)
 
 DEV = "cuda:0"
 N_KABA = 32

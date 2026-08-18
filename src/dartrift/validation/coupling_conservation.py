@@ -48,7 +48,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..cpu_reference.sph_ref import kernel_dwdq, kernel_w
+from ..cpu_reference.sph_ref import kernel_dwdq
 
 __all__ = ["net_force", "measure_coupling_conservation"]
 

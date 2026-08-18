@@ -1,0 +1,40 @@
+# Yerel bariyer (denetim maddesi 17).
+#
+# 183 Ruff hatasinin `main`'e ulasabilmesinin sebebi, commit ile CI
+# arasinda hicbir otomatik kontrol olmamasiydi. Bu dosya o bosluğu
+# kapatiyor.
+#
+# Kurulum (bir kez):
+#     pip install pre-commit
+#     pre-commit install
+#
+# Ruff surumu `constraints-ci.txt` ile AYNI olmali; farkli olurlarsa
+# yerelde temiz gorunen bir agac CI'da kirmizi olur ve tam bu tuzak
+# denetimin 9. maddesinde tarif ediliyor.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.3
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+        # SADECE kontrol: bu depo bicimlendirilmemis; `ruff format`i
+        # simdi uygulamak binlerce satirlik bir fark uretir ve fizik
+        # degisikliklerini gozden kacirilir kilar. Once ayri bir
+        # commit'te bicimlendirme kararı verilmeli.
+        stages: [manual]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        # Kanit dosyalari docs/evidence altina SECILEREK kopyalanir;
+        # 100+ MB PDS urunleri depoya girmez (.gitignore data/).
+        args: [--maxkb=2048]
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: [--fix=no]

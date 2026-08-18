@@ -83,7 +83,7 @@ def main() -> int:
           f"{int(ok.sum())} kullanilabilir", flush=True)
     x, Y = x[ok], Y[ok]
 
-    print(f"\n[2] vekiller", flush=True)
+    print("\n[2] vekiller", flush=True)
     vekiller = []
     for j, ad in enumerate(GOZLENEBILIRLER):
         s = fit_surrogate(UZAY, x, Y[:, j])
@@ -93,11 +93,11 @@ def main() -> int:
         print(f"    {ad:20s} q2={s.q2:8.5f}  rmse_loo={s.rmse_loo:.4e}  "
               f"sigma={s.sigma:.4e}  {tani}", flush=True)
 
-    sabitler = [ad for ad, s in zip(GOZLENEBILIRLER, vekiller) if s.sabit]
+    sabitler = [ad for ad, s in zip(GOZLENEBILIRLER, vekiller, strict=False) if s.sabit]
     if sabitler:
         raise SystemExit(
             f"DURDURULDU: {sabitler} HIC DEGISMIYOR. Cikarim bosuna olurdu.")
-    yetersiz = [ad for ad, s in zip(GOZLENEBILIRLER, vekiller)
+    yetersiz = [ad for ad, s in zip(GOZLENEBILIRLER, vekiller, strict=False)
                 if not s.guvenilir]
     if yetersiz:
         print(f"    UYARI: {yetersiz} YETERSIZ (q2 <= 0.5). Posterior yine "
@@ -106,11 +106,11 @@ def main() -> int:
     # Gercek deger UZAYIN ORTASI -- her uzayda tanim geregi iceride.
     gercek = UZAY.from_unit(np.full((1, UZAY.ndim), 0.5))[0]
     veri = np.array([float(s.predict(gercek[None, :])[0]) for s in vekiller])
-    print(f"\n[3] gercek: "
-          + ", ".join(f"{ad}={v:.4g}" for ad, v in zip(UZAY.names, gercek)),
+    print("\n[3] gercek: "
+          + ", ".join(f"{ad}={v:.4g}" for ad, v in zip(UZAY.names, gercek, strict=False)),
           flush=True)
     print("    sentetik veri: "
-          + ", ".join(f"{ad}={v:.5g}" for ad, v in zip(GOZLENEBILIRLER, veri)),
+          + ", ".join(f"{ad}={v:.5g}" for ad, v in zip(GOZLENEBILIRLER, veri, strict=False)),
           flush=True)
 
     print(f"\n[4] posterior (n_grid={a.n_grid})", flush=True)
@@ -126,7 +126,7 @@ def main() -> int:
               f"%68=[{lo:.4g}, {hi:.4g}]  bant/onsel={post.width_u[j]:.3f}",
               flush=True)
 
-    print(f"\n[5] G4-C", flush=True)
+    print("\n[5] G4-C", flush=True)
     v = recovery_verdict(post, gercek, tarama)
     print(f"    {v.ozet}", flush=True)
     for r in v.c1_ayrinti:
@@ -147,9 +147,9 @@ def main() -> int:
         "n_tasarim": int(len(x)), "gercek": gercek.tolist(),
         "sigma_nominal": list(SIGMA_NOMINAL),
         "vekil_q2": {ad: float(s.q2)
-                     for ad, s in zip(GOZLENEBILIRLER, vekiller)},
+                     for ad, s in zip(GOZLENEBILIRLER, vekiller, strict=False)},
         "vekil_guvenilir": {ad: bool(s.guvenilir)
-                            for ad, s in zip(GOZLENEBILIRLER, vekiller)},
+                            for ad, s in zip(GOZLENEBILIRLER, vekiller, strict=False)},
         "c1_gecti": v.c1_gecti, "c1_kapsama": v.c1_kapsama,
         "c1_ayrinti": v.c1_ayrinti,
         "c2_gecti": v.c2_gecti, "c2_en_dar": v.c2_en_dar,

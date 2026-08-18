@@ -27,9 +27,8 @@ for _akis in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):        # yeniden yonlendirilmis olabilir
         pass
 
-from dartrift.validation.g4_ozet import (  # noqa: E402
-    faz44_ozet, faz45_ozet)
 from dartrift.validation.g4_gate import degerlendir  # noqa: E402
+from dartrift.validation.g4_ozet import faz44_ozet, faz45_ozet  # noqa: E402
 
 
 def _oku(p: str | None, ozetle=None) -> dict | None:

@@ -24,12 +24,14 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.cpu_reference.materials import (DamageParams, GravityParams,
-                                              MaterialParams, PorosityParams,
-                                              StrengthParams)
-from dartrift.cpu_reference.solid_ref import (SolidState,
-                                              compute_timestep_solid,
-                                              evaluate_solid)
+from dartrift.cpu_reference.materials import (
+    DamageParams,
+    GravityParams,
+    MaterialParams,
+    PorosityParams,
+    StrengthParams,
+)
+from dartrift.cpu_reference.solid_ref import SolidState, compute_timestep_solid, evaluate_solid
 from dartrift.cpu_reference.sph_ref import RefParams
 
 MAT = MaterialParams(

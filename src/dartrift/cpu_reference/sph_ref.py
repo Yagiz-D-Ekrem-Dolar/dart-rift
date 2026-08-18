@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from .adaptive_h import pair_h, per_particle_h
+from .adaptive_h import pair_h
 
 _PI = np.pi
 AV_EPS = 0.01  # mu_ij paydasindaki eps*h^2 katsayisi (sartname §2.5)

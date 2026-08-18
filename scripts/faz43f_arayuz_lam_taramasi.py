@@ -45,9 +45,11 @@ for _akis in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
-from dartrift.validation.solid_interface import (BASALT_SOLID,  # noqa: E402
-                                                 judge_momentum,
-                                                 run_solid_interface)
+from dartrift.validation.solid_interface import (  # noqa: E402
+    BASALT_SOLID,
+    judge_momentum,
+    run_solid_interface,
+)
 
 #: 4 GiB'lik yerel kartin pratik siniri. Asilirsa kol KOSULMAZ ve
 #: `atlandi` yazilir -- OOM ile dusmek yerine.

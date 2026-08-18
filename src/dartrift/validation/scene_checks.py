@@ -200,7 +200,6 @@ def run_scene_determinism() -> dict:
          mermi malzemesi hedefinkinden ayri.
     """
     from ..setup.scene import build_scene
-
     from ..setup.shape_mesh import ellipsoid, icosphere, inside_points
 
     kw = dict(radius=82.0, spacing=8.0, n_impactor=400, model_class="M1",

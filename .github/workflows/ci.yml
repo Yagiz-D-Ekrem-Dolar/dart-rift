@@ -1,5 +1,29 @@
-# P0-QR-01: her commit'te derleme, statik analiz, birim testleri, config sema
-# kontrolu; gecelik kosuda determinizm regresyonu tekrarlanir.
+# P0-QR-01: her commit'te derleme, statik analiz, birim testleri, config
+# sema kontrolu; gecelik kosuda determinizm regresyonu tekrarlanir.
+#
+# ## Neden AYRI job'lar (denetim maddesi 5)
+#
+# Onceki surumde her sey TEK bir seri job icindeydi ve sira suydu:
+#     ruff -> config -> pytest+coverage -> determinism -> kapilar -> red-team
+#
+# Ruff dustugu anda sonraki BUTUN adimlar atlandi. Sonuc: 2026-08-02'den
+# (kosu #127) 2026-08-17'ye kadar 292 kosunun hicbiri yesil olmadi ve o
+# sure boyunca "birim testler geciyor", "kapsam >= %85", "determinizm
+# geciyor" iddialarinin HICBIRI dogrulanamaz durumdaydi. 183 bicimsel
+# lint hatasi, fiziksel dogrulama testlerinin durumunu gorunmez yapti.
+#
+# Artik `lint` kirmizi olsa bile `tests`, `determinism` ve `gates`
+# sonuclari gorulur. Bir stil hatasi bir fizik regresyonunu SAKLAYAMAZ.
+#
+# ## Neden sabitlenmis surumler (maddeler 6, 9, 10, 27, 29)
+#
+# - Action'lar commit SHA'sina sabit: etiket hareket edebilir, SHA edemez.
+# - Runner `ubuntu-24.04`: `ubuntu-latest` kayan hedeftir.
+# - Arac zinciri `constraints-ci.txt`: ayni agac ruff 0.15 ile 191,
+#   0.16 ile 183 hata veriyordu. Kanit ureten bir depoda lint sonucunun
+#   arac surumune gore degismesi kabul edilemez.
+# - `pip` sabit surumle kurulur: `--upgrade pip` build zincirini zamana
+#   bagliyordu.
 name: ci
 
 on:
@@ -8,51 +32,91 @@ on:
   schedule:
     - cron: "0 2 * * *"   # gecelik determinizm regresyonu (UTC)
 
+# Ayni dal uzerinde eski kosuyu iptal et (madde 30). `main` HARIC:
+# oradaki her commit'in kendi kaydi kalmali.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONIOENCODING: utf-8
+
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  # -------------------------------------------------------------- lint
+  # TEK Python surumunde kosar (madde 31): lint sonucu yorumlayici
+  # surumune bagli degil, iki kez kosmak bos maliyet.
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Ruff kur (SABIT surum)
+        run: pip install -c constraints-ci.txt ruff
+      - name: Surumu kayda gecir
+        run: ruff --version
+      - run: ruff check src tests scripts
+
+  # ------------------------------------------------------------- tests
+  tests:
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.12"]
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Bagimliliklari kur
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,gpu]"
-
-      - name: Statik analiz (ruff)
-        run: ruff check src tests scripts
-
+      - name: Bagimliliklari kur (kisitli)
+        run: pip install -c constraints-ci.txt -e ".[dev,gpu]"
       - name: Config sema kontrolu (her fazin ornek config'i)
         run: |
           python -m dartrift.config configs/p0_smoke.yaml
           python -m dartrift.config configs/p1_sod.yaml
           python -m dartrift.config configs/p2_basalt.yaml
-
-      # Kapsam yapilandirmasi `.coveragerc`'dedir ve coverage.py'nin VARSAYILAN
-      # dosya adi oldugu icin bayrak gerektirmez (ADR-0016). @wp.kernel/@wp.func
-      # govdeleri haric tutulur: coverage.py onlari olcemez, cunku Warp o
-      # fonksiyonlari derler ve Python satir izleyicisi govdeyi hic gormez.
-      # GPU cekirdekleri CPU<->GPU capraz kontrolleriyle dogrulanir.
+      # Kapsam yapilandirmasi `.coveragerc`'dedir ve coverage.py'nin
+      # VARSAYILAN dosya adi oldugu icin bayrak gerektirmez (ADR-0016).
+      # @wp.kernel/@wp.func govdeleri haric tutulur: coverage.py onlari
+      # olcemez, cunku Warp o fonksiyonlari derler ve Python satir
+      # izleyicisi govdeyi hic gormez. GPU cekirdekleri CPU<->GPU capraz
+      # kontrolleriyle dogrulanir.
       - name: Birim testleri + kapsam esigi (>= %85)
         run: >
           pytest tests -m "not gpu" --cov=dartrift
           --cov-fail-under=85 --cov-report=term-missing
 
+  # ------------------------------------------------------ determinizm
+  # Ayri job (madde 32): gecelik amac YALNIZCA bu ve tum matrisi
+  # tetiklemesi gereksiz is yapiyordu.
+  determinism:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.12"
+      - run: pip install -c constraints-ci.txt -e ".[dev,gpu]"
       - name: Determinizm altin hash
         run: pytest tests/test_determinism_golden.py -q
 
-      # GitHub runner'i GERCEKTEN GPU'suzdur; bu adim, kapi kosucusunun
-      # kanitlanamayan C3 kriterini "GECTI" saymadigini gercek bir ortamda
-      # dogrular (gelistirme makinesinde GPU oldugu icin orada sinanamiyor).
-      - name: Kapi, GPU'suz ortamda GECTI iddia etmemeli
+  # ------------------------------------------------------------ gates
+  # Bu job'in isi TEK sey: kapi kosucularinin GPU'suz ortamda "GECTI"
+  # DEMEDIGINI dogrulamak. O koruma, kanitin tamaminin dayandigi kural
+  # ("test gecilmediyse iddia edilmez") ve gelistirme makinesinde GPU
+  # oldugu icin orada sinanamiyor.
+  gates:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.12"
+      - run: pip install -c constraints-ci.txt -e ".[dev,gpu]"
+      - name: G0 GPU'suz ortamda GECTI iddia etmemeli
         run: |
           set +e
           python scripts/run_g0_gate.py --run-dir /tmp/g0_no_flag
@@ -67,12 +131,7 @@ jobs:
           if grep -q "G0 GECTI" /tmp/g0_precheck/G0_report.md; then
             echo "HATA: GPU'suz rapor 'G0 GECTI' iddia ediyor"; exit 1
           fi
-
-      # Ayni koruma G1 ve G2 icin de gecerli olmali. Bu adim olmadan, kapi
-      # kosucularindan birinin GPU'suz ortamda "GECTI" demeye baslamasi
-      # sessizce fark edilmezdi — oysa o koruma, kanitin tamaminin dayandigi
-      # kuraldir ("test gecilmediyse iddia edilmez").
-      - name: G1/G2 kapilari da GPU'suz ortamda GECTI iddia etmemeli
+      - name: G1/G2 de GPU'suz ortamda GECTI iddia etmemeli
         run: |
           set +e
           python scripts/run_g1_gate.py --run-dir /tmp/g1_no_gpu; rc1=$?
@@ -84,6 +143,5 @@ jobs:
               echo "HATA: $name GPU'suz kosuda exit 2 dondurmeliydi, $rc dondu"; exit 1
             fi
           done
-
       - name: Kirmizi takim kontrol listesi (§12)
         run: python scripts/run_red_team.py --run-dir /tmp/redteam

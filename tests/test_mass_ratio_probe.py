@@ -23,9 +23,12 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.validation.mass_ratio import (build_two_zone, _masks,
-                                            measure_partition_of_unity,
-                                            measure_spurious_acceleration)
+from dartrift.validation.mass_ratio import (
+    _masks,
+    build_two_zone,
+    measure_partition_of_unity,
+    measure_spurious_acceleration,
+)
 
 R_OUT, R_IN, S, HOS = 70.0, 25.0, 8.0, 1.3
 

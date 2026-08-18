@@ -18,10 +18,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.validation.variable_h import (_SCHEMES, _two_zone,
-                                            compare_h_schemes,
-                                            evaluate_uniform_pressure,
-                                            gradh_margin_factor)
+from dartrift.validation.variable_h import (
+    _SCHEMES,
+    _two_zone,
+    compare_h_schemes,
+    evaluate_uniform_pressure,
+    gradh_margin_factor,
+)
 
 # grad-h payi 4h oldugu icin geometri buyuk olmali: r_out >= r_in + 7s.
 R_OUT, R_IN, S, HOS = 88.0, 24.0, 8.0, 1.3

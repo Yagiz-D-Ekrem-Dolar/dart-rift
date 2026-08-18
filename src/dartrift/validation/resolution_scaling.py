@@ -48,8 +48,14 @@ from __future__ import annotations
 import numpy as np
 
 from ..cpu_reference.sph_ref import RefParams
-from .sedov import (GAMMA, H_OVER_DX, T_END_DEFAULT, build_sedov_ic,
-                    measure_shock_radius, shock_radius_exact)
+from .sedov import (
+    GAMMA,
+    H_OVER_DX,
+    T_END_DEFAULT,
+    build_sedov_ic,
+    measure_shock_radius,
+    shock_radius_exact,
+)
 
 __all__ = ["run_single", "run_arm", "judge", "run_resolution_scaling"]
 

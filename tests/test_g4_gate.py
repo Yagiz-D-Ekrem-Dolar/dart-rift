@@ -3,9 +3,14 @@ from __future__ import annotations
 
 import pytest
 
-from dartrift.validation.g4_gate import (A1_MERMI_PARCACIK, A3_KUTLE_SAPMASI,
-                                         B1_BETA_FARKI, KOSULLU_KABULLER,
-                                         Olcut, degerlendir)
+from dartrift.validation.g4_gate import (
+    A1_MERMI_PARCACIK,
+    A3_KUTLE_SAPMASI,
+    B1_BETA_FARKI,
+    KOSULLU_KABULLER,
+    Olcut,
+    degerlendir,
+)
 
 TAM_44 = {"A1_mermi_parcacik_cap": 2.6, "A2_r_ince_carpani": 8.0,
           "A3_kutle_sapmasi": 2.25e-05, "B1_beta_farki": 0.04,
@@ -282,7 +287,8 @@ def test_faz47_HAM_ciktiyi_OZETLIYOR():
 
 def test_faz47_ozetlenmis_dosyaya_DOKUNMUYOR(tmp_path):
     """Zaten özetlenmiş bir dosyaya özet uygulanırsa boş dönerdi."""
-    import importlib.util as iu, json
+    import importlib.util as iu
+    import json
     from pathlib import Path
     yol = Path(__file__).resolve().parents[1] / "scripts" / "faz47_g4_kapi.py"
     s = iu.spec_from_file_location("_faz47b", yol)
@@ -313,7 +319,6 @@ def test_A1_kaynagi_faz48_oldugunda_KABULLERDE_yaziyor():
 
 
 def test_faz47_faz48_bayragi_var():
-    import importlib.util as iu
     from pathlib import Path
     yol = Path(__file__).resolve().parents[1] / "scripts" / "faz47_g4_kapi.py"
     kaynak = yol.read_text(encoding="utf-8")

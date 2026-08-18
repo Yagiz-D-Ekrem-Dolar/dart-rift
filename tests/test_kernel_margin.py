@@ -11,8 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from dartrift.validation.kernel_margin import (SUPPORT_OVER_H, margin_factor,
-                                               support_margin)
+from dartrift.validation.kernel_margin import SUPPORT_OVER_H, margin_factor, support_margin
 
 VAL = Path(__file__).resolve().parents[1] / "src" / "dartrift" / "validation"
 

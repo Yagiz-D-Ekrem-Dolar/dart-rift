@@ -509,8 +509,7 @@ def rt15_eos_sessiz_nan_uretmiyor() -> Check:
     """
     import numpy as np
 
-    from dartrift.cpu_reference.materials import (MaterialParams,
-                                                  tillotson_pressure)
+    from dartrift.cpu_reference.materials import MaterialParams, tillotson_pressure
     from dartrift.cpu_reference.solid_ref import SolidState, budgets_solid
 
     c = Check("RT15", "EOS sessiz NaN uretmiyor; rho<=0 deftere isleniyor")

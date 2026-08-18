@@ -78,7 +78,7 @@ def _en_yakin_site(x: np.ndarray, siteler: np.ndarray,
 
 
 def coarsen_to_sites(x, v, m, e, siteler, alpha0=None, Y0=None,
-                     is_boulder=None) -> dict:
+                     is_boulder=None, mermi_kesri=None) -> dict:
     """İnce parçacıkları `siteler`e **korunumlu** aktar.
 
     Boş kalan siteler **düşürülür** — parçacığı olmayan bir siteye
@@ -86,6 +86,35 @@ def coarsen_to_sites(x, v, m, e, siteler, alpha0=None, Y0=None,
 
     `alpha0`/`Y0` kütle-ağırlıklı ortalanır. Bunlar korunum yasasına
     **tabi değil**; yaklaşım olduğu `korunum` sözlüğünde işaretli.
+
+    ## `mermi_kesri` — neden bayrak değil **kesir**
+
+    `is_boulder` bir bayrak ve kütle çoğunluğuyla karara bağlanıyor;
+    orada bu doğru, çünkü blokluk bir malzeme kimliği.
+
+    Mermi için bayrak **yetmiyor**. Kabalaştırma mermi ve hedef
+    maddesini aynı siteye karıştırabiliyor ve karışım kaçınılmaz:
+    `λ₁ = 19` çekirdeği `λ₂ = 2` ızgarasına inerken bir sitenin içinde
+    ikisi birlikte bulunur. Bayrak o siteyi *"tamamı mermi"* ya da
+    *"tamamı hedef"* yapardı ve momentum ayrıştırması **yanlış**
+    olurdu.
+
+    Kesir kütle-ağırlıklı taşındığı için toplam mermi kütlesi **tam**
+    korunur: `Σ m_k f_k = Σ m_i f_i`. Bu bir yaklaşım değil, pasif
+    skalerin doğru aktarımı.
+
+    ### Bu alan neden gerekliydi
+
+    Aktarımdan sonra `is_impactor` hiçbir parçacıkta korunmuyordu
+    (`two_stage` bunu bilerek yapıyor) ve `hedef = ~is_impactor`
+    **her yerde `True`** oluyordu. Sonuç: `β`'nın kaçan `28`
+    parçacığı *"hedef ejektası"* olarak etiketleniyordu, oysa toplam
+    kütleleri `579,40 kg` — merminin kendisi — ve parçacık kütleleri
+    `0,72–55,75 kg` iken hedef parçacıklarının medyanı `3,73e5 kg`.
+
+    > Kimlik kütleden **çıkarılabiliyordu** ama taşınmıyordu. `β`'yı
+    > *"mermi geri sekmesi"* ile *"hedef ejektası"* arasında ayırmak
+    > bu alan olmadan mümkün değil (rapor A17).
     """
     x = np.asarray(x, dtype=np.float64)
     v = np.asarray(v, dtype=np.float64)
@@ -143,6 +172,21 @@ def coarsen_to_sites(x, v, m, e, siteler, alpha0=None, Y0=None,
         b = np.bincount(idx, weights=m * np.asarray(is_boulder, np.float64),
                         minlength=ns)
         out["is_boulder"] = (b[dolu] / m_k[dolu]) > 0.5
+    if mermi_kesri is not None:
+        f = np.asarray(mermi_kesri, dtype=np.float64)
+        if len(f) != len(m):
+            raise ValueError(f"mermi_kesri uzunlugu {len(f)} != {len(m)}")
+        if np.any(f < 0.0) or np.any(f > 1.0):
+            raise ValueError("mermi_kesri [0,1] araliginda olmali")
+        w = np.bincount(idx, weights=m * f, minlength=ns)
+        out["mermi_kesri"] = w[dolu] / m_k[dolu]
+        # Toplam mermi kutlesi TAM korunmali -- kesir pasif skaler.
+        # (`korunum` sozlugu asagida yaziliyor; bu alan ust duzeyde
+        #  tutuluyor ki oranin uzerine yazilmasin.)
+        onceki = float((m * f).sum())
+        sonraki = float((out["m"] * out["mermi_kesri"]).sum())
+        out["mermi_kutle_hatasi"] = (abs(sonraki - onceki)
+                                     / max(onceki, 1e-300))
 
     # ATAMA MESAFESI: korunum tam olsa bile kutle UZAGA tasinmis olabilir.
     # Bir parcacik komsu olmayan bir siteye atandiysa aktarim maddeyi

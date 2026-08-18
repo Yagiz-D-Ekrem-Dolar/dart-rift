@@ -14,8 +14,8 @@ from dartrift.observables.momentum_transfer import (
     balistik_beta,
     bekleyen_profili,
     beta_sensitivity,
-    kacis_bekleyenler,
     escape_speed,
+    kacis_bekleyenler,
     momentum_transfer,
 )
 from dartrift.observables.period_interface import (
@@ -149,7 +149,8 @@ def test_hedef_yaricapi_kestirimi_yanli_degil():
 
     rng = np.random.default_rng(0)
     n, R = 200000, 100.0
-    d = rng.normal(size=(n, 3)); d /= np.linalg.norm(d, axis=1)[:, None]
+    d = rng.normal(size=(n, 3))
+    d /= np.linalg.norm(d, axis=1)[:, None]
     x = d * (R * rng.random(n) ** (1.0 / 3.0))[:, None]
     dist = np.linalg.norm(x, axis=1)
 
@@ -216,7 +217,8 @@ def test_olu_eksen_toplam_yayilimda_gizlenmez():
     """
     rng = np.random.default_rng(5)
     n = 400
-    d = rng.normal(size=(n, 3)); d /= np.linalg.norm(d, axis=1)[:, None]
+    d = rng.normal(size=(n, 3))
+    d /= np.linalg.norm(d, axis=1)[:, None]
     # hizlar 50-100 m/s: kacis hizi (~0.4 m/s) yaninda devasa -> esik olu
     x = (rng.uniform(150.0, 600.0, n))[:, None] * d
     v = (rng.uniform(50.0, 100.0, n))[:, None] * d
@@ -840,7 +842,8 @@ def test_kacis_olcutu_betiklerde_YENIDEN_yazilmamis():
 def _profil_sahnesi(kazi_gibi: bool, R=80.0, n=4000, tohum=3):
     """Kure; `kazi_gibi` ise disa hareket carpma noktasinda YOGUN."""
     rng = np.random.default_rng(tohum)
-    u = rng.uniform(-1, 1, n); ph = rng.uniform(0, 2*np.pi, n)
+    u = rng.uniform(-1, 1, n)
+    ph = rng.uniform(0, 2*np.pi, n)
     q = np.sqrt(1 - u*u)
     yon = np.column_stack([q*np.cos(ph), q*np.sin(ph), u])
     x = yon * (R * rng.random(n) ** (1/3))[:, None]
@@ -922,7 +925,8 @@ def _dolu_kure_krater(derinlik, R=82.0, D=20.0, s=3.5, tohum=5, gurultu=0.0):
     p3 = p3 + rng.normal(scale=0.25 * s, size=p3.shape)
     r0 = np.linalg.norm(p3, axis=1)
     ic = (r0 > 0.0) & (r0 <= R)
-    x0 = p3[ic]; r0 = r0[ic]
+    x0 = p3[ic]
+    r0 = r0[ic]
     yon = x0 / r0[:, None]
     eh = np.array([0.0, 0.0, 1.0])
     th = np.arccos(np.clip(yon @ eh, -1, 1))
@@ -978,7 +982,8 @@ def test_eksen_kutulama_YUZEYE_YIGILMIS_ornekte_izliyor():
     R, s = 82.0, 2.0
     rng = np.random.default_rng(7)
     n = 60000
-    u = rng.uniform(-1, 1, n); ph = rng.uniform(0, 2 * np.pi, n)
+    u = rng.uniform(-1, 1, n)
+    ph = rng.uniform(0, 2 * np.pi, n)
     q = np.sqrt(1 - u * u)
     yon = np.column_stack([q * np.cos(ph), q * np.sin(ph), u])
     # dis kabuk: R-3s .. R
@@ -1002,7 +1007,7 @@ def test_eksen_kutulama_YUZEYE_YIGILMIS_ornekte_izliyor():
     # 2 m icin %71 -- kabuk kalinligi 3s ve radyal dolgu rastgele.
     # Esigi %95'e cekmek fiksturu teste uydurmak olurdu; iddia
     # TEK DUZELIK ve mertebe kurtarmadir.
-    for gercek, d in zip((2.0, 5.0, 10.0), olculen):
+    for gercek, d in zip((2.0, 5.0, 10.0), olculen, strict=False):
         assert 0.6 < d / gercek < 1.2, f"gercek {gercek}, olculen {d}"
 
 

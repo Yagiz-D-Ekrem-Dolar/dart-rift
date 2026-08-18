@@ -16,7 +16,9 @@ from ..cpu_reference.materials import (
     GravityParams,
     MaterialParams,
     PorosityParams,
-    StrengthParams, TillotsonParams)
+    StrengthParams,
+    TillotsonParams,
+)
 from ..cpu_reference.solid_ref import SolidState, budgets_solid, run_solid
 from ..cpu_reference.sph_ref import RefParams
 from .gravity import _uniform_sphere

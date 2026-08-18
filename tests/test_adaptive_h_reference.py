@@ -9,8 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.cpu_reference.adaptive_h import (is_scalar_h, max_h, pair_h,
-                                               per_particle_h)
+from dartrift.cpu_reference.adaptive_h import is_scalar_h, max_h, pair_h, per_particle_h
 
 
 def test_skaler_h_SKALERIN_KENDISI_donuyor() -> None:
@@ -57,10 +56,13 @@ def test_max_h() -> None:
 # --- GERILEME: cozucu skaler h ile BIT AYNI mi?
 
 def _durum(h):
-    from dartrift.cpu_reference.materials import (DamageParams, GravityParams,
-                                                  MaterialParams,
-                                                  PorosityParams,
-                                                  StrengthParams)
+    from dartrift.cpu_reference.materials import (
+        DamageParams,
+        GravityParams,
+        MaterialParams,
+        PorosityParams,
+        StrengthParams,
+    )
     from dartrift.cpu_reference.solid_ref import SolidState
 
     rng = np.random.default_rng(4041)

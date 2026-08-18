@@ -5,9 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dartrift"
 version = "0.3.0"
-description = "DART-RIFT: GPU hizlandirmali SPH sok-fizigi motoru (FAZ 0-2: altyapi, sok cekirdegi, malzeme fizigi)"
+description = "DART-RIFT: GPU hizlandirmali, belirlenimci SPH sok-fizigi motoru; Dimorphos ic yapisini DART carpma verisinden olasiliksal cikarir (FAZ 0-3 gecildi; FAZ 4 kapisi G4 gecildi, motor dogrulamasi surüyor)"
 readme = "README.md"
-requires-python = ">=3.10"
+# UST SINIR GERCEK: hedef ortam NumPy 1.26.4 saglıyor (ADR-0005) ve o
+# surum Python 3.13'u desteklemiyor. Onceki ">=3.10" beyani test
+# edilmeyen -- ve kurulamayan -- surumleri vaat ediyordu.
+requires-python = ">=3.10,<3.13"
 license = { text = "MIT" }
 authors = [{ name = "DART-RIFT Team" }]
 dependencies = [
@@ -21,6 +24,10 @@ dependencies = [
 
 [project.optional-dependencies]
 gpu = ["warp-lang>=1.0"]
+# Bunlar ALT sinir. CI arac zinciri ayrica `constraints-ci.txt` ile
+# UST sinira sabitlenir: ayni agac ruff 0.15 ile 191, 0.16 ile 183
+# hata veriyordu ve lint sonucunun arac surumune gore degismesi bir
+# kanit deposunda kabul edilemez.
 dev = ["pytest>=7.4", "pytest-cov>=4.1", "ruff>=0.4", "matplotlib>=3.8"]
 
 [tool.setuptools.packages.find]
@@ -34,12 +41,12 @@ markers = [
     "warp: warp-lang paketi gerektirir (CPU cihazi yeterli)",
 ]
 
-[tool.coverage.run]
-source = ["dartrift"]
-
-[tool.coverage.report]
-precision = 1
-show_missing = true
+# KAPSAM YAPILANDIRMASI BURADA DEGIL: tek kaynak `.coveragerc`
+# (ADR-0016). Burada da bir kopya vardi; coverage.py `.coveragerc`'yi
+# once okudugu icin ETKISIZDI ama iki yapilandirma noktasi sapma
+# uretir. `.coveragerc` ayrica `exclude_also` ile @wp.kernel/@wp.func
+# govdelerini haric tutuyor -- buradaki kopyada o YOKTU, yani birinin
+# gun gelip bunu etkin kilmasi esigi sessizce bozardi.
 
 [tool.ruff]
 line-length = 100

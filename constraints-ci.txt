@@ -1,0 +1,34 @@
+# CI ARAC ZINCIRI KILIDI (denetim maddeleri 6, 8, 9, 10)
+#
+# NEDEN AYRI BIR DOSYA
+#
+# `environment.lock` KANIT ortamini belgeliyor: TRUBA'da G0 kapisini
+# koseturan yorumlayici ve paketler. Bu dosya ise CI'in KALITE
+# KONTROL arac zincirini kilitliyor. Ikisi ayni sey degil ve ayni
+# dosyaya sikistirilmalari denetimin 7. ve 8. maddelerinde tespit
+# edilen karisikligi uretti.
+#
+# NEDEN GEREKLI
+#
+# `pyproject.toml` yalnizca ALT SINIR veriyor (`ruff>=0.4`). Bu, kod
+# hic degismeden CI'in kirilabilecegi anlamina gelir ve kirildi da:
+# ayni agac yerelde ruff 0.15.21 ile 191, CI'da 0.16.x ile 183 hata
+# veriyordu. Bir lint sonucunun ARACIN SURUMUNE gore degismesi, o
+# sonucun kanit degerini dusurur.
+#
+# `pip install -c constraints-ci.txt` ile kullanilir; `pyproject.toml`
+# alt sinirlarini EZMEZ, yalnizca UST SINIR koyar.
+#
+# GUNCELLEME: Dependabot bu dosyayi izler (.github/dependabot.yml).
+# Surum yukseltmesi bir PR olarak gelir ve lint farki orada gorulur --
+# sessizce degil.
+
+ruff==0.16.3
+pytest==8.3.5
+pytest-cov==6.0.0
+coverage==7.6.10
+matplotlib==3.10.0
+numpy==1.26.4
+pydantic==2.9.2
+PyYAML==6.0.2
+h5py==3.12.1

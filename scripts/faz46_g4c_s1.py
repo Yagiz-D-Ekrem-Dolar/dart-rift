@@ -59,8 +59,7 @@ from dartrift.inference.forward import GOZLENEBILIRLER  # noqa: E402
 from dartrift.inference.posterior import grid_posterior  # noqa: E402
 from dartrift.inference.recovery import recovery_verdict  # noqa: E402
 from dartrift.inference.surrogate import fit_surrogate  # noqa: E402
-from dartrift.setup.rubble_generator import (  # noqa: E402
-    matrix_alpha0_for_bulk_density)
+from dartrift.setup.rubble_generator import matrix_alpha0_for_bulk_density  # noqa: E402
 
 sys.path.insert(0, str(REPO / "scripts"))
 from faz44_dart_yakinsama import SAHNE  # noqa: E402
@@ -90,7 +89,7 @@ def main() -> int:
     x = am[:, None]
 
     print("=" * 78, flush=True)
-    print(f"FAZ 4.6 — G4-C, INDIRGENMIS UZAY (ADR-0046 S1)", flush=True)
+    print("FAZ 4.6 — G4-C, INDIRGENMIS UZAY (ADR-0046 S1)", flush=True)
     print("=" * 78, flush=True)
     print(f"\n[1] {len(x)} nokta, matris alpha0 = "
           f"{am.min():.4f} .. {am.max():.4f}", flush=True)
@@ -100,7 +99,7 @@ def main() -> int:
         # disina cikan nokta DISDEGERLEME olurdu.
         raise SystemExit(f"{disari} nokta uzayin DISINDA — sinirlar yanlis")
 
-    print(f"\n[2] vekiller", flush=True)
+    print("\n[2] vekiller", flush=True)
     vekiller = []
     for j, ad in enumerate(GOZLENEBILIRLER):
         s = fit_surrogate(UZAY, x, Y[:, j])
@@ -117,7 +116,7 @@ def main() -> int:
     print(f"\n[3] gercek: matrix_alpha0 = {gercek[0]:.4f}", flush=True)
     print("    sentetik veri: "
           + ", ".join(f"{ad}={v:.5g}"
-                      for ad, v in zip(GOZLENEBILIRLER, veri)), flush=True)
+                      for ad, v in zip(GOZLENEBILIRLER, veri, strict=False)), flush=True)
 
     print(f"\n[4] posterior (n_grid={a.n_grid})", flush=True)
     post = grid_posterior(UZAY, vekiller, veri, SIGMA_NOMINAL,
@@ -131,7 +130,7 @@ def main() -> int:
           f"%68=[{lo:.4f}, {hi:.4f}]  bant/onsel={post.width_u[0]:.4f}",
           flush=True)
 
-    print(f"\n[5] G4-C", flush=True)
+    print("\n[5] G4-C", flush=True)
     v = recovery_verdict(post, gercek, tarama)
     print(f"    {v.ozet}", flush=True)
     for r in v.c1_ayrinti:
@@ -153,9 +152,9 @@ def main() -> int:
         "matris_alpha0_araligi": [float(am.min()), float(am.max())],
         "gercek": gercek.tolist(), "sigma_nominal": list(SIGMA_NOMINAL),
         "vekil_q2": {ad: float(s.q2)
-                     for ad, s in zip(GOZLENEBILIRLER, vekiller)},
+                     for ad, s in zip(GOZLENEBILIRLER, vekiller, strict=False)},
         "vekil_sigma": {ad: float(s.sigma)
-                        for ad, s in zip(GOZLENEBILIRLER, vekiller)},
+                        for ad, s in zip(GOZLENEBILIRLER, vekiller, strict=False)},
         "c1_gecti": v.c1_gecti, "c1_kapsama": v.c1_kapsama,
         "c1_ayrinti": v.c1_ayrinti,
         "c2_gecti": v.c2_gecti, "c2_en_dar": v.c2_en_dar,

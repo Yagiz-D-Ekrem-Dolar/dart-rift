@@ -10,8 +10,12 @@ import numpy as np
 import pytest
 
 from dartrift.validation.h_policy import (
-    KUP_SALINIMI, KUP_TARAMA_KAPSAMI, dart_salinim_ozeti,
-    judge_dart_salinimi, neighbour_count)
+    KUP_SALINIMI,
+    KUP_TARAMA_KAPSAMI,
+    dart_salinim_ozeti,
+    judge_dart_salinimi,
+    neighbour_count,
+)
 
 
 def _orn(degerler) -> dict:

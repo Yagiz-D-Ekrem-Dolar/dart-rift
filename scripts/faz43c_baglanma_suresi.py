@@ -132,7 +132,7 @@ def main() -> int:
     print(f"  DURULDU MU   = {d['durulmus']}"
           f"{'' if d['durulmus'] else '  -- ' + d['neden']}", flush=True)
     print(f"  t1 (olculen) = {d['t_durulma']:.6e} s", flush=True)
-    print(f"  ADR-0043 tahmini = 1.0e-03 s", flush=True)
+    print("  ADR-0043 tahmini = 1.0e-03 s", flush=True)
 
     Path(a.out).write_text(json.dumps(
         {"lam": a.lam, "r_ince": a.r_ince, "N": n, "A1": a1,

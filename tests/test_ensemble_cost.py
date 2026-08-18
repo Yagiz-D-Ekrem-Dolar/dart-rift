@@ -1,13 +1,15 @@
 """FAZ 5 ensemble maliyeti — A′'dan sonra yeniden hesap (FAZ 4 → 5 geçişi)."""
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
-from dartrift.validation.ensemble_cost import (OLCULEN, adim_maliyeti_s,
-                                               ensemble_gpu_gunu,
-                                               fizibilite_sinirlari,
-                                               kosu_maliyeti_s)
+from dartrift.validation.ensemble_cost import (
+    OLCULEN,
+    adim_maliyeti_s,
+    ensemble_gpu_gunu,
+    fizibilite_sinirlari,
+    kosu_maliyeti_s,
+)
 
 
 def test_adim_maliyeti_OLCULEN_noktada_tutuyor() -> None:
@@ -112,8 +114,7 @@ def test_FIZIBILITE_ile_dogrudan_kiyas_UYARISI_var() -> None:
 
 def test_mermiyi_cozmek_icin_GEREKEN_lam() -> None:
     """`A1 = D/s_ince` ve `s_ince = s_kaba/λ` ⇒ `λ = A1·s_kaba/D`."""
-    from dartrift.validation.ensemble_cost import (MERMI_CAPI_M,
-                                                   mermiyi_cozmek_icin_lam)
+    from dartrift.validation.ensemble_cost import MERMI_CAPI_M, mermiyi_cozmek_icin_lam
 
     lam = mermiyi_cozmek_icin_lam(2.0, 7.0)
     assert lam == pytest.approx(2.0 * 7.0 / MERMI_CAPI_M)
@@ -124,8 +125,7 @@ def test_mermiyi_cozmek_icin_GEREKEN_lam() -> None:
 
 def test_geometrik_sabit_OLCULEN_degeri_veriyor() -> None:
     """`c` uydurulmadı: `λ=2, r_iç=25` ölçümünden türetildi (`n_ince = 933`)."""
-    from dartrift.validation.ensemble_cost import (INCE_GEOMETRI_C,
-                                                   cozunurluk_bedeli)
+    from dartrift.validation.ensemble_cost import INCE_GEOMETRI_C, cozunurluk_bedeli
 
     assert INCE_GEOMETRI_C * (25.0 / 3.5) ** 3 == pytest.approx(933.0)
     d = cozunurluk_bedeli(2.0, 25.0)
@@ -172,8 +172,7 @@ def test_cozulmus_mermi_30_GUNLUK_butceye_SIGMIYOR() -> None:
     `λ=2`: bütçeye sığar ama mermi **çözülmemiş** (`A1 = 0,21`).
     `λ=19`: mermi çözülür ama bütçe **3 kat** aşılır.
     """
-    from dartrift.validation.ensemble_cost import (cozunurluk_bedeli,
-                                                   mermiyi_cozmek_icin_lam)
+    from dartrift.validation.ensemble_cost import cozunurluk_bedeli, mermiyi_cozmek_icin_lam
 
     ucuz = cozunurluk_bedeli(2.0, 25.0)
     # `lam` PRATIKTE tam sayi secilir ve gerekenin USTUNE yuvarlanir.
@@ -189,8 +188,7 @@ def test_cozulmus_mermi_30_GUNLUK_butceye_SIGMIYOR() -> None:
 
 
 def test_cozunurluk_bedeli_gecersiz_girdi() -> None:
-    from dartrift.validation.ensemble_cost import (cozunurluk_bedeli,
-                                                   mermiyi_cozmek_icin_lam)
+    from dartrift.validation.ensemble_cost import cozunurluk_bedeli, mermiyi_cozmek_icin_lam
 
     for lam, r in ((0.0, 3.0), (-1.0, 3.0), (2.0, 0.0), (2.0, -1.0)):
         with pytest.raises(ValueError):

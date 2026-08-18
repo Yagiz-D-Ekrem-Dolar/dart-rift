@@ -29,7 +29,9 @@ bu, döndürülen sözlükte `baseline_clean` olarak raporlanır.
 from __future__ import annotations
 
 import numpy as np
+
 from ..cpu_reference.materials import TillotsonParams
+from ..cpu_reference.sph_ref import kernel_w
 from ..setup.rubble_generator import FCC_VOLUME_FACTOR
 from .kernel_margin import support_margin
 
@@ -37,9 +39,6 @@ from .kernel_margin import support_margin
 # yazmak K7'nin kalibidir: iki yer tesaduf eseri tutar ve biri degisince
 # otekini SESSIZCE bozar (bkz. tests/test_no_hardcoded_rho0.py).
 RHO0_SOLID = TillotsonParams().rho0
-
-
-from ..cpu_reference.sph_ref import kernel_w
 
 __all__ = ["build_two_zone", "measure_partition_of_unity", "run_mass_ratio_scan"]
 
@@ -272,8 +271,12 @@ def measure_spurious_acceleration(z: dict, h_over_spacing: float = 2.0,
     referans zaten çapraz kontrollü.
     """
     from ..cpu_reference.materials import (
-        DamageParams, GravityParams, MaterialParams, PorosityParams,
-        StrengthParams)
+        DamageParams,
+        GravityParams,
+        MaterialParams,
+        PorosityParams,
+        StrengthParams,
+    )
     from ..cpu_reference.solid_ref import SolidState, evaluate_solid
     from ..cpu_reference.sph_ref import RefParams
 

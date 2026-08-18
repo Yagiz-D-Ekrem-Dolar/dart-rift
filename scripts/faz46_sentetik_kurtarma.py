@@ -43,9 +43,12 @@ for _akis in (sys.stdout, sys.stderr):
         pass
 
 
-from dartrift.inference.design import (DART_UZAYI,  # noqa: E402
-                                       DART_UZAYI_S3, factorial_design,
-                                       lhs_design)
+from dartrift.inference.design import (  # noqa: E402
+    DART_UZAYI,
+    DART_UZAYI_S3,
+    factorial_design,
+    lhs_design,
+)
 from dartrift.inference.forward import GOZLENEBILIRLER  # noqa: E402
 from dartrift.inference.forward import ileri_kosu as _gercek_ileri  # noqa: E402
 from dartrift.inference.posterior import grid_posterior  # noqa: E402
@@ -197,7 +200,9 @@ def main() -> int:
     print("=" * 78, flush=True)
     print(f"FAZ 4.6 — SENTETIK KURTARMA (G4-C){'  [KURU KIP]' if a.kuru else ''}",
           flush=True)
-    print(f"uzay: {'DART_UZAYI (ADR-0044 ONCESI, TUTARSIZ)' if a.eski_uzay else 'DART_UZAYI_S3 (ADR-0044)'}"
+    _ad = ("DART_UZAYI (ADR-0044 ONCESI, TUTARSIZ)" if a.eski_uzay
+           else "DART_UZAYI_S3 (ADR-0044)")
+    print(f"uzay: {_ad}"
           f"  -> {UZAY.names}", flush=True)
     print("=" * 78, flush=True)
 
@@ -224,8 +229,7 @@ def main() -> int:
         # KALDIGI YERDEN DEVAM: her nokta hemen JSONL'e yaziliyor. Bir SLURM
         # isi 12 saatte kesiliyor ve 300 kosuluk ensemble ~10 GPU-gunu
         # (KAYIT-040) -- yani kesinti KACINILMAZ, olasi degil.
-        from dartrift.inference.ensemble import (ensemble_kos,
-                                                oku_tamamlananlar)
+        from dartrift.inference.ensemble import ensemble_kos, oku_tamamlananlar
         from dartrift.inference.forward import ileri_kosu as _tek_nokta
 
         sys.path.insert(0, str(REPO / "scripts"))
@@ -302,9 +306,9 @@ def main() -> int:
                 else "GUVENILIR" if s.guvenilir else "YETERSIZ")
         print(f"    {ad:20s} q2={s.q2:8.5f}  rmse_loo={s.rmse_loo:.4e}  "
               f"sigma={s.sigma:.4e}  {tani}", flush=True)
-    yetersiz = [ad for ad, s in zip(GOZLENEBILIRLER, vekiller)
+    yetersiz = [ad for ad, s in zip(GOZLENEBILIRLER, vekiller, strict=False)
                 if not s.guvenilir]
-    sabitler = [ad for ad, s in zip(GOZLENEBILIRLER, vekiller) if s.sabit]
+    sabitler = [ad for ad, s in zip(GOZLENEBILIRLER, vekiller, strict=False) if s.sabit]
     if sabitler:
         # SABIT bir gozlenebilir "yetersiz vekil" degil, BOZUK ILERI MODEL
         # isaretidir. Devam etmek butun kosuyu bosa harcar.
@@ -330,11 +334,11 @@ def main() -> int:
     # Uzayin ORTASI (birim uzayda 0,5) her uzayda tanim geregi icerdedir.
     gercek = UZAY.from_unit(np.full((1, UZAY.ndim), 0.5))[0]
     veri = np.array([float(s.predict(gercek[None, :])[0]) for s in vekiller])
-    print(f"\n[4] gercek parametre: "
-          + ", ".join(f"{ad}={v:.4g}" for ad, v in zip(UZAY.names, gercek)),
+    print("\n[4] gercek parametre: "
+          + ", ".join(f"{ad}={v:.4g}" for ad, v in zip(UZAY.names, gercek, strict=False)),
           flush=True)
     print("    sentetik veri: "
-          + ", ".join(f"{ad}={v:.5g}" for ad, v in zip(GOZLENEBILIRLER, veri)),
+          + ", ".join(f"{ad}={v:.5g}" for ad, v in zip(GOZLENEBILIRLER, veri, strict=False)),
           flush=True)
 
     # --- 5) posterior + gurultu taramasi (C3)
@@ -372,9 +376,9 @@ def main() -> int:
         "kuru": bool(a.kuru), "root_seed": a.root_seed,
         "n_tasarim": int(len(x)), "gercek": gercek.tolist(),
         "sigma_nominal": list(SIGMA_NOMINAL),
-        "vekil_q2": {ad: float(s.q2) for ad, s in zip(GOZLENEBILIRLER, vekiller)},
+        "vekil_q2": {ad: float(s.q2) for ad, s in zip(GOZLENEBILIRLER, vekiller, strict=False)},
         "vekil_guvenilir": {ad: bool(s.guvenilir)
-                            for ad, s in zip(GOZLENEBILIRLER, vekiller)},
+                            for ad, s in zip(GOZLENEBILIRLER, vekiller, strict=False)},
         "c1_gecti": v.c1_gecti, "c1_kapsama": v.c1_kapsama,
         "c1_ayrinti": v.c1_ayrinti,
         "c2_gecti": v.c2_gecti, "c2_en_dar": v.c2_en_dar,

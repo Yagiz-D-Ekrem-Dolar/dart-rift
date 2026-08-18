@@ -103,7 +103,40 @@ def anatomi(yol: Path) -> dict:
     out["hiz_bantlari"] = bant
     isaretler = [np.sign(b["p_eksen"]) for b in bant if b["n"] > 0]
     out["isaret_donusu"] = int(sum(
-        1 for a, b in zip(isaretler, isaretler[1:]) if a != b and a and b))
+        1 for a, b in zip(isaretler, isaretler[1:], strict=False) if a != b and a and b))
+
+    # --- MERMI / HEDEF AYRISTIRMASI ----------------------------------
+    # A17'nin kilidi: `beta`nin payi mermi geri sekmesi mi, hedef
+    # ejektasi mi? Kimlik `mermi_kesri` ile tasiniyor (yoksa eski
+    # dosya; alan atlanir ve bu ACIKCA yazilir).
+    if "mermi_kesri" in d.files:
+        f = np.asarray(d["mermi_kesri"], dtype=np.float64)
+        kac2R = r > 2.0 * R
+        m_mermi = m * f
+        m_hedef = m * (1.0 - f)
+        out["ayristirma"] = {
+            "var": True,
+            "mermi_kutlesi_toplam": float(m_mermi.sum()),
+            "mermi_kutlesi_kacan": float(m_mermi[kac2R].sum()),
+            "hedef_kutlesi_kacan": float(m_hedef[kac2R].sum()),
+            "n_kacan": int(kac2R.sum()),
+            # Eksenel momentum KUTLE PAYLARINA gore bolunuyor: bir
+            # karisim parcaciginin momentumu tek bir tarafa yazilamaz.
+            "p_eksen_mermi": float((m_mermi[kac2R] * v[kac2R, eksen]).sum()),
+            "p_eksen_hedef": float((m_hedef[kac2R] * v[kac2R, eksen]).sum()),
+        }
+        ay = out["ayristirma"]
+        top = abs(ay["p_eksen_mermi"]) + abs(ay["p_eksen_hedef"])
+        ay["hedef_payi"] = (abs(ay["p_eksen_hedef"]) / top if top > 0
+                            else float("nan"))
+        ay["beta_mermiden"] = 1.0 + abs(ay["p_eksen_mermi"]) / 3.5604e6
+        ay["beta_hedeften"] = abs(ay["p_eksen_hedef"]) / 3.5604e6
+    else:
+        out["ayristirma"] = {
+            "var": False,
+            "neden": ("dosyada `mermi_kesri` yok -- kimligin tasinmasindan "
+                      "ONCE kaydedilmis durum; ayristirma YAPILAMAZ"),
+        }
 
     # --- kabuklar ----------------------------------------------------
     kab = []
@@ -131,14 +164,14 @@ def bas(a: dict) -> None:
           f"(eksen {a['baskin_eksen']}: {a['p_baskin_eksen']:+.4e})",
           flush=True)
 
-    print(f"\n[1] MOMENTUM VAR MI", flush=True)
+    print("\n[1] MOMENTUM VAR MI", flush=True)
     print(f"    disari giden: {a['n_disa']} parcacik, "
           f"{a['kutle_disa']:.4e} kg", flush=True)
     print(f"    p_eksenel net = {a['p_eksenel_disa']:+.4e}   "
           f"gereken = {a['gereken_p_ejekta']:.4e}   "
           f"-> {a['gereken_kat']:.3f} kat", flush=True)
 
-    print(f"\n[2] YONLU MU  (|p_eksen|/p_radyal; ~0 cinlama, ~1 koni)",
+    print("\n[2] YONLU MU  (|p_eksen|/p_radyal; ~0 cinlama, ~1 koni)",
           flush=True)
     print(f"    genel yonluluk = {a['yonluluk']:.5f}", flush=True)
     for k in a["kabuklar"]:
@@ -146,7 +179,7 @@ def bas(a: dict) -> None:
               f"p_rad={k['p_radyal']:+.3e}  p_eks={k['p_eksen']:+.3e}  "
               f"yonluluk={k['yonluluk']:7.4f}", flush=True)
 
-    print(f"\n[3] CIKIYOR MU  (uretim olcutu d > 2R)", flush=True)
+    print("\n[3] CIKIYOR MU  (uretim olcutu d > 2R)", flush=True)
     print(f"    r > R : {a['n_r_ustu_R']:5d}      "
           f"r > 2R: {a['n_r_ustu_2R']:5d}", flush=True)
     if "ic_disa" in a:
@@ -160,7 +193,31 @@ def bas(a: dict) -> None:
         yeter = "YETERLI" if g["sure_yeterli_mi"] else "YETERSIZ"
         print(f"    kosulan {a['t']:.0f} s  ->  SURE {yeter}", flush=True)
 
-    print(f"\n[4] HIZ BANTLARI  (isaret donusu = salinim imzasi)", flush=True)
+    ay = a.get("ayristirma", {"var": False, "neden": "alan yok"})
+    print("\n[3b] MERMI mi HEDEF mi  (beta'nin PAYI kimin)", flush=True)
+    if not ay.get("var"):
+        print(f"     YAPILAMADI: {ay.get('neden')}", flush=True)
+    else:
+        print(f"     kacan {ay['n_kacan']} parcacik icinde:", flush=True)
+        print(f"       mermi kutlesi = {ay['mermi_kutlesi_kacan']:12.4e} kg "
+              f"(sahnedeki toplam {ay['mermi_kutlesi_toplam']:.4e})",
+              flush=True)
+        print(f"       hedef kutlesi = {ay['hedef_kutlesi_kacan']:12.4e} kg",
+              flush=True)
+        print(f"       p_eksen mermi = {ay['p_eksen_mermi']:+12.4e}",
+              flush=True)
+        print(f"       p_eksen hedef = {ay['p_eksen_hedef']:+12.4e}",
+              flush=True)
+        print(f"       hedef payi    = {ay['hedef_payi']:.4f}", flush=True)
+        print(f"       beta (yalniz mermiden)  = "
+              f"{ay['beta_mermiden']:.4f}", flush=True)
+        print(f"       beta katkisi (hedeften) = "
+              f"{ay['beta_hedeften']:.4f}", flush=True)
+        if ay["hedef_payi"] < 0.1:
+            print("     -> beta bir HEDEF EJEKTASI olcumu DEGIL, "
+                  "MERMI GERI SEKME olcumu", flush=True)
+
+    print("\n[4] HIZ BANTLARI  (isaret donusu = salinim imzasi)", flush=True)
     print(f"    {'v_r araligi':>17s} {'n':>6s} {'kutle kg':>12s} "
           f"{'p_eksen':>12s}", flush=True)
     for b in a["hiz_bantlari"]:
@@ -169,8 +226,8 @@ def bas(a: dict) -> None:
               f"{b['kutle']:12.3e} {b['p_eksen']:+12.3e}", flush=True)
     print(f"    isaret donusu sayisi = {a['isaret_donusu']}", flush=True)
     if a["isaret_donusu"] >= 2:
-        print(f"    -> SALINIM: anlik p_eksen kacacak momentumun ust siniri "
-              f"DEGIL", flush=True)
+        print("    -> SALINIM: anlik p_eksen kacacak momentumun ust siniri "
+              "DEGIL", flush=True)
 
 
 def main() -> int:

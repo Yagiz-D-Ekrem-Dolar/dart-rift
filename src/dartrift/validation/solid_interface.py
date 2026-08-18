@@ -48,9 +48,13 @@ from __future__ import annotations
 
 import numpy as np
 
-from ..cpu_reference.materials import (DamageParams, GravityParams,
-                                       MaterialParams, PorosityParams,
-                                       StrengthParams)
+from ..cpu_reference.materials import (
+    DamageParams,
+    GravityParams,
+    MaterialParams,
+    PorosityParams,
+    StrengthParams,
+)
 from ..cpu_reference.sph_ref import RefParams
 
 __all__ = ["BASALT_SOLID", "build_two_zone_solid_ic", "judge",

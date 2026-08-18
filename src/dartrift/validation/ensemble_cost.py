@@ -32,7 +32,8 @@ Bir sayı uydurmaktansa sınırı vermek doğrudur (RULES.txt).
 
 | büyüklük | değer | kaynak |
 |---|---|---|
-| adım maliyeti (tam fizik) | `8 658 µs / 1000 parçacık` | FIZIBILITE §2b, iş 1429628 (`N = 65 840`) |
+| adım maliyeti (tam fizik) | `8 658 µs / 1000 parçacık` | FIZIBILITE
+  §2b, iş 1429628 (`N = 65 840`) |
 | A′ parçacık sayısı | `11 164` | KAYIT-038 (`s = 7,0/3,5`, `r_iç = 25`) |
 | tekdüze ince parçacık sayısı | `76 722` | aynı |
 | `dt` | `6,9e-5 s` | FIZIBILITE §1 (`cfl·h/(c_s+v)`) |

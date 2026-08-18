@@ -27,8 +27,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.inference.design import (DART_UZAYI, factorial_design,
-                                       lhs_design)
+from dartrift.inference.design import DART_UZAYI, factorial_design, lhs_design
 from dartrift.inference.ensemble import ensemble_kos, oku_tamamlananlar
 from dartrift.inference.posterior import grid_posterior
 from dartrift.inference.recovery import recovery_verdict
@@ -108,7 +107,7 @@ def test_dogrusalsizlik_ARTINCA_q2_DUSUYOR():
     for k in (0.0, 0.15, 0.5):
         vek, _, _ = _hat(dogrusalsizlik=k, tarama=False)
         q.append(min(s.q2 for s in vek))
-    assert all(b <= a + 1e-9 for a, b in zip(q, q[1:])), q
+    assert all(b <= a + 1e-9 for a, b in zip(q, q[1:], strict=False)), q
     assert q[0] > 0.999 and q[-1] < q[0]
 
 
@@ -264,7 +263,7 @@ def test_ensemble_tasarimdan_vekile_KESINTIDEN_SONRA_ayni(tmp_path):
         Y = np.array([t[i] for i in range(len(tasarim))])
         return [fit_surrogate(DART_UZAYI, tasarim, Y[:, k]) for k in range(3)]
 
-    for s1, s2 in zip(_vek(a), _vek(b)):
+    for s1, s2 in zip(_vek(a), _vek(b), strict=False):
         np.testing.assert_array_equal(s1.coef, s2.coef)
         assert s1.q2 == s2.q2
 
@@ -335,8 +334,7 @@ def test_VARSAYILAN_uzayin_KUTUSU_rho_yiginla_TUTARSIZ():
     Tasarım kutusu ikisini bağımsız ilan ediyor, yani kutunun neredeyse
     tamamı **uygulanamaz**.
     """
-    from dartrift.setup.rubble_generator import \
-        matrix_alpha0_for_bulk_density as g
+    from dartrift.setup.rubble_generator import matrix_alpha0_for_bulk_density as g
     rng = np.random.default_rng(0)
     n = 4000
     a0 = rng.uniform(DART_UZAYI.lo[0], DART_UZAYI.hi[0], n)
@@ -350,8 +348,7 @@ def test_VARSAYILAN_uzayin_KUTUSU_rho_yiginla_TUTARSIZ():
 def test_SECENEK3_kutusunun_TAMAMI_uygulanabilir():
     """ADR-0044 §6 madde 1 — ölçüldü, `0/36` yasak."""
     from dartrift.inference.design import DART_UZAYI_S3
-    from dartrift.setup.rubble_generator import \
-        matrix_alpha0_for_bulk_density as g
+    from dartrift.setup.rubble_generator import matrix_alpha0_for_bulk_density as g
     for b in np.linspace(DART_UZAYI_S3.lo[0], DART_UZAYI_S3.hi[0], 6):
         for f in np.linspace(DART_UZAYI_S3.lo[2], DART_UZAYI_S3.hi[2], 6):
             a = g(1800.0, 2700.0, float(b), float(f))
@@ -378,8 +375,8 @@ def test_SECENEK3_eslemesi_matrix_alpha0_VERMIYOR():
 
 def test_SECENEK3_ile_yigin_GERCEKTEN_kuruluyor():
     """Asıl sınav: varsayılanın **düştüğü** yerde Seçenek 3 kuruyor mu."""
-    from dartrift.setup.scene import build_scene
     from dartrift.inference.forward import sahne_parametreleri
+    from dartrift.setup.scene import build_scene
     taban = dict(radius=82.0, bulk_density=1800.0, root_seed=20260801,
                  model_class="M1", q=3.0, n_impactor=800,
                  r_min=14.0, r_max=42.0)

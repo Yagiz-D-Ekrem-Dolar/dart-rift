@@ -8,8 +8,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.validation.domain_coupling import (RHO0, measure_coupling_error,
-                                                 sph_interpolate)
+from dartrift.validation.domain_coupling import RHO0, measure_coupling_error, sph_interpolate
 
 HALF, S, HOS = 4.0, 1.0, 1.3
 

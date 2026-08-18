@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from .adaptive_h import pair_h, per_particle_h
 from .materials import (
     MaterialParams,
     return_mapping,
@@ -30,7 +31,6 @@ from .materials import (
     tillotson_pressure,
     tillotson_sound_speed,
 )
-from .adaptive_h import pair_h, per_particle_h
 from .sph_ref import AV_EPS, BALSARA_EPS, RefParams, kernel_dwdq, kernel_w
 
 _I3 = np.eye(3)

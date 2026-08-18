@@ -46,8 +46,7 @@ for _akis in (sys.stdout, sys.stderr):
         pass
 
 from dartrift.setup.refine import refine_scene_local  # noqa: E402
-from dartrift.setup.rubble_generator import (assign_material,  # noqa: E402
-                                             build_rubble_pile)
+from dartrift.setup.rubble_generator import assign_material, build_rubble_pile  # noqa: E402
 from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
 
 sys.path.insert(0, str(REPO / "scripts"))

@@ -92,7 +92,8 @@ def test_gecersiz_girdiler_REDDEDILIYOR(sahneler) -> None:
 def test_FARKLI_TOHUM_reddediliyor() -> None:
     """İki sahne aynı çarpma noktasını görmüyorsa birleştirme anlamsız."""
     kaba = build_scene(spacing=7.0, **KW)
-    kw2 = dict(KW); kw2["aim"] = (1.0, 0.0, 0.0)
+    kw2 = dict(KW)
+    kw2["aim"] = (1.0, 0.0, 0.0)
     ince = build_scene(spacing=3.5, **kw2)
     with pytest.raises(ValueError, match="çarpma noktası"):
         refine_scene(kaba, ince, r_ince=25.0)
@@ -281,7 +282,6 @@ def test_dikis_kalitesi_parcali_tek_blokla_AYNI():
 # ------------------------- UC SEVIYELI sahne (ADR-0043 §4f)
 
 def _uc_sahne(r1=6.0, lam1=6.0, r2=25.0, lam2=2.0):
-    import numpy as np
 
     from dartrift.setup.refine import refine_scene_ucseviye
     from dartrift.setup.scene import _build_mesh, build_scene
@@ -307,10 +307,9 @@ def test_ucseviye_UC_AYRI_h_seviyesi_var():
 
 def test_ucseviye_ORTA_seviye_asama2_ile_AYNI_aralik():
     """Aktarımın birebir kopyalanabilmesi **buna** bağlı."""
-    import numpy as np
 
     from dartrift.setup.refine import refine_scene_local
-    from dartrift.setup.scene import _build_mesh, build_scene
+    from dartrift.setup.scene import _build_mesh
     kaba, rs = _uc_sahne()
     mesh = _build_mesh("icosphere", radius=82.0, subdiv=3)
     a2 = refine_scene_local(kaba, mesh, r_ince=25.0, lam=2.0)

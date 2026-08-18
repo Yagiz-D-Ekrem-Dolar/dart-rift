@@ -6,7 +6,17 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-11 · **Kapanan:** 23 (bölüm 2) + 13 (bölüm 1) · **Açık:** 4 — A3, A11, A12, A17
+**Son güncelleme:** 2026-08-17 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 13 (bölüm 1) · **Açık:** 4 — A3, A11, A12, A17
+
+> ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
+>
+> Başlık `37` diyordu; ben `23` sanıp *"düzelttim"*. **Yanlıştı.**
+> Bölüm 2 maddeleri **iki biçimde** yazılı — `| N |` tablo satırı
+> (`23` tane) ve `### N` başlığı (`14` tane) — ve ben yalnızca
+> tablo satırlarını saymıştım. Numaralar `1..37` kesintisiz.
+>
+> `test_KAPANAN_ve_ACIK_sayilari_TABLOLARLA_tutuyor` iki biçimi de
+> sayıyor ve tam bu yüzden düştü. Test haklıydı, ben değildim.
 
 ---
 

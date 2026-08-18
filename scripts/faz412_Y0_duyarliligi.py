@@ -40,9 +40,11 @@ for _akis in (sys.stdout, sys.stderr):
         pass
 
 from dartrift.inference.design import DART_UZAYI_S3  # noqa: E402
-from dartrift.inference.forward import (GOZLENEBILIRLER,  # noqa: E402
-                                        KRATER_AYARLARI_DART,
-                                        ileri_kosu_ikiasama)
+from dartrift.inference.forward import (  # noqa: E402
+    GOZLENEBILIRLER,
+    KRATER_AYARLARI_DART,
+    ileri_kosu_ikiasama,
+)
 from dartrift.observables.crater_shape import crater_profile  # noqa: E402
 
 sys.path.insert(0, str(REPO / "scripts"))
@@ -72,7 +74,8 @@ def main() -> int:
         # ogrenilemez.
         from dartrift.inference.design import lhs_design
         X = np.vstack([X, lhs_design(uzay, a.n_lhs, root_seed=a.root_seed)])
-    dz = Path(a.durum_dizin); dz.mkdir(parents=True, exist_ok=True)
+    dz = Path(a.durum_dizin)
+    dz.mkdir(parents=True, exist_ok=True)
     print("=" * 78, flush=True)
     print(f"FAZ 4.12 — Y0 DERINLIKTE GORUNUYOR MU  ({len(X)} nokta, "
           f"t_end={a.t_end})", flush=True)
@@ -120,17 +123,18 @@ def main() -> int:
     print(f"{'#':>2} " + " ".join(f"{ad:>14}" for ad in uzay.names)
           + f" {'beta':>9} {'derinlik':>9}", flush=True)
     print("-" * 78, flush=True)
-    for i, (x, y) in enumerate(zip(X, Y)):
+    for i, (x, y) in enumerate(zip(X, Y, strict=False)):
         print(f"{i:2d} " + " ".join(f"{v:14.5g}" for v in x)
               + f" {y[0]:9.5f} {D[i]:9.4f}", flush=True)
 
-    print(f"\nPARAMETRE ETKILERI (kose ortalamalari)", flush=True)
+    print("\nPARAMETRE ETKILERI (kose ortalamalari)", flush=True)
     print(f"{'parametre':>16} {'beta farki':>12} {'derinlik farki':>15}",
           flush=True)
     print("-" * 46, flush=True)
     etki = {}
     for j, ad in enumerate(uzay.names):
-        dus = X[:, j] == X[:, j].min(); yuk = X[:, j] == X[:, j].max()
+        dus = X[:, j] == X[:, j].min()
+        yuk = X[:, j] == X[:, j].max()
         db = float(np.nanmean(Y[yuk, 0]) - np.nanmean(Y[dus, 0]))
         dd = float(np.nanmean(D[yuk]) - np.nanmean(D[dus]))
         etki[ad] = {"beta": db, "derinlik": dd}

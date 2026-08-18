@@ -5,11 +5,9 @@ Bu sayı ADR-0041'in A′ kefesini belirledi; aracın kendisi bozuksa karar
 """
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
-from dartrift.validation.adaptive_h_cost import (measure_multilevel_waste,
-                                                 measure_neighbour_waste)
+from dartrift.validation.adaptive_h_cost import measure_multilevel_waste, measure_neighbour_waste
 
 GEO = dict(r_outer=70.0, r_inner=25.0, spacing=8.0, h_over_spacing=1.3)
 

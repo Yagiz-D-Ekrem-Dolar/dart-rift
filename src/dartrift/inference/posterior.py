@@ -145,7 +145,7 @@ def grid_posterior(space: ParamSpace, surrogates, data, sigma,
         raise ValueError(f"veri içinde sonlu olmayan değer var: {data}")
 
     ki2 = np.zeros(len(u_flat), dtype=np.float64)
-    for i, (s, d, sg) in enumerate(zip(surrogates, data, sig)):
+    for i, (s, d, sg) in enumerate(zip(surrogates, data, sig, strict=False)):
         tahmin = np.asarray(s.predict(x_flat), dtype=np.float64).ravel()
         # SESSIZ NaN'A KARSI. Tek bir `nan` tahmin butun `logp`yi `nan`
         # yapar (`logp.max()` -> nan), posterior tamamen `nan` olur ve

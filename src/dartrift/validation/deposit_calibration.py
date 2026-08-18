@@ -44,8 +44,16 @@ from __future__ import annotations
 import numpy as np
 
 from ..cpu_reference.sph_ref import RefParams
-from .sedov import (E_INJECT, GAMMA, H_OVER_DX, RHO0, T_END_DEFAULT,
-                    U_BACKGROUND, measure_shock_radius, shock_radius_exact)
+from .sedov import (
+    E_INJECT,
+    GAMMA,
+    H_OVER_DX,
+    RHO0,
+    T_END_DEFAULT,
+    U_BACKGROUND,
+    measure_shock_radius,
+    shock_radius_exact,
+)
 
 __all__ = ["build_piston_ic", "run_calibration"]
 

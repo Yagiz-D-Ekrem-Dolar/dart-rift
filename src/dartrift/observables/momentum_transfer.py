@@ -494,7 +494,7 @@ def bekleyen_profili(
     d_mp = np.linalg.norm(x - mp[None, :], axis=1)
 
     kusaklar = []
-    for a, b in zip(kenarlar[:-1], kenarlar[1:]):
+    for a, b in zip(kenarlar[:-1], kenarlar[1:], strict=False):
         msk = hedef & (d_mp >= a) & (d_mp < b)
         n_t = int(msk.sum())
         if n_t == 0:

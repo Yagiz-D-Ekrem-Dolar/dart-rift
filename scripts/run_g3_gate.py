@@ -167,10 +167,10 @@ def main() -> int:
 
     # --- 2) senaryolar -----------------------------------------------------
     from dartrift.validation.scene_checks import (
+        run_crater_irregular_selftest,
         run_impactor_convergence,
         run_observable_selftest,
         run_rubble_quality,
-        run_crater_irregular_selftest,
         run_scene_determinism,
         run_shape_pipeline,
         run_speed_threshold_selftest,

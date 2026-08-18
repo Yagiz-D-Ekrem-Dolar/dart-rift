@@ -204,7 +204,7 @@ def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,
     if not np.all(np.isfinite(y)):
         raise RuntimeError(
             f"gozlenebilirlerden biri sonlu degil: "
-            f"{dict(zip(GOZLENEBILIRLER, y))}")
+            f"{dict(zip(GOZLENEBILIRLER, y, strict=False))}")
     return y
 
 
@@ -269,7 +269,7 @@ def ileri_kosu(x, *, material, device: str, steps: int, r_ince: float,
             continue
         if ilerleme:
             ilerleme(i, len(x), " ".join(
-                f"{a}={v:.5g}" for a, v in zip(GOZLENEBILIRLER, Y[i])))
+                f"{a}={v:.5g}" for a, v in zip(GOZLENEBILIRLER, Y[i], strict=False)))
     return Y
 
 

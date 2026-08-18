@@ -9,10 +9,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.inference.design import (DART_UZAYI, ParamSpace,
-                                       factorial_design, lhs_design)
+from dartrift.inference.design import DART_UZAYI, ParamSpace, factorial_design, lhs_design
 from dartrift.inference.posterior import grid_posterior
-from dartrift.inference.recovery import (C2_DARALMA, G4C, recovery_verdict)
+from dartrift.inference.recovery import C2_DARALMA, G4C, recovery_verdict
 from dartrift.inference.surrogate import design_matrix, fit_surrogate
 
 # --------------------------------------------------------------- tasarim
@@ -175,7 +174,7 @@ def test_posterior_GURULTU_artinca_GENISLIYOR() -> None:
     for sg in (0.01, 0.05, 0.25, 1.0):
         p = grid_posterior(DART_UZAYI, vek, veri, sigma=sg, n_grid=40)
         gen.append(p.width_u.min())
-    assert all(b >= a - 1e-12 for a, b in zip(gen, gen[1:])), gen
+    assert all(b >= a - 1e-12 for a, b in zip(gen, gen[1:], strict=False)), gen
     assert gen[-1] > 2.0 * gen[0], gen
 
 

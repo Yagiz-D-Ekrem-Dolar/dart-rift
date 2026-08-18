@@ -44,7 +44,7 @@ class IkiAsamaSahne:
     """Aşama-2'ye verilecek birleşik durum + **kütle defteri**."""
 
     __slots__ = ("x", "v", "m", "e", "h", "alpha0", "Y0", "is_boulder",
-                 "is_impactor", "kaynak", "diagnostics")
+                 "is_impactor", "mermi_kesri", "kaynak", "diagnostics")
 
     def __init__(self, **kw):
         for k in self.__slots__:
@@ -91,10 +91,22 @@ def asama2_sahnesi(a1_durum: dict, a1_ince_maske, a1_m, a1_alpha0, a1_Y0,
 
     s2 = float(a2.spacing_fine)
     siteler = sites_from_cloud(x1, s2)
+    # `is_impactor` DOGRULAMASI burada yapiliyor cunku artik kesir olarak
+    # kabalastirmaya giriyor. Once asagidaydi ve indeksleme ondan once
+    # geldigi icin bilgilendirici ValueError yerine IndexError atiyordu.
+    if a1_is_impactor is None:
+        raise ValueError("`a1_is_impactor` zorunlu — mermi kütlesi bölge "
+                         "karşılaştırmasından çıkarılmalı")
+    imp1 = np.asarray(a1_is_impactor, dtype=bool)
+    if imp1.shape != ince.shape:
+        raise ValueError(f"is_impactor {imp1.shape}, ince {ince.shape} — "
+                         f"aynı olmalı")
+    f_mermi1 = imp1.astype(np.float64)
     kaba = coarsen_to_sites(x1, v1, m1, e1, siteler,
                             alpha0=np.asarray(a1_alpha0)[ince],
                             Y0=np.asarray(a1_Y0)[ince],
-                            is_boulder=np.asarray(a1_is_boulder)[ince])
+                            is_boulder=np.asarray(a1_is_boulder)[ince],
+                            mermi_kesri=f_mermi1[ince])
 
     # --- CIFTE SAYIM KORUMASI: asama-2'nin `r_ince_a1` ICINDE BASLAMIS
     # parcaciklari atilir. Olcut LAGRANGE'ci: "bu madde asama-1'de mi
@@ -125,6 +137,9 @@ def asama2_sahnesi(a1_durum: dict, a1_ince_maske, a1_m, a1_alpha0, a1_Y0,
     # ve o sayi asama-1'den TASINIR, etiketten degil.
     is_imp = np.concatenate([np.zeros(nk, bool),
                              np.asarray(a2.is_impactor, bool)[tut]])
+    f_mermi = np.concatenate([
+        kaba["mermi_kesri"],
+        np.asarray(a2.is_impactor, bool)[tut].astype(np.float64)])
     kaynak = np.concatenate([np.zeros(nk, np.int8),
                              np.ones(int(tut.sum()), np.int8)])
 
@@ -142,13 +157,7 @@ def asama2_sahnesi(a1_durum: dict, a1_ince_maske, a1_m, a1_alpha0, a1_Y0,
     # `a1_durum.get("is_impactor", ...)` yaziyordu ve `state_numpy()` o
     # anahtari HIC dondurmuyor -- yani mermi kutlesi SESSIZCE hic
     # cikarilmazdi ve uyusmazlik oldugundan buyuk gorunurdu.
-    if a1_is_impactor is None:
-        raise ValueError("`a1_is_impactor` zorunlu — mermi kütlesi bölge "
-                         "karşılaştırmasından çıkarılmalı")
-    imp1 = np.asarray(a1_is_impactor, dtype=bool)
-    if imp1.shape != ince.shape:
-        raise ValueError(f"is_impactor {imp1.shape}, ince {ince.shape} — "
-                         f"aynı olmalı")
+    # (`imp1` yukarida dogrulandi ve kurulmustu.)
     m_mermi = float(np.asarray(a1_m, dtype=np.float64)[ince & imp1].sum())
     m_a1_hedef = m_a1 - m_mermi
     m_atilan = float(np.asarray(a2.m)[atilan].sum())
@@ -177,9 +186,12 @@ def asama2_sahnesi(a1_durum: dict, a1_ince_maske, a1_m, a1_alpha0, a1_Y0,
         # sonuc veriyordu (on ucusta medyan 27, <30 orani 1.000).
         "komsu": komsu_sagligi(kaba["x"], h=2.0 * s2,
                                cevre=np.asarray(a2.x)[tut]),
+        "mermi_kutle_hatasi": float(kaba["mermi_kutle_hatasi"]),
+        "mermi_kutlesi": float((m * f_mermi).sum()),
     })
     return IkiAsamaSahne(x=x, v=v, m=m, e=e, h=h, alpha0=alpha0, Y0=Y0,
-                         is_boulder=blok, is_impactor=is_imp, kaynak=kaynak,
+                         is_boulder=blok, is_impactor=is_imp,
+                         mermi_kesri=f_mermi, kaynak=kaynak,
                          diagnostics=tani)
 
 
@@ -229,11 +241,16 @@ def asama2_sahnesi_ucseviye(a1, a1_durum: dict) -> IkiAsamaSahne:
         raise ValueError("aşama-1 durumu sonlu değil — koşu patlamış")
     m1 = np.asarray(a1.m, dtype=np.float64)
 
+    # MERMI KESRI: asama-1'de kimlik bir BAYRAK; kabalastirmadan sonra
+    # karisim kacinilmaz oldugu icin KESIR olarak tasiniyor. Bkz.
+    # `coarsen_to_sites`in `mermi_kesri` bolumu.
+    f_mermi1 = np.asarray(a1.is_impactor, dtype=bool).astype(np.float64)
     kaba = coarsen_to_sites(
         x1[ince], v1[ince], m1[ince], e1[ince],
         sites_from_cloud(x1[ince], s2),
         alpha0=np.asarray(a1.alpha0)[ince], Y0=np.asarray(a1.Y0)[ince],
-        is_boulder=np.asarray(a1.is_boulder)[ince])
+        is_boulder=np.asarray(a1.is_boulder)[ince],
+        mermi_kesri=f_mermi1[ince])
 
     dis = ~ince                       # zaten `s2` cozunurlugunde
     nk = len(kaba["m"])
@@ -248,6 +265,9 @@ def asama2_sahnesi_ucseviye(a1, a1_durum: dict) -> IkiAsamaSahne:
     h = np.concatenate([np.full(nk, 2.0 * s2), np.asarray(a1.h)[dis]])
     is_imp = np.concatenate([np.zeros(nk, bool),
                              np.asarray(a1.is_impactor, bool)[dis]])
+    # Kesir: kabalastirilan bolgede tasinan deger, kopyalanan bolgede
+    # bayragin kendisi (orada karisim YOK, birebir kopya).
+    f_mermi = np.concatenate([kaba["mermi_kesri"], f_mermi1[dis]])
     kaynak = np.concatenate([np.zeros(nk, np.int8),
                              np.ones(int(dis.sum()), np.int8)])
 
@@ -267,7 +287,11 @@ def asama2_sahnesi_ucseviye(a1, a1_durum: dict) -> IkiAsamaSahne:
         "sahne_kutle_hatasi": abs(float(m.sum()) - float(m1.sum()))
                               / max(float(m1.sum()), 1e-300),
         "komsu": komsu_sagligi(kaba["x"], h=2.0 * s2, cevre=x1[dis]),
+        # Kesir pasif skaler: toplam mermi kutlesi TAM korunmali.
+        "mermi_kutle_hatasi": float(kaba["mermi_kutle_hatasi"]),
+        "mermi_kutlesi": float((m * f_mermi).sum()),
     })
     return IkiAsamaSahne(x=x, v=v, m=m, e=e, h=h, alpha0=alpha0, Y0=Y0,
-                         is_boulder=blok, is_impactor=is_imp, kaynak=kaynak,
+                         is_boulder=blok, is_impactor=is_imp,
+                         mermi_kesri=f_mermi, kaynak=kaynak,
                          diagnostics=tani)

@@ -67,16 +67,21 @@ for _akis in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
+from faz44_dart_yakinsama import SAHNE  # noqa: E402
+from faz48_iki_asama import T1_OLCULEN, _cozucu, _kos, _mat  # noqa: E402
+
 from dartrift.setup.coarsen import komsu_sagligi  # noqa: E402
 from dartrift.setup.refine import refine_scene_ucseviye  # noqa: E402
 from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
 from dartrift.setup.two_stage import asama2_sahnesi_ucseviye  # noqa: E402
 from dartrift.validation.h_policy import (  # noqa: E402
-    KUP_SALINIMI, KUP_TARAMA_KAPSAMI, SUPPORT_OVER_H, dart_salinim_ozeti,
-    judge_dart_salinimi, neighbour_count)
-
-from faz44_dart_yakinsama import SAHNE  # noqa: E402
-from faz48_iki_asama import T1_OLCULEN, _cozucu, _kos, _mat  # noqa: E402
+    KUP_SALINIMI,
+    KUP_TARAMA_KAPSAMI,
+    SUPPORT_OVER_H,
+    dart_salinim_ozeti,
+    judge_dart_salinimi,
+    neighbour_count,
+)
 
 
 def _ic_maske(x, h, R: float, ic_frac: float) -> np.ndarray:
@@ -194,9 +199,9 @@ def main() -> int:
           flush=True)
     print(f"Taramanin KAPSADIGI aralik: {KUP_TARAMA_KAPSAMI[0]:.1f} -> "
           f"{KUP_TARAMA_KAPSAMI[1]:.1f}", flush=True)
-    print(f"\nOLCUT (veriye bakilmadan): DART araligi kapsamanin ICINDE "
-          f"kalirsa kanit gecerli;\n         DISINA cikarsa ADR-0042 "
-          f"yeniden acilir.", flush=True)
+    print("\nOLCUT (veriye bakilmadan): DART araligi kapsamanin ICINDE "
+          "kalirsa kanit gecerli;\n         DISINA cikarsa ADR-0042 "
+          "yeniden acilir.", flush=True)
 
     t0 = time.perf_counter()
     kaba = build_scene(spacing=7.0, device="cpu", **SAHNE)

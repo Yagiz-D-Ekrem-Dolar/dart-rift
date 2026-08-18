@@ -9,9 +9,12 @@ bir betik olarak değil, her kapı koşusunda tekrarlanan bir test olarak.
 
 | # | sınav | hangi kusuru yakalar | kaynağı |
 |---|---|---|---|
-| 1 | skaler `h` ≡ tekdüze dizi `h`, **bit düzeyinde** | `h_ij = ½(h+h)` yuvarlamayı değiştiriyorsa | ilk K21 düzeltmem `1e-14` fark üretmişti |
-| 2 | değişken `h`'de `Σ mᵢaᵢ = 0` **tam** | bir çift büyüklüğü hâlâ **asimetrik** `h` kullanıyorsa | CPU referansında yakalandı: net/ölçek **4,0e5** |
-| 3 | değişken `h`'de **CPU = GPU** | portun sessiz sapması | K1'in kök nedeni tam bu boşluğun **yokluğuydu** |
+| 1 | skaler `h` ≡ tekdüze dizi `h`, **bit düzeyinde** | `h_ij = ½(h+h)`
+  yuvarlamayı değiştiriyorsa | ilk K21 düzeltmem `1e-14` fark üretmişti |
+| 2 | değişken `h`'de `Σ mᵢaᵢ = 0` **tam** | bir çift büyüklüğü hâlâ
+  **asimetrik** `h` kullanıyorsa | CPU'da yakalandı: net/ölçek **4,0e5** |
+| 3 | değişken `h`'de **CPU = GPU** | portun sessiz sapması | K1'in kök
+  nedeni tam bu boşluğun **yokluğuydu** |
 
 Ölçülen değerler KAYIT-034'te.
 """
@@ -20,9 +23,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.cpu_reference.materials import (DamageParams, GravityParams,
-                                              MaterialParams, PorosityParams,
-                                              StrengthParams)
+from dartrift.cpu_reference.materials import (
+    DamageParams,
+    GravityParams,
+    MaterialParams,
+    PorosityParams,
+    StrengthParams,
+)
 from dartrift.cpu_reference.solid_ref import SolidState, evaluate_solid
 from dartrift.cpu_reference.sph_ref import RefParams
 

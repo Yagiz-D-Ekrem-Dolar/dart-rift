@@ -48,13 +48,10 @@ for _akis in (sys.stdout, sys.stderr):
         pass
 
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
-from dartrift.observables.momentum_transfer import (  # noqa: E402
-    escape_speed, momentum_transfer)
-from dartrift.setup.refine import (refine_scene_local,  # noqa: E402
-                                   refine_scene_ucseviye)
+from dartrift.observables.momentum_transfer import escape_speed, momentum_transfer  # noqa: E402
+from dartrift.setup.refine import refine_scene_local, refine_scene_ucseviye  # noqa: E402
 from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
-from dartrift.setup.two_stage import (  # noqa: E402
-    asama2_sahnesi_ucseviye)
+from dartrift.setup.two_stage import asama2_sahnesi_ucseviye  # noqa: E402
 
 sys.path.insert(0, str(REPO / "scripts"))
 from faz44_dart_yakinsama import SAHNE, _malzeme  # noqa: E402
@@ -241,8 +238,7 @@ def _iz_ornegi(st, *, hedef, R, v_esc, ehat, p_imp, x0) -> dict:
     """
     from dartrift.inference.forward import KRATER_AYARLARI_DART
     from dartrift.observables.crater_shape import crater_profile
-    from dartrift.observables.momentum_transfer import (balistik_beta,
-                                                        kacis_bekleyenler)
+    from dartrift.observables.momentum_transfer import balistik_beta, kacis_bekleyenler
     x, v, m = st["x"], st["v"], st["m"]
     # Olcut BURADA YAZILMIYOR: tek kaynak `balistik_beta`. Onceden bu
     # satirlar `faz410_firlatma_suresi.py`de de vardi ve iki kopya
@@ -373,7 +369,7 @@ def main() -> int:
     # ------------------------------------------------------ KABALASTIR
     sahne = asama2_sahnesi_ucseviye(a1, st1)
     d = sahne.diagnostics
-    print(f"\nAKTARIM (Lagrange'ci, UC SEVIYELI):", flush=True)
+    print("\nAKTARIM (Lagrange'ci, UC SEVIYELI):", flush=True)
     print(f"  {d['n_asama1_ince']} cekirdek -> {d['n_aktarilan']} parcacik",
           flush=True)
     print(f"  birebir kopyalanan = {d['n_kopyalanan']}   "
@@ -398,13 +394,29 @@ def main() -> int:
                    _alpha0_denetle(sahne.alpha0, a.gozeneksiz), sahne.Y0, a.device,
                    mat=_mat(a.gozeneksiz, a.yercekimli))
     izler = []
-    x0_h = np.array(a1.x, dtype=np.float64, copy=True)   # CARPMA ONCESI (R4)
     # Aktarimdan sonra parcacik kimlikleri degisti; krater referansi
     # ASAMA-1'in baslangic konumlarindan ALINAMAZ. Bu yuzden aktarim
     # SONRASI konumlar referans aliniyor ve bunun ne oldugu yaziliyor:
     # "t1'den t_end'e olan degisim", mutlak krater DEGIL.
     x_ref2 = np.array(sahne.x, dtype=np.float64, copy=True)
-    hedef2 = ~np.asarray(sahne.is_impactor, dtype=bool)
+    # HEDEF MASKESI artik MERMI KESRINDEN kuruluyor.
+    #
+    # Eskiden `~sahne.is_impactor` yaziliyordu ve aktarimdan sonra
+    # `is_impactor` HICBIR parcacikta korunmadigi icin maske her yerde
+    # `True` oluyordu. Sonuc: kacan 28 parcacik "hedef ejektasi"
+    # etiketleniyordu, oysa toplam kutleleri 579,40 kg -- merminin
+    # kendisi -- ve parcacik kutleleri 0,72-55,75 kg iken hedef
+    # parcaciklarinin medyani 3,73e5 kg (rapor A17).
+    #
+    # `mermi_kesri` kutle-agirlikli tasindigi icin karisim siteleri de
+    # dogru: kesri 0,5'in altinda olan parcacik KUTLECE cogunlukla
+    # hedeftir.
+    f_mermi2 = np.asarray(sahne.mermi_kesri, dtype=np.float64)
+    hedef2 = f_mermi2 < 0.5
+    print(f"  mermi kesri: kutle {float((sahne.m * f_mermi2).sum()):.4f} kg, "
+          f"kesri>0,5 olan {int((~hedef2).sum())} parcacik, "
+          f"tasima hatasi {d.get('mermi_kutle_hatasi', float('nan')):.3e}",
+          flush=True)
     v_esc = escape_speed(m_hedef, R)
     ehat = np.asarray(p_imp) / float(np.linalg.norm(p_imp))
     P = float(np.linalg.norm(p_imp))
@@ -438,8 +450,8 @@ def main() -> int:
     durum_yolu = Path(a.out).with_suffix(".son_durum.npz")
     np.savez_compressed(
         durum_yolu, x=st_son["x"], v=st_son["v"], m=st_son["m"],
-        x_referans=x_ref2, hedef=hedef2, R=R, v_esc=v_esc, ehat=ehat,
-        p_imp=P, t=t2)
+        x_referans=x_ref2, hedef=hedef2, mermi_kesri=f_mermi2,
+        R=R, v_esc=v_esc, ehat=ehat, p_imp=P, t=t2)
     print(f"\nson durum yazildi: {durum_yolu}", flush=True)
 
     print(f"\nSONUC ({time.perf_counter() - t0:.1f} s duvar)", flush=True)

@@ -57,8 +57,7 @@ for _akis in (sys.stdout, sys.stderr):
         pass
 
 from dartrift.inference.design import DART_UZAYI_S3  # noqa: E402
-from dartrift.inference.forward import (GOZLENEBILIRLER,  # noqa: E402
-                                        ileri_kosu_ikiasama)
+from dartrift.inference.forward import GOZLENEBILIRLER, ileri_kosu_ikiasama  # noqa: E402
 
 sys.path.insert(0, str(REPO / "scripts"))
 from faz44_dart_yakinsama import SAHNE, _malzeme  # noqa: E402
@@ -104,7 +103,7 @@ def main() -> int:
     print("=" * 78, flush=True)
     for i, th in enumerate(X):
         print(f"  {i}: " + "  ".join(f"{ad}={v:.4g}"
-                                     for ad, v in zip(uzay.names, th)),
+                                     for ad, v in zip(uzay.names, th, strict=False)),
               flush=True)
 
     t0 = time.perf_counter()

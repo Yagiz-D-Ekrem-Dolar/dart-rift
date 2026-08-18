@@ -41,8 +41,6 @@ import json
 import sys
 from pathlib import Path
 
-import numpy as np
-
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 for _akis in (sys.stdout, sys.stderr):
@@ -59,8 +57,8 @@ DAGILMA_ORANI = 0.50
 
 
 def _oku(yol: str) -> list[dict]:
-    sat = [json.loads(l) for l in Path(yol).read_text(
-        encoding="utf-8").splitlines() if l.strip()]
+    sat = [json.loads(satir) for satir in Path(yol).read_text(
+        encoding="utf-8").splitlines() if satir.strip()]
     if not sat:
         raise SystemExit(f"{yol}: bos iz — kayit bulunamadi")
     if "n_bekleyen" not in sat[-1]:

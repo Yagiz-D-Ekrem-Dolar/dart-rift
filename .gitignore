@@ -33,6 +33,9 @@ slurm-*.out
 .DS_Store
 Thumbs.db
 
+# Windows Explorer klasor-ikonu metadata'si. Depoda commitlenmisti
+# (denetim maddesi 14) ve .gitignore engellemedigi icin geri gelebilirdi.
+desktop.ini
 # PDS veri urunleri — 100+ MB, DEPOYA GIRMEZ.
 # Depoya giren sey koken kaydidir: data_manifest/*.json (urun kimligi,
 # SHA-256, arsivin resmi MD5'i). Veri su komutla cekilir:

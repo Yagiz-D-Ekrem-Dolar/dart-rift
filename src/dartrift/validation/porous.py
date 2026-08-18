@@ -15,7 +15,9 @@ from ..cpu_reference.materials import (
     MaterialParams,
     PorosityParams,
     StrengthParams,
-    porosity_update, TillotsonParams)
+    TillotsonParams,
+    porosity_update,
+)
 from ..cpu_reference.solid_ref import SolidState, run_solid
 from ..cpu_reference.sph_ref import RefParams
 

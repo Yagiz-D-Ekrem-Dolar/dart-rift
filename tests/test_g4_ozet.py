@@ -11,7 +11,6 @@ import pytest
 from dartrift.validation.g4_gate import degerlendir
 from dartrift.validation.g4_ozet import faz44_ozet, faz45_ozet
 
-
 #: Kollar AYNI `t_sim`'e ulaşmış olmalı; yoksa B1/B3 yakınsama ölçmez.
 T_ESIT = 0.2
 
@@ -181,8 +180,9 @@ def test_ciktilar_JSON_serilestirilebilir() -> None:
 
 
 def test_durulma_tanisi_JSON_serilestirilebilir() -> None:
-    from dartrift.validation.settling_time import settling_time
     import json
+
+    from dartrift.validation.settling_time import settling_time
 
     t = np.linspace(0.0, 1.0, 60)
     for b in (0.5 + 1e-5 * np.sin(30.0 * t), 0.5 + 0.4 * t):

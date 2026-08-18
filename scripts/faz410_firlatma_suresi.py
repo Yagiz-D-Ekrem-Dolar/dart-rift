@@ -53,7 +53,9 @@ for _akis in (sys.stdout, sys.stderr):
 
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
 from dartrift.observables.momentum_transfer import (  # noqa: E402
-    balistik_beta, escape_speed)  # noqa: E402
+    balistik_beta,  # noqa: E402
+    escape_speed,
+)
 from dartrift.setup.refine import refine_scene_local  # noqa: E402
 from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
 from dartrift.validation.settling_time import settling_time  # noqa: E402
@@ -86,7 +88,7 @@ def main() -> int:
     p_imp = float(np.linalg.norm(rs.impactor_momentum))
     ehat = np.asarray(rs.impactor_momentum) / p_imp
     print(f"\nN = {rs.n}, R = {R:.1f} m, v_kacis = {v_esc:.5f} m/s", flush=True)
-    print(f"olcut: r > R  VE  v_r > v_kacis  (2R BEKLENMIYOR)", flush=True)
+    print("olcut: r > R  VE  v_r > v_kacis  (2R BEKLENMIYOR)", flush=True)
 
     iz_yolu = Path(a.out).with_suffix(".izler.jsonl")
     iz_yolu.parent.mkdir(parents=True, exist_ok=True)
@@ -139,7 +141,7 @@ def main() -> int:
           f"{'' if dd['durulmus'] else '  -- ' + dd.get('neden', '')}",
           flush=True)
     print(f"  FIRLATMA SURESI     = {dd['t_durulma']:.6e} s", flush=True)
-    print(f"  (FAZ 4.5 beta_bound ile 4.056e-02 s demisti — A12)", flush=True)
+    print("  (FAZ 4.5 beta_bound ile 4.056e-02 s demisti — A12)", flush=True)
 
     Path(a.out).write_text(json.dumps(
         {"N": rs.n, "R": R, "v_kacis": v_esc, "t_sim": t,

@@ -38,16 +38,14 @@ for _akis in (sys.stdout, sys.stderr):
         pass
 
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
-from dartrift.observables.momentum_transfer import (  # noqa: E402
-    escape_speed, momentum_transfer)
+from dartrift.observables.momentum_transfer import escape_speed, momentum_transfer  # noqa: E402
 from dartrift.setup.refine import refine_scene  # noqa: E402
 from dartrift.setup.scene import build_scene  # noqa: E402
 from dartrift.validation.g4_ozet import faz45_ozet  # noqa: E402
 from dartrift.validation.settling_time import settling_time  # noqa: E402
 
 sys.path.insert(0, str(REPO / "scripts"))
-from faz44_dart_yakinsama import (  # noqa: E402
-    SAHNE, _malzeme, _mermi_yaricapi)
+from faz44_dart_yakinsama import SAHNE, _malzeme, _mermi_yaricapi  # noqa: E402
 
 
 def main() -> int:

@@ -9,8 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.validation.boulder_boundary import (F_BLOK_SAPMA_ESIGI,
-                                                  blok_sapmasi, judge)
+from dartrift.validation.boulder_boundary import F_BLOK_SAPMA_ESIGI, blok_sapmasi, judge
 
 
 def _kol(f_kes, f_kul):
@@ -72,7 +71,8 @@ def test_sapma_dogru_hesaplaniyor():
 
 def test_kusursuz_atamada_sapma_sifir():
     m = np.ones(100)
-    b = np.zeros(100, bool); b[:30] = True
+    b = np.zeros(100, bool)
+    b[:30] = True
     d = blok_sapmasi(m, b, b)
     assert d["durum"] == "olculdu"               # blok VAR
     assert d["f_blok_sapma"] == 0.0

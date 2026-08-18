@@ -16,22 +16,47 @@ Buradan `beta(t)` GELECEGE dogru, ek simulasyon KOSMADAN cikarilir.
 > ucus varsayimi altinda bir kestirimdir. Ama "hic gecmez mi, yoksa
 > gec mi gecer" sorusunu KESIN ayirir.
 """
-import sys, numpy as np
-sys.path.insert(0, "src"); sys.path.insert(0, "scripts")
-from dartrift.cpu_reference.sph_ref import RefParams
-from dartrift.observables.momentum_transfer import escape_speed
-from dartrift.setup.refine import refine_scene_local
-from dartrift.setup.scene import _build_mesh, build_scene
-from faz44_dart_yakinsama import SAHNE, _malzeme
-from dartrift.warp_core.solver_solid import WarpSolid3D
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import numpy as np
+
+# REPO dosyanin KENDISINDEN turetiliyor. Once `sys.path.insert(0, "src")`
+# yaziliydi -- goreli yol, yani betik yalnizca depo kokunden cagrildiginda
+# calisiyordu ve SLURM isinde sessizce ImportError veriyordu.
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "src"))
+sys.path.insert(0, str(REPO / "scripts"))
+
+# UTF-8 KORUMASI: `faz47_g4_kapi.py` bir kez `UnicodeEncodeError` ile
+# dustu ve urettigi raporu yok etti. SLURM isi `PYTHONIOENCODING=utf-8`
+# veriyor ama betik elle de kosulabiliyor.
+for _akis in (sys.stdout, sys.stderr):
+    try:
+        _akis.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
+from faz44_dart_yakinsama import SAHNE, _malzeme  # noqa: E402
+
+from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
+from dartrift.observables.momentum_transfer import escape_speed  # noqa: E402
+from dartrift.setup.refine import refine_scene_local  # noqa: E402
+from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
+from dartrift.warp_core.solver_solid import WarpSolid3D  # noqa: E402
 
 ADIM = int(sys.argv[1]) if len(sys.argv) > 1 else 1500
 kaba = build_scene(spacing=7.0, device="cpu", **SAHNE)
 mesh = _build_mesh("icosphere", radius=SAHNE["radius"], subdiv=4)
 rs = refine_scene_local(kaba, mesh, r_ince=25.0, lam=2.0)
-imp = np.asarray(rs.is_impactor, bool); hedef = ~imp
-R = float(rs.target_radius); M = float(rs.target_mass)
-v_esc = escape_speed(M, R); r_ctrl = 2.0 * R
+imp = np.asarray(rs.is_impactor, bool)
+hedef = ~imp
+R = float(rs.target_radius)
+M = float(rs.target_mass)
+v_esc = escape_speed(M, R)
+r_ctrl = 2.0 * R
 p_imp = float(np.linalg.norm(rs.impactor_momentum))
 ehat = np.asarray(rs.impactor_momentum) / p_imp
 
@@ -41,7 +66,9 @@ sol = WarpSolid3D(np.ascontiguousarray(rs.x), np.ascontiguousarray(rs.v),
     Y0=np.ascontiguousarray(rs.Y0), device="cuda:0", check_every=10**9)
 t = 0.0
 for _ in range(ADIM):
-    dt = sol.compute_dt(); sol.step(dt); t += dt
+    dt = sol.compute_dt()
+    sol.step(dt)
+    t += dt
 st = sol.state_numpy()
 x, v, m = st["x"], st["v"], st["m"]
 print(f"t = {t:.5e} s,  v_kacis = {v_esc:.5f} m/s,  r_ctrl = {r_ctrl:.0f} m\n")
@@ -68,14 +95,14 @@ t_gec = np.full(len(x), np.inf)
 kok = (-b_[gecer] + np.sqrt(disk[gecer])) / (2*a_[gecer])
 t_gec[gecer] = np.where(kok > 0, kok, np.inf)
 onemli = hedef & np.isfinite(t_gec) & (vr > v_esc)
-print(f"\n  BALISTIK gecis zamani (hedef, v_r > v_kacis):")
+print("\n  BALISTIK gecis zamani (hedef, v_r > v_kacis):")
 if onemli.any():
     tg = t_gec[onemli]
     for q in (10, 25, 50, 75, 90):
         print(f"    p{q:<3d} = {np.percentile(tg, q):10.3f} s")
     print(f"    min  = {tg.min():10.3f} s")
     # beta(t) gelecege dogru
-    print(f"\n  beta(t) KESTIRIMI (serbest ucus varsayimi):")
+    print("\n  beta(t) KESTIRIMI (serbest ucus varsayimi):")
     p_ej0 = np.sum(m[imp & (r > r_ctrl)][:, None] * v[imp & (r > r_ctrl)], axis=0)
     for T in (0.2, 1.0, 5.0, 10.0, 30.0, 100.0, np.inf):
         sec = (t_gec <= T) | (r > r_ctrl)

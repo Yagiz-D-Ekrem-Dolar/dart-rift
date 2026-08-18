@@ -50,8 +50,8 @@ def main() -> int:
                     help="aktarilan cekirdek parcacik sayisi (esik)")
     a = ap.parse_args()
 
-    sat = [json.loads(l) for l in Path(a.iz).read_text(
-        encoding="utf-8").splitlines() if l.strip()]
+    sat = [json.loads(satir) for satir in Path(a.iz).read_text(
+        encoding="utf-8").splitlines() if satir.strip()]
     if len(sat) < 2:
         print(f"yalnizca {len(sat)} ornek — yargi verilemez. "
               f"kayit bulunamadi.", flush=True)
@@ -80,11 +80,11 @@ def main() -> int:
               f"kirintisi", flush=True)
 
     # --- 1b) BEKLEYEN MADDE VAR MI  (yeni izlerde; eskilerde yok)
-    print(f"\n[1b] ICERIDE DISARI GIDEN MADDE (kacis_bekleyenler)", flush=True)
+    print("\n[1b] ICERIDE DISARI GIDEN MADDE (kacis_bekleyenler)", flush=True)
     if "n_bekleyen" not in sat[-1]:
-        print(f"    bu iz bu tanidan ONCE yazildi — kayit bulunamadi.",
+        print("    bu iz bu tanidan ONCE yazildi — kayit bulunamadi.",
               flush=True)
-        print(f"    (yeni kosular `n_bekleyen` / `t_gecis_medyan` tasiyor)",
+        print("    (yeni kosular `n_bekleyen` / `t_gecis_medyan` tasiyor)",
               flush=True)
     else:
         nb = np.array([z["n_bekleyen"] for z in sat])
@@ -92,9 +92,9 @@ def main() -> int:
         print(f"    n_bekleyen: ilk {nb[0]}  son {nb[-1]}  max {nb.max()}",
               flush=True)
         if nb[-1] == 0:
-            print(f"    BEKLEYEN YOK -> daha uzun kosmak EJEKTA GETIRMEZ.",
+            print("    BEKLEYEN YOK -> daha uzun kosmak EJEKTA GETIRMEZ.",
                   flush=True)
-            print(f"    Kazi olmuyor; sorun sure degil, TASARIM.", flush=True)
+            print("    Kazi olmuyor; sorun sure degil, TASARIM.", flush=True)
         else:
             print(f"    t_gecis medyan (son) = {tg[-1]:.3f} s "
                   f"— serbest ucus kestirimi, KESIN DEGIL", flush=True)
@@ -103,7 +103,7 @@ def main() -> int:
 
     # --- 2) BETA DURULDU MU
     d = settling_time(t, b, adim=adim)
-    print(f"\n[2] beta_bal DURULMASI", flush=True)
+    print("\n[2] beta_bal DURULMASI", flush=True)
     print(f"    ilk / son  = {b[0]:.6f} / {b[-1]:.6f}", flush=True)
     print(f"    yayilim    = {(b.max() - b.min()) / max(abs(b[-1]), 1e-300):.3e}",
           flush=True)
@@ -111,23 +111,23 @@ def main() -> int:
     print(f"    DURULDU MU = {d['durulmus']}"
           f"{'' if d['durulmus'] else '  -- ' + d.get('neden', '')}", flush=True)
     if d.get("sabit"):
-        print(f"    -> SABIT seri: 'durulma zamani' bir sey OLCMUYOR "
-              f"(rapor A9/A12)", flush=True)
+        print("    -> SABIT seri: 'durulma zamani' bir sey OLCMUYOR "
+              "(rapor A9/A12)", flush=True)
 
     # --- 3) KRATER
-    print(f"\n[3] KRATER (VARSAYILAN kutulama — D < 20 m goremez)", flush=True)
+    print("\n[3] KRATER (VARSAYILAN kutulama — D < 20 m goremez)", flush=True)
     ok = np.isfinite(dz)
     if not ok.any():
-        print(f"    derinlik hic olculemedi", flush=True)
+        print("    derinlik hic olculemedi", flush=True)
     else:
         print(f"    derinlik: min {np.nanmin(dz):.4f}  max {np.nanmax(dz):.4f} m",
               flush=True)
         print(f"    gurultu tabani (olculdu) = {GURULTU_TABANI_M} m", flush=True)
         if np.nanmax(dz) > GURULTU_TABANI_M:
-            print(f"    TABANIN USTUNDE — krater olabilir", flush=True)
+            print("    TABANIN USTUNDE — krater olabilir", flush=True)
         else:
-            print(f"    TABANIN ALTINDA — buyuk krater YOK "
-                  f"(kucugu bu ayarla zaten gorunmez)", flush=True)
+            print("    TABANIN ALTINDA — buyuk krater YOK "
+                  "(kucugu bu ayarla zaten gorunmez)", flush=True)
 
     # --- OZET
     print(f"\n{'=' * 74}", flush=True)

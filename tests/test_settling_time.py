@@ -129,7 +129,8 @@ def test_yarim_pencere_sinavi_BAGIMSIZ_DEGIL() -> None:
     for ad, b in sekiller.items():
         d = is_settled(t, b)
         yalniz = d["yarim_pencere_farki"] >= 0.02 > d["egim_kaymasi"]
-        assert not yalniz, f"{ad}: yarim-pencere TEK BASINA yakaladi — "                            f"modul basligindaki tablo guncellenmeli"
+        assert not yalniz, (f"{ad}: yarim-pencere TEK BASINA yakaladi — "
+                            f"modul basligindaki tablo guncellenmeli")
         assert d["egim_kaymasi"] >= d["yarim_pencere_farki"] - 1e-12, ad
 
 

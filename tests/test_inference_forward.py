@@ -9,10 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.inference.forward import (GOZLENEBILIRLER,
-                                        gozlenebilirleri_cikar,
-                                        sahne_parametreleri)
-
+from dartrift.inference.forward import GOZLENEBILIRLER, gozlenebilirleri_cikar, sahne_parametreleri
 
 # ------------------------------------------------- parametre -> sahne
 
@@ -214,8 +211,9 @@ def test_KRATER_AYARLARI_DART_eksen_kipinde():
 
 def test_krater_ayarlari_VARSAYILAN_davranisi_bozmuyor():
     """`krater_ayarlari=None` eski yolu **aynen** korumali."""
-    from dartrift.inference.forward import gozlenebilirleri_cikar
     import inspect
+
+    from dartrift.inference.forward import gozlenebilirleri_cikar
     p = inspect.signature(gozlenebilirleri_cikar).parameters
     assert p["krater_ayarlari"].default is None
 
@@ -313,6 +311,7 @@ def test_iki_ileri_kosu_yolu_krateri_AYNI_olcuyor():
     değil **ayar farkı** olur — ve karşılaştırma sessizce anlamsızlaşır.
     """
     import inspect
+
     from dartrift.inference import forward as F
 
     a = inspect.signature(F.ileri_kosu).parameters["krater_ayarlari"].default

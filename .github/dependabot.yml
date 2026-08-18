@@ -1,0 +1,28 @@
+# Denetim maddesi 18.
+#
+# Ozellikle onemli: CI arac zinciri artik `constraints-ci.txt` ile
+# SABIT. Sabit surum, guncellemenin GORUNUR olmasi demektir -- ama
+# ancak biri onu yukseltirse. Dependabot o yukseltmeyi bir PR olarak
+# getirir ve lint/test farki orada olculur, sessizce degil.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "ci"
+    # Action'lar SHA'ya sabitli; Dependabot SHA'yi gunceller ve yorumdaki
+    # surum etiketini de yeniler.
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "deps"
+    # NumPy 2.0 ADR-0005 ile YASAK (hedef ortam 1.26.4 sagliyor).
+    # Otomatik yukseltme gelirse ADR degismeden birlestirilmemeli.
+    ignore:
+      - dependency-name: "numpy"
+        versions: [">=2.0"]

@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dartrift.setup.coarsen import coarsen_to_sites
+from dartrift.setup.coarsen import coarsen_to_sites, sites_from_cloud
 
 RNG = np.random.default_rng(20260808)
 
@@ -355,3 +355,69 @@ def test_komsu_sagligi_gecersiz(kw, mesaj):
     g.update(kw)
     with pytest.raises(ValueError, match=mesaj):
         komsu_sagligi(**g)
+
+
+# ---------------------------------------------------------------- mermi_kesri
+# Kimlik kabalastirmada KAYBOLUYORDU: `hedef = ~is_impactor` her yerde
+# True olunca kacan 28 parcacik "hedef ejektasi" etiketleniyordu, oysa
+# toplam kutleleri 579,40 kg -- merminin kendisi (rapor A17).
+
+def test_mermi_kesri_toplam_kutleyi_TAM_koruyor() -> None:
+    """Kesir pasif skaler: `Σ m_k f_k = Σ m_i f_i` **bit düzeyinde**."""
+    rng = np.random.default_rng(11)
+    n = 400
+    x = rng.uniform(-3.0, 3.0, (n, 3))
+    v = rng.normal(0.0, 50.0, (n, 3))
+    m = rng.uniform(1.0, 10.0, n)
+    e = rng.uniform(0.0, 1e5, n)
+    f = (rng.random(n) < 0.3).astype(np.float64)
+    siteler = sites_from_cloud(x, 1.0)
+    out = coarsen_to_sites(x, v, m, e, siteler, mermi_kesri=f)
+
+    assert out["mermi_kutle_hatasi"] < 1e-14, out["mermi_kutle_hatasi"]
+    assert float((out["m"] * out["mermi_kesri"]).sum()) == pytest.approx(
+        float((m * f).sum()), rel=1e-14)
+
+
+def test_mermi_kesri_karisimi_ORTALIYOR_bayrak_degil() -> None:
+    """Aynı siteye düşen mermi + hedef **kesir** vermeli, bayrak değil.
+
+    `is_boulder` çoğunluk bayrağı kullanıyor; mermi için o yanlış olurdu
+    çünkü momentum ayrıştırması kesir ister.
+    """
+    # Iki parcacik ayni hucrede: biri tamamen mermi (m=1), biri hedef (m=3)
+    x = np.array([[0.1, 0.0, 0.0], [0.2, 0.0, 0.0]])
+    v = np.zeros((2, 3))
+    m = np.array([1.0, 3.0])
+    e = np.zeros(2)
+    f = np.array([1.0, 0.0])
+    out = coarsen_to_sites(x, v, m, e, np.array([[0.15, 0.0, 0.0]]),
+                           mermi_kesri=f)
+    assert len(out["m"]) == 1
+    # 1 kg mermi / 4 kg toplam = 0,25
+    assert float(out["mermi_kesri"][0]) == pytest.approx(0.25, rel=1e-14)
+
+
+def test_mermi_kesri_aralik_disini_reddediyor() -> None:
+    x = np.zeros((2, 3))
+    v = np.zeros((2, 3))
+    m = np.ones(2)
+    e = np.zeros(2)
+    s = np.array([[0.0, 0.0, 0.0]])
+    for kotu in (np.array([-0.1, 0.5]), np.array([0.5, 1.2])):
+        with pytest.raises(ValueError, match=r"\[0,1\]"):
+            coarsen_to_sites(x, v, m, e, s, mermi_kesri=kotu)
+    with pytest.raises(ValueError, match="uzunlugu"):
+        coarsen_to_sites(x, v, m, e, s, mermi_kesri=np.ones(5))
+
+
+def test_mermi_kesri_saf_kumede_bir_kaliyor() -> None:
+    """Sadece mermi olan bir sitede kesir tam `1` olmalı."""
+    rng = np.random.default_rng(3)
+    x = rng.uniform(-0.4, 0.4, (20, 3))
+    v = rng.normal(0.0, 10.0, (20, 3))
+    m = rng.uniform(1.0, 2.0, 20)
+    out = coarsen_to_sites(x, v, m, np.zeros(20),
+                           np.array([[0.0, 0.0, 0.0]]),
+                           mermi_kesri=np.ones(20))
+    assert np.allclose(out["mermi_kesri"], 1.0, atol=1e-15)

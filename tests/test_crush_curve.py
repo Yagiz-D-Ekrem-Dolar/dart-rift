@@ -112,8 +112,10 @@ class TestPerParticleCrushCeiling:
     def test_ortuk_cozum_tavani_koruyor(self):
         """`solve_alpha_implicit` gerilmesiz baslangici BOZMAMALI."""
         from dartrift.cpu_reference.materials import (
-            MaterialParams, StrengthParams)
-        from dartrift.cpu_reference.materials import solve_alpha_implicit
+            MaterialParams,
+            StrengthParams,
+            solve_alpha_implicit,
+        )
 
         pp = self._pp(1.6)
         mat = MaterialParams(eos="tillotson", porosity=pp,
@@ -132,8 +134,10 @@ class TestPerParticleCrushCeiling:
     def test_gercek_basma_hala_eziyor(self):
         """Bosluk kontrolu: tavan parcacik basina olunca crush ISLEVI kaybolmamali."""
         from dartrift.cpu_reference.materials import (
-            MaterialParams, StrengthParams)
-        from dartrift.cpu_reference.materials import solve_alpha_implicit
+            MaterialParams,
+            StrengthParams,
+            solve_alpha_implicit,
+        )
 
         pp = self._pp(1.6)
         mat = MaterialParams(eos="tillotson", porosity=pp,
