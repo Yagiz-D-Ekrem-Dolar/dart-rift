@@ -39,10 +39,19 @@ on:
     - cron: "0 2 * * *"   # gecelik determinizm regresyonu (UTC)
 
 # Ayni dal uzerinde eski kosuyu iptal et (madde 30). `main` HARIC:
-# oradaki her commit'in kendi kaydi kalmali.
+# oradaki her commit'in kendi kaydi kalmali -- kanit deposunda bir
+# commit'in CI sonucu "iptal edildi" olarak kalamaz.
+#
+# `cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}` YAZILMISTI
+# ve main'i KORUMADI: kosu #433 bir sonraki main push'unda iptal oldu.
+# Ifadeye guvenmek yerine GRUP AYRILIYOR -- main'de grup SHA icerdigi
+# icin iki main kosusu ayni gruba hic dusmez, dolayisiyla iptal
+# mekanizmasi onlara ulasamaz. Dallarda grup ortak, eski kosu iptal olur.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  group: >-
+    ci-${{ github.ref }}-${{
+      github.ref == 'refs/heads/main' && github.sha || 'ortak' }}
+  cancel-in-progress: true
 
 env:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
