@@ -149,8 +149,59 @@ kalacak.
 >
 > **Ama bu, ADR-0041/0042'nin kendi iddialarını doğrulamaz.** O ADR'ler
 > `h` ilkesi ve `Ω` birimi hakkında; korunumun iyi olması onları
-> sınamaz. A3'ün bu yarısı **açık kalıyor** ve kapatmak için o
-> sınavların DART geometrisinde tekrarı gerekir.
+> sınamaz.
+>
+> ### Bu yarısı da **KAPANDI** (2026-08-17, iş `1506785`)
+>
+> ADR-0042 kendi içine şu yükümlülüğü yazmıştı ve yerine
+> getirilmemişti: *"Ölçüm FAZ 4.4'te DART geometrisinde
+> **tekrarlanacaktır**."*
+>
+> Ölçüldü (`scripts/faz49_komsu_salinimi_dart.py`, iki aşamada `101`
+> örnek):
+>
+> | | küp (KAYIT-035) | **DART** |
+> |---|---|---|
+> | `N_komşu` aralığı | `268,2 – 551,5` | **`379,1 – 403,5`** |
+> | salınım | `2,06×` | **`1,064×`** |
+> | taramanın kapsadığı aralık | `56,1 – 650,5` | — |
+>
+> DART salınımı küp taramasının kapsadığı aralığın **içinde** ve küpün
+> kendi salınımından **daha dar**. Yargı `kanit_gecerli`: ADR-0042'nin
+> kanıtı çalışma noktasını kapsıyor, **yeniden açılmasına gerek yok**.
+>
+> Ölçüt veriye bakılmadan yazıldı ve ADR'nin *kendi* kapsama mantığını
+> kullanıyor (`judge`'ın aralık koruması). ADR *"belirgin biçimde"*
+> eşiğini tanımsız bırakmıştı; keyfî bir çarpan uydurmak yerine
+> deponun başka yerde kullandığı ölçüt alındı ve bunun bir **yorum**
+> olduğu çıktının `yorum` alanında taşınıyor.
+>
+> #### İlk ölçüm **yanlıştı** ve düzeltildi
+>
+> İlk koşuda salınım `1,000×` çıktı — `101` örnek, `207 252` değer,
+> hepsi `379,1`. Sonuç değil **maske hatasıydı**: küpün `r ≤ 0,6R`
+> tarifi aynen kullanılmıştı, oysa
+>
+> | | küp (Sedov) | DART |
+> |---|---|---|
+> | enerji nerede | **merkez** | **yüzey** |
+> | `r ≤ 0,6R` neyi kapsar | şok bölgesini | **hiç şok görmeyen çekirdeği** |
+>
+> Maske parçacık başına destek ölçütüne çevrildi (`r_i + 2h_i ≤ R`):
+> ince bölgede `h` küçük olduğu için krater çevresi **dahil**, kaba
+> bölgede `h = 14 m` olduğu için yüzeyden uzak. İki test bu hatanın
+> geri gelmesini engelliyor.
+>
+> #### Çapraz kontrol
+>
+> Analitik `neighbour_count` tekdüze paketleme varsayıyor; fiilen
+> sayılan komşu `303` (başta) ve `266` (sonda), analitik `379,1` —
+> oran `1,25×` ve `1,43×`. Küp kanıtı da **aynı** formülle kurulduğu
+> için karşılaştırma eşdeğer.
+>
+> Kalan çekince `Ω`'nın kendisinde değil: `Ω ≡ 1` cebirsel
+> (`∂h/∂ρ = 0` çarpanı terimi kapatır), ölçüme tabi değil. Ölçülen
+> şey sabit `h`'nin **yeterliliğiydi** ve DART'ta küpten daha rahat.
 
 ### A5 — **G4-A1 düştü: mermi çözülmemiş** → **KAPANDI** (2026-08-09)
 
@@ -1481,6 +1532,81 @@ yerleştiriyor. Ölçüt önden yazıldı:
 |---|---|
 | `Y0 = 1 Pa`'da `\|p_eksen\|` temelin `1,5` katını geçerse veya `β > 2,0` | **mukavemet rejimi** sebeptir |
 | üç kolun üçü de temele bit düzeyinde yakınsa | `Y0` da değil |
+
+#### Üç ölçüt de koştu — **üçü de hipotezlerimin aleyhine**
+
+**1. Süre (iş `1506765`, `t_end = 600 s`, `22:50` duvar):**
+
+| | |
+|---|---|
+| `t_sim` | `600,000 s` (tam) |
+| `β` | **`1,411216`** |
+| `t = 0,2 s`'deki `β` | `1,411216` |
+| `n_ejekta` | `28` |
+| momentum kapanışı | `2,86e-12` |
+
+`3000` kat uzun koşu, `β`'yı **bit düzeyinde** değiştirmedi. Ölçüt
+`β < 1,8` idi → **süre sebep değil.**
+
+`2R`'ye varış kestirimim `~550 s`'ti ve tutmadı: madde yavaşlıyor.
+`t = 100 s`'de `r = 57,7 m`, `v_r = 0,193 m/s`; sabit hızla `600 s`'de
+`r ≈ 154 m` eder — `2R = 164 m`'nin **altında**, üstelik çınlama
+yavaşlatıyor.
+
+**2. Mukavemet rejimi (iş `1506779`):**
+
+| `Y0` (Pa) | `β` | `n_ejekta` |
+|---|---|---|
+| 1 | `1,411215` | 28 |
+| 10 | `1,411215` | 28 |
+| 100 | `1,411215` | 28 |
+
+Üçü de **bit düzeyinde aynı**. Ölçüt gereği: **`Y0` da değil.**
+Tesisat ayrıca doğrulandı — `Y0` dizileri gerçekten farklı
+(`1` / `100` / `3513`; blok `1e7` sabit), yani çözücüye ulaşıyor.
+
+**3. Yerçekimi (enerji ölçütü, `t = 100 s`):** `β_enerji` `1,7167`
+(yerçekimsiz) → `1,9731` (yerçekimli). Yön doğru ama `3,2225`'e uzak.
+
+#### Sonuç: A12 baştan haklıydı ve bu **üçüncü** doğrulaması
+
+Bütün bu elemeler tek bir şeye yakınsıyor ve o şey **zaten yazılıydı**:
+
+> [ADR-0028](adr/ADR-0028-uzun-kosu-kararliligi.md): *"kontrol yüzeyini
+> geçen malzeme, hedeften kopan ejekta değil, **merminin geri
+> sıçramasıdır**."*
+
+A12 bunu bir kez yeniden keşfettiğimi zaten kaydetmiş. Bu turda
+**üçüncü** kez aynı yere geldim. Fark: bu kez ölçtüm.
+
+`n_ejekta = 28` ve kaçan kütle `579,40 kg` **her koşuda**, `t_end`
+`0,2 → 600 s` (`3000×`), `Y0` `1 → 2,15e6 Pa` (`6` mertebe),
+yerçekimi açık/kapalı, gözenekli/katı fark etmeksizin. `579,4 kg`
+DART'ın kütlesidir.
+
+> **Hedef parametreleri `β`'yı değiştiremez, çünkü `β` hedefi
+> ölçmüyor.** Gözeneklilik (`+%7,5`) ve çözünürlük (`−%17`) etki
+> ediyor — ikisi de merminin ayrıklaştırmasını veya çarptığı yüzeyin
+> sertliğini değiştirdiği için.
+
+#### Yapılan: kimlik artık **taşınıyor**
+
+Kusur ölçülebilir değildi çünkü kabalaştırmadan sonra `is_impactor`
+hiçbir parçacıkta korunmuyordu ve `hedef = ~is_impactor` **her yerde
+`True`** oluyordu. Kaçan `28` parçacık *"hedef ejektası"* etiketiyle
+sayılıyordu.
+
+`coarsen_to_sites` artık `mermi_kesri` taşıyor — bayrak değil **kesir**,
+çünkü kabalaştırma mermi ve hedefi aynı siteye karıştırabiliyor. Kütle
+ağırlıklı taşındığı için toplam mermi kütlesi **tam** korunuyor
+(`Σ m_k f_k = Σ m_i f_i`, ölçülen hata `< 1e-14`).
+
+Böylece `β`'nın payı ilk kez **ayrıştırılabilir**: `p_eksen_mermi` ve
+`p_eksen_hedef` ayrı ayrı ölçülüyor
+(`scripts/a17_momentum_anatomisi.py`, `[3b]` bölümü).
+
+> Bu A17'yi **kapatmıyor**. Kapattığı şey şu: bundan sonra *"ejekta mı,
+> sekme mi"* sorusu tahminle değil **ölçümle** yanıtlanacak.
 
 #### Üçüncü aday: ejekta **parçacık kütlesiyle nicemli**
 
