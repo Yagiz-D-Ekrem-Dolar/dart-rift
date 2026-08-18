@@ -25,7 +25,7 @@
 
 ruff==0.16.3
 pytest==8.3.5
-pytest-cov==6.0.0
+pytest-cov==7.1.0
 coverage==7.6.10
 matplotlib==3.10.0
 numpy==1.26.4
