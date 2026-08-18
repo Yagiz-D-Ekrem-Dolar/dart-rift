@@ -10,6 +10,7 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    open-pull-requests-limit: 3
     commit-message:
       prefix: "ci"
     # Action'lar SHA'ya sabitli; Dependabot SHA'yi gunceller ve yorumdaki
@@ -19,6 +20,9 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    # Ilk kosuda 5 PR birden acti ve her biri (push + pull_request)
+    # iki kosu tetikledi. Sinir olmadan bakim yuku kuyruga tasiniyor.
+    open-pull-requests-limit: 3
     commit-message:
       prefix: "deps"
     # NumPy 2.0 ADR-0005 ile YASAK (hedef ortam 1.26.4 sagliyor).

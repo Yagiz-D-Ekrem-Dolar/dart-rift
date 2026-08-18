@@ -27,7 +27,13 @@
 name: ci
 
 on:
+  # `push` YALNIZCA main'de. Filtresiz birakinca her dal HEM push HEM
+  # pull_request ile tetikleniyor ve ayni commit iki kez kosuyordu --
+  # job sayisi job basina 6 oldugu icin bu, Dependabot'un actigi 5 PR
+  # ile birlikte kuyrugu doldurdu (60 job). Dal calismasi `pull_request`
+  # ile kapsaniyor.
   push:
+    branches: [main]
   pull_request:
   schedule:
     - cron: "0 2 * * *"   # gecelik determinizm regresyonu (UTC)
