@@ -296,6 +296,21 @@ gerçek bir çekirdek hatasını kaydeder.
 > **yeterliliğiydi**; DART geometrisinde `N_komşu` salınımı `1,064×` çıktı —
 > kanıtın kurulduğu küp aralığından (`2,06×`) **daha dar**.
 
+## Bilinen açık sorunlar
+
+Bu depo kendi sıkıntılarını [`docs/FAZ*-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md)
+altında izler; **motoru** engelleyen açıklar ayrıca
+[issue](https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/issues?q=is%3Aissue+is%3Aopen+label%3Amotor)
+olarak da duruyor ki dışarıdan görülebilsin.
+
+| | konu | durum |
+|---|---|---|
+| [#6](https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/issues/6) | `β` hedef ejektasını değil merminin sekmesini ölçüyor (A17/A12) | açık |
+| [#7](https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/issues/7) | Krater çapı gerçek ensemble'da gözlenemiyor (A11) | açık |
+
+> Kapanmış sıkıntılar **silinmiyor**, raporda gerekçesiyle duruyor —
+> deponun değeri nerede yanıldığının izlenebilir olmasında (`RULES.txt`).
+
 ## Kurulum ve test
 
 ```bash
