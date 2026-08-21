@@ -160,13 +160,36 @@ def _sahne_kolu(gozeneksiz: bool) -> dict:
     return {**SAHNE, "bulk_density": RHO0_KATI, "boulder_alpha0": 1.0}
 
 
-def _sahne_Y0(kw: dict, Y0: float | None) -> dict:
-    """`--Y0` verilirse matris mukavemetini ez."""
-    if Y0 is None:
-        return kw
-    if Y0 <= 0.0:
-        raise ValueError(f"Y0 pozitif olmali, {Y0} geldi")
-    return {**kw, "matrix_Y0": float(Y0)}
+def _sahne_Y0(kw: dict, Y0: float | None,
+              boulder_Y0: float | None = None) -> dict:
+    """`--Y0` matris, `--boulder-Y0` blok mukavemetini ezer.
+
+    ## Blok kolu neden eklendi
+
+    Bu islev daha once YALNIZCA `matrix_Y0`'i eziyordu. `build_scene`in
+    `boulder_Y0` varsayilani `1e7 Pa` ve `SAHNE` onu hic vermiyor, yani
+    hedefin kutlece `%36,3`'u butun FAZ 4 boyunca -- eleme kosulari ve
+    cikarim uzayinin `Y0` ekseni dahil -- `1e7 Pa`'da SABIT kaldi.
+
+    Krater bolgesinde blok kutle payi `%7,4` ama kutle agirlikli `Y0`
+    matrisin `75` kati; is `1506779`'un `1/10/100 Pa` kollari bolgenin
+    ortalama mukavemetini `1,0001` kat oynatiyordu (KAYIT-050).
+
+    Kol TRUBA'da kosuldu (is `1515196`): `matrix_Y0 = boulder_Y0 = 1 Pa`
+    ve yercekimi acikken `beta` `1,05e-5` oynadi, kacan hedef kutlesi
+    yine `0` (KAYIT-052).
+    """
+    out = dict(kw)
+    if Y0 is not None:
+        if Y0 <= 0.0:
+            raise ValueError(f"Y0 pozitif olmali, {Y0} geldi")
+        out["matrix_Y0"] = float(Y0)
+    if boulder_Y0 is not None:
+        if boulder_Y0 <= 0.0:
+            raise ValueError(
+                f"boulder_Y0 pozitif olmali, {boulder_Y0} geldi")
+        out["boulder_Y0"] = float(boulder_Y0)
+    return out
 
 
 def _alpha0_denetle(alpha0, gozeneksiz: bool):
@@ -321,6 +344,10 @@ def main() -> int:
     # oldugu icin uzun kosuda gorunebilir; bu bayrak onu sinamak icin.
     ap.add_argument("--Y0", type=float, default=None,
                     help="matris Y0'i ez (Pa); ADR-0046 olcumu icin")
+    # KAYIT-050: bloklarin mukavemeti FAZ 4 boyunca hic taranmadi.
+    ap.add_argument("--boulder-Y0", type=float, default=None,
+                    help="blok Y0'i ez (Pa); varsayilan 1e7 ve FAZ 4 "
+                         "boyunca hic taranmadi (rapor A17 / KAYIT-050)")
     ap.add_argument("--yercekimli", action="store_true",
                     help="yercekimini AC (ADR-0028 maliyet yuzunden "
                          "kapatmisti; rapor A17)")
@@ -338,7 +365,8 @@ def main() -> int:
     print("=" * 78, flush=True)
 
     kaba = build_scene(spacing=7.0, device="cpu",
-                       **_sahne_Y0(_sahne_kolu(a.gozeneksiz), a.Y0))
+                       **_sahne_Y0(_sahne_kolu(a.gozeneksiz), a.Y0,
+                                          a.boulder_Y0))
     mesh = _build_mesh("icosphere", radius=SAHNE["radius"], subdiv=4)
     R = float(kaba.target_radius)
     t0 = time.perf_counter()

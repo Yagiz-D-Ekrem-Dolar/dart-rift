@@ -65,3 +65,32 @@ def test_config_ile_KOD_celisiyor_ve_bu_YAZILI() -> None:
     rapor = (REPO / "docs" / "FAZ4-SIKINTI-RAPORU.md").read_text(
         encoding="utf-8")
     assert "ADR-0027" in rapor
+
+
+def test_boulder_Y0_kolu_ayri_ve_matristen_BAGIMSIZ() -> None:
+    """`--Y0` matrisi, `--boulder-Y0` bloğu ezmeli; ikisi karışmamalı.
+
+    KAYIT-050: `_sahne_Y0` yalnızca `matrix_Y0`'ı eziyordu ve
+    `boulder_Y0` (hedefin kütlece `%36,3`'ü) FAZ 4 boyunca `1e7 Pa`'da
+    sabit kaldı. Bu test o boşluğun geri gelmesini engelliyor.
+    """
+    from faz48_iki_asama import _sahne_Y0
+    kw = {"radius": 82.0}
+    assert _sahne_Y0(kw, None) == kw
+    assert _sahne_Y0(kw, 5.0)["matrix_Y0"] == 5.0
+    assert "boulder_Y0" not in _sahne_Y0(kw, 5.0)
+    d = _sahne_Y0(kw, None, 3.0)
+    assert d["boulder_Y0"] == 3.0 and "matrix_Y0" not in d
+    d = _sahne_Y0(kw, 5.0, 3.0)
+    assert (d["matrix_Y0"], d["boulder_Y0"]) == (5.0, 3.0)
+    # cagiranin sozlugu DEGISMEMELI
+    assert kw == {"radius": 82.0}
+
+
+def test_boulder_Y0_pozitif_olmali() -> None:
+    import pytest
+    from faz48_iki_asama import _sahne_Y0
+    with pytest.raises(ValueError, match="boulder_Y0 pozitif"):
+        _sahne_Y0({}, None, 0.0)
+    with pytest.raises(ValueError, match="Y0 pozitif"):
+        _sahne_Y0({}, -1.0)

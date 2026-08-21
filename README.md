@@ -14,6 +14,13 @@ Bu depo, o çıkarımın dayanacağı **motoru** içerir: deterministik altyapı
 gözeneklilik, öz-yerçekimi (FAZ 2), çarpma sahnesi (FAZ 3) ve iki aşamalı
 çözünürlük + Bayesçi çıkarım hattı (FAZ 4).
 
+> ### Yeni bir oturuma mı başladın?
+>
+> **[DEVAM.md](DEVAM.md)** en üstteki `2026-08-21` bölümü, hiçbir önceki
+> bağlam olmadan işe devam edebilmek için yazıldı: nerede çalışıldığı
+> (yerel + **yeni** TRUBA alanı), `β` sonucunun kanıt zinciri, **tekrar
+> koşulmaması gereken** elemeler, bulunan kusurlar ve bekleyen kararlar.
+
 ## Kapı durumu
 
 Her faz, şartnamedeki kabul ölçütlerini **kanıtla** geçmeden bir sonrakine

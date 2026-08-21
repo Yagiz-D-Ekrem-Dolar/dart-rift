@@ -1,3 +1,268 @@
+# DEVAM — **2026-08-21 durumu** (yeni oturum buradan başlar)
+
+> Bu bölüm, hiçbir önceki bağlam olmadan işe devam edebilmek için
+> yazıldı. Altındaki `2026-08-03` bölümü **arşivdir**; sayıları
+> bayattır, oraya karar için bakma.
+
+---
+
+## 0. Otuz saniyede durum
+
+| | |
+|---|---|
+| **En büyük sonuç** | `β` **ölçümle çözüldü**: motorun `β = 1,4112`'si fizik değil, **çözülmemiş çarpışmanın artığı**. Hedef ejektası **yok** (kaçan kütle her koşuda merminin tamamı, hedef payı tam `0`). |
+| **Kapı sonucu** | **`G4-B1` düşüyor** — yakınsama `λ₂`'de (hedef) ölçülmüştü, `λ₁`'de (mermi) eşiğin `268` katı. Kapı raporu hâlâ `GEÇİLDİ` diyor ve **yeniden üretilmeli**. |
+| **Bekleyen karar** | **ADR-0047** (ÖNERİ) ve **ADR-0046** (kapsam) — ikisi de kullanıcıda. |
+| **Açık sıkıntılar** | A11 (`krater_capi` ölü), A12, A17 (artık **ölçülmüş**, karar bekliyor). |
+| **Depo** | `main`, GitHub'a push edildi. |
+| **Koşan işler** | TRUBA `1515233` (`λ₂ = 4`), yerelde `λ₁ = 55`. |
+
+---
+
+## 1. Nerede çalışılıyor
+
+### 1a. Yerel dizüstü — **üretim sayılarını birebir veriyor**
+
+Bu turun en kullanışlı yan sonucu: TRUBA olmadan da ilerlenebilir.
+
+| | |
+|---|---|
+| depo | `C:/Users/yagiz/Desktop/videos/dart-rift` |
+| ortam | `.venv` (Python 3.12), warp `1.15.0` |
+| GPU | RTX 3050 Laptop, 4 GB (fp64 zayıf ama sahne küçük) |
+
+Doğrulanmış eşleşme:
+
+| | TRUBA / kayıtlı | yerel |
+|---|---|---|
+| iki aşamalı `β` (`t_end = 0,2 s`) | `1,4112162721355217` | **aynı** |
+| `A1` | `2,0390593305845943` | **aynı** |
+| aktarım momentum hatası | `8,76e-15` | **aynı** |
+| tek aşamalı `β` | `1,6175832076207557` | `1,617583208` |
+
+Süre: iki aşamalı `t_end = 0,2 s` koşusu **~14 dk**. H100 aynısını
+`55 s`'de yapıyor (`~15×`).
+
+### 1b. TRUBA — çalışma alanı **yeniden kuruldu**
+
+**Eski alan artık erişilemez.** MCP bağlantısı `egitimg16u1` olarak
+açılıyor; `/arf/scratch/egitimg16u4` `Permission denied` ve
+`/arf/scratch/egitimg16/driftclaude` **yok**. Bunun etrafından
+dolaşılmadı, yenisi kuruldu:
+
+| | |
+|---|---|
+| yol | `/arf/scratch/egitimg16u1/driftclaude` |
+| depo | `dart-rift/` — GitHub'dan klon |
+| ortam | `module load apps/truba-ai/gpu-2024.0` → Python `3.10.15`, numpy `1.26.4` |
+| warp | `pylib/` altında `1.15.0` (login node'da **internet var**, `pip --target`) |
+| çıktılar | `ciktilar/` |
+
+Koşu ortamı:
+
+```
+export PYTHONPATH="$KOK/pylib:$KOK/dart-rift/src"
+export WARP_CACHE_PATH="$KOK/.warp_cache"
+```
+
+**Kurulum tuzağı (kayda geçiyor):** `pip` numpy `2.x`'i de kurmaya
+kalkar ve **dosya kotasına** takılıp yarım bırakır. Yarım
+`pylib/numpy` **silinmeli** — yoksa modülün `1.26.4`'ünü sessizce
+gölgeler. Kullanılan numpy modülünkidir.
+
+**Kuyruk kuralı:** `kolyoz-cuda` için `--cpus-per-task` **16 ve
+katları** olmalı (`-n 16` yetmiyor; doğrulayıcı `cpus_per_task`
+istiyor). `palamut-cuda` düğümleri drain.
+
+Koşan/koşmuş işlerin betikleri ve **ölçüt belgeleri** depoda:
+`docs/truba/` — dosyalar TRUBA'daki kopyalarla **md5 eşleşiyor**.
+
+---
+
+## 2. `β` sonucu — kanıt zinciri
+
+### 2a. `β`'nın payında hedeften hiçbir şey yok
+
+| | |
+|---|---|
+| kaçan kütle (her koşuda) | `579,40 kg` = **DART'ın kütlesi** |
+| kaçan **hedef** kütlesi | **`0,0000e+00`** (iş `1512733`) |
+| `p_eksen` hedef | **`0`** |
+
+### 2b. Sekme çözünürlükle **kayboluyor**
+
+Tek değişen `λ₁` (mermi inceltmesi):
+
+| `λ₁` | `A1` | `β` | `n_ejekta` |
+|---|---|---|---|
+| — (tek aşamalı, `λ = 2`) | `0,215` | `1,617583` | `803` |
+| `19` | `2,039` | `1,411216` | `28` |
+| `38` | `4,078` | `1,185066` | `40` |
+| `55` | `5,903` | **koşuyor** | — |
+
+Ardışık farklar `-0,206`, `-0,226` — azalma **yavaşlamıyor**. Limit
+gözlemin `3,2225`'i değil **`β → 1`**.
+
+### 2c. Hedef güçlü şok **görmüyor**
+
+| | |
+|---|---|
+| merminin özgül `KE`'si | `1,888e7 J/kg` |
+| iç enerjiye dönen | **`%29,7`** |
+| `u_kaçan` (kütle ağırlıklı) | `5,613e6` = `1,19 × u_iv` → **şoklanmış** |
+| sahnedeki **en yüksek** `u` | `5,644e6` — ve o **merminin** üstünde |
+
+Yani sekme soğuk elastik bir yapay değil, ama merminin enerjisinin
+`%70`'i kinetik kalıp geri çıkıyor ve hedef ısınmıyor.
+
+---
+
+## 3. Elenenler — **BUNLARI TEKRAR KOŞMA**
+
+| aday | nasıl elendi | kanıt |
+|---|---|---|
+| koşu süresi | `t_end` `0,2 → 600 s` (`3000×`), `β` bit düzeyinde aynı | iş `1506765` |
+| yerçekimi | `t = 100 s`'de `%0,14`; zayıf cisimde `%0,001` | `1501241/2`, `1515196` |
+| matris `Y0` | `1 → 2,15e6 Pa` (6 mertebe) | `1506779`, FAZ 4.12 |
+| **blok `Y0`** | `1e7 → 1 Pa`, yerçekimi açık | **`1515196`** |
+| **hasar** (ADR-0027) | `Δβ = 5,9e-6`; `11 183` parçacığın `3`'ü kırılıyor | yerel, 21.08 |
+| gözeneklilik | katı sahnede `+%7,5` — gereken `2,3×` | rapor A17 |
+| `λ₂` (hedef ızgarası) | `Δβ = 0,000843` | G4-B1 |
+| aktarımın durum sıfırlaması | etkilenen kütle payı `1e-3`–`1e-5` | yerel, 21.08 |
+
+**Yakınsamamış tek yön `λ₁`** ve o `β`'yı gözlemden **uzağa** itiyor.
+
+---
+
+## 4. Bulunan kusurlar
+
+| # | kusur | durum |
+|---|---|---|
+| 1 | İki aşamalı aktarım Grady-Kipp hasarını **siliyordu** (aşama-1'de `D_max = 0,562` → aktarımdan sonra `0`) | **DÜZELTİLDİ** — `coarsen_to_sites(hasar=)`, `WarpSolid3D(D0=)`, `Σ m D` defteri, 6 gerileme testi |
+| 2 | FAZ 4'ün **bütün** koşuları `damage=enabled=False` ile koştu, oysa `configs/p3_dimorphos.yaml` `true` diyor | **AÇIK** — çelişki `tests/test_hasar_kolu.py` ile sabitlendi; hangi tarafın doğru olduğu bir karar |
+| 3 | `_sahne_Y0` yalnızca `matrix_Y0`'ı eziyordu; `boulder_Y0` (hedefin kütlece `%36,3`'ü) hiç taranmamıştı | **DÜZELTİLDİ** — `--boulder-Y0` |
+| 4 | Aktarım `rho`, `alpha`, `S`'yi sıfırlıyor | **ÖLÇÜLDÜ, küçük** (kütlece `1e-3`) — açık ama öncelikli değil |
+| 5 | Rapor başlığı A3'ü kapandıktan sonra da açık listeliyordu | **DÜZELTİLDİ** (sayaç `4 → 3`) |
+
+---
+
+## 5. Bekleyen kararlar — **kullanıcıda**
+
+1. **ADR-0047** (ÖNERİ) — `β` bu ileri modelin çıktısı değil. Dört
+   seçenek: S1 krater bölgesini incelt · S2 model-form · S3 `β`'yı
+   gözlenebilir olmaktan çıkar · S4 dış ölçekleme.
+   Eğilim **S3**, ama S1'in sonucu (iş `1515233`) onu geri alabilir.
+2. **ADR-0046** — çıkarım uzayını `S1`'e indirmek fiilen uygulandı
+   ama kapsam kararı resmen kapatılmadı.
+3. **`G4-B1`** — ADR-0047 kabul edilirse kapı raporu yeniden
+   üretilmeli. Kapı betiğine **dokunulmadı**; bu bir karar.
+
+### Kaba kuvvetin maliyeti (karar için)
+
+`λ₂` inceltmesiyle ejekta perdesine inmek:
+
+| aralık | `λ₂` | maliyet (bugüne göre) |
+|---|---|---|
+| `3,5 m` (bugün) | 2 | `1×` — `t_end = 5 s` için `1056 s` (H100) |
+| `1,75 m` | 4 | `~5×` |
+| `0,5 m` | 14 | `~150×` → **~9 gün**, tek nokta, `5 s` |
+| `0,1 m` (gerçek ejekta ölçeği) | 70 | `~1,5e6×` |
+
+Üstüne hedef ejektasının `2R`'yi geçmesi `~100 s` ister (`20×` daha).
+Yani S1 doğru çıksa bile `β = 3,22`'ye kaba kuvvetle **ulaşılamaz**.
+
+---
+
+## 6. Koşan işler ve nasıl bakılır
+
+| iş | ne | nerede |
+|---|---|---|
+| TRUBA `1515233` | `λ₂ = 4` — **çözünürlük mü mekanizma mı** | `ciktilar/c_1515233.out` |
+| yerel `λ₁ = 55` | `β → 1` trendinin 4. noktası | scratchpad `f48_lam55.log` |
+
+`1515233` ölçütü `docs/truba/OLCUT-krater-cozunurlugu.md`'de,
+**koşudan önce** yazıldı. Karar `β`'ya **değil** `bekleyen` ve
+`beta_bal`'a bağlı — çünkü `λ₂` büyüyünce `A1` de artıyor ve `β`'yı
+`1`'e iter (karışık sinyal).
+
+Son bakışta (`t = 1,77 / 5 s`): `beta_bal = 1,34064` **sabit**,
+`hedef_ej = 2` (donmuş), `bekleyen = 0`.
+
+---
+
+## 7. Bu turda tekrarlanan **hata kalıpları**
+
+Üç hipotezim de çürüdü ve üçü de ölçütü **önce** yazdığım için
+temiz çürüdü:
+
+1. *"Çarpma bir bloğun içine düşüyor"* — `r ≤ 8 m`'de blok payı `0`.
+2. *"Ejekta ayrıklaştırma tabanının altında"* — krater içinde `223`
+   parçacık var.
+3. *"Mermi soğuk sekiyor"* — `u_kaçan = 1,19 × u_iv`.
+
+Ayrıca **iki kez kendi iddiamı geri aldım**:
+
+- *"Aktarımın durum sıfırlaması hasar kolunu kirletiyor"* — ölçtüm,
+  kütlece binde bir.
+- `β` için yazdığım `1,3 ≤ β < 2,0 → kısmi` bandı **kötü eşikti**:
+  taban değerin kendisi o bandın içinde. Bandı sonradan
+  değiştirmedim, sonucu *"oynamadı"* diye okudum.
+
+---
+
+## 8. Sık kullanılan komutlar
+
+Yerel üretim kolu:
+
+    .venv/Scripts/python.exe scripts/faz48_iki_asama.py --device cuda:0 --t-end 0.2 --out out.json
+
+Mermi çözünürlüğü taraması:
+
+    .venv/Scripts/python.exe scripts/faz48_iki_asama.py --device cuda:0 --lam1 38 --t-end 0.2 --out out.json
+
+Hasar kolu (aktarım artık `D` taşıyor):
+
+    .venv/Scripts/python.exe scripts/faz48_iki_asama.py --device cuda:0 --hasarli --t-end 0.2 --out out.json
+
+Zayıf hedef (moloz yığını rejimi):
+
+    .venv/Scripts/python.exe scripts/faz48_iki_asama.py --device cuda:0 --Y0 1 --boulder-Y0 1 --yercekimli --t-end 5 --out out.json
+
+Analiz:
+
+    .venv/Scripts/python.exe scripts/a17_hasar_karsilastir.py --kontrol K.son_durum.npz --hasarli H.son_durum.npz --beta-kontrol B --beta-referans R
+    .venv/Scripts/python.exe scripts/a17_kacan_enerji.py --durum X.son_durum.npz
+    .venv/Scripts/python.exe scripts/a17_carpma_bolgesi_malzemesi.py --tohum-sayisi 8
+
+Lint (CI kapsamı) ve hızlı testler:
+
+    .venv/Scripts/python.exe -m ruff check src tests scripts
+    .venv/Scripts/python.exe -m pytest -m "not gpu and not warp" -q
+
+TRUBA'da iş göndermek: `docs/truba/is_*.slurm` şablonlarını
+`/arf/scratch/egitimg16u1/driftclaude/` altına koy ve `sbatch` et.
+
+---
+
+## 9. Kurallar — bu turda uyulanlar
+
+- **Ölçüt koşudan önce yazılır ve commit'lenir.** Bu turdaki her
+  koşunun ölçütü ayrı bir commit'te, koşudan önce.
+- **Tesisat sınavı ölçütün ilk maddesidir.** İlk hasar çifti tam bu
+  yüzden *"geçersiz"* sayıldı (`D_max = 0`) ve sonucu okunmadı.
+- **Hiçbir satır silinmez** (`docs/FAZ4-SIKINTI-RAPORU.md`); düzelen
+  şey `KAPANDI` işaretlenir, yanlış çıkan yargı yerinde kalır.
+- **Etrafından dolaşılmaz.** TRUBA erişimi yoktu; yerelde koşuldu ve
+  sonra TRUBA **yeniden kuruldu** — sonuç uydurulmadı.
+
+---
+---
+
+# ARŞİV — 2026-08-03 durumu
+
+> Aşağısı bayattır. G4 o tarihte geçilmemişti, kota doluydu ve `β`
+> henüz ölçülmemişti. Karar için **yukarıya** bak.
+
 ﻿# DEVAM — projeyi kaldığı yerden sürdürme kılavuzu
 
 Bu belge, bağlam kaybolsa bile **hatasız devam edebilmek** içindir. Depoyu ilk
