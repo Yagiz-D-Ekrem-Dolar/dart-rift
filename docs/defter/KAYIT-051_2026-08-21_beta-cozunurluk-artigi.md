@@ -93,10 +93,25 @@ Tek değişen `λ₁`:
 
 ### Bu `G4-B1`'i düşürüyor
 
-| tarama yönü | `Δβ` | eşik `0,1` |
-|---|---|---|
-| `λ₂` `2 -> 4` (**hedef**) | `0,000843` | geçti |
-| `λ₁` `19 -> 38` (**mermi**) | **`0,226150`** | **düştü** (`268` kat) |
+| tarama yönü | `Δβ` | bağıl | yargı |
+|---|---|---|---|
+| `λ₂` `2 -> 4` (**hedef**) | `0,000843` | `%0,06` | geçti |
+| `λ₁` `19 -> 38` (**mermi**) | **`0,226150`** | **`%16,0`** | **düştü** |
+
+> ### Eşik hangisi — kayda geçiyor (2026-08-21 düzeltmesi)
+>
+> İki yerde iki biçimde yazılı: kapı **üreticisi** mutlak `0,1`
+> kullanıyor (`faz47_g4_kapi.py`; raporda `< 0.1`), ölçüt belgesi ise
+> **`%10` bağıl** diyor (`G4-OLCUTLERI.md` B1). `β ≈ 1,41` için ikisi
+> aynı sayı **değil** (`0,1` vs `0,141`).
+>
+> `λ₁` ölçümü **ikisini de** aşıyor: mutlak eşiğin `2,26`, bağıl
+> eşiğin `1,60` katı. Yargı hangi okumayla bakıldığından bağımsız.
+>
+> **Önceki sürümde burada *"268 kat"* yazıyordu.** O sayı eşikle
+> değil `λ₂` ölçümüyle oran (`0,226150 / 0,000843`), yani iki **tarama
+> yönü** arasındaki fark. Eşik aşımı diye okunacak biçimde yazmıştım;
+> düzeltiyorum.
 
 `B1`'in *"gözlenebilirler yakınsıyor"* yargısı `β`'yı **üreten**
 yönde hiç sınanmamıştı.

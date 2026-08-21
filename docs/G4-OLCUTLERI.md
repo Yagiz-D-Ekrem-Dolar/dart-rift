@@ -65,6 +65,33 @@ altında. A1 ve A2 koşuya bağlı.
 > - **B3 düşerse ADR-0041 düşer** — A′'nın seçilme gerekçesi buydu.
 > - B4 `1,0`'ı aşarsa: entegratör veya `dt` politikası bozuk.
 
+> ### ⚠ B1 **hangi yönde** tarandı — 2026-08-21 ölçümü
+>
+> `B1` *"ardışık iki çözünürlük"* diyor ama **hangi çözünürlük**
+> olduğunu söylemiyor. Kapı koşusunda taranan `λ₂` (hedef ızgarası)
+> oldu ve `Δβ = 0,000843` ile geçti.
+>
+> `β`'yı **üreten** tek şey merminin sekmesi (hedef payı ölçüldü:
+> tam `0`, iş `1512733`). O yüzden yakınsama `λ₁` (mermi inceltmesi)
+> yönünde de sınandı:
+>
+> | yön | `Δβ` | bağıl |
+> |---|---|---|
+> | `λ₂` `2 → 4` (hedef) | `0,000843` | `%0,06` |
+> | **`λ₁` `19 → 38` (mermi)** | **`0,226150`** | **`%16,0`** |
+>
+> `%16,0` bu belgedeki `%10` eşiğinin `1,60` katı; kapı üreticisinin
+> kullandığı mutlak `0,1` eşiğinin `2,26` katı. **İki okumada da
+> düşüyor.**
+>
+> Ayrıca kayda geçiyor: bu belge `%10` **bağıl** diyor, üretici
+> (`faz47_g4_kapi.py`) mutlak `0,1` kullanıyor. `β ≈ 1,41` için ikisi
+> aynı sayı değil (`0,1` vs `0,141`). Bu tutarsızlık **bu ölçümün
+> yargısını değiştirmiyor** ama kapı yeniden üretilirken çözülmeli.
+>
+> Karar ADR-0047'de (ÖNERİ). Bu belge **eşiği değiştirmiyor**;
+> yalnızca ölçütün hangi yönde sınandığını kaydediyor.
+
 ### B1 eşiği neden `%10`
 
 Keyfî değil, **geriye doğru** hesaplandı: ADR-0026 DART için `β`'yı
