@@ -2221,6 +2221,59 @@ G4-C'de (`λ₂ = 2`, `S1`) kayıtlı değerler `krater_derinlik 0,907`,
 
 ---
 
+#### **DIŞ KIYAS** — model çanak değil **delik** açıyor (2026-08-21)
+
+Bu deponun ilk **dış** doğrulaması. Bugüne kadarki bütün ölçütler
+modelin kendi iç tutarlılığınaydı (Sedov, Hugoniot, korunum,
+determinizm) — çarpma **sonucunun büyüklüğü** hiçbir dış standarda
+karşı sınanmamıştı.
+
+π-grubu krater ölçeklemesi (Holsapple 1993; Housen & Holsapple 2011)
+verilen çarpma için krater hacmini kapalı formda verir. Sabitler
+literatürden; **hiçbiri uydurulmadı**. Dimorphos'un hangi malzeme
+ailesine düştüğü bilinmediği için bir **kuşak** tarandı
+(`scripts/pi_olcekleme.py`, koşu gerektirmez):
+
+| malzeme ailesi | rejim | `V (m³)` | çap (m) |
+|---|---|---|---|
+| kuru kum | yerçekimi | `4,93e4` | **`85,6`** |
+| zayıf gözenekli | mukavemet | `6,12e3` | `42,7` |
+| kohezyonlu toprak | mukavemet | `2,07e4` | `64,1` |
+| sert kaya | mukavemet | `1,85e2` | **`13,3`** |
+
+| | |
+|---|---|
+| π-ölçekleme aralığı | çap **`13,3 – 85,6 m`** |
+| **modelin ölçtüğü** | çap **`7,49 m`** |
+
+Model, **en sert kaya** ailesinin öngördüğünün bile altında — oysa
+Dimorphos bir moloz yığını, yani zayıf uçta (`43 – 86 m`) olmalı.
+
+##### Ve malzemeden **bağımsız** olan kıyas
+
+Ölçekleme sabitleri tartışılabilir; şu tartışılamaz: çarpma
+kraterleri **çanak**tır ve geçici kraterde derinlik/çap oranı
+literatürde `0,15 – 0,30`'dur (Melosh 1989). Bu oran **boyutsuz** ve
+hiçbir malzeme sabitine bağlı değil.
+
+| | ölçülen |
+|---|---|
+| modelin derinliği | `15,28 m` |
+| modelin çapı | `7,49 m` |
+| **derinlik / çap** | **`2,040`** |
+| literatür bandı | `0,15 – 0,30` |
+| bandın üst sınırının | **`6,8` katı** |
+
+> **Model çanak açmıyor, `delik` açıyor.** Mermi içeri giriyor ve
+> madde yanlara **akmıyor** — kazı akışı yok. Ejektanın olmaması,
+> `β`'nın hedeften beslenmemesi ve şokun hedefe girmemesi
+> (`u_hedef/u_mermi = 0,0016`) bunun **aynı olgunun** üç yüzü.
+
+Bu bulgu `tests/test_pi_olcekleme.py` ile kilitlendi: düzelirse test
+düşer ve rapor güncellenmek zorunda kalır.
+
+---
+
 ### A18 — **`G4-C`'nin ensemble verisi depoda yok ve geri alınamıyor** (2026-08-21)
 
 Kapı raporu `G4-C`'yi üç ölçütle geçiriyor (`C1 = 1`, `C2 = 0,221142`,
