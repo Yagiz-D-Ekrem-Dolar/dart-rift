@@ -60,7 +60,8 @@ from faz44_dart_yakinsama import SAHNE, _malzeme  # noqa: E402
 T1_OLCULEN = 4.767e-3
 
 
-def _mat(gozeneksiz: bool = False, yercekimli: bool = False):
+def _mat(gozeneksiz: bool = False, yercekimli: bool = False,
+         hasarli: bool = False):
     """Malzeme; `gozeneksiz` ise **P-α kapalı**.
 
     Tanı amaçlı: gözeneklilik şok enerjisini **gözenek çökmesine**
@@ -99,6 +100,18 @@ def _mat(gozeneksiz: bool = False, yercekimli: bool = False):
         # momentumun 250 KATI ve kinetik enerjinin %100'u ic hareket.
         m = dataclasses.replace(
             m, gravity=dataclasses.replace(m.gravity, enabled=True))
+    if hasarli:
+        # ADR-0027 kendi metninde soyle diyor: "`D = 0` birakmak,
+        # malzemenin cekmede sinirsiz dayanikli oldugunu varsaymak
+        # demekti -- krater hacmini ve dolayisiyla ejekta kutlesini,
+        # yani `beta`'yi SISTEMATIK olarak kuculturdu."
+        #
+        # FAZ 4 boyunca `_malzeme()` hasari KAPALI tuttu, oysa
+        # `configs/p3_dimorphos.yaml` `damage.enabled: true` diyor.
+        # Bu bayrak ADR'nin ongordugu kolu acar; parametreler o
+        # config'ten (ve `DamageParams` varsayilanlarindan) gelir.
+        m = dataclasses.replace(
+            m, damage=dataclasses.replace(m.damage, enabled=True))
     if not gozeneksiz:
         return m
     return dataclasses.replace(
@@ -168,6 +181,8 @@ def _alpha0_denetle(alpha0, gozeneksiz: bool):
 
 
 def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None):
+    # Kusur tohumlamasi sahneyle AYNI koke baglanir; boylece hasarli kol
+    # da yeniden uretilebilir ve "hangi tohum" sorusu tek yerde yanitlanir.
     from dartrift.warp_core.solver_solid import WarpSolid3D
     return WarpSolid3D(
         np.ascontiguousarray(x), np.ascontiguousarray(v),
@@ -175,7 +190,8 @@ def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None):
         np.ascontiguousarray(h),
         mat if mat is not None else _malzeme(), RefParams(cfl=0.25),
         alpha0=np.ascontiguousarray(alpha0), Y0=np.ascontiguousarray(Y0),
-        device=device, check_every=10 ** 9)
+        device=device, check_every=10 ** 9,
+        damage_seed=int(SAHNE["root_seed"]))
 
 
 def _kos(sol, t_bas: float, t_end: float, azami: int, etiket: str,
@@ -310,6 +326,11 @@ def main() -> int:
                          "kapatmisti; rapor A17)")
     ap.add_argument("--gozeneksiz", action="store_true",
                     help="P-alpha gozenekliligi KAPAT (tani kontrol kolu)")
+    # A17: `_malzeme()` hasari KAPALI tutuyor ama config `true` diyor ve
+    # ADR-0027 bunun `beta`'yi kucultecegini ONCEDEN yazmisti. Bu bayrak
+    # o kolu acar.
+    ap.add_argument("--hasarli", action="store_true",
+                    help="Grady-Kipp hasari AC (ADR-0027; rapor A17)")
     a = ap.parse_args()
 
     print("=" * 78, flush=True)
@@ -331,7 +352,7 @@ def main() -> int:
         print(f"\nKONTROL KOLU: tek asama, lam={a.lam2}, N={a2.n}", flush=True)
         sol = _cozucu(a2.x, a2.v, a2.m, np.zeros(a2.n), a2.h,
                       _alpha0_denetle(a2.alpha0, a.gozeneksiz), a2.Y0, a.device,
-                      mat=_mat(a.gozeneksiz, a.yercekimli))
+                      mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
         t = _kos(sol, 0.0, a.t_end, a.azami_adim, "tek")
         b = _beta(sol.state_numpy(), a2, p_imp, m_hedef, R)
         print(f"\n  t_sim = {t:.5e}  beta = {b['beta']:.6f}", flush=True)
@@ -360,7 +381,7 @@ def main() -> int:
 
     sol1 = _cozucu(a1.x, a1.v, a1.m, np.zeros(a1.n), a1.h,
                    _alpha0_denetle(a1.alpha0, a.gozeneksiz), a1.Y0, a.device,
-                   mat=_mat(a.gozeneksiz, a.yercekimli))
+                   mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
     t = _kos(sol1, 0.0, a.t1, a.azami_adim, "a1")
     print(f"  asama-1 bitti: t = {t:.5e} s "
           f"({time.perf_counter() - t0:.1f} s duvar)", flush=True)
@@ -392,7 +413,7 @@ def main() -> int:
           flush=True)
     sol2 = _cozucu(sahne.x, sahne.v, sahne.m, sahne.e, sahne.h,
                    _alpha0_denetle(sahne.alpha0, a.gozeneksiz), sahne.Y0, a.device,
-                   mat=_mat(a.gozeneksiz, a.yercekimli))
+                   mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
     izler = []
     # Aktarimdan sonra parcacik kimlikleri degisti; krater referansi
     # ASAMA-1'in baslangic konumlarindan ALINAMAZ. Bu yuzden aktarim
@@ -451,7 +472,11 @@ def main() -> int:
     np.savez_compressed(
         durum_yolu, x=st_son["x"], v=st_son["v"], m=st_son["m"],
         x_referans=x_ref2, hedef=hedef2, mermi_kesri=f_mermi2,
-        R=R, v_esc=v_esc, ehat=ehat, p_imp=P, t=t2)
+        R=R, v_esc=v_esc, ehat=ehat, p_imp=P, t=t2,
+        # Hasar alani: kapali kolda sifir dizisi doner (state_numpy),
+        # yani iki kol AYNI sekille okunur ve karsilastirma post-hoc
+        # yapilabilir.
+        D=st_son["D"])
     print(f"\nson durum yazildi: {durum_yolu}", flush=True)
 
     print(f"\nSONUC ({time.perf_counter() - t0:.1f} s duvar)", flush=True)
@@ -461,6 +486,14 @@ def main() -> int:
     print(f"  beta      = {b['beta']:.6f}", flush=True)
     print(f"  n_ejekta  = {b['n_ejekta']}", flush=True)
     print(f"  momentum kapanisi = {b['momentum_kapanis']:.3e}", flush=True)
+    D = np.asarray(st_son["D"], dtype=np.float64)
+    hasar = {"acik": bool(a.hasarli), "D_ort": float(D.mean()),
+             "D_max": float(D.max()),
+             "n_tam_kirik": int(np.count_nonzero(D >= 0.999)),
+             "hedef_D_ort": float(D[hedef2].mean())}
+    print(f"  hasar     = {'ACIK' if a.hasarli else 'kapali'}  "
+          f"D_ort {hasar['D_ort']:.4f}  D_max {hasar['D_max']:.4f}  "
+          f"tam kirik {hasar['n_tam_kirik']}", flush=True)
     print("\n  KARSILASTIRMA icin: --tek-asama kolunu da kos.", flush=True)
 
     Path(a.out).write_text(json.dumps(
@@ -469,6 +502,7 @@ def main() -> int:
          "A1": A1, "A1_gecti": bool(A1 >= 2.0),
          "N_asama1": a1.n, "N_asama2": sahne.n,
          "aktarim": {k: v for k, v in d.items() if k != "atama"},
+         "hasar": hasar,
          "izler": izler,
          "duvar_s": time.perf_counter() - t0, **b}, indent=2, default=float))
     print(f"\nyazildi: {a.out}", flush=True)
