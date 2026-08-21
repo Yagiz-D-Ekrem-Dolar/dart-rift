@@ -53,6 +53,21 @@ from faz48_iki_asama import T1_OLCULEN  # noqa: E402
 from faz411_gozlenebilir_duyarliligi import ZAYIF_ESIGI, koseler  # noqa: E402
 
 
+def _krater_ayarlari(n_bins: int | None) -> dict:
+    """`KRATER_AYARLARI_DART`in kopyasi; istenirse `n_bins` ezilir.
+
+    Uretim ayarlari **degistirilmiyor**: varsayilan `None` geldiginde
+    sozluk birebir ayni. A11 icin `lam2 = 4` ile `n_bins = 16`
+    denenebilsin diye bir kol acildi.
+    """
+    ayar = dict(KRATER_AYARLARI_DART)
+    if n_bins is not None:
+        if n_bins < 4:
+            raise ValueError(f"n_bins en az 4 olmali, {n_bins} geldi")
+        ayar["n_bins"] = int(n_bins)
+    return ayar
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--device", default="cuda:0")
@@ -62,6 +77,16 @@ def main() -> int:
                     help="koselerin USTUNE bu kadar LHS noktasi ekle "
                          "(FAZ 4.6'nin egitim kumesi icin)")
     ap.add_argument("--root-seed", type=int, default=20260810)
+    # A11: `krater_capi` OLU (40 durumun hepsinde 6,69 m, sifir yayilim).
+    # Kok neden nicemleme: `lam2 = 2`de yalnizca `n_bins = 8` calisiyor,
+    # o da +-1,5 derece -> capta +-4,3 m. `lam2 = 4`te `n_bins = 16`
+    # aciliyor (+-0,75 derece -> +-2,1 m). Bu iki bayrak o olcumu
+    # kosulabilir yapiyor; varsayilanlar URETIM degerleri, degismedi.
+    ap.add_argument("--lam2", type=float, default=2.0,
+                    help="asama-2 inceltmesi (uretim 2; A11 icin 4)")
+    ap.add_argument("--n-bins", type=int, default=None,
+                    help="krater acisal kutu sayisi (uretim 8; "
+                         "lam2=4 ile 16 denenebilir)")
     ap.add_argument("--durum-dizin", default=str(Path.home() / "faz412_durumlar"))
     ap.add_argument("--out", default=str(Path.home() / "faz412.json"))
     a = ap.parse_args()
@@ -84,6 +109,7 @@ def main() -> int:
 
     t0 = time.perf_counter()
     derinlikler: dict[int, float] = {}
+    caplar: dict[int, float] = {}
 
     def kaydet(i, th, st, sahne, x_ref, a1):
         yol = dz / f"nokta_{i:02d}.npz"
@@ -101,10 +127,15 @@ def main() -> int:
                 impact_direction=np.asarray(a1.impact_direction),
                 reference_radius=float(a1.target_radius),
                 x_reference=np.asarray(x_ref)[hedef],
-                **KRATER_AYARLARI_DART)
+                **_krater_ayarlari(a.n_bins))
             derinlikler[i] = float(kr.depth)
+            # A11: CAP da kaydediliyor. Daha once yalnizca derinlik
+            # tutuluyordu ve capin olu olup olmadigi ensemble ciktisindan
+            # OKUNAMIYORDU -- her turda ayri bir betikle bakiliyordu.
+            caplar[i] = float(kr.diameter)
         except Exception as e:                              # noqa: BLE001
             derinlikler[i] = float("nan")
+            caplar[i] = float("nan")
             print(f"      krater OLCULEMEDI: {str(e)[:70]}", flush=True)
 
     def ilerleme(i, n, mesaj):
@@ -114,18 +145,34 @@ def main() -> int:
 
     Y = ileri_kosu_ikiasama(
         X, material=_malzeme(), device=a.device, t1=T1_OLCULEN,
-        t_end=a.t_end, r1=3.0, lam1=19.0, r2=25.0, lam2=2.0,
+        t_end=a.t_end, r1=3.0, lam1=19.0, r2=25.0, lam2=a.lam2,
         spacing=7.0, sahne_taban=SAHNE, ilerleme=ilerleme,
         durum_kaydi=kaydet)
 
     D = np.array([derinlikler.get(i, np.nan) for i in range(len(X))])
+    C = np.array([caplar.get(i, np.nan) for i in range(len(X))])
     print(f"\n{'=' * 78}", flush=True)
     print(f"{'#':>2} " + " ".join(f"{ad:>14}" for ad in uzay.names)
-          + f" {'beta':>9} {'derinlik':>9}", flush=True)
+          + f" {'beta':>9} {'derinlik':>9} {'cap':>9}", flush=True)
     print("-" * 78, flush=True)
     for i, (x, y) in enumerate(zip(X, Y, strict=False)):
         print(f"{i:2d} " + " ".join(f"{v:14.5g}" for v in x)
-              + f" {y[0]:9.5f} {D[i]:9.4f}", flush=True)
+              + f" {y[0]:9.5f} {D[i]:9.4f} {C[i]:9.4f}", flush=True)
+
+    # A11 -- CAP OLU MU? Yayilim burada, ciktinin ICINDE raporlaniyor;
+    # daha once ayri bir betikle bakiliyordu ve her turda unutuluyordu.
+    sonlu = C[np.isfinite(C)]
+    if sonlu.size:
+        yay = float(sonlu.max() - sonlu.min())
+        bagil = yay / max(abs(float(np.mean(sonlu))), 1e-30)
+        print(f"KRATER CAPI: {sonlu.size} sonlu deger, aralik "
+              f"{sonlu.min():.4f} - {sonlu.max():.4f} m, yayilim "
+              f"{yay:.4f} m ({100 * bagil:.2f}%)", flush=True)
+        print(f"  benzersiz deger sayisi = {len(np.unique(sonlu))}"
+              f"  -> {'OLU' if len(np.unique(sonlu)) <= 1 else 'CANLI'}",
+              flush=True)
+    else:
+        print("KRATER CAPI: hicbir noktada olculemedi", flush=True)
 
     print("\nPARAMETRE ETKILERI (kose ortalamalari)", flush=True)
     print(f"{'parametre':>16} {'beta farki':>12} {'derinlik farki':>15}",
