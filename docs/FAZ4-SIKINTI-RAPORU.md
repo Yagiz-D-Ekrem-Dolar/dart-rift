@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-17 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 13 (bölüm 1) · **Açık:** 4 — A3, A11, A12, A17
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 3 — A11, A12, A17
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -17,6 +17,19 @@
 >
 > `test_KAPANAN_ve_ACIK_sayilari_TABLOLARLA_tutuyor` iki biçimi de
 > sayıyor ve tam bu yüzden düştü. Test haklıydı, ben değildim.
+
+> ### Sayaç `4 → 3` (2026-08-21) — **neden**
+>
+> A3'ün gövdesi `2026-08-17`'de *"Bu yarısı da KAPANDI (iş `1506785`)"*
+> yazıyordu ve [KAYIT-049](defter/KAYIT-049_2026-08-18_CI-yesil-A3-kapandi.md)
+> de A3'ü kapanmış sayıyordu; **başlık** ise onu hâlâ açık listeliyordu.
+> Yani rapor kendi özetiyle çelişiyordu — testin yakalayamadığı bir
+> çelişki, çünkü test `Açık:` sayısını **başlıklarla** karşılaştırıyor
+> ve iki taraf da A3'ü açık sayıyordu.
+>
+> Değişen tek şey **etiket**: A3 başlığına `KAPANDI` eklendi, sayaç
+> `4 → 3` ve bölüm 1'in kapananı `13 → 14` oldu. Ölçüm yok, gerekçe
+> yerinde duruyor.
 
 ---
 
@@ -108,7 +121,7 @@ On ölçütün **onu da** `koşulmadı`. Kapı raporu üretildi ve
 > **Bedel kaydedildi:** bilimsel iddia *"iç yapıyı çıkardık"*tan
 > **"matris gözenekliliğini çıkardık"**a daraldı. `f_boulder` artık
 > serbest değil ve Hera onu görüntüleyecek.
-### A3 — ADR-0041 ve ADR-0042 **koşullu** (yarısı kapandı)
+### A3 — ADR-0041 ve ADR-0042 **koşullu** → **KAPANDI** (2026-08-17)
 
 Ölçümler **küp geometrisinde** yapıldı, DART geometrisinde değil.
 Boşluk 3 `λ = 2` (8:1) oranında kapandı; ADR-0026 daha yükseğini
@@ -1674,6 +1687,104 @@ nicemleme bir **taban** koyuyor ama açığın tamamını açıklamıyor.
 > **Ayrıştırılmadı.** O yüzden `91,3 kg`'ı *"gerçek hedef ejektası"*
 > diye okumayı geri alıyorum; kesin olan tek şey `r > R` ölçütünde
 > nokta 6'da `3,91e4 kg`'lık **bir parçacığın** yüzeyi geçtiği.
+
+#### `boulder_Y0` **hiçbir taramada değişmedi** (2026-08-21, yerel CPU)
+
+A17'nin bütün elemeleri `β = 1,411216`'yı bit düzeyinde bırakınca şunu
+sordum: *`Y0` taramaları çarpmanın gerçekten gördüğü malzemeyi
+değiştirdi mi?* Koda bakınca eleme koşullarının `Y0` kolu
+
+```
+faz48_iki_asama.py:156   return {**kw, "matrix_Y0": float(Y0)}
+inference/forward.py:99  kw.update(boulder_alpha0=a0, matrix_Y0=y0, ...)
+inference/forward.py:103 kw.update(matrix_alpha0=a0, matrix_Y0=y0, ...)
+```
+
+**yalnızca matrisi** eziyor. `build_scene`'in `boulder_Y0` varsayılanı
+`1,0e7 Pa` ve `SAHNE` onu hiç vermiyor: yani FAZ 4'ün **hiçbir**
+taramasında (`Y0` `1 Pa`–`2,15e6 Pa`, çıkarım uzayının `Y0` ekseni
+dahil) blokların mukavemeti değişmedi. Bloklar hedefin kütlece
+**%36,3**'ü.
+
+Ölçüm **kanıt koşusu değil, sahne kurulumu** — yerel CPU'da koştu
+(`scripts/a17_carpma_bolgesi_malzemesi.py`, üretim tohumu `20260801`).
+Ölçütler veriye bakılmadan yazıldı (betiğin kendi belgesinde).
+
+##### İki kuşkum da **çürüdü**
+
+| kuşku | ölçüt | ölçülen | yargı |
+|---|---|---|---|
+| *"çarpma bir bloğun içine düşüyor"* | blok kütle payı `>= %50` | `r <= 8 m`: **`0,0000`**, `r <= 15 m`: `0,0738` | **çürüdü** |
+| *"ejekta ayrıklaştırma tabanının altında"* | krater içinde `< 20` parçacık | üretim inceltmesinde (`λ₂ = 2`) `r <= 15 m`'de **`223`** hedef parçacığı | **çürüdü** |
+
+Gereken ejekta (`6,449e6 kg m/s`) ince bölge parçacığı (`4,66e4 kg`)
+cinsinden: `1 m/s`'de `138` parçacık, `10 m/s`'de **`13,8`**,
+`100 m/s`'de `1,4`. Yani nicemleme kaba ama **engel değil**.
+
+##### Ayakta kalan: bölgenin **ortalama mukavemetini blok belirliyor**
+
+| bölge | `n` (kaba / ince) | blok kütle payı | kütle ağırlıklı `Y0` |
+|---|---|---|---|
+| `r <= 8 m` | `4` / `37` | `0,0000` | `1,00e4 Pa` |
+| `r <= 15 m` (krater) | `22` / `223` | `0,0738` | **`7,47e5 Pa`** |
+| `r <= 25 m` | `116` / `952` | `0,3366` | `3,37e6 Pa` |
+
+Krater bölgesinin kütlesi `%92,6` matris ama **ortalama mukavemeti
+matrisin `75` katı**, çünkü `%7,4`'lük blok `1e7 Pa`'da duruyor.
+Bunun aritmetik sonucu:
+
+| `matrix_Y0` | bölgenin `<Y0>`'ı |
+|---|---|
+| `1 Pa` | `7,3779e5` |
+| `10 Pa` | `7,3780e5` |
+| `100 Pa` | `7,3788e5` |
+| `1e4 Pa` | `7,4705e5` |
+| `2,15e6 Pa` | `2,7292e6` |
+
+> İş `1506779`'un üç kolu (`1 / 10 / 100 Pa`) krater bölgesinin kütle
+> ağırlıklı mukavemetini **`1,0001` kat** oynatıyor. *"Üçü de bit
+> düzeyinde aynı çıktı"* bulgusu bu yüzden `Y0`'ın etkisiz olduğunu
+> göstermiyor olabilir: **taranan şey bölgede neredeyse hiç
+> değişmiyordu.**
+
+Bu bir **aritmetik**, sınav değil: ölçülen tek şey blok kütle payı,
+gerisi ondan çıkıyor. Ve kütle ağırlıklı ortalama bir **vekil** —
+matris `%92,6` ile sürekli faz ve kazıyı o yönetiyor olabilir. Bunu
+ancak bir koşu söyler.
+
+##### Çarpma noktasının malzemesi bir **kura** — sekiz tohum
+
+| tohum | `r <= 15 m` blok kütle payı |
+|---|---|
+| **`20260801`** (üretim) | **`0,0738`** |
+| `20260802` | `0,4373` |
+| `20260803` – `20260808` | `0,0000` (altı tohumun altısı) |
+
+Sekiz tohumun altısında krater bölgesi **saf matris**. Yani `Y0`
+taramasının anlamlı olup olmaması tohuma bağlı ve **bütün A17
+koşuları tek tohumla** (`20260801`) yapıldı. Bu, ensemble'ın
+istatistiksel yakınsaması için de ayrı bir uyarı.
+
+##### Bunu kapatacak koşu — ölçüt **önden**
+
+İki kol, ikisi de ucuz (`t_end = 0,2 s`, tek nokta):
+
+| kol | değişen | beklenti |
+|---|---|---|
+| **B1** | üretim tohumu, `boulder_Y0` `1e7 -> 1e2 Pa` | `β` oynarsa mukavemet **elenmemiştir** |
+| **B2** | tohum `20260803` (saf matris), `matrix_Y0` `1e4 -> 1 Pa` | `β` oynarsa mukavemet **elenmemiştir** |
+
+- İki kolun herhangi birinde `β` farkı `> %10` -> *"`Y0` da değil"*
+  yargısı **geri alınır**; mukavemet A17'nin adayı olarak geri döner.
+- İkisinde de fark `< %1` -> mukavemet, öncekinden **daha sağlam**
+  bir zeminde elenmiş olur (bu kez taranan şey bölgede gerçekten
+  değişmişti).
+- Arası -> kısmi; blok geometrisi ayrıştırılmalı.
+
+> **Bu koşu bu oturumda gönderilemedi:** TRUBA MCP bağlantısı
+> `egitimg16u1` olarak açılıyor ve `/arf/scratch/egitimg16u4`
+> `Permission denied` veriyor; `driftclaude` çalışma alanı erişilebilir
+> değil. Bu bir kod sorunu değil, **erişim** sorunu.
 
 ---
 
