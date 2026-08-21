@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 4 — A11, A12, A17, A18
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 5 — A11, A12, A17, A18, A19
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -2271,6 +2271,80 @@ hiçbir malzeme sabitine bağlı değil.
 
 Bu bulgu `tests/test_pi_olcekleme.py` ile kilitlendi: düzelirse test
 düşer ve rapor güncellenmek zorunda kalır.
+
+---
+
+### A19 — **`krater_derinlik` krateri ölçmüyor: yokken var, varken yok** (2026-08-21)
+
+`krater_derinlik` bu projenin **en güçlü** gözlenebiliriydi
+(`G4-C`'de `q2 = 0,907`) ve çıkarım ona dayanıyor. İki yönlü sınandı;
+ikisi de kötü çıktı.
+
+#### Boş sınav — çarpmamış sahneye ne diyor
+
+Ensemble yolunun `40` noktasının **çarpmamış** (referans)
+konfigürasyonu çıkarıcıya verildi:
+
+| | ölçülen |
+|---|---|
+| REF (çarpma **yok**) derinlik | `7,94 – 12,23 m`, medyan **`10,85 m`** |
+| SON (raporlanan) derinlik | `13,65 – 16,46 m` |
+| fark (çarpmaya ait olan) | `3,61 – 6,12 m` |
+| **raporlanan değerin taban payı** | **`%67,7`** |
+
+Ve vekil, hangisinin parametrelerle açıklandığını söylüyor:
+
+| büyüklük | `q2` |
+|---|---|
+| SON (raporlanan) | `0,2769` |
+| REF (çarpmasız taban) | `0,1287` |
+| **fark (gerçek krater)** | **`-0,3283`** |
+
+> Raporlanan derinliğin üçte ikisi çarpmayla ilgisi olmayan **yüzey
+> yapısı**; ve çarpmaya ait olan kısım parametrelerle **ortalamadan
+> bile kötü** açıklanıyor (`q2 < 0`).
+>
+> Bir gözlenebilirin parametrelerle güzel korele olması, ölçmek
+> istediğin şeyi ölçtüğü anlamına gelmiyor. **Taban da parametrelere
+> bağlıysa korelasyon tabandan gelir** — `boulder_alpha0` ve
+> `f_boulder` yüzeyin pürüzünü belirliyor.
+
+#### Dolu sınav — gerçek çukura ne diyor
+
+Sentetik, denetimli fikstür (dolu küre, eksende `12 m` derin, `15°`
+yarı-açılı düz tabanlı çukur, `508` parçacık kazılmış; çukurun
+gerçekten orada olduğu ayrıca doğrulanıyor):
+
+| | ölçülen |
+|---|---|
+| gerçek derinlik | `12 m` |
+| çıkarıcının dediği | **`-0,03 m`**, çap `0` |
+
+#### İkisi birlikte
+
+| sınav | olması gereken | ölçülen |
+|---|---|---|
+| pürüzlü yüzey, çarpma yok | `0` | **`0,26 m`** |
+| ensemble yolu, çarpma yok | `0` | **`10,85 m`** |
+| gerçek `12 m` çukur | `~12 m` | **`-0,03 m`** |
+
+> **Çıkarıcı yokken var, varken yok diyor.**
+
+Düzgün (pürüzsüz) yüzeyde `x == x_referans` verildiğinde tam `0`
+dönüyor — yani tek tuttuğu değişmez bu. Pürüz girer girmez bozuluyor.
+
+#### Sonucu nereye kadar gidiyor
+
+- `G4-C`'nin `C1`/`C2`/`C3` yargıları `krater_derinlik`'e dayanıyor.
+- ADR-0046 `Y0`'ı *"derinlikte görünmüyor"* diye uzaydan çıkardı —
+  o ölçüm de bu gözlenebilirle yapıldı.
+- ADR-0045 (çap mı derinlik mi) yeniden okunmalı.
+
+**Bu A19 kapanmadan çıkarım tarafında hiçbir sayı güvenilir değil.**
+
+Kilit: `tests/test_krater_bos_sinav.py` — iki kusur
+`xfail(strict=True)` ile sabitlendi; düzeltildikleri gün testler
+**düşer** ve bu bölüm güncellenmek zorunda kalır.
 
 ---
 
