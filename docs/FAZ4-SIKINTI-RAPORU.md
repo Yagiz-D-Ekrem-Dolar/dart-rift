@@ -1903,6 +1903,64 @@ eşiğini geçmiş. Ama merminin enerjisinin `%70`'i kinetik kalıp geri
 çıkıyor ve **sahnedeki en sıcak parçacık merminin kendisi** — yani
 hedef güçlü bir şok hiç görmüyor.
 
+##### **`β` mermi çözünürlüğünde yakınsamamış** — ve `1`'e doğru düşüyor
+
+Ölçüt EK-3'te, koşudan **önce** (`8ed77fc`). Tek değişen `λ₁`;
+`t_end`, sahne, tohum, `λ₂` aynı.
+
+| `λ₁` | `A1` = mermi çapı / aralık | `N` (aşama-1) | **`β`** | `n_ejekta` |
+|---|---|---|---|---|
+| — (tek aşamalı, `λ = 2`) | `0,215` | `11 183` | `1,617583` | `803` |
+| `19` | `2,039` | `12 705` | `1,411216` | `28` |
+| **`38`** | **`4,078`** | `23 391` | **`1,185066`** | `40` |
+
+`Δβ = -0,226150`, bağıl **`%16,0`** — ölçütün `%10` dalı. Yargı:
+**`β` mermi çözünürlüğünde yakınsamamış.**
+
+> Yön **gözlemden uzağa**. Mermi daha iyi çözüldükçe geri sekme
+> zayıflıyor; sekme `β`'nın **tamamı** olduğu için `β` de düşüyor.
+> Üç nokta tekdüze azalıyor ve azalma **hızlanmıyor da yavaşlamıyor**
+> (`-0,206`, `-0,226`). Yakınsama limiti gözlemin `3,2225`'i değil,
+> **`β -> 1`** yönü: yani *"momentum artışı yok"*.
+
+##### Bu `G4-B1`'i **düşürüyor**
+
+`B1` ölçütü *"ardışık çözünürlükte `β` farkı `< 0,1`"* diyor ve
+kapı raporunda `0,000843` ile **geçti**. Ama o tarama `λ₂`'yi
+(**hedef** inceltmesi) değiştiriyordu. `λ₁` (**mermi** inceltmesi)
+yönünde aynı ölçüt:
+
+| tarama yönü | `Δβ` | `B1` eşiği `0,1` |
+|---|---|---|
+| `λ₂` `2 -> 4` (hedef) | `0,000843` | **geçti** |
+| `λ₁` `19 -> 38` (mermi) | **`0,226150`** | **düştü** (`268` kat) |
+
+> `B1`'in *"gözlenebilirler yakınsıyor"* yargısı, `β`'yı **üreten**
+> yönde hiç sınanmamıştı. `β`'nın payındaki tek şey merminin
+> sekmesiyken yakınsamayı hedef ızgarasında aramak, ölçmek istenen
+> şeyin yanında ölçmekti.
+
+##### A17'nin cevabı: `β` **hedeften hiç beslenmiyor** ve sekme bir ayrıklaştırma yapayı
+
+Bu turda ölçülenler tek bir tabloya çıkıyor:
+
+| ölçüm | sonuç |
+|---|---|
+| kaçan kütle (her çözünürlükte) | merminin **tamamı**; hedef payı **tam `0`** |
+| kaçan madde şoklanmış mı | evet (`u = 1,19 x u_iv`) |
+| merminin enerjisinin ne kadarı iç enerjiye döndü | **`%29,7`** |
+| sahnedeki en sıcak parçacık | **mermi** — hedef güçlü şok görmüyor |
+| hasar açık/kapalı | `Δβ = 5,9e-6` — **eleme** |
+| mermi çözünürlüğü `2` kat | `Δβ = -%16` — **yakınsamamış**, `1`'e doğru |
+
+> Yani `β = 1,41` bir fizik sonucu değil, **çözülmemiş bir çarpışmanın
+> artığı**. Çözünürlük arttıkça artık küçülüyor ve altından
+> **hedef ejektası çıkmıyor** — çünkü hiç yok.
+>
+> Gözlemin `3,2225`'ini bu ileri modelden çıkarmak için eksik olan
+> şey bir parametre değil: hedef maddesini fırlatan **mekanizmanın
+> kendisi**. Bu bir **ADR kararı** ve ölçüm tarafı artık kapalı.
+
 ---
 
 ## 2. KAPANAN sıkıntılar — kronolojik
