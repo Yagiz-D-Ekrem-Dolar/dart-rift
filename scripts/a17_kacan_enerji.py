@@ -54,6 +54,14 @@ def main() -> int:
         "u_kacan_max": float(uk.max()),
         "u_sahne_max": float(u.max()),
         "u_mermi_max": float(u[mermi].max()) if mermi.any() else float("nan"),
+        # HEDEFIN en sicak parcacigi. Uretimde sahnedeki en yuksek `u`
+        # merminin ustunde -- yani sok hedefe GECMIYOR. Eslesme
+        # duzelirse bu oran 1'i gecmeli.
+        "u_hedef_max": float(u[hedef].max()) if hedef.any() else float("nan"),
+        "u_hedef_max / u_mermi_max": (
+            float(u[hedef].max() / u[mermi].max())
+            if hedef.any() and mermi.any() and u[mermi].max() > 0
+            else float("nan")),
         "u_iv": U_IV, "u_cv": U_CV,
         "gelen_ozgul_KE": ke0,
         "u_kacan / u_iv": u_kacan / U_IV,
