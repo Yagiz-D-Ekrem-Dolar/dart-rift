@@ -53,6 +53,7 @@ class WarpSolid3D:
         gravity_rebuild_every: int = 1,
         gravity_drift_tol: float = 0.25,
         damage_seed: int = 0,
+        D0: np.ndarray | None = None,
     ):
         _init_warp()
         self.mat = mat
@@ -144,6 +145,13 @@ class WarpSolid3D:
         self._pp = make_porosity_wp(mat.porosity)
         # --- Grady-Kipp hasar (P2 §1.3 STRETCH; ADR-0027) ---
         self._damage = mat.damage.enabled
+        if not self._damage and D0 is not None and np.any(
+                np.asarray(D0, dtype=np.float64) > 0.0):
+            # Sessizce yutmak, A17'de bir kosu boyunca fark edilmeyen
+            # kusurun ta kendisiydi.
+            raise ValueError(
+                "D0 verildi ama damage.enabled=False -- tasinan hasar "
+                "SESSIZCE atilirdi")
         if self._damage:
             from ..cpu_reference.damage_ref import seed_flaws, youngs_modulus
             from .damage_gradykipp import make_damage_wp
@@ -180,8 +188,26 @@ class WarpSolid3D:
                 else mat.tillotson.A
             self._dp = make_damage_wp(
                 mat.damage, r_s, youngs_modulus(k_bulk, mat.strength.shear_G))
-            self.D = wp.zeros(n, dtype=F, device=dev)
-            self.D_cbrt = wp.zeros(n, dtype=F, device=dev)
+            # BASLANGIC HASARI. Iki asamali semada asama-2 cozucusu
+            # asama-1'in biriktirdigi `D`yi devralmali; devralmazsa
+            # sokun urettigi butun hasar `t1`'de SILINIR ve cisim
+            # cekmede yeniden "sinirsiz dayanikli" olur (ADR-0027).
+            # Olculdu: `t = 2,2 ms`'te `D_max = 0,060`, aktarimdan
+            # sonra `0`.
+            #
+            # `D_cbrt = D^(1/3)`: `accumulate_damage_k` `D`yi
+            # `D_cbrt^3` diye turetir, yani ikisi tutarli baslamali.
+            if D0 is None:
+                d_init = np.zeros(n, dtype=np.float64)
+            else:
+                d_init = np.asarray(D0, dtype=np.float64)
+                if d_init.shape != (n,):
+                    raise ValueError(
+                        f"D0 uzunlugu {d_init.shape} != {(n,)}")
+                if np.any(d_init < 0.0) or np.any(d_init > 1.0):
+                    raise ValueError("D0 [0,1] araliginda olmali")
+            self.D = wp.array(d_init, dtype=F, device=dev)
+            self.D_cbrt = wp.array(np.cbrt(d_init), dtype=F, device=dev)
             self.dDdt_cbrt = wp.zeros(n, dtype=F, device=dev)
             self.strain = wp.zeros(n, dtype=F, device=dev)
             # TASINAN gerilme — DURUMDAN AYRI. `S` elastik durumdur ve

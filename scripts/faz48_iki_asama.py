@@ -180,7 +180,7 @@ def _alpha0_denetle(alpha0, gozeneksiz: bool):
     return a
 
 
-def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None):
+def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None, D0=None):
     # Kusur tohumlamasi sahneyle AYNI koke baglanir; boylece hasarli kol
     # da yeniden uretilebilir ve "hangi tohum" sorusu tek yerde yanitlanir.
     from dartrift.warp_core.solver_solid import WarpSolid3D
@@ -191,7 +191,7 @@ def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None):
         mat if mat is not None else _malzeme(), RefParams(cfl=0.25),
         alpha0=np.ascontiguousarray(alpha0), Y0=np.ascontiguousarray(Y0),
         device=device, check_every=10 ** 9,
-        damage_seed=int(SAHNE["root_seed"]))
+        damage_seed=int(SAHNE["root_seed"]), D0=D0)
 
 
 def _kos(sol, t_bas: float, t_end: float, azami: int, etiket: str,
@@ -398,6 +398,10 @@ def main() -> int:
     print(f"  SAHNE momentum hatasi = {d['sahne_momentum_hatasi']:.3e}  "
           f"kutle = {d['sahne_kutle_hatasi']:.3e}", flush=True)
     print(f"  toplam N = {d['n_toplam']}", flush=True)
+    if "hasar_max" in d:
+        print(f"  HASAR tasindi: max {d['hasar_max']:.4f}  "
+              f"kutle agirlikli {d['hasar_kutle_agirlikli']:.4e}  "
+              f"defter hatasi {d['hasar_kutle_hatasi']:.3e}", flush=True)
     print(f"  korunum: kutle {d['kutle_hata']:.2e}  "
           f"momentum {d['momentum_hata']:.2e}  enerji {d['enerji_hata']:.2e}",
           flush=True)
@@ -411,9 +415,14 @@ def main() -> int:
     # ---------------------------------------------------------- ASAMA 2
     print(f"\nASAMA-2: lam={a.lam2}, N={sahne.n}, t {t:.4e} -> {a.t_end}",
           flush=True)
+    # ASAMA-1'IN HASARI DEVRALINIYOR. Devralinmazsa `t1`'de silinir;
+    # olculdu (2026-08-21): asama-1'de `D_max = 0,060`, aktarimdan
+    # sonra cozucu `D = 0` ile basliyordu ve `--hasarli` kolu hasarsiz
+    # kolla ayni `beta`yi veriyordu.
     sol2 = _cozucu(sahne.x, sahne.v, sahne.m, sahne.e, sahne.h,
                    _alpha0_denetle(sahne.alpha0, a.gozeneksiz), sahne.Y0, a.device,
-                   mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
+                   mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli),
+                   D0=sahne.hasar if a.hasarli else None)
     izler = []
     # Aktarimdan sonra parcacik kimlikleri degisti; krater referansi
     # ASAMA-1'in baslangic konumlarindan ALINAMAZ. Bu yuzden aktarim

@@ -44,7 +44,8 @@ class IkiAsamaSahne:
     """Aşama-2'ye verilecek birleşik durum + **kütle defteri**."""
 
     __slots__ = ("x", "v", "m", "e", "h", "alpha0", "Y0", "is_boulder",
-                 "is_impactor", "mermi_kesri", "kaynak", "diagnostics")
+                 "is_impactor", "mermi_kesri", "hasar", "kaynak",
+                 "diagnostics")
 
     def __init__(self, **kw):
         for k in self.__slots__:
@@ -191,7 +192,13 @@ def asama2_sahnesi(a1_durum: dict, a1_ince_maske, a1_m, a1_alpha0, a1_Y0,
     })
     return IkiAsamaSahne(x=x, v=v, m=m, e=e, h=h, alpha0=alpha0, Y0=Y0,
                          is_boulder=blok, is_impactor=is_imp,
-                         mermi_kesri=f_mermi, kaynak=kaynak,
+                         mermi_kesri=f_mermi,
+                         # Iki seviyeli yol hasar TASIMIYOR: bu surum
+                         # zaten ADR-0043 §4f ile emekli (momentumun
+                         # %69'unu atiyordu). Alan sifir veriliyor ki
+                         # `__slots__` eksik kalmasin ve okuyan bunun
+                         # bir SECIM oldugunu gorsun.
+                         hasar=np.zeros(len(m)), kaynak=kaynak,
                          diagnostics=tani)
 
 
@@ -245,12 +252,18 @@ def asama2_sahnesi_ucseviye(a1, a1_durum: dict) -> IkiAsamaSahne:
     # karisim kacinilmaz oldugu icin KESIR olarak tasiniyor. Bkz.
     # `coarsen_to_sites`in `mermi_kesri` bolumu.
     f_mermi1 = np.asarray(a1.is_impactor, dtype=bool).astype(np.float64)
+    # HASAR: `state_numpy` `D`yi hasar KAPALIYKEN de dondurur (sifir
+    # dizisi), o yuzden kosulsuz okunur ve iki kol AYNI yoldan gecer.
+    D1 = np.asarray(a1_durum.get("D", np.zeros(len(m1))), dtype=np.float64)
+    if D1.shape != (len(m1),):
+        raise ValueError(f"D uzunlugu {D1.shape} != {(len(m1),)}")
     kaba = coarsen_to_sites(
         x1[ince], v1[ince], m1[ince], e1[ince],
         sites_from_cloud(x1[ince], s2),
         alpha0=np.asarray(a1.alpha0)[ince], Y0=np.asarray(a1.Y0)[ince],
         is_boulder=np.asarray(a1.is_boulder)[ince],
-        mermi_kesri=f_mermi1[ince])
+        mermi_kesri=f_mermi1[ince],
+        hasar=D1[ince])
 
     dis = ~ince                       # zaten `s2` cozunurlugunde
     nk = len(kaba["m"])
@@ -268,6 +281,9 @@ def asama2_sahnesi_ucseviye(a1, a1_durum: dict) -> IkiAsamaSahne:
     # Kesir: kabalastirilan bolgede tasinan deger, kopyalanan bolgede
     # bayragin kendisi (orada karisim YOK, birebir kopya).
     f_mermi = np.concatenate([kaba["mermi_kesri"], f_mermi1[dis]])
+    # Kopyalanan bolge hasarini BIREBIR tasir; kabalastirilan bolge
+    # kutle-agirlikli ortalamayi.
+    hasar = np.concatenate([kaba["hasar"], D1[dis]])
     kaynak = np.concatenate([np.zeros(nk, np.int8),
                              np.ones(int(dis.sum()), np.int8)])
 
@@ -290,8 +306,16 @@ def asama2_sahnesi_ucseviye(a1, a1_durum: dict) -> IkiAsamaSahne:
         # Kesir pasif skaler: toplam mermi kutlesi TAM korunmali.
         "mermi_kutle_hatasi": float(kaba["mermi_kutle_hatasi"]),
         "mermi_kutlesi": float((m * f_mermi).sum()),
+        # HASAR DEFTERI: `Sum m D` TAM korunmali ve tasinan hasarin
+        # buyuklugu GORUNMELI -- sifir cikarsa aktarim onu yine yutmus
+        # demektir (A17'de tam bu oldu ve bir kosu boyunca fark
+        # edilmedi).
+        "hasar_kutle_hatasi": float(kaba["hasar_kutle_hatasi"]),
+        "hasar_max": float(hasar.max()) if len(hasar) else 0.0,
+        "hasar_kutle_agirlikli": float((m * hasar).sum()
+                                       / max(float(m.sum()), 1e-300)),
     })
     return IkiAsamaSahne(x=x, v=v, m=m, e=e, h=h, alpha0=alpha0, Y0=Y0,
                          is_boulder=blok, is_impactor=is_imp,
-                         mermi_kesri=f_mermi, kaynak=kaynak,
+                         mermi_kesri=f_mermi, hasar=hasar, kaynak=kaynak,
                          diagnostics=tani)

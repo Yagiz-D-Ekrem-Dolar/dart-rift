@@ -78,7 +78,8 @@ def _en_yakin_site(x: np.ndarray, siteler: np.ndarray,
 
 
 def coarsen_to_sites(x, v, m, e, siteler, alpha0=None, Y0=None,
-                     is_boulder=None, mermi_kesri=None) -> dict:
+                     is_boulder=None, mermi_kesri=None,
+                     hasar=None) -> dict:
     """İnce parçacıkları `siteler`e **korunumlu** aktar.
 
     Boş kalan siteler **düşürülür** — parçacığı olmayan bir siteye
@@ -187,6 +188,31 @@ def coarsen_to_sites(x, v, m, e, siteler, alpha0=None, Y0=None,
         sonraki = float((out["m"] * out["mermi_kesri"]).sum())
         out["mermi_kutle_hatasi"] = (abs(sonraki - onceki)
                                      / max(onceki, 1e-300))
+
+    if hasar is not None:
+        # HASAR da pasif skaler ve `mermi_kesri` ile AYNI sekilde tasinir.
+        #
+        # Neden gerekli: asama-1'de sok gecerken Grady-Kipp hasari
+        # birikiyor (olculdu: `t = 2,2 ms`'te `D_max = 0,060`), ama
+        # aktarim onu TASIMIYORDU ve asama-2 cozucusu `D = 0` ile
+        # basliyordu. Yani sokun urettigi butun hasar `t1`'de
+        # SILINIYORDU -- ADR-0027'nin "cekmede sinirsiz dayanikli"
+        # dedigi duruma her aktarimda geri donuluyordu.
+        #
+        # Kutle-agirlikli ortalama: `D` bir HACIM kesri (kirik kesit
+        # orani) oldugu icin kutleyle agirliklandirmak dogru birinci
+        # mertebe tasima. Tam korunan buyukluk `Sum m_i D_i`.
+        dz = np.asarray(hasar, dtype=np.float64)
+        if len(dz) != len(m):
+            raise ValueError(f"hasar uzunlugu {len(dz)} != {len(m)}")
+        if np.any(dz < 0.0) or np.any(dz > 1.0):
+            raise ValueError("hasar [0,1] araliginda olmali")
+        w = np.bincount(idx, weights=m * dz, minlength=ns)
+        out["hasar"] = w[dolu] / m_k[dolu]
+        onceki_h = float((m * dz).sum())
+        sonraki_h = float((out["m"] * out["hasar"]).sum())
+        out["hasar_kutle_hatasi"] = (abs(sonraki_h - onceki_h)
+                                     / max(onceki_h, 1e-300))
 
     # ATAMA MESAFESI: korunum tam olsa bile kutle UZAGA tasinmis olabilir.
     # Bir parcacik komsu olmayan bir siteye atandiysa aktarim maddeyi
