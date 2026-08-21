@@ -2050,6 +2050,177 @@ Geriye tek bir ifade kalıyor ve artık ölçülü:
 > `3,2225`'i için eksik olan bir parametre değil, ejektayı üreten
 > **mekanizmanın kendisi**.
 
+##### **Kök neden bulundu: kütle oranı** — şok hedefe girmiyordu (TRUBA `1515337`)
+
+Kaçan maddenin enerjisine bakarken hedefinkine de bakıldı ve ölçü
+şuydu (tek aşamalı kontrol kolu, `t = 0,2 s`):
+
+| | |
+|---|---|
+| merminin en sıcak parçacığı | `5,6445e6 J/kg` |
+| **hedefin** en sıcak parçacığı | **`8 993 J/kg`** |
+| oran | **`0,0016`** |
+
+`6,1 km/s`'lik bir çarpmada hedefin çarpma noktası `1e6 – 1e7 J/kg`'a
+çıkmalı. `9e3` çıkıyor — **üç mertebe** eksik. Şok hedefe **girmiyor**;
+`β`'nın hedeften beslenmemesi bunun **sonucu**.
+
+Hipotez: bugüne kadarki bütün çözünürlük ölçütleri **uzunluk**
+ölçütüydü. `A1 = mermi çapı / yerel aralık ≥ 2` geçiyor (`2,039`) ama
+o ölçüt merminin **aşama-1** ızgarasında çözülüp çözülmediğini
+soruyor. Aktarımdan sonra mermi aşama-2 ızgarasında ilerliyor ve orada
+ölçülmesi gereken **kütle** (`scripts/a17_kutle_orani.py`):
+
+| `λ₂` | `s_ince` | hedef parçacığı | **`μ = m_hedef/m_mermi`** | `N` |
+|---|---|---|---|---|
+| **2** (üretim) | `3,50 m` | `4,66e4 kg` | **`80,4`** | `10 413` |
+| 4 | `1,75 m` | `5,83e3 kg` | `10,1` | `10 880` |
+| 6 | `1,17 m` | `1,73e3 kg` | `2,98` | `35 959` |
+| 8 | `0,875 m` | `7,28e2 kg` | `1,26` | `71 134` |
+
+> Mermi (`579,4 kg`), üretimde kendisinden **`80` kat ağır tek bir
+> parçacığa** çarpıyor. Momentumun büyük kısmının geri sekmesi böyle
+> bir çarpışmada **beklenen** davranıştır.
+
+Ölçüt `docs/truba/OLCUT-kutle-orani.md`'de, koşudan **önce** yazıldı
+ve birincil gösterge bilerek `β` **değil** iç enerji seçildi.
+
+| `λ₂` | `μ` | `u_hedef_max` | `u_mermi_max` | **oran** | `β` | `n_ejekta` | `A1` |
+|---|---|---|---|---|---|---|---|
+| 2 | `80,4` | — | — | `0,0016` | `1,411216` | `28` | `2,039` |
+| **6** | `2,98` | `3,3635e6` | `4,4085e6` | **`0,7630`** | `1,307686` | `334` | `2,039` |
+| **8** | `1,26` | `3,3573e6` | `4,6243e6` | **`0,7260`** | `1,289949` | `436` | `2,039` |
+
+**Birincil ölçüt (`≥ 0,50`) geçti.** Hedefin en sıcak parçacığı
+`8 993 → 3,36e6 J/kg`: **`370` kat**. Şok artık hedefe giriyor.
+
+`A1` üç kolda da **tam olarak `2,039`** — yani korktuğum karışma
+olmadı, tarama gerçekten tek değişkenli.
+
+###### Ama `β` **yükselmedi** — ve "hedef ejektası" çıkan şey o değil
+
+`β` `1,411 → 1,308 → 1,290` ile **düştü**. Sebep ayrıştırıldı:
+
+| | `λ₂ = 6` | `λ₂ = 8` |
+|---|---|---|
+| kaçan parçacık | `334` | `436` |
+| kaçanlarda taşınan **mermi** kütlesi | `576,5 kg` | `578,7 kg` |
+| kaçanlarda taşınan **hedef** kütlesi | `108,71 kg` | `108,71 kg` |
+| hedef-çoğunluklu kaçan parçacık | **`2`** | **`2`** |
+
+> `108,713880 kg` iki koşuda **bit düzeyinde aynı** ve iki
+> parçacıktan geliyor (`54,35694018 kg` × 2). Bu parçacıkların
+> kütlesi ne `λ₂ = 6` (`1 726 kg`) ne `λ₂ = 8` (`728 kg`) ızgarasına
+> ait; **aşama-1'in kabalaştırılmış siteleri** (`0,72 – 55,75 kg`).
+>
+> Yani bu **krater ejektası değil**, çarpma noktasındaki çekirdek
+> maddesi. *"İlk kez hedef ejektası çıktı"* diye okumak yanlış olurdu.
+
+Eşleşme düzeldi, `β`'nın payına giren hedef maddesi hâlâ yok.
+
+##### Süre elemesi **yeniden açılıyor**
+
+*"Koşu süresi elendi"* yargısı (`t_end` `0,2 → 600 s`, `β` bit
+düzeyinde aynı) `μ = 80`'de ölçüldü — yani hedefin **hiç şoklanmadığı**
+rejimde. Eşleşme düzeldiğine göre eleme, **mekanizmanın yok olduğu
+yerde** yapılmış olabilir; bu deponun üç kez kaydettiği hatanın
+(`ölçütü etkisiz olduğu yerde sınamak`) aynısı olurdu.
+
+İş `1515364` gönderildi: `λ₂ = 6`, `t_end = 20 s`, ölçüt koşudan önce
+(`n_hedef_ejekta` zamanla **artıyor mu**).
+
+---
+
+#### Yakınsama denetimi — **iki düğme düşüyor** (TRUBA `1515317`)
+
+`scripts/yakinsama_denetimi.py` sekiz ayrıklaştırma düğmesini tek tek
+taradı (`t_end = 0,2 s`, taban `β = 1,4112162721355217`):
+
+| düğme | bağıl fark | yargı | mertebe | yeterli ayar |
+|---|---|---|---|---|
+| **`lam1`** | `2,349e-01` | **DÜŞTÜ** | **`2,07`** | — |
+| `lam2` | `5,001e-02` | geçti | — | `2` |
+| **`spacing`** | `1,455e-01` | **DÜŞTÜ** | — | — |
+| `r_ince1` | `9,168e-02` | geçti | — | `3` |
+| `r_ince2` | `4,843e-03` | geçti | — | `25` |
+| `cfl` | `1,585e-03` | geçti | — | `0,25` |
+| `n_mermi` | `1,090e-03` | geçti | — | `800` |
+| `t1` | `4,820e-03` | geçti | — | `4,767e-3` |
+
+**Yeni bulgu: `spacing` (kaba ızgara) de düşüyor** — `%14,6`. Bu
+düğme bugüne kadar **hiç taranmamıştı**.
+
+`lam1`'in gözlenen mertebesi **`2,07`**: hata `h²` ile küçülüyor, yani
+bu bir **gerçek ayrıklaştırma hatası**, bir kusur değil. Ve `r_ince1`
+`%9,17` ile eşiğin hemen altında — geçti ama **kıl payı**.
+
+> ### En önemli ders bu tabloda
+>
+> `lam2` `β`'yı yalnızca `%5` oynattı ve **"geçti"** dedi. Aynı
+> düğme, aynı taramada, hedefin iç enerjisini **`450` kat**
+> değiştirdi (`0,0016 → 0,73`).
+>
+> **Bir gözlenebilirin yakınsama testini geçmesi, fiziğin
+> yakınsadığı anlamına gelmiyor.** Gözlenebilir duyarsız olabilir —
+> ve `β` tam olarak öyleydi.
+
+---
+
+#### A11 — çap **hâlâ ölü**, ve "canlı" diyen gösterge **benim hatamdı**
+
+Ensemble `λ₂ = 4`, `n_bins = 16` ile koştu (iş `1515252`, `40` nokta,
+`0/40` düşen). Koruyucu ölçüt geçti: derinliğin bağıl yayılımı
+`%18,2` (`%10 – %40` bandında).
+
+Koşunun kendi çıktısı *"benzersiz değer sayısı = 40 -> CANLI"* dedi.
+**Yanlıştı.** Değerler `0,01 m` toleransla kümelenince:
+
+| seviye | nokta |
+|---|---|
+| `5,4032 m` | `3` |
+| `7,4916 m` | `37` |
+| **ayrı seviye sayısı** | **`2`** |
+
+`np.unique` kayan nokta gürültüsünü (`< 1e-4 m`, bağıl `1,3e-5`)
+ayrı değer sayıyordu. Gösterge **canlı derken gürültü sayıyordu** ve
+göstergeyi yazan bendim. Düzeltildi: artık toleransla kümeleme
+yapılıyor (`faz412_Y0_duyarliligi.py`).
+
+Yayılım `2,0884 m` ve bu **tam olarak bir kutu adımı**
+(`n_bins = 16` → `±2,1 m`). Yani çap iki nicemleme seviyesi arasında
+`3/40` noktada atlıyor, başka bir şey yapmıyor.
+
+Bağımsız doğrulama — vekil (`fit_surrogate`, aşağıda): `krater_capi`
+`q2 = 0,0111` (`S1`) / `0,2127` (`S3`). **Kullanılamaz.**
+
+> **Önceden yazılmış ölçütün ikinci dalı geçerli:** *"benzersiz `≤ 2`
+> **ya da** yayılım `< 2,1 m` -> `λ₂ = 4` yetmiyor."* İki koşul da
+> sağlandı. **A11 açık kalıyor.**
+>
+> Ölçütün ilk dalı (`benzersiz ≥ 5` **ve** yayılım `≥ 2,1`) eşiği tam
+> nicemleme değerine koyduğu için kötü kurulmuştu; bugün ikinci kez
+> yaptığım eşik hatası. Dalı sonradan değiştirmiyorum.
+
+#### Vekil **eğitildi** — ve `krater_derinlik` düştü
+
+`40` nokta, `docs/olcumler/ensemble_1515252.csv`:
+
+| gözlenebilir | `q2` (`S1`) | `q2` (`S3`) | güvenilir (`q2 > 0,5`) |
+|---|---|---|---|
+| `beta` | **`0,8725`** | **`0,9260`** | **evet** |
+| `krater_derinlik` | `0,2351` | `0,2769` | hayır |
+| `krater_capi` | `0,0111` | `0,2127` | hayır |
+
+G4-C'de (`λ₂ = 2`, `S1`) kayıtlı değerler `krater_derinlik 0,907`,
+`beta 0,749` idi. Yani `λ₂ = 2 → 4` ile **sıralama tersine döndü**.
+
+> **Çekince — bu kol tek değişkenli DEĞİL.** `λ₂` ile birlikte
+> `n_bins` de `8 → 16` değişti. Derinliğin `q2`'sindeki düşüşün
+> çözünürlükten mi kutulamadan mı geldiği **ayrıştırılmadı**. Kendi
+> kuralımı bu koşuda çiğnedim ve bunu sonucun yanına yazıyorum.
+
+---
+
 ### A18 — **`G4-C`'nin ensemble verisi depoda yok ve geri alınamıyor** (2026-08-21)
 
 Kapı raporu `G4-C`'yi üç ölçütle geçiriyor (`C1 = 1`, `C2 = 0,221142`,
@@ -2094,6 +2265,16 @@ o veriden yeniden eğitilebilecek.
 
 Bu A18'i kapatmıyor: kaybolan `λ₂ = 2` ensemble'ı geri gelmiyor ve
 yeni ensemble **üretim çözünürlüğünde değil**.
+
+> ### Kısmen yapıldı (2026-08-21)
+>
+> İş `1515252`'nin `40` noktası `docs/olcumler/ensemble_1515252.csv`
+> olarak depoya girdi (`X`, `β`, derinlik, ejekta kesri, **çap**) ve
+> vekil o dosyadan **yeniden eğitilebiliyor** — depo kopyası TRUBA
+> kopyasının verdiği `q2`'leri birebir veriyor.
+>
+> A18 yine de **açık**: kaybolan `λ₂ = 2` ensemble'ı geri gelmedi ve
+> `G4-C`'nin kapı raporundaki sayılar hâlâ yeniden üretilemiyor.
 
 ---
 

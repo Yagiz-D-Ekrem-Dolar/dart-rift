@@ -168,9 +168,19 @@ def main() -> int:
         print(f"KRATER CAPI: {sonlu.size} sonlu deger, aralik "
               f"{sonlu.min():.4f} - {sonlu.max():.4f} m, yayilim "
               f"{yay:.4f} m ({100 * bagil:.2f}%)", flush=True)
-        print(f"  benzersiz deger sayisi = {len(np.unique(sonlu))}"
-              f"  -> {'OLU' if len(np.unique(sonlu)) <= 1 else 'CANLI'}",
-              flush=True)
+        # SEVIYE sayisi, `np.unique` DEGIL. Ilk surum `np.unique(sonlu)`
+        # kullaniyordu ve `40` dondurmustu -- oysa degerler `2` ayri
+        # seviyede toplaniyordu (`5,4032` ve `7,4916`); aradaki fark
+        # `1e-4 m`'nin altinda, yani KAYAN NOKTA GURULTUSU. Gosterge
+        # "canli" derken aslinda gurultu sayiyordu.
+        tol = 0.01
+        s = np.sort(sonlu)
+        seviye = 1
+        for onceki, simdiki in zip(s, s[1:], strict=False):
+            if simdiki - onceki > tol:
+                seviye += 1
+        print(f"  ayri seviye sayisi (tol {tol} m) = {seviye}"
+              f"  -> {'OLU' if seviye <= 2 else 'CANLI'}", flush=True)
     else:
         print("KRATER CAPI: hicbir noktada olculemedi", flush=True)
 
@@ -209,7 +219,8 @@ def main() -> int:
 
     Path(a.out).write_text(json.dumps(
         {"uzay": list(uzay.names), "t_end": a.t_end, "X": X.tolist(),
-         "Y": Y.tolist(), "derinlik": D.tolist(), "etki": etki,
+         "Y": Y.tolist(), "derinlik": D.tolist(), "cap": C.tolist(),
+         "etki": etki,
          "gozlenebilirler": list(GOZLENEBILIRLER),
          "krater_ayarlari": KRATER_AYARLARI_DART,
          "durum_dizin": str(dz),
