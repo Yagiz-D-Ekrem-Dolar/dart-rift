@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 3 — A11, A12, A17
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 4 — A11, A12, A17, A18
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -2049,6 +2049,53 @@ Geriye tek bir ifade kalıyor ve artık ölçülü:
 > merminin sekmesi ve o sekme çözünürlükle **kayboluyor**. Gözlemin
 > `3,2225`'i için eksik olan bir parametre değil, ejektayı üreten
 > **mekanizmanın kendisi**.
+
+### A18 — **`G4-C`'nin ensemble verisi depoda yok ve geri alınamıyor** (2026-08-21)
+
+Kapı raporu `G4-C`'yi üç ölçütle geçiriyor (`C1 = 1`, `C2 = 0,221142`,
+`C3 = 1`) ve vekil kalitelerini yazıyor (`krater_derinlik`
+`q2 = 0,907`, `beta` `0,749`, `ejekta_kutle_kesri` `0,308`). Bu
+sayıların **hepsi** `40` noktalık bir `X, Y` matrisinden geliyor.
+
+**O matris depoda yok.**
+
+| aranan | nerede olması gerekirdi | durum |
+|---|---|---|
+| `g4c_ensemble.json` | `docs/olcumler/` | **yok** |
+| `faz46_g4c_s1.json` | `docs/olcumler/` | **yok** |
+| `faz412` çıktısı (`X`, `Y`) | `docs/olcumler/` | **yok** |
+
+Depoda yalnızca **betikler** var (`faz46_g4c_s1.py`,
+`faz46_g4c_hazir_ensemble.py`). Veri eski TRUBA çalışma alanında
+(`egitimg16u4`) kalmış ve orası artık erişilemez. `2026-08-21`'de
+erişilebilen her yerde arandı:
+
+```
+find /arf/scratch/egitimg16 /arf/scratch/egitimg16u1      /arf/home/egitimg16u1 -name "*g4c*" -o -name "faz46*" -o -name "faz412*"
+-> hicbir sonuc
+```
+
+`.gitignore` *"koşu çıktıları; kanıtlar `docs/evidence` altına
+**seçilerek** kopyalanır"* diyor. Kural doğru ama **uygulanmamış**:
+seçilerek kopyalanan şey `G0`–`G3` kapı raporlarıydı, `G4`'ün
+ensemble'ı değil.
+
+> **Sonuç:** `G4-C`'nin sayıları **yeniden üretilemez**. Kapı raporu
+> onları hâlâ gösteriyor ve gösterdiği şey yanlış değil — ama
+> arkasındaki veri kaybolduğu için bir okuyucu **doğrulayamaz**.
+> Bu, deponun kendi *"kanıtla geçilir"* kuralının delindiği yer.
+
+#### Ne yapılıyor
+
+`2026-08-21`'de koşan A11 ensemble'ı (iş `1515252`, `40` nokta,
+`λ₂ = 4`) `X`, `Y`, `derinlik` ve **çap**ı tek JSON'a yazıyor. O
+çıktı bittiğinde `docs/olcumler/` altına **kopyalanacak** ve vekil
+o veriden yeniden eğitilebilecek.
+
+Bu A18'i kapatmıyor: kaybolan `λ₂ = 2` ensemble'ı geri gelmiyor ve
+yeni ensemble **üretim çözünürlüğünde değil**.
+
+---
 
 ---
 
