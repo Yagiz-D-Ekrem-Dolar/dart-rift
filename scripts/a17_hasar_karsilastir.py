@@ -27,6 +27,9 @@ from dartrift.observables.momentum_transfer import (  # noqa: E402
 
 # docs/A17-HASAR-OLCUTU.md — esikler ORADAN gelir.
 ESIK_D_MAX = 0.999
+# Kolun kayitli referansi. Iki asamali kol 1,4112; tek asamali kol
+# 1,6175832 (docs/olcumler/faz48_tek_asama.json). Sabit birakmak
+# ilk kullanimda yanlis kola karsi olcup 'TUTMADI' yazdirdi.
 ESIK_BETA_KONTROL = 1.4112
 ESIK_BETA_TOL = 0.01
 ESIK_ORAN_DOGRULAR = 3.0
@@ -87,6 +90,9 @@ def main() -> int:
     ap.add_argument("--hasarli", type=Path, required=True)
     ap.add_argument("--beta-kontrol", type=float, default=None,
                     help="kontrol kolunun JSON'undaki beta (olcut 0b)")
+    ap.add_argument("--beta-referans", type=float, default=ESIK_BETA_KONTROL,
+                    help="kolun KAYITLI referansi (iki asamali 1.4112, "
+                         "tek asamali 1.6175832)")
     ap.add_argument("--cikti", type=Path, default=None)
     a = ap.parse_args()
 
@@ -114,7 +120,7 @@ def main() -> int:
     # --- 0b. kontrol referansi
     ref = None
     if a.beta_kontrol is not None:
-        sapma = abs(a.beta_kontrol - ESIK_BETA_KONTROL) / ESIK_BETA_KONTROL
+        sapma = abs(a.beta_kontrol - a.beta_referans) / a.beta_referans
         ref = sapma <= ESIK_BETA_TOL
         print(f"  [0b] kontrol beta = {a.beta_kontrol:.6f}  sapma "
               f"{100 * sapma:.3f}%  -> {'TUTTU' if ref else 'TUTMADI'}",

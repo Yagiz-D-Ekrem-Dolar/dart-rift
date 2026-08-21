@@ -153,3 +153,39 @@ Kayıtlı kontrol (`docs/olcumler/faz48_tek_asama.json`):
 ### 2. İkincil
 
 - `n_ejekta` ve kaçan hedef kütlesi aynı yönde oynamalı.
+
+---
+
+# EK-2 — kaçan madde **şoklanmış mı**? (2026-08-21, koşudan önce)
+
+## Ölçülen durum
+
+| kol | `β` | `n_ejekta` | kaçan kütle |
+|---|---|---|---|
+| iki aşamalı | `1,411216` | `28` | `579,40 kg` = merminin **tamamı** |
+| tek aşamalı | `1,617583` | `803` | merminin **tamamı** |
+
+Hasar kolu ölçüldü ve `β`'yı `5,9e-6` oynattı — **eleme**. Geriye
+şu soru kalıyor: `β`'nın **tamamı** merminin geri sekmesiyse, o
+sekme **fiziksel mi**?
+
+DART `6144,9 m/s` ile çarpıyor; özgül kinetik enerji
+`0,5 v² = 1,888e7 J/kg`. Tillotson bazaltın eşikleri:
+`u_iv = 4,72e6`, `u_cv = 1,82e7 J/kg`. Yani gelen enerji **tam
+buharlaşma eşiğinde**. Şok doğru çözülüyorsa mermi maddesi erimiş/
+buharlaşmış olarak dağılmalı, katı gibi geri **sekmemeli**.
+
+## Ölçüt — **veriye bakılmadan**
+
+Kaçan parçacıkların (`r > 2R`, `v_r > v_kaçış`) kütle ağırlıklı özgül
+iç enerjisi `u_kaçan`:
+
+- `u_kaçan >= u_iv` (`4,72e6 J/kg`) -> kaçan madde **şoklanmış**;
+  geri sekme fiziksel ve `β = 1,41` gerçek bir sonuçtur.
+- `u_kaçan < 0,1 u_iv` (`4,72e5 J/kg`) -> kaçan madde **hiç
+  şoklanmamış**; mermi katı gibi sekiyor ve `β`'nın **tamamı** bir
+  ayrıklaştırma yapayıdır.
+- arası -> kısmi.
+
+Yan ölçüm (karar vermez): sahnedeki en yüksek `u`, ve merminin
+başlangıç kinetik enerjisinin ne kadarının iç enerjiye döndüğü.

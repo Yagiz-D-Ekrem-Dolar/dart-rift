@@ -354,10 +354,36 @@ def main() -> int:
                       _alpha0_denetle(a2.alpha0, a.gozeneksiz), a2.Y0, a.device,
                       mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
         t = _kos(sol, 0.0, a.t_end, a.azami_adim, "tek")
-        b = _beta(sol.state_numpy(), a2, p_imp, m_hedef, R)
+        st_tek = sol.state_numpy()
+        b = _beta(st_tek, a2, p_imp, m_hedef, R)
+        # HASAR TANISI kontrol kolunda da yaziliyor: hasar kapali kolda
+        # `D` sifir dizisi doner, yani iki kol AYNI sekille okunur.
+        Dt = np.asarray(st_tek["D"], dtype=np.float64)
+        hasar_tek = {"acik": bool(a.hasarli), "D_ort": float(Dt.mean()),
+                     "D_max": float(Dt.max()),
+                     "n_tam_kirik": int(np.count_nonzero(Dt >= 0.999))}
         print(f"\n  t_sim = {t:.5e}  beta = {b['beta']:.6f}", flush=True)
+        print(f"  hasar = {'ACIK' if a.hasarli else 'kapali'}  "
+              f"D_ort {hasar_tek['D_ort']:.4e}  "
+              f"D_max {hasar_tek['D_max']:.4f}  "
+              f"tam kirik {hasar_tek['n_tam_kirik']}", flush=True)
+        # SON DURUM: tek asamali kolda da post-hoc tani yapilabilsin.
+        v_esc_t = escape_speed(m_hedef, R)
+        ehat_t = np.asarray(p_imp) / float(np.linalg.norm(p_imp))
+        np.savez_compressed(
+            Path(a.out).with_suffix(".son_durum.npz"),
+            x=st_tek["x"], v=st_tek["v"], m=st_tek["m"],
+            x_referans=np.asarray(a2.x, dtype=np.float64),
+            hedef=~np.asarray(a2.is_impactor, bool),
+            mermi_kesri=np.asarray(a2.is_impactor, bool).astype(np.float64),
+            R=R, v_esc=v_esc_t, ehat=ehat_t,
+            p_imp=float(np.linalg.norm(p_imp)), t=t, D=Dt,
+            # `u` ve `rho`: kacan maddenin SOKLANMIS olup olmadigi
+            # ancak ic enerjiyle yanitlanir (olcut EK-2).
+            u=st_tek["u"], rho=st_tek["rho"])
         Path(a.out).write_text(json.dumps(
             {"kip": "tek_asama", "lam": a.lam2, "N": a2.n, "t_sim": t,
+             "hasar": hasar_tek,
              "duvar_s": time.perf_counter() - t0, **b}, indent=2))
         print(f"\nyazildi: {a.out}", flush=True)
         return 0
@@ -485,7 +511,7 @@ def main() -> int:
         # Hasar alani: kapali kolda sifir dizisi doner (state_numpy),
         # yani iki kol AYNI sekille okunur ve karsilastirma post-hoc
         # yapilabilir.
-        D=st_son["D"])
+        D=st_son["D"], u=st_son["u"], rho=st_son["rho"])
     print(f"\nson durum yazildi: {durum_yolu}", flush=True)
 
     print(f"\nSONUC ({time.perf_counter() - t0:.1f} s duvar)", flush=True)
