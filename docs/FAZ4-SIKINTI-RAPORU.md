@@ -1961,6 +1961,80 @@ Bu turda ölçülenler tek bir tabloya çıkıyor:
 > şey bir parametre değil: hedef maddesini fırlatan **mekanizmanın
 > kendisi**. Bu bir **ADR kararı** ve ölçüm tarafı artık kapalı.
 
+##### Son deneme: **gerçek moloz yığını** rejimi — TRUBA, iş `1515196`
+
+Geriye tek bir fiziksel açıklama kalmıştı: modelin hedefi bir moloz
+yığını değil **kaya**. Rejim geçişi `Y0 ≈ 6,14 Pa`'da; model matrisi
+`1e4 Pa` (geçişin `1 636` katı), **blokları `1e7 Pa`** (`1,6e6` katı)
+ve blok mukavemeti FAZ 4 boyunca **hiç taranmamıştı** (KAYIT-050).
+Üstelik yerçekimi kapalı olduğu için *"kaçış"* tanımsızdı.
+
+TRUBA çalışma alanı `egitimg16u4` altında erişilemez olduğu için
+`egitimg16u1` altında **sıfırdan** kuruldu (klon + `pip --target`
+ile warp `1.15.0`). `--boulder-Y0` bayrağı eklendi — daha önce
+`_sahne_Y0` yalnızca matrisi eziyordu.
+
+**Ortam sınavı geçti** (ölçüt gereği, B kolu ondan önce koşmadı):
+
+| | beklenen | ölçülen |
+|---|---|---|
+| `β` | `1,4112162721355217` | **birebir aynı** |
+| `A1` | `2,0390593305845943` | **birebir aynı** |
+
+Kol B — `matrix_Y0 = 1 Pa`, `boulder_Y0 = 1 Pa`, **yerçekimi açık**,
+`t_end = 5 s`:
+
+| | üretim | **B (moloz yığını)** |
+|---|---|---|
+| `β` | `1,411216272` | `1,411231044` |
+| bağıl fark | — | **`1,05e-5`** |
+| `n_ejekta` | `28` | `28` (mermi) |
+| **kaçan hedef kütlesi** | `0` | **`0`** |
+| `bekleyen` (içeride dışarı giden) | `17` | **`0`** |
+| momentum kapanışı | `1,31e-14` | `3,10e-13` |
+
+Koruyucu ölçüt de geçti: `bekleyen = 0` ve kapanış `3e-13`, yani
+cisim **dağılmadı** — sonuç *"ejekta çıktı"* ile *"cisim patladı"*
+karışması değil.
+
+> **Ölçütün birincil dalı:** *"kaçan hedef kütlesi `= 0` -> zayıf
+> hedef de yetmiyor; sebep parametre değil **mekanizma** (model-form)
+> ve bu bir ADR kararıdır."* Bu dal **düştü**.
+
+Hedefi gerçek Dimorphos'un mukavemet rejimine indirmek ve yerçekimini
+açmak `β`'yı `%0,001` oynattı ve hedef ejektası **yine tam sıfır**.
+Yerçekimi açıkken `bekleyen` de `17 -> 0` oldu: zayıf cisimde dışarı
+giden madde **daha da az**.
+
+> ### Kendi ölçütümde bir kusur — kayda geçiyor
+>
+> `β` için *"`1,3 <= β < 2,0` -> kısmi"* bandını yazmıştım. **Kötü
+> eşikti:** taban değerin (`1,4112`) kendisi o bandın içinde, yani
+> hiç oynamayan bir sonuç *"kısmi"* okunurdu. Bandı sonradan
+> değiştirmiyorum; sonucu **oynamadı** diye okuyorum
+> (`Δβ/β = 1,05e-5`) ve karar zaten birincil ölçütte veriliyor.
+
+##### Böylece parametre tarafı **kapandı**
+
+| aday | nasıl elendi |
+|---|---|
+| koşu süresi | `3000×` — bit düzeyinde aynı |
+| yerçekimi | `t = 100 s`'de `%0,14`; **`t = 5 s`'de zayıf cisimle `%0,001`** |
+| matris `Y0` | 6 mertebe |
+| **blok `Y0`** | **`1e7 -> 1 Pa`, bu koşu** |
+| çözünürlük (`λ₂`) | yakınsamış |
+| hasar | `Δβ = 5,9e-6` |
+| gözeneklilik | zayıf (`+%7,5`) |
+| **mermi çözünürlüğü (`λ₁`)** | **yakınsamamış — ama `β`'yı `1`'e itiyor** |
+
+Geriye tek bir ifade kalıyor ve artık ölçülü:
+
+> Bu ileri model **hedef ejektası üretmiyor** — mukavemet rejiminden,
+> yerçekiminden, süreden ve hasardan bağımsız olarak. `β`'nın tamamı
+> merminin sekmesi ve o sekme çözünürlükle **kayboluyor**. Gözlemin
+> `3,2225`'i için eksik olan bir parametre değil, ejektayı üreten
+> **mekanizmanın kendisi**.
+
 ---
 
 ## 2. KAPANAN sıkıntılar — kronolojik
