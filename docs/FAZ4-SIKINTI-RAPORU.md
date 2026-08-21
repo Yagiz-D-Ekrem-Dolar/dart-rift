@@ -1786,6 +1786,123 @@ istatistiksel yakınsaması için de ayrı bir uyarı.
 > `Permission denied` veriyor; `driftclaude` çalışma alanı erişilebilir
 > değil. Bu bir kod sorunu değil, **erişim** sorunu.
 
+#### Hasar sınandı ve **elendi** — yolda iki kusur çıktı (2026-08-21)
+
+Bütün bu tur **yerel RTX 3050**'de koştu; TRUBA çalışma alanına
+erişilemiyor (MCP `egitimg16u1` olarak bağlanıyor). Bu bir engel
+değil çıktı: makine referansı **birebir** tutturuyor.
+
+| kol | TRUBA/kayıtlı | **yerel** |
+|---|---|---|
+| iki aşamalı `β` | `1,411216` | **`1,411216`** |
+| `A1` | `2,0391` | `2,0391` |
+| aktarım momentum hatası | `8,76e-15` | `8,76e-15` |
+| tek aşamalı `β` | `1,6175832076207557` | **`1,617583208`** |
+
+> `t_end = 0,2 s`'lik iki aşamalı koşu bu dizüstünde **`14` dakika**.
+> Yani A17'nin bundan sonraki elemeleri TRUBA **olmadan** yapılabilir.
+
+##### Kök neden adayı: `damage` FAZ 4 boyunca **kapalıydı**
+
+| kaynak | ne diyor |
+|---|---|
+| `configs/p3_dimorphos.yaml` | `damage: enabled: true` |
+| `faz44_dart_yakinsama.py::_malzeme()` | `damage=DamageParams(enabled=False)` |
+
+İkincisi FAZ 4'ün **bütün** koşularının malzemesi — G4 kapısı,
+ensemble ve çıkarım dahil. ADR-0027 (kabul edilmiş, `2026-08-01`)
+bu durumun sonucunu önceden yazmıştı:
+
+> *"`D = 0` bırakmak, malzemenin çekmede sınırsız dayanıklı olduğunu
+> varsaymak demekti — krater hacmini ve dolayısıyla ejekta kütlesini,
+> yani **β'yı** sistematik olarak küçültürdü."*
+
+##### İlk çift **geçersiz**: tesisat sınavı düştü
+
+Ölçüt (`docs/A17-HASAR-OLCUTU.md`) koşudan **önce** yazılıp
+commit'lendi (`ba04d36`). İlk maddesi tesisattı ve düştü:
+`--hasarli` kolunda `D_max = 0,0000`.
+
+Tanı ölçüldü — hasar **oluşuyor**, aktarım **taşımıyordu**:
+
+| aşama-1 (üretim sahnesi) | |
+|---|---|
+| `t = 4,6e-4 s`'de `P_min` | `-1,37e9 Pa` (kusur eşiğinin `~80` katı) |
+| `t = t₁ = 4,767e-3 s`'de `D_max` | **`0,562`** |
+| aktarımdan **sonra** | **`0`** |
+
+`coarsen_to_sites` `D`'yi taşımıyordu, `IkiAsamaSahne`'nin alanı
+yoktu ve aşama-2 çözücüsü `D = 0` ile başlıyordu. Yani şokun ürettiği
+bütün hasar `t₁`'de siliniyor ve cisim çekmede yeniden *"sınırsız
+dayanıklı"* oluyordu. **Kusur sessizdi:** `--hasarli` kolu hasarsız
+kolla aynı `β`'yı veriyor ve hiçbir defter tutulmuyordu.
+
+Taşıma eklendi (`hasar=` kütle ağırlıklı, `Sum m D` hatası
+`0,000e+00`; `WarpSolid3D(D0=...)`; hasar kapalıyken `D0` vermek artık
+`ValueError`). Altı gerileme testi: `tests/test_hasar_aktarimi.py`.
+
+##### Aktarımın **durum sıfırlaması** ölçüldü — iddiamı geri alıyorum
+
+Aktarım yalnızca `x, v, m, u, h` taşıyor; aşama-2 `rho`'yu
+`rho0/alpha0`'a, `alpha`'yı `alpha0`'a, `S`'yi sıfıra kuruyor. Bunun
+hasar kolunu *"kirlettiğini"* yazmıştım (`934fcd3`). **Ölçtüm ve
+küçük çıktı:**
+
+| sıfırlanan | etkilenen kütle payı |
+|---|---|
+| ezilme (`alpha < alpha0`) | `1,33e-3` |
+| `rho` (`> %1` sapan) | `1,81e-5` |
+| `S`, ince bölge **dışında** | medyan `1,79 Pa` (`Y0 = 1e4`) |
+
+Sıfırlama gerçek ama **ince bölgeyle sınırlı** (`r < 3 m`), yani
+kütlenin binde biri. *"Hasar kolunu kirletiyor"* demem fazlaydı.
+
+##### Karar: tek aşamalı çift — hasar **elendi**
+
+Aktarım hiç olmadığı için durum da sıfırlanmıyor. Ölçüt EK'te,
+koşudan önce (`934fcd3`).
+
+| | **K** (hasar kapalı) | **H** (hasar açık) |
+|---|---|---|
+| `β` | `1,617583208` | `1,617592767` |
+| `n_ejekta` | `803` | `803` |
+| `D_max` | `0` | **`1,0000`** |
+| tam kırık parçacık | `0` | **`3`** |
+| `D` ortalama | `0` | `2,757e-4` |
+| krater derinliği | `0,047697` | `0,048595` |
+
+- **[0] tesisat:** `D_max = 1,0`, `3` tam kırık -> hasar **koşuyor**.
+- **[0b] referans:** `K` kayıtlı değerden `%0,000` sapıyor -> tuttu.
+- **[1] birincil:** `|Δβ| / β = 5,9e-6` -> ölçütün *"`< %1` ise sebep
+  değil"* dalı. **Hasar A17'nin sebebi değil.**
+
+> ADR-0027 haklıydı ama **ölçekte değil**: hasar `β`'yı
+> küçültebilecek bir mekanizma, ancak üretim çözünürlüğünde
+> **neredeyse hiç oluşmuyor** — `11 183` parçacığın **`3`'ü** tam
+> kırılıyor, ortalama `D = 2,8e-4`. Doğrulanmış (32 testli) bir
+> modül, `3,5 m`'lik parçacıkta fiilen **etkisiz**.
+
+Krater derinliği `%1,9` arttı: yön ADR-0027'nin dediği yönde ama
+büyüklük gerekenin (`2,3` kat) yanından geçmiyor.
+
+##### Kaçan madde **şoklanmış** — ama hedef şok görmüyor
+
+Üçüncü hipotezim de çürüdü. Ölçüt EK-2'de, koşudan önce (`9e9dad8`):
+
+| | ölçülen |
+|---|---|
+| kaçan parçacık | `803` = `579,40 kg` = merminin **tamamı** |
+| kaçan **hedef** kütlesi | **`0`** |
+| `u_kaçan` (kütle ağırlıklı) | `5,613e6 J/kg` = **`1,19 x u_iv`** |
+| gelen özgül `KE` | `1,888e7 J/kg` |
+| iç enerjiye dönen | **`%29,7`** |
+| sahnedeki **en yüksek** `u` | `5,644e6` — ve o **merminin** üstünde |
+
+Geri sekme soğuk bir elastik yapay **değil**: kaçan madde erime
+eşiğini geçmiş. Ama merminin enerjisinin `%70`'i kinetik kalıp geri
+çıkıyor ve **sahnedeki en sıcak parçacık merminin kendisi** — yani
+hedef güçlü bir şok hiç görmüyor.
+
 ---
 
 ## 2. KAPANAN sıkıntılar — kronolojik
