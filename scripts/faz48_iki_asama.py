@@ -574,6 +574,27 @@ def main() -> int:
     print(f"  beta      = {b['beta']:.6f}", flush=True)
     print(f"  n_ejekta  = {b['n_ejekta']}", flush=True)
     print(f"  momentum kapanisi = {b['momentum_kapanis']:.3e}", flush=True)
+    # KRATER SEKLI son durumda da olculuyor. `--iz-every` verilmeden
+    # kosulan kollarda derinlik/cap JSON'a hic girmiyordu ve dis kiyas
+    # (pi-olcekleme, derinlik/cap bandi) yapilamiyordu.
+    try:
+        from dartrift.inference.forward import KRATER_AYARLARI_DART
+        from dartrift.observables.crater_shape import crater_profile
+        _kr = crater_profile(st_son["x"][hedef2], center=np.zeros(3),
+                             impact_direction=ehat, reference_radius=R,
+                             x_reference=x_ref2[hedef2],
+                             **KRATER_AYARLARI_DART)
+        krater = {"derinlik_m": float(_kr.depth), "cap_m": float(_kr.diameter),
+                  "derinlik_cap": (float(_kr.depth) / float(_kr.diameter)
+                                   if _kr.diameter > 0 else float("nan"))}
+    except Exception as e:                                  # noqa: BLE001
+        krater = {"derinlik_m": float("nan"), "cap_m": float("nan"),
+                  "derinlik_cap": float("nan"), "hata": str(e)[:80]}
+    print(f"  krater    = derinlik {krater['derinlik_m']:.4f} m, "
+          f"cap {krater['cap_m']:.4f} m, "
+          f"d/D {krater['derinlik_cap']:.4f}  "
+          f"(literatur bandi 0,15-0,30)", flush=True)
+
     D = np.asarray(st_son["D"], dtype=np.float64)
     hasar = {"acik": bool(a.hasarli), "D_ort": float(D.mean()),
              "D_max": float(D.max()),
@@ -590,7 +611,7 @@ def main() -> int:
          "A1": A1, "A1_gecti": bool(A1 >= 2.0),
          "N_asama1": a1.n, "N_asama2": sahne.n,
          "aktarim": {k: v for k, v in d.items() if k != "atama"},
-         "hasar": hasar,
+         "hasar": hasar, "krater": krater,
          "izler": izler,
          "duvar_s": time.perf_counter() - t0, **b}, indent=2, default=float))
     print(f"\nyazildi: {a.out}", flush=True)
