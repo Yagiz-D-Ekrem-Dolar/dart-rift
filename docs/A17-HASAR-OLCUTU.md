@@ -189,3 +189,52 @@ iç enerjisi `u_kaçan`:
 
 Yan ölçüm (karar vermez): sahnedeki en yüksek `u`, ve merminin
 başlangıç kinetik enerjisinin ne kadarının iç enerjiye döndüğü.
+
+---
+
+# EK-3 — `β` **mermi çözünürlüğünde** yakınsamış mı? (2026-08-21, koşudan önce)
+
+## EK-2 ne gösterdi
+
+Kaçan `803` parçacık merminin tamamı (`579,40 kg`), kaçan hedef
+kütlesi `0`. Kaçan maddenin özgül iç enerjisi `5,613e6 J/kg` —
+`u_iv`'nin `1,19` katı, yani **şoklanmış**; geri sekme soğuk bir
+elastik yapay **değil**. Ama:
+
+| | |
+|---|---|
+| gelen özgül KE | `1,888e7 J/kg` |
+| iç enerjiye dönen | **`%29,7`** |
+| sahnedeki **en yüksek** `u` | `5,644e6` — ve o **merminin** üstünde |
+
+Yani hedef, sahnedeki en sıcak parçacıktan bile daha soğuk: **hedef
+güçlü bir şok görmüyor.** Merminin enerjisinin `%70`'i kinetik kalıp
+geri çıkıyor.
+
+## Zaten ölçülmüş olan ipucu
+
+| kol | `A1` (mermi çapı / aralık) | `β` |
+|---|---|---|
+| tek aşamalı, `λ = 2` | `0,215` (**çözülmemiş**) | `1,617583` |
+| iki aşamalı, `λ₁ = 19` | `2,039` (**çözülmüş**) | `1,411216` |
+
+Merminin çözünürlüğü `0,215 -> 2,04` olunca `β` **`%12,8` düştü**.
+Yön belli: mermi daha iyi çözüldükçe daha az sekiyor. Ama bu yönde
+**ikinci bir nokta yok** — `B1` yakınsama ölçütü `λ₂`'yi (hedef
+inceltmesi) taradı, `λ₁`'i **değil**.
+
+## Koşu
+
+`λ₁ = 19 -> 38` (`A1 = 2,04 -> ~4,1`), her şey aynı, `t_end = 0,2 s`.
+
+## Ölçüt — **veriye bakılmadan**
+
+- `|Δβ| / β >= 0,10` -> `β` mermi çözünürlüğünde **yakınsamamış**;
+  `B1`'in *"yakınsadı"* yargısı yalnızca `λ₂` için geçerliydi ve
+  A17'nin kök nedeni **mermi–hedef eşleşmesinin çözünürlüğü**.
+- `|Δβ| / β < 0,01` -> bu yön de **kapanır**; `β = 1,41` mermi
+  çözünürlüğünden bağımsızdır.
+- arası -> kısmi; üçüncü nokta gerekir.
+
+Yan ölçüm (karar vermez): iç enerjiye dönen oran ve sahnedeki en
+yüksek `u` — eşleşme iyileşiyorsa ikisi de artmalı.
