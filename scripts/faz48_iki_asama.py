@@ -122,6 +122,18 @@ def _mat(gozeneksiz: bool = False, yercekimli: bool = False,
 RHO0_KATI = 2700.0
 
 
+def _sahne_n_mermi(kw: dict, n_mermi: int | None) -> dict:
+    """`--n-mermi` verilirse mermi parcacik sayisini ez.
+
+    Semanin `>= 8` sarti korunur (nokta parcacik YASAK, `p3_scene.yaml`).
+    """
+    if n_mermi is None:
+        return kw
+    if n_mermi < 8:
+        raise ValueError(f"n_mermi en az 8 olmali, {n_mermi} geldi")
+    return {**kw, "n_impactor": int(n_mermi)}
+
+
 def _sahne_kolu(gozeneksiz: bool) -> dict:
     """Gözeneksiz kolda sahne de **katı** kurulmalı; yalnızca `alpha0 = 1`
     demek YETMEZ.
@@ -203,7 +215,8 @@ def _alpha0_denetle(alpha0, gozeneksiz: bool):
     return a
 
 
-def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None, D0=None):
+def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None, D0=None,
+            cfl: float = 0.25):
     # Kusur tohumlamasi sahneyle AYNI koke baglanir; boylece hasarli kol
     # da yeniden uretilebilir ve "hangi tohum" sorusu tek yerde yanitlanir.
     from dartrift.warp_core.solver_solid import WarpSolid3D
@@ -211,7 +224,7 @@ def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None, D0=None):
         np.ascontiguousarray(x), np.ascontiguousarray(v),
         np.ascontiguousarray(m), np.ascontiguousarray(u),
         np.ascontiguousarray(h),
-        mat if mat is not None else _malzeme(), RefParams(cfl=0.25),
+        mat if mat is not None else _malzeme(), RefParams(cfl=cfl),
         alpha0=np.ascontiguousarray(alpha0), Y0=np.ascontiguousarray(Y0),
         device=device, check_every=10 ** 9,
         damage_seed=int(SAHNE["root_seed"]), D0=D0)
@@ -351,6 +364,15 @@ def main() -> int:
     ap.add_argument("--yercekimli", action="store_true",
                     help="yercekimini AC (ADR-0028 maliyet yuzunden "
                          "kapatmisti; rapor A17)")
+    # AYRIKLASTIRMA DUGMELERI. Bunlar "tani bayragi" degil, yakinsama
+    # denetiminin taradigi eksenler: her biri BAGIMSIZ olarak sinanmali
+    # (rapor A17/EK-3: yakinsama lam2'de olculup lam1'de sinanmamisti).
+    ap.add_argument("--spacing", type=float, default=7.0,
+                    help="kaba izgara araligi (uretim 7,0 m)")
+    ap.add_argument("--cfl", type=float, default=0.25,
+                    help="CFL sayisi (uretim 0,25)")
+    ap.add_argument("--n-mermi", type=int, default=None,
+                    help="mermi parcacik sayisi (uretim 800)")
     ap.add_argument("--gozeneksiz", action="store_true",
                     help="P-alpha gozenekliligi KAPAT (tani kontrol kolu)")
     # A17: `_malzeme()` hasari KAPALI tutuyor ama config `true` diyor ve
@@ -364,9 +386,10 @@ def main() -> int:
     print("FAZ 4.8 — IKI ASAMALI KOSU (ADR-0043)", flush=True)
     print("=" * 78, flush=True)
 
-    kaba = build_scene(spacing=7.0, device="cpu",
-                       **_sahne_Y0(_sahne_kolu(a.gozeneksiz), a.Y0,
-                                          a.boulder_Y0))
+    kaba = build_scene(spacing=a.spacing, device="cpu",
+                       **_sahne_n_mermi(
+                           _sahne_Y0(_sahne_kolu(a.gozeneksiz), a.Y0,
+                                     a.boulder_Y0), a.n_mermi))
     mesh = _build_mesh("icosphere", radius=SAHNE["radius"], subdiv=4)
     R = float(kaba.target_radius)
     t0 = time.perf_counter()
@@ -380,6 +403,7 @@ def main() -> int:
         print(f"\nKONTROL KOLU: tek asama, lam={a.lam2}, N={a2.n}", flush=True)
         sol = _cozucu(a2.x, a2.v, a2.m, np.zeros(a2.n), a2.h,
                       _alpha0_denetle(a2.alpha0, a.gozeneksiz), a2.Y0, a.device,
+                      cfl=a.cfl,
                       mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
         t = _kos(sol, 0.0, a.t_end, a.azami_adim, "tek")
         st_tek = sol.state_numpy()
@@ -435,6 +459,7 @@ def main() -> int:
 
     sol1 = _cozucu(a1.x, a1.v, a1.m, np.zeros(a1.n), a1.h,
                    _alpha0_denetle(a1.alpha0, a.gozeneksiz), a1.Y0, a.device,
+                   cfl=a.cfl,
                    mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
     t = _kos(sol1, 0.0, a.t1, a.azami_adim, "a1")
     print(f"  asama-1 bitti: t = {t:.5e} s "
@@ -475,7 +500,7 @@ def main() -> int:
     # kolla ayni `beta`yi veriyordu.
     sol2 = _cozucu(sahne.x, sahne.v, sahne.m, sahne.e, sahne.h,
                    _alpha0_denetle(sahne.alpha0, a.gozeneksiz), sahne.Y0, a.device,
-                   mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli),
+                   cfl=a.cfl, mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli),
                    D0=sahne.hasar if a.hasarli else None)
     izler = []
     # Aktarimdan sonra parcacik kimlikleri degisti; krater referansi
