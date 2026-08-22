@@ -255,6 +255,16 @@ def _kos(sol, t_bas: float, t_end: float, azami: int, etiket: str,
             break
     if not np.all(np.isfinite(sol.state_numpy()["v"])):
         raise RuntimeError(f"{etiket} PATLADI (t={t:.4e})")
+    # ADIM SINIRI SESSIZ KESIYORDU. Olculdu (is 1515364): `t_end = 20 s`
+    # istenen kosu `azami_adim = 200000`'de durdu, `t_sim = 7,72 s` ile
+    # `rc = 0` dondu ve cikti dosyasinin adi hala `_t20` idi. Yani kisa
+    # kalmis bir kosu, TAM kosmus gibi kaydediliyordu.
+    if t < t_end * (1.0 - 1e-9):
+        raise RuntimeError(
+            f"{etiket} ADIM SINIRINA TAKILDI: t = {t:.6e} s istenen "
+            f"{t_end:.6e} s'nin {100 * t / t_end:.1f}%'i (azami {azami} "
+            f"adim). Sessizce kisa donmek yerine duruyorum; "
+            f"--azami-adim'i buyutun.")
     return t
 
 

@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 5 — A11, A12, A17, A18, A19
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 6 — A11, A12, A17, A18, A19, A20
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -2404,6 +2404,126 @@ yeni ensemble **üretim çözünürlüğünde değil**.
 > `G4-C`'nin kapı raporundaki sayılar hâlâ yeniden üretilemiyor.
 
 ---
+
+#### A19'un **çaresi** ve onunla gelen gerçek tablo (2026-08-21)
+
+Kırık çıkarıcıyı değiştirmek yerine yanına doğru ölçü yazıldı
+(`krater_yerdegistirme`): **aynı parçacıkların yer değiştirmesine**
+bakıyor, mutlak yarıçapa değil.
+
+| | |
+|---|---|
+| yüzey kabuğu | **referans** konfigürasyondan seçilir |
+| kutulama | **referans** kutup açısına göre — kutu üyeliği çarpmadan etkilenmez |
+| ölçülen | kutu başına `⟨r − r₀⟩` |
+| kaçan madde | `r > 1,05 R` **dışlanır** |
+
+**Değişmez:** `x is x_reference` ise her kutuda yer değiştirme tam
+`0`'dır, yüzey ne kadar pürüzlü olursa olsun. Pürüz iki tarafta da
+aynı olduğu için **farkta çıkar gider** — yaklaşım değil, cebirsel
+özdeşlik. A19'un kök nedeni tam buydu.
+
+| sentetik sınav | eski ölçü | **yeni ölçü** |
+|---|---|---|
+| kimildamamış, düzgün | `0` | `0` |
+| kimildamamış, **pürüzlü** | `0,26 m` | **`0,000000`** |
+| gerçek `12 m` çukur (`15°`) | `-0,03 m` | **`9,29 m`** |
+| pürüzlü + `12 m` çukur | — | `10,50 m` |
+| krater **yokken** çap | `0,0` | **`nan`** (uydurmuyor) |
+
+##### Ve gerçek koşularda krater **yok**
+
+Yeni ölçü bütün kayıtlı durumlara uygulandı (`t = 0,2 s`):
+
+| kol | `μ` | **derinlik** | çap | `d/D` |
+|---|---|---|---|---|
+| `λ₂ = 2` (üretim) | `80,4` | **`0,0849 m`** | `17,84` | `0,005` |
+| `λ₁ = 38` | `80,4` | `0,0531` | `17,84` | `0,003` |
+| `λ₂ = 6` | `2,98` | `0,0728` | `17,84` | `0,004` |
+| `λ₂ = 8` | `1,26` | `0,0923` | `17,84` | `0,005` |
+| `λ₂ = 8` **hasarlı** | `1,26` | `0,0926` | `17,84` | `0,005` |
+| `λ₂ = 8` **zayıf** | `1,26` | **`0,1109`** | `24,93` | `0,004` |
+| `λ₂ = 8` hasar+zayıf | `1,26` | `0,1105` | `24,93` | `0,004` |
+
+Ensemble'ın `40` noktası (`λ₂ = 4`): derinlik **`0,0002 – 0,0379 m`**,
+medyan `0,0099 m`.
+
+> Yani `t = 0,2 s`'de krater **`1 – 11 santimetre**. Bu depoda
+> `15,28 m` diye taşınan sayı baştan sona **çıkarıcı artığıydı**.
+
+##### Elemelerin `μ ≈ 1`'de yeniden sınavı
+
+| kol | derinlik | tabana göre |
+|---|---|---|
+| üretim malzemesi | `0,0923 m` | — |
+| **hasar açık** | `0,0926 m` | **`+%0,3`** — etkisiz |
+| **zayıf** (`Y0 = 1 Pa`) | `0,1109 m` | **`+%20`** |
+
+Hasarın elenmesi `μ ≈ 1`'de **doğrulandı**. Mukavemet ise ilk kez
+ölçülebilir bir iz bıraktı (`+%20`) — küçük ama gerçek.
+
+> Kendi ölçütümde üçüncü eşik hatası: *"`d/D ≤ 0,50` -> mekanizma
+> bulundu"* yazmıştım. Ölçülen `0,004 – 0,005`, yani dal **teknik
+> olarak** ateşliyor — ama sebebi çanak açılması değil, çukurun
+> `9 cm` olması ve *"çap"*ın kutu genişliğiyle belirlenmesi.
+> **Bunu başarı diye okumuyorum.**
+
+---
+
+#### Uzun koşu: model **kazmıyor, çınlıyor** (iş `1515364`)
+
+`λ₂ = 6` (`μ = 2,98`, şok hedefe giriyor), `t_end = 20 s` istendi.
+
+| `t` | `beta_bal` | `hedef_ej` | **`bekleyen`** | `t_geçiş` |
+|---|---|---|---|---|
+| `0,2 s` (kısa koşular) | `1,41` | `0` | **`0`** | — |
+| `2,51 s` | `1,259` | `3` | `6 342` | `54,3 s` |
+| `4,83 s` | `1,302` | `3` | `7 088` | `59,6 s` |
+| `6,56 s` | `1,210` | `3` | `7 874` | `62,4 s` |
+| `7,72 s` | `1,283` | `4` | `5 368` | `63,0 s` |
+
+**Kazı akışı gerçekten doğuyor**: içeride dışarı giden madde
+`0 → 5 000–14 000` parçacık. Ama:
+
+- `β` `1,31`'de kalıyor, `beta_bal` `1,18 – 1,31` arasında
+  **salınıyor**, eğilim yok.
+- `2R`'yi geçen hedef maddesi tek haneli (`3 – 46`, gürültülü).
+- Yeni ölçüyle yüzey profili (`t = 7,72 s`):
+
+```
+aci:  1     4     6     9    11    14    16    19    21    24
+Dr : +0,034 +0,098 +0,103 +0,066 +0,089 +0,075 +0,059 +0,019 -0,022 -0,039
+```
+
+Eksene yakın yer değiştirme **pozitif** — yüzey içeri çökmüyor,
+**dışarı kabarıyor**. `t = 0,2 s`'de `-0,073 m` olan eksen değeri
+`t = 7,7 s`'de `+0,034 m` olmuş.
+
+> **Model kazmıyor, çınlıyor.** Madde dışarı gidiyor ama bir kazı
+> akışı olarak değil, cismin salınımı olarak; yüzey aşağı değil
+> **yukarı** hareket ediyor. Bu, A17'nin *"iç dolaşım net momentumun
+> 250 katı"* ölçümüyle ve *"dört işaret dönüşü"* bulgusuyla tam
+> tutarlı.
+
+---
+
+### A20 — **adım sınırı koşuyu sessizce kesiyordu** (2026-08-21)
+
+İş `1515364` `t_end = 20 s` istedi, `azami_adim = 200 000`'de durdu ve
+
+| | |
+|---|---|
+| `t_sim` | **`7,72 s`** (istenenin `%39`'u) |
+| çıkış kodu | **`0`** |
+| çıktı dosyası | `lam2_6_t20.json` — adında hâlâ `t20` |
+| duvar | `5:08:58` |
+
+Yani **kısa kalmış bir koşu, tam koşmuş gibi kaydedildi**. Bu koşunun
+sonuçları yukarıda `t = 7,72 s` diye okundu; eğer okunmasaydı
+`20 s`'lik sonuç sanılacaktı.
+
+Düzeltildi: `_kos` artık `t < t_end` ile dönerse **`RuntimeError`**
+atıyor ve kaç adımda nerede kaldığını yazıyor.
 
 ---
 
