@@ -37,11 +37,13 @@ cisimde bu tani goz ardi edilemez.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 import numpy as np
 
-__all__ = ["CraterShape", "crater_profile", "surface_particles"]
+__all__ = ["CraterShape", "KraterYerdegistirme", "crater_profile",
+           "krater_yerdegistirme", "surface_particles"]
 
 
 @dataclass(frozen=True)
@@ -449,3 +451,161 @@ def crater_profile(
             "global_shift_applied": float(global_shift),
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# YERDEGISTIRME TABANLI KRATER  (A19'un caresi)
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class KraterYerdegistirme:
+    """Lagrange'ci krater olcusu -- ayni parcaciklarin YER DEGISTIRMESI."""
+
+    derinlik: float           # [m] en buyuk ICERI yer degistirme
+    cap: float                # [m] kenarin gordugu daire capi
+    derinlik_cap: float
+    kenar_aci_deg: float
+    n_yuzey: int
+    n_kutu: int
+    profil: np.ndarray        # (n_kutu,) kutu basina ortalama radyal yer deg.
+    aci_deg: np.ndarray       # (n_kutu,) kutu merkezleri
+    tani: dict = field(default_factory=dict)
+
+
+def krater_yerdegistirme(
+    x: np.ndarray,
+    x_reference: np.ndarray,
+    *,
+    impact_direction: np.ndarray,
+    reference_radius: float,
+    center: np.ndarray | None = None,
+    kabuk_kalinligi: float | None = None,
+    n_kutu: int = 24,
+    dis_aci_deg: float = 60.0,
+    en_az_parcacik: int = 5,
+) -> KraterYerdegistirme:
+    """Krateri **yer degistirmeden** olc -- `x` ve `x_reference` AYNI parcaciklar.
+
+    ## Neden yeni bir olcu (A19)
+
+    `crater_profile` mutlak yaricap dagilimina bakiyor ve bu iki yonde
+    de bozuluyor (olculdu, 2026-08-21):
+
+    | sinav | olmasi gereken | `crater_profile` |
+    |---|---|---|
+    | puruzlu yuzey, CARPMA YOK | `0` | `0,26 m` |
+    | ensemble yolu, CARPMA YOK | `0` | `10,85 m` |
+    | gercek `12 m` cukur | `~12 m` | `-0,03 m` |
+
+    Kok neden: moloz yiginin yuzeyi **puruzlu** ve puruz, mutlak
+    yaricap olcusunde kraterden ayirt edilemiyor. Raporlanan derinligin
+    `%67,7`'si o tabandi.
+
+    ## Bu olcunun degismezi
+
+    `x is x_reference` (hicbir sey kimildamamis) ise **her kutuda** yer
+    degistirme tam `0`'dir; yuzey ne kadar puruzlu olursa olsun.
+    Puruz her iki tarafta da ayni oldugu icin **cikar gider**. Bu bir
+    yaklasim degil, cebirsel bir ozdeslik.
+
+    ## Tanim
+
+    1. **Yuzey kabugu** REFERANS konfigurasyondan secilir:
+       `r0 > R - kabuk_kalinligi`.
+    2. Parcaciklar REFERANS kutup acisina gore kutulanir (`theta0`,
+       carpma ekseninden). Kutulama referanstan yapilir ki kutu uyeligi
+       carpmadan **etkilenmesin**.
+    3. Her kutuda ortalama radyal yer degistirme `<r - r0>`.
+    4. `derinlik` = en buyuk ICERI hareket (`-min(profil)`).
+    5. `kenar` = profilin sifira dondugu ilk aci; `cap = 2 R sin(kenar)`.
+
+    Ejekta (kacip giden madde) **disarida birakilir**: yalnizca hala
+    `r < 1,05 R` olan parcaciklar sayilir, yoksa firlayan bir parcacik
+    kutunun ortalamasini disari cekerdi.
+    """
+    x = np.asarray(x, dtype=np.float64)
+    x0 = np.asarray(x_reference, dtype=np.float64)
+    if x.shape != x0.shape:
+        raise ValueError(f"x {x.shape} ile x_reference {x0.shape} ayni olmali")
+    if x.ndim != 2 or x.shape[1] != 3:
+        raise ValueError(f"x (N,3) olmali, {x.shape} geldi")
+    R = float(reference_radius)
+    if R <= 0.0:
+        raise ValueError(f"reference_radius pozitif olmali, {R} geldi")
+    if n_kutu < 2:
+        raise ValueError(f"n_kutu >= 2 olmali, {n_kutu} geldi")
+
+    c = np.zeros(3) if center is None else np.asarray(center, dtype=np.float64)
+    e = np.asarray(impact_direction, dtype=np.float64)
+    n = float(np.linalg.norm(e))
+    if n == 0.0:
+        raise ValueError("impact_direction sifir vektor olamaz")
+    e = e / n
+    # Mermi `e` YONUNDE gidiyor; carpma noktasi cismin `-e` tarafinda.
+    eksen = -e
+
+    d = x - c[None, :]
+    d0 = x0 - c[None, :]
+    r = np.linalg.norm(d, axis=1)
+    r0 = np.linalg.norm(d0, axis=1)
+
+    kal = 2.0 * R / max(n_kutu, 1) if kabuk_kalinligi is None else float(
+        kabuk_kalinligi)
+    kabuk = r0 > (R - kal)
+    # Kacip gitmis maddeyi disla: kutu ortalamasini bozar.
+    kabuk &= r < 1.05 * R
+    if not np.any(kabuk):
+        raise ValueError(
+            f"yuzey kabugunda parcacik yok (R={R}, kalinlik={kal}) -- "
+            f"kabuk_kalinligi verin")
+
+    with np.errstate(invalid="ignore", divide="ignore"):
+        cos0 = np.clip((d0 @ eksen) / np.maximum(r0, 1e-300), -1.0, 1.0)
+    th0 = np.degrees(np.arccos(cos0))
+
+    kenarlar = np.linspace(0.0, float(dis_aci_deg), n_kutu + 1)
+    profil = np.full(n_kutu, np.nan)
+    sayi = np.zeros(n_kutu, dtype=int)
+    dr = r - r0
+    for i in range(n_kutu):
+        s = kabuk & (th0 >= kenarlar[i]) & (th0 < kenarlar[i + 1])
+        sayi[i] = int(s.sum())
+        if sayi[i] >= en_az_parcacik:
+            profil[i] = float(np.mean(dr[s]))
+    if not np.any(np.isfinite(profil)):
+        raise ValueError(
+            f"hicbir kutuda >= {en_az_parcacik} parcacik yok "
+            f"(yuzey {int(kabuk.sum())}, n_kutu={n_kutu})")
+
+    merkez = 0.5 * (kenarlar[:-1] + kenarlar[1:])
+    sonlu = np.isfinite(profil)
+    derinlik = float(-np.nanmin(profil))
+    if derinlik <= 0.0:
+        derinlik = 0.0
+
+    # Kenar: eksenden disari giderken profilin ilk kez sifira donmesi.
+    # KRATER YOKSA CAP DA YOKTUR: derinlik sifirken bir "kenar"
+    # aramak, ilk kutuyu kenar sayip uydurma bir cap uretirdi.
+    kenar_aci = float("nan")
+    cap = float("nan")
+    if derinlik > 0.0:
+        esik = -0.05 * abs(np.nanmin(profil))
+        for i in range(n_kutu):
+            if not sonlu[i]:
+                continue
+            if profil[i] >= esik:
+                kenar_aci = merkez[i]
+                break
+        if kenar_aci == kenar_aci:
+            cap = 2.0 * R * math.sin(math.radians(kenar_aci))
+
+    return KraterYerdegistirme(
+        derinlik=derinlik, cap=cap,
+        derinlik_cap=(derinlik / cap if cap and cap == cap and cap > 0
+                      else float("nan")),
+        kenar_aci_deg=kenar_aci, n_yuzey=int(kabuk.sum()),
+        n_kutu=int(sonlu.sum()), profil=profil, aci_deg=merkez,
+        tani={"kabuk_kalinligi_m": kal, "kutu_sayilari": sayi.tolist(),
+              "dis_aci_deg": float(dis_aci_deg),
+              "en_derin_kutu_deg": (float(merkez[np.nanargmin(profil)])
+                                    if derinlik > 0 else float("nan"))})

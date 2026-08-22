@@ -114,3 +114,107 @@ def test_fikstur_GERCEKTEN_cukur_aciyor() -> None:
     assert n_kaz > 300
     assert iceri.min() < -11.0, iceri.min()      # en az 11 m iceri cekilmis
     assert np.median(iceri[iceri < -1e-9]) < -3.0
+
+
+# ===================================================================
+# A19'un CARESI: yerdegistirme tabanli olcu
+# ===================================================================
+
+from dartrift.observables.crater_shape import (  # noqa: E402
+    krater_yerdegistirme,
+)
+
+#: Mermi `+z` yonunde gidiyor -> carpma cismin `-z` tarafinda.
+GELIS = np.array([0.0, 0.0, 1.0])
+
+
+def _yeni(x, x0, R=82.0):
+    return krater_yerdegistirme(x, x0, impact_direction=GELIS,
+                                reference_radius=R)
+
+
+def test_YENI_kimildamamis_DUZGUN_yuzeyde_sifir() -> None:
+    x = _kure(20000, 82.0)
+    k = _yeni(x, x)
+    assert k.derinlik == 0.0
+    assert np.isnan(k.cap), "krater yokken cap uydurulmamali"
+
+
+def test_YENI_kimildamamis_PURUZLU_yuzeyde_de_SIFIR() -> None:
+    """A19'un kok nedeni buydu; yeni olcu cebirsel olarak bagisik.
+
+    Puruz `x` ve `x_reference`'ta AYNI oldugu icin farkta cikar gider.
+    """
+    rng = np.random.default_rng(11)
+    x = _kure(20000, 82.0)
+    yuzey = np.linalg.norm(x, axis=1) > 0.9 * 82.0
+    x = x.copy()
+    x[yuzey] *= (1.0 + rng.normal(0.0, 3.0 / 82.0, int(yuzey.sum())))[:, None]
+    k = _yeni(x, x)
+    assert k.derinlik == 0.0
+    assert np.isnan(k.cap)
+
+
+def _cukur_gelis(n, R, yari_aci_deg, taban_r, puruz=0.0, seed=5):
+    """`GELIS` yonune gore `-z` kutbunda duz tabanli cukur."""
+    x0 = _kure(n, R, seed=seed)
+    if puruz > 0.0:
+        rng = np.random.default_rng(seed + 1)
+        yuz = np.linalg.norm(x0, axis=1) > 0.9 * R
+        x0 = x0.copy()
+        x0[yuz] *= (1.0 + rng.normal(0.0, puruz / R, int(yuz.sum())))[:, None]
+    x = x0.copy()
+    r0 = np.linalg.norm(x0, axis=1)
+    cos = (x0 @ (-GELIS)) / np.maximum(r0, 1e-30)
+    kaz = (r0 > taban_r) & (cos > np.cos(np.radians(yari_aci_deg)))
+    x[kaz] *= (taban_r / r0[kaz])[:, None]
+    return x, x0, int(kaz.sum())
+
+
+def test_YENI_GERCEK_cukuru_goruyor() -> None:
+    """`12 m` derin, `15°` çukur — eski ölçü `-0,03 m` diyordu."""
+    x, x0, n_kaz = _cukur_gelis(20000, 82.0, 15.0, 70.0)
+    assert n_kaz > 100
+    k = _yeni(x, x0)
+    assert k.derinlik > 5.0, k.derinlik
+    # cap ~ 2 R sin(15 der) = 42,4 m; kutu genisligi kadar tolerans
+    assert 30.0 < k.cap < 60.0, k.cap
+
+
+def test_YENI_PURUZ_cukuru_bozmuyor() -> None:
+    duz = _yeni(*_cukur_gelis(20000, 82.0, 15.0, 70.0)[:2])
+    pur = _yeni(*_cukur_gelis(20000, 82.0, 15.0, 70.0, puruz=3.0)[:2])
+    assert abs(pur.derinlik - duz.derinlik) < 0.35 * duz.derinlik
+
+
+def test_YENI_daha_DERIN_cukur_daha_BUYUK_derinlik() -> None:
+    sig = _yeni(*_cukur_gelis(20000, 82.0, 15.0, 76.0)[:2])
+    derin = _yeni(*_cukur_gelis(20000, 82.0, 15.0, 70.0)[:2])
+    assert derin.derinlik > sig.derinlik
+
+
+def test_YENI_daha_GENIS_cukur_daha_BUYUK_cap() -> None:
+    dar = _yeni(*_cukur_gelis(20000, 82.0, 10.0, 70.0)[:2])
+    genis = _yeni(*_cukur_gelis(20000, 82.0, 25.0, 70.0)[:2])
+    assert genis.cap > dar.cap
+
+
+def test_YENI_COZUNURLUKTEN_bagimsiz() -> None:
+    """Parçacık sayısı `4` katına çıkınca ölçü kaymamalı."""
+    az = _yeni(*_cukur_gelis(20000, 82.0, 15.0, 70.0)[:2])
+    cok = _yeni(*_cukur_gelis(80000, 82.0, 15.0, 70.0)[:2])
+    assert abs(cok.derinlik - az.derinlik) < 0.20 * az.derinlik
+    assert abs(cok.cap - az.cap) < 0.20 * az.cap
+
+
+def test_YENI_bozuk_girdiyi_REDDEDIYOR() -> None:
+    x = _kure(2000, 82.0)
+    with pytest.raises(ValueError, match="ayni olmali"):
+        krater_yerdegistirme(x, x[:100], impact_direction=GELIS,
+                             reference_radius=82.0)
+    with pytest.raises(ValueError, match="sifir vektor"):
+        krater_yerdegistirme(x, x, impact_direction=np.zeros(3),
+                             reference_radius=82.0)
+    with pytest.raises(ValueError, match="pozitif"):
+        krater_yerdegistirme(x, x, impact_direction=GELIS,
+                             reference_radius=-1.0)
