@@ -32,7 +32,7 @@ geçilmez. Kanıtlar TRUBA/ARF-ACC üzerinde, temiz git ağacıyla üretilir.
 | **G1** | Şok motoru çalışıyor | **GEÇTİ** | FAZ 2 başlayabilir |
 | **G2** | Gerçek malzeme fiziği | **GEÇTİ** | FAZ 3 başlayabilir |
 | **G3** | Sahne kurulumu | **GEÇTİ** 7/7 | FAZ 5 değil — önce G4 |
-| **G4** | Çözünürlük + çıkarım | **GEÇTİ** 10/10 | aşağıdaki **bedel** okunmadan değil |
+| **G4** | Çözünürlük + çıkarım | **GEÇTİ** 10/10 | **FAZ 4 KAPANDI** ([kapanış](docs/FAZ4-KAPANIS.md)) |
 
 ### G4 geçti — ve neyin karşılığında
 

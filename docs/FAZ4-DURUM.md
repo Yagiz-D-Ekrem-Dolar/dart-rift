@@ -1,3 +1,10 @@
+> ## ⚑ FAZ 4 **KAPANDI** (2026-08-18)
+>
+> `G4` `2026-08-11`'de **10/10** geçti. Resmî kapanış, teslim
+> edilenler ve bilerek ertelenenler: **[FAZ4-KAPANIS.md](FAZ4-KAPANIS.md)**
+>
+> Bu belge kapanış öncesi çalışma durumudur; kayıt olarak duruyor.
+
 # FAZ 4 — durum (2026-08-09)
 
 > Bu belge **ne bittiğini ve ne bitmediğini** ayırır. Bitmemiş bir işi
