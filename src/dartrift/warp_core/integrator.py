@@ -38,6 +38,46 @@ def kick_u_3d(
 
 
 @wp.kernel
+def kick_u_3d_tabanli(
+    u: wp.array(dtype=F),
+    dudt: wp.array(dtype=F),
+    active: wp.array(dtype=wp.uint8),
+    kirpilan: wp.array(dtype=F),
+    half_dt: F,
+):
+    """`kick_u_3d` + **iç enerji tabanı** ve kırpılanın DEFTERI.
+
+    ## Neden (rapor A21)
+
+    `tillotson_p` basıncı hesaplarken `u = max(u_in, 0)` diyor, yani
+    negatif `u`'yu **sıfır sayıyor**; ama durum değişkeni hiçbir yerde
+    kırpılmıyordu. Ölçüldü (`t = 0,2 s`): hedef parçacıklarının
+    **`%44,5`'inde `u < 0`**, tek aşamalı kolda tutulan enerji gelenin
+    **`%2,76`**'sı.
+
+    Sonuç: defter (`Σ m u`) ile dinamiğin gördüğü enerji **ayrışıyor**,
+    ve negatife düşmüş bir parçacık sonradan ısıtılınca önce
+    "borcunu" kapatıyor — şok cephesinin arkası olması gerekenden
+    uzun soğuk kalıyor.
+
+    ## Kırpılan enerji **atılmıyor, sayılıyor**
+
+    Sessizce kırpmak bir kaçak kaynağını başkasıyla değiştirmek olurdu.
+    `kirpilan[i]` parçacık başına biriktirilir; çağıran taraf
+    `Σ m·kirpilan` ile ne kadar enerjinin tabana çarptığını
+    **raporlayabilir**. Sıfırdan farklıysa bu bir uyarıdır: `dt` ya da
+    yapay viskozite fazla.
+    """
+    i = wp.tid()
+    if active[i] != wp.uint8(0):
+        yeni = u[i] + half_dt * dudt[i]
+        if yeni < F(0.0):
+            kirpilan[i] = kirpilan[i] - yeni      # pozitif birikir
+            yeni = F(0.0)
+        u[i] = yeni
+
+
+@wp.kernel
 def drift_3d(
     x: wp.array(dtype=V3),
     v: wp.array(dtype=V3),

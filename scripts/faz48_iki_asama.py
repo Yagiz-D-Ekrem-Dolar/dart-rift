@@ -216,7 +216,7 @@ def _alpha0_denetle(alpha0, gozeneksiz: bool):
 
 
 def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None, D0=None,
-            cfl: float = 0.25):
+            cfl: float = 0.25, u_tabani: bool = False):
     # Kusur tohumlamasi sahneyle AYNI koke baglanir; boylece hasarli kol
     # da yeniden uretilebilir ve "hangi tohum" sorusu tek yerde yanitlanir.
     from dartrift.warp_core.solver_solid import WarpSolid3D
@@ -227,7 +227,8 @@ def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None, D0=None,
         mat if mat is not None else _malzeme(), RefParams(cfl=cfl),
         alpha0=np.ascontiguousarray(alpha0), Y0=np.ascontiguousarray(Y0),
         device=device, check_every=10 ** 9,
-        damage_seed=int(SAHNE["root_seed"]), D0=D0)
+        damage_seed=int(SAHNE["root_seed"]), D0=D0,
+        u_tabani=u_tabani)
 
 
 def _kos(sol, t_bas: float, t_end: float, azami: int, etiket: str,
@@ -383,6 +384,12 @@ def main() -> int:
                     help="CFL sayisi (uretim 0,25)")
     ap.add_argument("--n-mermi", type=int, default=None,
                     help="mermi parcacik sayisi (uretim 800)")
+    # A21: ic enerji durum degiskeni tabansiz; hedefin %44,5'inde u < 0.
+    # Bayrak VARSAYILAN KAPALI -- acmak butun kayitli sayilari
+    # degistirir ve bu bir karar, sessiz duzeltme degil.
+    ap.add_argument("--u-tabani", action="store_true",
+                    help="ic enerjiyi 0'in altina indirme; kirpilani SAY "
+                         "(rapor A21)")
     ap.add_argument("--gozeneksiz", action="store_true",
                     help="P-alpha gozenekliligi KAPAT (tani kontrol kolu)")
     # A17: `_malzeme()` hasari KAPALI tutuyor ama config `true` diyor ve
@@ -413,7 +420,7 @@ def main() -> int:
         print(f"\nKONTROL KOLU: tek asama, lam={a.lam2}, N={a2.n}", flush=True)
         sol = _cozucu(a2.x, a2.v, a2.m, np.zeros(a2.n), a2.h,
                       _alpha0_denetle(a2.alpha0, a.gozeneksiz), a2.Y0, a.device,
-                      cfl=a.cfl,
+                      cfl=a.cfl, u_tabani=a.u_tabani,
                       mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
         t = _kos(sol, 0.0, a.t_end, a.azami_adim, "tek")
         st_tek = sol.state_numpy()
@@ -469,7 +476,7 @@ def main() -> int:
 
     sol1 = _cozucu(a1.x, a1.v, a1.m, np.zeros(a1.n), a1.h,
                    _alpha0_denetle(a1.alpha0, a.gozeneksiz), a1.Y0, a.device,
-                   cfl=a.cfl,
+                   cfl=a.cfl, u_tabani=a.u_tabani,
                    mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
     t = _kos(sol1, 0.0, a.t1, a.azami_adim, "a1")
     print(f"  asama-1 bitti: t = {t:.5e} s "
@@ -510,7 +517,8 @@ def main() -> int:
     # kolla ayni `beta`yi veriyordu.
     sol2 = _cozucu(sahne.x, sahne.v, sahne.m, sahne.e, sahne.h,
                    _alpha0_denetle(sahne.alpha0, a.gozeneksiz), sahne.Y0, a.device,
-                   cfl=a.cfl, mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli),
+                   cfl=a.cfl, u_tabani=a.u_tabani,
+                   mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli),
                    D0=sahne.hasar if a.hasarli else None)
     izler = []
     # Aktarimdan sonra parcacik kimlikleri degisti; krater referansi

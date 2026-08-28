@@ -54,6 +54,7 @@ class WarpSolid3D:
         gravity_drift_tol: float = 0.25,
         damage_seed: int = 0,
         D0: np.ndarray | None = None,
+        u_tabani: bool = False,
     ):
         _init_warp()
         self.mat = mat
@@ -117,6 +118,10 @@ class WarpSolid3D:
         for name in ("rho", "P", "cs", "divv", "fbal", "dudt", "phi",
                      "drhodt", "plastic_du", "dt_cfl", "dt_acc"):
             setattr(self, name, wp.zeros(n, dtype=F, device=dev))
+        # IC ENERJI TABANI (rapor A21). Varsayilan KAPALI: acmak butun
+        # kayitli sayilari degistirir ve bu bir KARAR. Acikken kirpilan
+        # enerji parcacik basina SAYILIR, sessizce atilmaz.
+        self._u_tabani = bool(u_tabani)
         self._continuity = mat.density_method == "continuity"
         if self._continuity:
             # rho artik bir DURUM degiskeni ve baslangici GOZENEKLILIGE
@@ -134,6 +139,7 @@ class WarpSolid3D:
             self.rho = wp.array(np.asarray(rho0 / a0, np.float64), dtype=F, device=dev)
         elif mat.density_method != "summation":
             raise ValueError(f"bilinmeyen yogunluk yontemi: {mat.density_method!r}")
+        self.u_kirpilan = wp.zeros(n, dtype=F, device=dev)
         self.a = wp.zeros(n, dtype=V3, device=dev)
         self.g = wp.zeros(n, dtype=V3, device=dev)
         self.L = wp.zeros(n, dtype=M3, device=dev)
@@ -355,7 +361,13 @@ class WarpSolid3D:
             self._evaluated = True
         half = F(dt * 0.5)
         self._launch(I.kick_v_3d, [self.v, self.a, self.active, half])
-        self._launch(I.kick_u_3d, [self.u, self.dudt, self.active, half])
+        if self._u_tabani:
+            self._launch(I.kick_u_3d_tabanli,
+                         [self.u, self.dudt, self.active,
+                          self.u_kirpilan, half])
+        else:
+            self._launch(I.kick_u_3d,
+                         [self.u, self.dudt, self.active, half])
         self._launch(SS.kick_S_3d, [self.S, self.dSdt, self.active, half])
         if self._continuity:
             self._launch(I.accumulate_scalar_3d, [self.rho, self.drhodt, self.active, half])
@@ -373,7 +385,13 @@ class WarpSolid3D:
         self._eval()  # (x1, v_half)
         self._launch(I.kick_v_3d, [self.v, self.a, self.active, half])
         self._eval()  # (x1, v1)
-        self._launch(I.kick_u_3d, [self.u, self.dudt, self.active, half])
+        if self._u_tabani:
+            self._launch(I.kick_u_3d_tabanli,
+                         [self.u, self.dudt, self.active,
+                          self.u_kirpilan, half])
+        else:
+            self._launch(I.kick_u_3d,
+                         [self.u, self.dudt, self.active, half])
         self._launch(SS.kick_S_3d, [self.S, self.dSdt, self.active, half])
         if self._continuity:
             self._launch(I.accumulate_scalar_3d, [self.rho, self.drhodt, self.active, half])
@@ -519,4 +537,5 @@ class WarpSolid3D:
             "a": self.a.numpy().astype(np.float64),
             "D": self.D.numpy() if self._damage else np.zeros(self.n),
             "strain": self.strain.numpy() if self._damage else np.zeros(self.n),
+            "u_kirpilan": self.u_kirpilan.numpy(),
         }
