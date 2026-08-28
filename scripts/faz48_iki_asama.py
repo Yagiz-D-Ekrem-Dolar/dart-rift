@@ -216,7 +216,8 @@ def _alpha0_denetle(alpha0, gozeneksiz: bool):
 
 
 def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None, D0=None,
-            cfl: float = 0.25, u_tabani: bool = False):
+            cfl: float = 0.25, u_tabani: bool = False,
+            alpha_av: float = 1.0, beta_av: float = 2.0):
     # Kusur tohumlamasi sahneyle AYNI koke baglanir; boylece hasarli kol
     # da yeniden uretilebilir ve "hangi tohum" sorusu tek yerde yanitlanir.
     from dartrift.warp_core.solver_solid import WarpSolid3D
@@ -224,7 +225,8 @@ def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None, D0=None,
         np.ascontiguousarray(x), np.ascontiguousarray(v),
         np.ascontiguousarray(m), np.ascontiguousarray(u),
         np.ascontiguousarray(h),
-        mat if mat is not None else _malzeme(), RefParams(cfl=cfl),
+        mat if mat is not None else _malzeme(),
+        RefParams(cfl=cfl, alpha_av=alpha_av, beta_av=beta_av),
         alpha0=np.ascontiguousarray(alpha0), Y0=np.ascontiguousarray(Y0),
         device=device, check_every=10 ** 9,
         damage_seed=int(SAHNE["root_seed"]), D0=D0,
@@ -382,6 +384,14 @@ def main() -> int:
                     help="kaba izgara araligi (uretim 7,0 m)")
     ap.add_argument("--cfl", type=float, default=0.25,
                     help="CFL sayisi (uretim 0,25)")
+    # A21: enerjinin %78'i alti parcacikta ve orada ISI olarak duruyor.
+    # Yapay viskozite sok yakalamak icin var ama h = 7 m ile 0,1 m'lik
+    # bir temasta kinetik enerjiyi YERINDE isiya cevirir. Bu iki
+    # bayrak o supheliyi olculebilir yapiyor; VARSAYILANLAR URETIM.
+    ap.add_argument("--alpha-av", type=float, default=1.0,
+                    help="yapay viskozite dogrusal terim (uretim 1,0)")
+    ap.add_argument("--beta-av", type=float, default=2.0,
+                    help="yapay viskozite karesel terim (uretim 2,0)")
     ap.add_argument("--n-mermi", type=int, default=None,
                     help="mermi parcacik sayisi (uretim 800)")
     # A21: ic enerji durum degiskeni tabansiz; hedefin %44,5'inde u < 0.
@@ -421,6 +431,7 @@ def main() -> int:
         sol = _cozucu(a2.x, a2.v, a2.m, np.zeros(a2.n), a2.h,
                       _alpha0_denetle(a2.alpha0, a.gozeneksiz), a2.Y0, a.device,
                       cfl=a.cfl, u_tabani=a.u_tabani,
+                   alpha_av=a.alpha_av, beta_av=a.beta_av,
                       mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
         t = _kos(sol, 0.0, a.t_end, a.azami_adim, "tek")
         st_tek = sol.state_numpy()
@@ -477,6 +488,7 @@ def main() -> int:
     sol1 = _cozucu(a1.x, a1.v, a1.m, np.zeros(a1.n), a1.h,
                    _alpha0_denetle(a1.alpha0, a.gozeneksiz), a1.Y0, a.device,
                    cfl=a.cfl, u_tabani=a.u_tabani,
+                   alpha_av=a.alpha_av, beta_av=a.beta_av,
                    mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
     t = _kos(sol1, 0.0, a.t1, a.azami_adim, "a1")
     print(f"  asama-1 bitti: t = {t:.5e} s "
@@ -518,6 +530,7 @@ def main() -> int:
     sol2 = _cozucu(sahne.x, sahne.v, sahne.m, sahne.e, sahne.h,
                    _alpha0_denetle(sahne.alpha0, a.gozeneksiz), sahne.Y0, a.device,
                    cfl=a.cfl, u_tabani=a.u_tabani,
+                   alpha_av=a.alpha_av, beta_av=a.beta_av,
                    mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli),
                    D0=sahne.hasar if a.hasarli else None)
     izler = []
