@@ -2469,6 +2469,34 @@ Tanı aracı `scripts/yetim_parcacik.py`, yedi test
 hesapla kilitlendi (`18` komşu), kutu sınırında komşu kaçırılmıyor,
 negatif `u` donmuş enerjiye katılmıyor.
 
+##### Kaynağı: **`h` zamanla güncellenmiyor** (ADR-0042'nin ölçülmemiş sonucu)
+
+`WarpSolid3D` `h`'yi kurulumda bir kez alıyor ve **bir daha
+dokunmuyor**; `support = 2h` sabit. Bu bir kaza değil,
+[ADR-0042](adr/ADR-0042-h-sabittir-omega-birimdir.md)'nin kilitlediği
+bir karar (*"`h` sabittir, dolayısıyla `Ω ≡ 1`"*).
+
+Sonucu şimdi ölçüldü: **genleşen madde bağlantısını kaybediyor.**
+
+| | |
+|---|---|
+| kabalaştırılmış parçacığın `h`'si | `2 s₂ = 7 m` |
+| komşuluk yarıçapı | `2h = 14 m` |
+| yetim olan parçacığın en yakın komşusu | `72,9 m` |
+
+Mermi kırıntıları `~km/s` ile ayrışıyor; `14 m`'yi geçtikleri anda
+komşusuz kalıyorlar ve iç enerjileri donuyor. Uyarlanabilir `h`
+(`h ∝ (m/ρ)^(1/3)`) olsaydı `h` genleşmeyle büyür ve bağlantı
+sürerdi — bu, SPH'nin standart davranışı.
+
+> ADR-0042'nin kanıtı (KAYIT-035) **komşu sayısının çalışma
+> noktasındaki salınımını** ölçtü; **genleşen** maddede ne olduğunu
+> ölçmedi. Karar o kanıtla doğru verilmişti ama kapsamı bu değildi.
+>
+> Bu ADR-0042'yi **çürütmüyor**: sabit `h`, arayüz hatası ve
+> determinizm için seçilmişti ve o gerekçeler duruyor. Çürüttüğü şey,
+> kararın **sonuçlarının tamamının ölçüldüğü** varsayımı.
+
 ---
 
 ### A18 — **`G4-C`'nin ensemble verisi depoda yok ve geri alınamıyor** (2026-08-21)

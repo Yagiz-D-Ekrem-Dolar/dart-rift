@@ -124,3 +124,29 @@ sınırdır** (`dx` yakınsaması da içinde).
   **daha küçük**; bu bir tahmindir, ölçüm değil.
 - Salınım ölçümü **Sedov geometrisinde** yapıldı. DART geometrisinde
   (moloz yığını, gerçek mermi) tekrarlanmadan bu karar **koşulludur**.
+
+---
+
+## SONRADAN ÖLÇÜLEN SONUÇ (2026-08-21)
+
+Bu karar `h`'yi zaman içinde de sabitliyor (`WarpSolid3D` `h`'yi
+kurulumda alıp bir daha dokunmuyor, `support = 2h`). O günkü kanıt
+(KAYIT-035) komşu sayısının **çalışma noktasındaki salınımını**
+ölçmüştü; **genleşen** maddede ne olduğu ölçülmemişti.
+
+Ölçüldü (rapor A21, `λ₁ = 38`, `t = 0,2 s`):
+
+| | |
+|---|---|
+| komşusuz (`2h = 14 m` içinde) parçacık | **`40`** |
+| kütleleri | `409,6 kg` (merminin `%71`'i) |
+| taşıdıkları donmuş enerji | **`%17,7`** gelen enerjinin |
+
+Komşusuz bir parçacığın `P dV`'si yoktur: iç enerjisi işe dönüşemez.
+Mermi kırıntıları `~km/s` ile ayrışıp `14 m`'yi geçince bağlantılarını
+kaybediyor.
+
+Bu **kararı çürütmüyor** — sabit `h` arayüz hatası ve determinizm için
+seçilmişti, o gerekçeler duruyor. Çürüttüğü şey, sonuçların
+tamamının ölçüldüğü varsayımı. Uyarlanabilir `h` seçeneği
+ADR-0048'in kapsamında yeniden değerlendirilmelidir.
