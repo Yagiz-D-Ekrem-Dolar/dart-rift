@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 6 — A11, A12, A17, A18, A19, A20
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 7 — A11, A12, A17, A18, A19, A20, A21
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -2345,6 +2345,90 @@ dönüyor — yani tek tuttuğu değişmez bu. Pürüz girer girmez bozuluyor.
 Kilit: `tests/test_krater_bos_sinav.py` — iki kusur
 `xfail(strict=True)` ile sabitlendi; düzeltildikleri gün testler
 **düşer** ve bu bölüm güncellenmek zorunda kalır.
+
+---
+
+### A21 — **Enerji yayılmıyor: hedefin ısısının `%90`'ı `6` parçacıkta** (2026-08-21)
+
+Farklı bir açıdan bakıldı: gelen enerji (`½ m v² = 1,0939e10 J`)
+nereye gitti?
+
+| kol | `KE` | `U` (ısı) | hedefte `KE` | hedefte `U` |
+|---|---|---|---|---|
+| tek aşama (`A1 = 0,215`) | `%38,2` | `%59,7` | `%0,004` | `%30,0` |
+| iki aşama (`λ₁ = 38`, `A1 = 4,08`) | **`%5,6`** | **`%93,2`** | `%0,95` | **`%84,8`** |
+
+İlk okuma `β`'yı **bağımsız olarak** doğruluyor: mermideki kinetik
+enerji `%38,2 -> %4,7`, yani geri sekme çözünürlükle ölüyor —
+`β`'nın `1,618 -> 1,185` düşüşünün ikinci ölçümü.
+
+İkinci okuma asıl bulguyu veriyor: **enerji hedefe geçiyor
+(`%84,8`) ama akış olmuyor (`KE = %0,95`).** Madde ısınıyor, hareket
+etmiyor.
+
+#### Isı nerede: **altı parçacıkta**
+
+Hedefin iç enerjisi parçacık başına sıralandı (`λ₁ = 38`,
+`10 387` hedef parçacığı):
+
+| en sıcak | `U`'nun payı | kütlece payı |
+|---|---|---|
+| `1` parçacık | **`%26,7`** | `%0,0006` |
+| `5` parçacık | **`%89,5`** | `%0,0020` |
+| `10` parçacık | `%96,5` | `%0,0076` |
+| `50` parçacık | `%100,0` | `%0,048` |
+
+> `U`'nun **`%50`'si `2` parçacıkta, `%90`'ı `6` parçacıkta** —
+> hedef parçacıklarının `%0,058`'i, hedef kütlesinin `%0,002`'si.
+
+Çarpma bölgesinde (`r ≤ 15 m`, `230` parçacık) **medyan** `u` yalnızca
+`0,49 J/kg` ve **medyan yoğunluk `1537,2 kg/m³`** — yani
+`ρ₀/α₀`'ın tam kendisi, hiç değişmemiş. `ρ > 1600` olan `10` parçacık
+(`%4,3`).
+
+> **Şok yayılmıyor.** Enerji temas noktasındaki birkaç parçacığa
+> dökülüyor ve orada kalıyor. Gerçek bir şok, mermi çapının birkaç
+> katı yarıçapında bir yarıküreyi karşılaştırılabilir `u`'ya
+> çıkarırdı.
+>
+> Ejektanın olmaması, kraterin `9 cm` kalması, `β`'nın hedeften
+> beslenmemesi — hepsi **bunun** sonucu.
+
+#### Ve bir sızıntı: `u < 0`
+
+Aynı durumlarda hedef parçacıklarının **`%44,5`'inde iç enerji
+negatif**:
+
+| koşu | `u < 0` | en negatif | tutulan enerji |
+|---|---|---|---|
+| `λ₁ = 38` | `4 641 / 10 424` | `-12,06 J/kg` | `-7,0e6 J` (`%0,06`) |
+| tek aşama | `4 942 / 11 183` | `-694 J/kg` | `-3,0e8 J` (**`%2,76`**) |
+
+Sebep bulundu: `eos_tillotson.py` basıncı hesaplarken
+
+```
+u = wp.max(u_in, F(0.0))
+```
+
+diyor — **negatif `u`'yu sıfır sayıyor**. Ama durum değişkeni hiçbir
+yerde kırpılmıyor (`integrator.py`: `u[i] += half_dt * dudt[i]`).
+
+İki sonucu var:
+
+1. **Defter ile fizik ayrışıyor.** `Σ m u` korunuyor ve
+   `test_conservation` bunu doğruluyor; ama dinamiğin gördüğü enerji
+   defterdekinden farklı.
+2. **Negatif `u` bir borç.** O parçacık sonradan ısıtıldığında önce
+   borcunu kapatıyor; EOS ısınmayı ancak `u > 0` olunca görüyor. Şok
+   cephesinin arkasındaki madde **olması gerekenden uzun soğuk
+   kalıyor** — ve bu, ısının yayılmamasının bir parçası.
+
+Büyüklük ADR-0028'in kaydettiği `%1,5`'lik enerji hatasıyla aynı
+mertebede; ikisinin aynı şey olup olmadığı **ölçülmedi**.
+
+Kilit: `tests/test_ic_enerji_tabani.py` — kırpmanın kendisi ve
+defter/fizik ayrışması geçiyor; integratörde taban olmadığı
+`xfail(strict=True)` ile sabit.
 
 ---
 
