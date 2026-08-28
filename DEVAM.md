@@ -10,10 +10,13 @@
 
 | | |
 |---|---|
-| **En büyük sonuç** | `β` **ölçümle çözüldü**: motorun `β = 1,4112`'si fizik değil, **çözülmemiş çarpışmanın artığı**. Hedef ejektası **yok** (kaçan kütle her koşuda merminin tamamı, hedef payı tam `0`). |
+| **En büyük sonuç** | `β` **ölçümle çözüldü** ve altındaki mekanizma bulundu: **şok hedefe yayılmıyor**. Hedefin ısısının `%90`'ı **altı parçacıkta** (hedef kütlesinin `%0,002`'si); gelen enerjinin `%17,7`'si **komşusuz** parçacıklarda donmuş. Krater `9 cm`, `15,28 m` diye taşınan sayı **çıkarıcı artığıydı**. |
+| **Gözlenebilirlerin üçü de kırık** | `beta` ayrıklaştırma artığı (A17) · `krater_derinlik` `%68` taban artığı, çıkarıcı **yokken var varken yok** diyordu (A19, **çare yazıldı**) · `krater_capi` iki nicemleme seviyesi (A11) |
+| **Dış kıyas yapıldı** | π-ölçekleme çap `13,3 – 85,6 m` bekliyor, model `7,49 m`; `d/D = 2,04` vs literatür `0,15 – 0,30` — model **çanak değil delik** açıyordu (yeni ölçüyle: krater aslında `9 cm`) |
 | **Kapı sonucu** | **`G4-B1` düşüyor** — yakınsama `λ₂`'de (hedef) ölçülmüştü, `λ₁`'de (mermi) eşiğin `268` katı. Kapı raporu hâlâ `GEÇİLDİ` diyor ve **yeniden üretilmeli**. |
 | **Bekleyen karar** | **ADR-0047** (ÖNERİ) ve **ADR-0046** (kapsam) — ikisi de kullanıcıda. |
-| **Açık sıkıntılar** | A11 (`krater_capi` ölü), A12, A17 (artık **ölçülmüş**, karar bekliyor). |
+| **Açık sıkıntılar** | **7**: A11, A12, A17, A18 (ensemble verisi kayıp), A19 (krater çıkarıcısı), A20 (adım sınırı sessiz kesiyordu — **düzeltildi**), A21 (şok yayılmıyor + `u < 0` + yetim parçacıklar — **çare yazıldı, varsayılan kapalı**). |
+| **Yeni araçlar** | `yakinsama_denetimi.py` (her düğmeyi tek tek tarar) · `pi_olcekleme.py` (dış kıyas) · `krater_yerdegistirme` (Lagrange'cı krater) · `yetim_parcacik.py` · `a17_kutle_orani.py` |
 | **Depo** | `main`, GitHub'a push edildi. |
 | **Koşan işler** | TRUBA `1515233` (`λ₂ = 4`), yerelde `λ₁ = 55`. |
 
@@ -131,6 +134,30 @@ Yani sekme soğuk elastik bir yapay değil, ama merminin enerjisinin
 | aktarımın durum sıfırlaması | etkilenen kütle payı `1e-3`–`1e-5` | yerel, 21.08 |
 
 **Yakınsamamış tek yön `λ₁`** ve o `β`'yı gözlemden **uzağa** itiyor.
+
+### Yakınsama denetimi — **iki düğme düşüyor** (`1515317`)
+
+| düğme | bağıl fark | yargı | mertebe |
+|---|---|---|---|
+| **`lam1`** | `2,35e-01` | **DÜŞTÜ** | `2,07` |
+| **`spacing`** | `1,46e-01` | **DÜŞTÜ** | — |
+| `r_ince1` | `9,17e-02` | geçti (kıl payı) | — |
+| `lam2` · `r_ince2` · `cfl` · `n_mermi` · `t1` | — | geçti | — |
+
+> `lam2` `β`'yı `%5` oynatıp *"geçti"* dedi; **aynı** düğme hedefin iç
+> enerjisini `450` kat değiştirdi. Bir gözlenebilirin yakınsama
+> testini geçmesi **fiziğin yakınsadığı anlamına gelmiyor**.
+
+### Elemeler `μ ≈ 1`'de **yeniden** sınandı
+
+Bütün elemeler `μ = 80`'de, yani şokun hedefe hiç girmediği rejimde
+yapılmıştı. `λ₂ = 8`'de (`μ = 1,26`) tekrarlandı:
+
+| kol | krater derinliği (**yeni** ölçü) |
+|---|---|
+| üretim | `0,0923 m` |
+| **hasar açık** | `0,0926 m` (`+%0,3`) — eleme **doğrulandı** |
+| **zayıf** (`Y0 = 1 Pa`) | `0,1109 m` (`+%20`) — ilk ölçülebilir iz |
 
 ---
 
