@@ -2430,6 +2430,45 @@ Kilit: `tests/test_ic_enerji_tabani.py` — kırpmanın kendisi ve
 defter/fizik ayrışması geçiyor; integratörde taban olmadığı
 `xfail(strict=True)` ile sabit.
 
+**Çare yazıldı** (`integrator.kick_u_3d_tabanli`): `u` sıfırın altına
+inmiyor **ve kırpılan miktar parçacık başına biriktiriliyor** —
+sessizce kırpmak, bir kaçak kaynağını başkasıyla değiştirmek olurdu.
+`WarpSolid3D(u_tabani=False)` **varsayılan kapalı**: açmak bütün
+kayıtlı sayıları değiştirir ve bu bir **karar**, sessiz düzeltme
+değil. Altı çekirdek testi (`tests/test_u_tabani_cekirdegi.py`).
+
+#### İkinci mekanizma: **yetim parçacıklar** enerjiyi donduruyor
+
+SPH'de komşusu olmayan bir parçacık hiçbir şeyle etkileşemez:
+basınç gradyanı yok, `P dV` yok, **iş yapamaz**. İç enerjisi varsa o
+enerji **donar**.
+
+Ölçüldü (`λ₁ = 38`, `t = 0,2 s`, komşuluk yarıçapı `14 m = 2h`):
+
+| | |
+|---|---|
+| komşusuz parçacık | **`40`** |
+| toplam kütleleri | `409,6 kg` — merminin **`%71`**'i |
+| taşıdıkları iç enerji | `1,323e9 J` = **`%12,1`** gelen enerjinin |
+| kinetik | `6,14e8 J` = `%5,6` |
+| **donmuş toplam** | **`%17,7`** |
+
+Tek aşamalı kolda yetim **yok** (`0`): mermi `803` parçacıkla birlikte
+kalıyor. Yetimler, iki aşamalı aktarımın mermiyi `46` siteye
+kabalaştırmasıyla ortaya çıkıyor.
+
+> Momentum ve kütle **korunuyor** — yetimler sahnede duruyor.
+> Kaybolan şey enerjinin **işe dönüşebilirliği**. Gerçekte o sıcak
+> madde genleşir ve momentuma dönerdi; burada gelen enerjinin
+> **altıda biri** etkileşemez halde donuyor.
+>
+> Ve bu doğrudan `β`'nın payına ait: genleşemeyen ejekta itmez.
+
+Tanı aracı `scripts/yetim_parcacik.py`, yedi test
+(`tests/test_yetim_parcacik.py`) — komşu sayımı `3x3x3` kafeste elle
+hesapla kilitlendi (`18` komşu), kutu sınırında komşu kaçırılmıyor,
+negatif `u` donmuş enerjiye katılmıyor.
+
 ---
 
 ### A18 — **`G4-C`'nin ensemble verisi depoda yok ve geri alınamıyor** (2026-08-21)
