@@ -2348,7 +2348,29 @@ Kilit: `tests/test_krater_bos_sinav.py` — iki kusur
 
 ---
 
-### A21 — **Enerji yayılmıyor: hedefin ısısının `%90`'ı `6` parçacıkta** (2026-08-21)
+### A21 — **Enerji yayılmıyor: gelen enerjinin `%78`'i `6` parçacıkta** (2026-08-21)
+
+> ### Tek tabloda bütün zincir (`λ₁ = 38`, `t = 0,2 s`)
+>
+> | | enerji | pay |
+> |---|---|---|
+> | **gelen** | `1,0939e10 J` | `%100,0` |
+> | hedefte iç enerji | `9,2822e9 J` | `%84,9` |
+> | **bunun `6` parçacıkta olanı** | **`8,5548e9 J`** | **`%78,2`** |
+> | hedefte kinetik | `1,0339e8 J` | `%0,9` |
+> | mermide (sekme + ısı) | `1,4312e9 J` | `%13,1` |
+>
+> O `6` parçacık hedef kütlesinin **`%0,002`**'si.
+>
+> | | model | olması gereken |
+> |---|---|---|
+> | krater (yeni ölçü) | **`0,09 m`** | π-ölçekleme: çap `13 – 86 m` |
+> | hedef ejektası | **`0 kg`** | gözlem için `6,45e6 kg` |
+>
+> **Çarpma enerjisinin `%78`'i altı parçacığa hapsolmuş durumda.**
+> Kraterin olmaması, ejektanın olmaması ve `β`'nın hedeften
+> beslenmemesi — üçü de bunun sonucu, üç ayrı sorun değil.
+
 
 Farklı bir açıdan bakıldı: gelen enerji (`½ m v² = 1,0939e10 J`)
 nereye gitti?
