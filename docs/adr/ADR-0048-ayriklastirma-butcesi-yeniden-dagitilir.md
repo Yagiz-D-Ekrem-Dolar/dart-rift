@@ -115,6 +115,35 @@ beklenmez. Bu, gereken `t_end`'i `100 s`'den `~20 s`'ye indirir.
 **Bedeli:** yeni bir gözlenebilir ve onun doğrulaması. `2R` ölçütü
 **silinmez** — ikisi birlikte raporlanır ve tutarlılıkları ölçülür.
 
+### Ç4 — `A1` eşiği: `>= 2` **yetersiz olduğu ölçüldü**
+
+`A1 = mermi çapı / yerel aralık` ölçütünün eşiği `>= 2`. Yani mermi
+**iki parçacık** eninde. Şok literatüründe mermi tipik olarak
+`10 – 20` parçacıkla çözülür; `2` ile şok merminin **içinde** bile
+ayrıklaştırılamaz.
+
+Ve ölçüldü: `A1` `2,04 -> 4,08` olunca `β` **`%16`** değişiyor. Yani
+`A1 = 2` yakınsamış değil, **uzağında**.
+
+Maliyet (ölçülen `n_ince ~ λ₁^2,48` ölçeklemesiyle; aşama-1 `λ₁ = 19`
+H100'de `~30 s`):
+
+| `A1` | `λ₁` | `s_ince` | `n_ince` | aşama-1 maliyeti | H100 |
+|---|---|---|---|---|---|
+| **2,0** (bugün) | `19` | `0,368 m` | `2 327` | `1×` | `30 s` |
+| 4,1 | `38` | `0,184 m` | `13 011` | `11×` | `6 dk` |
+| **8,0** | `75` | `0,094 m` | `69 355` | `117×` | **`1 saat`** |
+| 12,0 | `112` | `0,063 m` | `189 838` | `480×` | `4 saat` |
+| 20,0 | `186` | `0,038 m` | `675 033` | `2 845×` | `24 saat` |
+
+> `A1 = 8` **bugün karşılanabilir** (aşama-1 için `~1 saat`) ve
+> `λ₁` yakınsama eğrisine üçüncü noktayı koyar. `A1 = 20` tek nokta
+> için `24 saat` — ensemble için değil, **mekanizma** için.
+
+Ama dikkat: aşama-2 aktarımı bu inceliği `t₁`'de **kabalaştırıp
+atıyor**. Yani Ç4 tek başına yetmez; Ç2 (hareketli inceltme) ile
+birlikte anlamlı.
+
 ### Birleşik etki
 
 `Ç1 × Ç3` tek başına: `399 saat -> ~2 saat`. Üçü birlikte, `μ ≪ 1`
