@@ -460,7 +460,8 @@ def main() -> int:
             p_imp=float(np.linalg.norm(p_imp)), t=t, D=Dt,
             # `u` ve `rho`: kacan maddenin SOKLANMIS olup olmadigi
             # ancak ic enerjiyle yanitlanir (olcut EK-2).
-            u=st_tek["u"], rho=st_tek["rho"])
+            u=st_tek["u"], rho=st_tek["rho"],
+            alpha0=np.asarray(a2.alpha0, dtype=np.float64))
         Path(a.out).write_text(json.dumps(
             {"kip": "tek_asama", "lam": a.lam2, "N": a2.n, "t_sim": t,
              "hasar": hasar_tek,
@@ -595,7 +596,11 @@ def main() -> int:
         # Hasar alani: kapali kolda sifir dizisi doner (state_numpy),
         # yani iki kol AYNI sekille okunur ve karsilastirma post-hoc
         # yapilabilir.
-        D=st_son["D"], u=st_son["u"], rho=st_son["rho"])
+        D=st_son["D"], u=st_son["u"], rho=st_son["rho"],
+        # SOK SINAVI icin: sikismanin tabani alpha0'dan KESIN
+        # hesaplanabilsin (yogunluk esigiyle tahmin %30 ustu
+        # sikismada yanilir).
+        alpha0=np.asarray(sahne.alpha0, dtype=np.float64))
     print(f"\nson durum yazildi: {durum_yolu}", flush=True)
 
     print(f"\nSONUC ({time.perf_counter() - t0:.1f} s duvar)", flush=True)

@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 7 — A11, A12, A17, A18, A19, A20, A21
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 8 — A11, A12, A17, A18, A19, A20, A21, A22
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -2518,6 +2518,78 @@ sürerdi — bu, SPH'nin standart davranışı.
 > Bu ADR-0042'yi **çürütmüyor**: sabit `h`, arayüz hatası ve
 > determinizm için seçilmişti ve o gerekçeler duruyor. Çürüttüğü şey,
 > kararın **sonuçlarının tamamının ölçüldüğü** varsayımı.
+
+---
+
+### A22 — **Model şok üretmiyor**: sıkışma `%0,25` vs Hugoniot `%46 – 74` (2026-08-21)
+
+A21 *"enerji altı parçacıkta"* diyordu. Bir adım daha sorulunca en dip
+katman çıktı: **o parçacıklar sıkışmadan ısınmış.**
+
+Gerçek bir şok maddeyi **sıkıştırarak** ısıtır; Rankine-Hugoniot
+sıçrama koşulları ikisini birbirine bağlar. Referans **dışarıdan**
+geliyor — modelin kendi önceki koşusundan değil.
+
+Bazalt için `Us = C0 + S·up` (`C0 = 2,6 km/s`, `S = 1,5`; Melosh 1989),
+DART hızında (`6 144,9 m/s`, `up ≈ v/4 – v/2`):
+
+| `up` | `Us` | **sıkışma** | `P` | `du` |
+|---|---|---|---|---|
+| `1 536 m/s` | `4 904` | **`%45,6`** | `20,3 GPa` | `1,18e6 J/kg` |
+| `3 072 m/s` | `7 209` | **`%74,3`** | `59,8 GPa` | `4,72e6 J/kg` |
+
+Ölçülen (her parçacığın **kendi** `α₀`'ına göre):
+
+| kol | `A1` | sıkışma medyan | **sıkışma max** | `>%5` sıkışan |
+|---|---|---|---|---|
+| tek aşama | `0,215` | `%-0,0008` | **`%0,250`** | **`0`** |
+| iki aşama `λ₁ = 38` | `4,078` | `%-0,0008` | **`%3,693`** | **`0`** |
+
+> **Hedefte tek bir parçacık bile `%5` sıkışmıyor.** Hugoniot `%46`
+> istiyor. Model bandın `%0,5` – `%8`'inde.
+>
+> En sıcak parçacıklar `u = 1,03e5 J/kg`'a çıkmış ama sıkışmaları
+> `%0,4 – 0,5`. **Sıkışmadan ısınma şok değildir** — ısı,
+> ayrıklaştırmanın dağıtıcı teriminden geliyor.
+
+#### Bu, geri kalan her şeyi açıklıyor
+
+| belirti | sebebi |
+|---|---|
+| `β` hedeften beslenmiyor | şok yok -> kazı akışı yok -> ejekta yok |
+| krater `9 cm` | kazılacak madde şoklanmadı |
+| enerji `6` parçacıkta | şok yayılmadı, temas noktasında dağıldı |
+| `%78` iç enerji, `%0,9` kinetik | ısı üretildi ama akışa dönüşmedi |
+
+Dört ayrı sıkıntı değil; **tek** sıkıntının dört yüzü.
+
+#### Yakınsama yönü **var** ve hedefi dışarıdan belli
+
+`A1` `0,215 -> 4,078` (`19×`) ile sıkışma `%0,25 -> %3,69` (`15×`).
+Ölçülen ölçekleme: **sıkışma `~ A1^0,92`**.
+
+Hugoniot bandının **alt** ucuna (`%45,6`) ulaşmak için:
+
+| | |
+|---|---|
+| gereken `A1` | **`≈ 64`** (bugünkü eşik `2`) |
+| gereken `λ₁` | `≈ 592` |
+| aşama-1 maliyeti | `159 727×` |
+| H100'de tek nokta | **`≈ 55 gün`** |
+
+Ara noktalar: `A1 = 8` -> `1 saat` (sıkışma `~%7` beklenir),
+`A1 = 20` -> `24 saat` (`~%16`).
+
+> `A1 ≥ 2` eşiği yalnızca *gevşek* değil; **şok üretemeyecek kadar**
+> gevşek. Ve şoku üretmek bu mimaride tek nokta için `~55 gün`.
+> ADR-0048'in kama önerisi (`36×`) bunu `~1,5 güne` indirir — kararın
+> asıl gerekçesi budur.
+
+Ölçüt aracı `scripts/sok_sinavi.py`, on dört test
+(`tests/test_sok_sinavi.py`): Hugoniot bağıntıları elden hesapla
+kilitli, blok/matris tabanı `α₀` ile **kesin** (koşular artık `α₀`'ı
+da kaydediyor), ve tahmin yolunun sınırı (`%30` üstü sıkışmada
+yanılır) testle yazılı.
 
 ---
 
