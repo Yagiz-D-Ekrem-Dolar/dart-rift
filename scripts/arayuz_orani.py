@@ -74,6 +74,43 @@ def oranlar(m: np.ndarray, *, tol: float = 1e-6) -> dict:
     }
 
 
+#: Bir kaba parcacigin destegi `2h = 4s`. Kabuk bundan INCEYSE o
+#: seviye bir tampon olarak islemiyor demektir.
+ASGARI_KALINLIK_S = 4.0
+
+
+def kabuk_kalinligi(kademeler, spacing: float) -> list:
+    """Her kabuğun kalınlığı, parçacık aralığı cinsinden.
+
+    ## Neden kütle oranından **daha** temel
+
+    Destekteki ince parçacık sayısı `(2h_kaba)³`, gereken kütle de
+    `s_kaba³` ile gidiyor; ikisi aynı oranda büyüdüğü için pay
+    **basamak boyutundan bağımsız** (`189,6×`). Yani kütle oranı tek
+    başına hiçbir basamağı düşürmez.
+
+    Düşüren şey **geometri**: kaba parçacığın desteği `4 s_kaba` ve o
+    kadar ince madde **var olmalı**. Tek basamaklı şemada destek
+    `28 m`, ince bölge `3 m` — `9` kat büyük. Destekte `1,5` milyon
+    ince parçacık gerekiyordu; `1 828` vardı.
+
+    `kademeler`: `(r, λ)` çiftleri **dıştan içe**
+    (:func:`refine_scene_kademeli` ile aynı sıra).
+    """
+    k = [(float(r), float(lam)) for r, lam in kademeler]
+    if len(k) < 2:
+        raise ValueError(f"en az iki kademe gerekir, {len(k)} geldi")
+    out = []
+    for i, (r, lam) in enumerate(k):
+        s = float(spacing) / lam
+        ic = k[i + 1][0] if i + 1 < len(k) else 0.0
+        kal = r - ic
+        out.append({"r_dis": r, "r_ic": ic, "s": s, "kalinlik_m": kal,
+                    "kalinlik_s": kal / s,
+                    "yeterli": bool(kal / s >= ASGARI_KALINLIK_S)})
+    return out
+
+
 def kademe_onerisi(en_dik: float) -> int:
     """Basamağı `OLAGAN_ORAN`'a indirmek için gereken **ara seviye**."""
     if en_dik <= OLAGAN_ORAN:

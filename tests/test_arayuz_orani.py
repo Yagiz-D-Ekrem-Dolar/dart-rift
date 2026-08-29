@@ -103,3 +103,44 @@ def test_bozuk_girdi_REDDEDILIYOR() -> None:
         basamaklar(np.zeros((2, 2)) + 1.0)
     with pytest.raises(ValueError, match="bos olmayan"):
         basamaklar(np.array([]))
+
+
+# ------------------------------------------- KABUK KALINLIGI (A25)
+
+def test_kabuk_kalinligi_KOSTURULAN_merdivenin_kusurunu_yakaliyor() -> None:
+    """`12:1.25 8:2.5 6:5 4.5:10 3:20` — dış üç kabuk **çok ince**.
+
+    Bu kusur bir koşu **sırasında** fark edildi; test onu bir daha
+    gözden kaçırılmaz kılıyor.
+    """
+    from arayuz_orani import kabuk_kalinligi
+    k = kabuk_kalinligi([(12.0, 1.25), (8.0, 2.5), (6.0, 5.0),
+                         (4.5, 10.0), (3.0, 20.0)], 3.5)
+    yeterli = [d["yeterli"] for d in k]
+    assert yeterli == [False, False, False, True, True]
+    assert k[0]["kalinlik_s"] == pytest.approx(4.0 / 2.8, rel=1e-6)
+
+
+def test_kabuk_kalinligi_OZ_BENZER_merdivende_SABIT_ve_yeterli() -> None:
+    """`kalınlık/s = r/s` sabit — öz-benzerliğin **gerekli** olduğu yer."""
+    from arayuz_orani import kabuk_kalinligi
+
+    from dartrift.setup.refine import ozbenzer_kademeler
+    k = kabuk_kalinligi(ozbenzer_kademeler(3.5, 3.0, 0.175, 24.0), 3.5)
+    assert all(d["yeterli"] for d in k)
+    dis = [d["kalinlik_s"] for d in k[:-1]]      # en ic kabuk r_ic = 0
+    assert max(dis) - min(dis) < 1e-9
+    assert dis[0] == pytest.approx(3.0 / 0.175 / 2.0, rel=1e-6)
+
+
+def test_kabuk_kalinligi_EN_IC_kabuk_merkeze_kadar() -> None:
+    from arayuz_orani import kabuk_kalinligi
+    k = kabuk_kalinligi([(12.0, 2.5), (3.0, 20.0)], 3.5)
+    assert k[-1]["r_ic"] == 0.0
+    assert k[-1]["kalinlik_m"] == pytest.approx(3.0)
+
+
+def test_kabuk_kalinligi_tek_kademe_REDDEDIYOR() -> None:
+    from arayuz_orani import kabuk_kalinligi
+    with pytest.raises(ValueError, match="en az iki kademe"):
+        kabuk_kalinligi([(3.0, 20.0)], 3.5)
