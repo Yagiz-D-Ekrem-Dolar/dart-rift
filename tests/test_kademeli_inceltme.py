@@ -183,3 +183,32 @@ def test_ozbenzer_bozuk_girdi_REDDEDIYOR() -> None:
         ozbenzer_kademeler(3.5, 3.0, 0.0, 24.0)
     with pytest.raises(ValueError, match="kat > 1"):
         ozbenzer_kademeler(3.5, 3.0, 0.175, 24.0, kat=1.0)
+
+
+def test_izgara_arama_KABA_KUVVETLE_ayni() -> None:
+    """Hız için yazıldı; **sonucu değiştirmemeli**.
+
+    `refine_scene_ucseviye` de bu yola geçti, yani iki aşamalı bütün
+    koşular buna bağlı. Rastgele bulutta birebir eşitlik aranıyor.
+    """
+    from dartrift.setup.refine import _en_yakin_indeks
+    rng = np.random.default_rng(7)
+    h = rng.uniform(-30, 30, (2000, 3))
+    q = rng.uniform(-25, 25, (600, 3))
+    izgara = _en_yakin_indeks(h, q, 7.0)
+    kaba = np.array([np.argmin(np.linalg.norm(h - p, axis=1)) for p in q])
+    assert (izgara == kaba).all()
+
+
+def test_izgara_arama_UZAK_sorguda_yaricapi_BUYUTUYOR() -> None:
+    """Hücre içinde komşu yoksa sessizce yanlış komşu **dönmemeli**."""
+    from dartrift.setup.refine import _en_yakin_indeks
+    h = np.array([[0.0, 0.0, 0.0]])
+    q = np.array([[50.0, 0.0, 0.0]])          # hucrenin cok otesinde
+    assert _en_yakin_indeks(h, q, 1.0)[0] == 0
+
+
+def test_izgara_arama_BOS_hedefi_REDDEDIYOR() -> None:
+    from dartrift.setup.refine import _en_yakin_indeks
+    with pytest.raises(ValueError, match="hedef_x bos"):
+        _en_yakin_indeks(np.zeros((0, 3)), np.zeros((1, 3)), 1.0)

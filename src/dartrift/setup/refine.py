@@ -470,10 +470,10 @@ def refine_scene_ucseviye(kaba, mesh, r1: float, lam1: float,
     #    PARCALI -- `N x M x 3` asla parcasiz kurulmaz.
     k_hedef = ~np.asarray(kaba.is_impactor, dtype=bool)
     hedef_x = np.asarray(kaba.x)[k_hedef]
-    idx = np.empty(len(x_c), dtype=np.int64)
-    for b in range(0, len(x_c), 2048):
-        idx[b:b + 2048] = np.argmin(np.linalg.norm(
-            x_c[b:b + 2048, None, :] - hedef_x[None, :, :], axis=2), axis=1)
+    # IZGARA ile: eski `O(N.M)` argmin merdivende dakikalarca suruyordu.
+    # `_en_yakin_indeks` kaba kuvvetle BIREBIR ayni sonucu veriyor
+    # (test_kademeli_inceltme + elden dogrulama).
+    idx = _en_yakin_indeks(hedef_x, x_c, float(kaba.spacing))
     a0_c = np.asarray(kaba.alpha0)[k_hedef][idx]
     y0_c = np.asarray(kaba.Y0)[k_hedef][idx]
     blok_c = np.asarray(kaba.is_boulder)[k_hedef][idx]
