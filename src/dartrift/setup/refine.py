@@ -683,3 +683,56 @@ def refine_scene_kademeli(kaba, mesh, kademeler,
     s.diagnostics["h_min"] = float(h.min())
     s.diagnostics["h_max"] = float(h.max())
     return s
+
+
+def ozbenzer_kademeler(spacing: float, r_ic: float, s_ic: float,
+                       r_dis: float, kat: float = 2.0) -> list:
+    """**Öz-benzer** merdiven: `r` ve `s` birlikte katlanır, `s/r` sabit.
+
+    ## Neden öz-benzer
+
+    Elle yazılan merdivenler dıştan içe **bozuluyor**: ilk denemede
+    bağıl çözünürlük `s/r` `0,058`'den `0,233`'e kaydı (dış kabuk
+    `4,7` kat kaba). Yarıçapı aralıkla **birlikte** katlamak bunu
+    kendiliğinden önlüyor.
+
+    ## Maliyet yasası
+
+    Bir oktavlık kabuk (`r -> 2r`, yarım küre):
+
+        V = (14/3) pi r^3        N = V / (0,707 s^3) = 20,7 (r/s)^3
+
+    `r`'ye **bağlı değil** — yani her oktav **aynı** maliyette ve
+    kraterin yarıçapına ulaşmak aritmetik değil **geometrik** olarak
+    pahalı: dört oktav = dört sabit.
+
+    | `r/s` | `N` / oktav | dört oktav |
+    |---|---|---|
+    | `4,3` | `1 646` | `6 583` |
+    | `8,6` | `13 166` | `52 665` |
+    | `17,1` | `103 504` | `414 017` |
+    | `20,0` | `165 600` | `662 400` |
+
+    Bütün maliyet **tek** bir sayıda: `r/s`. Ve o sayı — şokun
+    **yayılması** için gereken bağıl çözünürlük — henüz
+    **ölçülmedi**. A23 şokun **doğması** için `r_mermi/h ~ 1` ölçtü;
+    o kaynak koşulu, bu değil.
+
+    Parametreler `(r, λ)` çiftleri döndürüyor (dıştan içe), yani
+    doğrudan :func:`refine_scene_kademeli`'ye verilebilir.
+    """
+    if not (0.0 < r_ic < r_dis):
+        raise ValueError(f"0 < r_ic < r_dis gerekir; {r_ic}, {r_dis} geldi")
+    if s_ic <= 0.0:
+        raise ValueError(f"s_ic pozitif olmali, {s_ic} geldi")
+    if kat <= 1.0:
+        raise ValueError(f"kat > 1 olmali, {kat} geldi")
+    ciftler = []
+    r, s = float(r_ic), float(s_ic)
+    while r < r_dis * (1.0 - 1e-12):
+        ciftler.append((r, float(spacing) / s))
+        r *= kat
+        s *= kat
+    ciftler.append((min(r, float(r_dis)), float(spacing) / s))
+    # `refine_scene_kademeli` DISTAN ICE bekliyor
+    return list(reversed(ciftler))
