@@ -734,5 +734,19 @@ def ozbenzer_kademeler(spacing: float, r_ic: float, s_ic: float,
         r *= kat
         s *= kat
     ciftler.append((min(r, float(r_dis)), float(spacing) / s))
+
+    # SON BASAMAK TABANA: merdiven `s_dis`'te bitip `spacing`'e atlarsa
+    # ORADA bir artik sicrama kalir. Olculdu (2026-08-29): `r_dis = 24`
+    # ile merdiven `s = 1,4`'te bitiyordu ve tabana (`3,5`) `2,5×`
+    # aralik = `15,6×` kutle sicramasi kaliyordu -- arac `9×` diye
+    # raporladi cunku blok/matris farki araya giriyor.
+    #
+    # Cozum: `s` tabanin YARISINI gecene kadar surdur; o zaman son
+    # sicrama en cok `2×` aralik (`8×` kutle) olur.
+    s_son = float(spacing) / ciftler[-1][1]
+    while s_son < float(spacing) / kat * (1.0 - 1e-12):
+        r *= kat
+        s_son *= kat
+        ciftler.append((r, float(spacing) / s_son))
     # `refine_scene_kademeli` DISTAN ICE bekliyor
     return list(reversed(ciftler))

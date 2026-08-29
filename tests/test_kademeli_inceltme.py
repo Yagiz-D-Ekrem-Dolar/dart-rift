@@ -212,3 +212,39 @@ def test_izgara_arama_BOS_hedefi_REDDEDIYOR() -> None:
     from dartrift.setup.refine import _en_yakin_indeks
     with pytest.raises(ValueError, match="hedef_x bos"):
         _en_yakin_indeks(np.zeros((0, 3)), np.zeros((1, 3)), 1.0)
+
+
+def test_ozbenzer_TABANA_kadar_kapaniyor() -> None:
+    """Merdiven `s_dış`'ta bitip tabana atlarsa **artık sıçrama** kalır.
+
+    Ölçüldü (`2026-08-29`): `r_dış = 24` ile merdiven `s = 1,4`'te
+    bitiyor ve tabana (`3,5`) `2,5×` aralık = `15,6×` kütle
+    sıçraması kalıyordu. Araç `9×` diye raporladı çünkü blok/matris
+    farkı araya giriyor — yani kusur **gizlenmişti**.
+    """
+    from dartrift.setup.refine import ozbenzer_kademeler
+    spacing = 3.5
+    k = ozbenzer_kademeler(spacing, 3.0, 0.175, 24.0)
+    s_dis = spacing / k[0][1]                    # en DIS kademe
+    assert s_dis >= spacing / 2.0 * (1 - 1e-9), s_dis
+    assert (spacing / s_dis) ** 3 <= 8.0 + 1e-9  # tabana son sicrama
+
+
+def test_ozbenzer_ic_basamaklar_hepsi_SEKIZ() -> None:
+    from dartrift.setup.refine import ozbenzer_kademeler
+    spacing = 3.5
+    k = ozbenzer_kademeler(spacing, 3.0, 0.175, 24.0)
+    s = [spacing / lam for _, lam in k]           # distan ice, azalan
+    oran = [(s[i] / s[i + 1]) ** 3 for i in range(len(s) - 1)]
+    assert all(abs(o - 8.0) < 1e-6 for o in oran), oran
+
+
+def test_ozbenzer_KABUK_KALINLIGI_hepsi_yeterli() -> None:
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    from arayuz_orani import kabuk_kalinligi
+
+    from dartrift.setup.refine import ozbenzer_kademeler
+    kk = kabuk_kalinligi(ozbenzer_kademeler(3.5, 3.0, 0.175, 24.0), 3.5)
+    assert all(d["yeterli"] for d in kk)
