@@ -98,3 +98,35 @@ def test_EKSIK_merdiven_hala_tehlikeli() -> None:
     o = oranlar(_kutleler(7.0, [20.0, 8.0, 1.0]))
     assert o["yargi"] == "TEHLIKELI"
     assert o["en_dik"] > 100.0
+
+
+# ---------------------------------------------- kosucuya BAGLANMA
+
+def test_faz48_kademeler_bayragi_var_ve_TEK_ASAMA_zorunlu() -> None:
+    """İki aşamalı yolda aktarım merdiveni kabalaştırır (A24/A25).
+
+    Bayrağı sessizce kabul edip aktarımda öğütmek, bu deponun tam
+    olarak kaçındığı hata sınıfı: kullanıcı çareyi uyguladığını
+    **sanır**.
+    """
+    import inspect
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import faz48_iki_asama as f
+    k = inspect.getsource(f.main)
+    assert '"--kademeler"' in k
+    assert "yalnizca --tek-asama ile" in k
+    assert "refine_scene_kademeli(kaba, mesh, kad)" in k
+
+
+def test_kademe_sinavi_MERDIVEN_kurabiliyor() -> None:
+    import inspect
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import kademe_sinavi as ks
+    k = inspect.getsource(ks.main)
+    assert "refine_scene_kademeli(kaba, mesh, kad)" in k
+    # cephe yargisi EN IC yaricapa gore olmali, r1'e degil
+    assert 'a.kademeler[-1].split(":")[0]' in k

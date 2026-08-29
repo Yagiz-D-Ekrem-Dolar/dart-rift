@@ -49,7 +49,11 @@ for _akis in (sys.stdout, sys.stderr):
 
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
 from dartrift.observables.momentum_transfer import escape_speed, momentum_transfer  # noqa: E402
-from dartrift.setup.refine import refine_scene_local, refine_scene_ucseviye  # noqa: E402
+from dartrift.setup.refine import (  # noqa: E402
+    refine_scene_kademeli,
+    refine_scene_local,
+    refine_scene_ucseviye,
+)
 from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
 from dartrift.setup.two_stage import asama2_sahnesi_ucseviye  # noqa: E402
 
@@ -382,6 +386,15 @@ def main() -> int:
     ap.add_argument("--rho-tasima-yok", action="store_true",
                     help="A24 oncesi davranis: asama-1'in sikismasini "
                          "asama-2'ye TASIMA (kiyas kolu)")
+    # KADEMELI INCELTME (rapor A25). Tek basamakli inceltme `lam = 20`'de
+    # arayuz orani `8 000` uretiyor ve sok orada yavas bir itmeye
+    # donusuyor. Merdiven bunu `8`'e indiriyor; bedeli `%13` parcacik ve
+    # `dt` DEGISMIYOR (en ince aralik ayni).
+    #   --kademeler 20:1.25 13:2.5 8:5 5:10 3:20      (r:lam, DISTAN ICE)
+    # Verilirse `--lam2/--r-ince2` yerine gecer (tek asamali kolda).
+    ap.add_argument("--kademeler", nargs="+", default=None,
+                    help="r:lam ciftleri (distan ice); tek asamali kolda "
+                         "MERDIVEN kurar (A25)")
     ap.add_argument("--tek-asama", action="store_true",
                     help="kontrol kolu: lam=2 ile TEK BASINA t_end'e git")
     ap.add_argument("--out", default=str(REPO.parent / "faz48_sonuc.json"))
@@ -450,7 +463,17 @@ def main() -> int:
     R = float(kaba.target_radius)
     t0 = time.perf_counter()
 
-    a2 = refine_scene_local(kaba, mesh, r_ince=a.r_ince2, lam=a.lam2)
+    if a.kademeler:
+        if not a.tek_asama:
+            raise SystemExit("--kademeler simdilik yalnizca --tek-asama ile "
+                             "kullanilabilir; iki asamali yolda aktarim "
+                             "merdiveni kabalastirir (A24/A25).")
+        kad = [(float(c.split(":")[0]), float(c.split(":")[1]))
+               for c in a.kademeler]
+        a2 = refine_scene_kademeli(kaba, mesh, kad)
+        print(f"MERDIVEN: {' '.join(a.kademeler)}  N={a2.n}", flush=True)
+    else:
+        a2 = refine_scene_local(kaba, mesh, r_ince=a.r_ince2, lam=a.lam2)
     p_imp = a2.impactor_momentum
     m_hedef = a2.target_mass
 
