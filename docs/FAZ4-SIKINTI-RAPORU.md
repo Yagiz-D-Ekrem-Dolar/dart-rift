@@ -2964,6 +2964,57 @@ Sıra doğrulaması zorunlu: yarıçaplar dıştan içe **azalmalı**, `λ`
 **artmalı**. Ters sıra sessizce daha kötü bir sahne üretirdi; ikisi
 de `ValueError`.
 
+#### Asıl sınır kütle oranı **değil**: **kabuk kalınlığı**
+
+Bir kaba parçacığın şoku alabilmesi için desteğinde yeterli ince
+madde bulunmalı. Destekteki ince parçacık sayısı `(2h_kaba)³`, gereken
+kütle de `s_kaba³` ile gittiği için **pay basamak boyutundan
+bağımsız** — her basamakta `189,6×`:
+
+| basamak | destekteki ince | gereken | pay |
+|---|---|---|---|
+| `8×` | `1 517` | `8` | `189,6×` |
+| `8 000×` | `1 516 733` | `8 000` | `189,6×` |
+
+Yani kütle oranı **tek başına** hiçbir basamağı düşürmez. Düşüren
+şey **geometri**: destek yarıçapı `2h_kaba = 4 s_kaba`, ve o kadar
+ince madde **var olmalı**.
+
+| | |
+|---|---|
+| tek basamakta kaba desteği | `4 × 7,0 = 28 m` |
+| ince bölge | `3 m` |
+| **oran** | **`9` kat büyük -> düşer** |
+
+Destekte `1,5` milyon ince parçacık gerekiyordu; ince bölgede
+**`1 828`** var.
+
+> **Ölçüt:** her seviyenin kabuğu en az `~4 s` kalın olmalı. Kütle
+> oranı bunun bir **vekili**; asıl koşul bu.
+
+Bu, koşmakta olduğum merdivenin bir kusurunu **koşu sırasında**
+ortaya çıkardı:
+
+| kabuk | `s` | kalınlık | `kalınlık/s` | |
+|---|---|---|---|---|
+| `0 – 3` | `0,175` | `3,0 m` | `17,1` | geçer |
+| `3 – 4,5` | `0,350` | `1,5 m` | `4,3` | geçer |
+| `4,5 – 6` | `0,700` | `1,5 m` | **`2,1`** | **çok ince** |
+| `6 – 8` | `1,400` | `2,0 m` | **`1,4`** | **çok ince** |
+| `8 – 12` | `2,800` | `4,0 m` | **`1,4`** | **çok ince** |
+
+Öz-benzer merdivende (`r` ve `s` **birlikte** katlanır) bu
+kendiliğinden çözülüyor: `kalınlık/s = r/s` sabit.
+
+| kabuk | `s` | kalınlık | `kalınlık/s` |
+|---|---|---|---|
+| `0 – 3` | `0,175` | `3,0` | `17,1` |
+| `3 – 6` | `0,350` | `3,0` | `8,6` |
+| `6 – 12` | `0,700` | `6,0` | `8,6` |
+| `12 – 24` | `1,400` | `12,0` | `8,6` |
+
+Yani `ozbenzer_kademeler` yalnızca zarif değil — **gerekli**.
+
 #### Merdiven yetmezse: **yedek çare** `h_ij`'nin kendisi
 
 `solid_stress.py:178` `hij = 0,5 (h_i + h_j)` kullanıyor ve bu
