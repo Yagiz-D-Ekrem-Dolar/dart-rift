@@ -2521,7 +2521,20 @@ sürerdi — bu, SPH'nin standart davranışı.
 
 ---
 
-### A22 — **Model şok üretmiyor**: sıkışma `%0,25` vs Hugoniot `%46 – 74` (2026-08-21)
+### A22 — ~~**Model şok üretmiyor**~~ · **BAŞLIK YANLIŞ** — bkz. A23, A24 (2026-08-21)
+
+> **DÜZELTME (2026-08-29).** Bu bölümün *ölçümleri* doğru ama
+> *başlığı* yanlış. Model şok **üretiyor**; A22 aktarımdan **sonraki**
+> durumu ölçtü, yani cesedi.
+>
+> | A22 diyordu | gerçek |
+> |---|---|
+> | model şok üretmiyor | aşama-1 `%26` sıkışma üretiyor (**A24**) |
+> | çare `A1 ≈ 64`, `~55 gün` | şok `λ₂ = 20`'de doğuyor; `470` kat yanlış (**A23**) |
+> | ısı ayrıklaştırmadan geliyor | ısı **gerçek**; kaybolan şey **sıkışma** (**A24**) |
+>
+> Aşağıdaki tablo ve sayılar **silinmedi** (depo kuralı) — o durum
+> gerçekten ölçüldü, yalnızca sebebi başka.
 
 A21 *"enerji altı parçacıkta"* diyordu. Bir adım daha sorulunca en dip
 katman çıktı: **o parçacıklar sıkışmadan ısınmış.**
