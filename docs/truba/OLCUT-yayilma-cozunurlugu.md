@@ -77,6 +77,41 @@ Ortak çekirdek (üç kolda da **aynı**): `r < 3` -> `s = 0,175`;
 
 Son satır önemli: bu ölçüt kendi öncülünü de **çürütebilir**.
 
-## 6. Ne ölçmüyor
+## 6. `r_dış` neden `24 m` — `β` hedefinden geliyor
+
+`β = 3,2225` bir sayı değil, bir **kütle bütçesi**:
+
+| | |
+|---|---|
+| `p_mermi` | `3 560 355 kg m/s` |
+| gereken ejekta momentumu | **`7 912 889 kg m/s`** |
+
+Bu momentumu taşıyacak madde:
+
+| ort. ejekta hızı | gereken kütle | eşdeğer yarıçap |
+|---|---|---|
+| `20 m/s` | `395 644 kg` | `4,97 m` |
+| `8 m/s` | `989 111 kg` | **`6,75 m`** |
+| `3 m/s` | `2 637 630 kg` | `9,36 m` |
+| `1 m/s` | `7 912 889 kg` | **`13,50 m`** |
+
+Bugün şoklanan kütle `72 936 kg` ve **kaçan `0 kg`**. Yani gereken
+`13,6 – 108` kat daha fazla madde.
+
+> **Kazı bölgesi en az `~7 – 14 m` yarıçapa ulaşmalı.** Bu, literatür
+> krater yarıçapıyla (`6,5 – 43 m`) tutarlı ve merdivenin şoku
+> taşıması gereken mesafeyi **sayıyla** veriyor.
+
+`r_dış = 24 m` bu bandın üstünü kapsıyor. Ve maliyet:
+
+| `r/s` | `3 -> 24 m` (üç oktav) | üretim bütçesine göre |
+|---|---|---|
+| `8,6` | `39 500` | **`0,6×`** |
+| `17,1` | `310 500` | `4,4×` |
+
+Yani *"`β`'ya ulaşmak için gereken çözünürlük ne kadara mal olur"*
+sorusu, bu ölçütün ölçtüğü **tek sayıya** indirgenmiş durumda.
+
+## 7. Ne ölçmüyor
 
 `β`, krater. `t = 6e-3 s`'de kazı akışı yok.
