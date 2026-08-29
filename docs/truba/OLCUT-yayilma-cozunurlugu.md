@@ -144,6 +144,34 @@ modeliyle çökmediğini söylüyor — sayısalı düzeltmek gerçekten
 hedefe götürebilir. Ama bir tutarlılık kontrolü, kanıt değil: `n`
 literatürden alınmış bir bant ve model onu kendisi üretmiyor.
 
-## 8. Ne ölçmüyor
+## 8. Üretim reçetesi — ölçüm hangi kararı verecek
+
+Merdiven ile iki aşamalı yol **birleşmiyor**: aktarım `r < r₁`'i
+kabalaştırdığı için merdivenin iç seviyelerini öğütür. Yani merdiven
+**tek aşamalı** koşulmalı ve `dt` en ince aralıktan gelir.
+
+`t_end = 0,2 s`, öz-benzer merdiven, üretim bütçesine göre:
+
+| `s_min` | `r_iç` | `r_dış` | `r/s` | `N` | adım | maliyet | H100/nokta | A23 sıkışma |
+|---|---|---|---|---|---|---|---|---|
+| `0,175` | `3` | `24` | `17,1` | `337 778` | `27 429` | `23,7×` | `19,0 sa` | `%40,5` |
+| `0,175` | `3` | `12` | `17,1` | `233 493` | `27 429` | `16,4×` | `13,1 sa` | `%40,5` |
+| **`0,350`** | **`3`** | **`24`** | **`8,6`** | **`50 972`** | **`13 714`** | **`1,8×`** | **`1,4 sa`** | `%22,0` |
+| `0,350` | `6` | `24` | `17,1` | `233 493` | `13 714` | `8,2×` | `6,6 sa` | `%22,0` |
+| `0,700` | `3` | `24` | `4,3` | `15 122` | `6 857` | `0,3×` | `0,2 sa` | `%1,7` |
+
+Takas doğrudan: **şokun gücü** (`s_min`, A23) ile **maliyet**
+arasında. `s_min = 0,175` Hugoniot'un `%89`'una çıkıyor ama
+`13 – 19 saat`; `0,350` yarısını veriyor ve **`1,4 saat`**.
+
+> Kırk noktalık bir ensemble: `s_min = 0,350` ile **`56 saat`**,
+> `0,175` ile `520 – 760 saat`.
+
+Bu ölçütün ölçtüğü `r/s` eşiği kararı **doğrudan** veriyor: `8,6`
+yetiyorsa üçüncü satır seçilir ve ensemble mümkün olur; `17`
+gerekiyorsa mekanizma koşuları tek tek yapılır ve ensemble başka bir
+yolla (vekil model, daha az nokta) kurulur.
+
+## 9. Ne ölçmüyor
 
 `β`, krater. `t = 6e-3 s`'de kazı akışı yok.
