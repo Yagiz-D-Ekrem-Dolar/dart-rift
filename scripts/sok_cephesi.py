@@ -30,6 +30,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from arayuz_orani import basamaklar  # noqa: E402
 from sok_sinavi import sikisma  # noqa: E402
 
 #: Cepheyi tanimlayan sikisma esigi (kesir, yuzde degil).
@@ -68,6 +69,32 @@ def cephe(rho, alpha0, x_referans, carpma_noktasi, m, *,
     }
 
 
+def seviye_dagilimi(m, sikismalar, *, esik: float = ESIK) -> list:
+    """Her **ayrıklaştırma seviyesinde** kaç parçacık şoklanmış.
+
+    A25'in kütle parmak izi ölçüsü: tek basamaklı şemada `>%1` sıkışan
+    `1 306` parçacığın **`1 306`'sı ince**, kaba olan **`0`**. Şoklanan
+    kütle ince parçacık kütlesinin **tam katı** çıkıyordu — yani kaba
+    bölgeye şok **hiç girmemişti**.
+
+    Cephe konumu bunu **göstermiyor**: `3,41 m` ince bölgenin dış ucu
+    olduğu için *"cephe ilerledi"* gibi okunabilir. Seviye dağılımı
+    o yanılgıyı kapatıyor.
+    """
+    m = np.asarray(m, dtype=np.float64)
+    s = np.asarray(sikismalar, dtype=np.float64)
+    if m.shape != s.shape:
+        raise ValueError(f"m {m.shape} ile sikisma {s.shape} ayni olmali")
+    out = []
+    for k in basamaklar(m):
+        bu = np.isclose(m, k, rtol=1e-6)
+        soklu = bu & (s > esik)
+        out.append({"kutle_kg": float(k), "n": int(bu.sum()),
+                    "n_soklu": int(soklu.sum()),
+                    "soklu_oran": float(soklu.sum() / max(int(bu.sum()), 1))})
+    return out
+
+
 def hiz(cephe_onceki: float, cephe_simdi: float, dt: float) -> float:
     """Cephe hızı — Hugoniot `Us` ile kıyaslanabilir olsun diye."""
     if dt <= 0.0:
@@ -90,10 +117,20 @@ def main() -> int:
         r = cephe(z["rho"][h], z["alpha0"][h], z["x_referans"][h], carp,
                   z["m"][h], esik=a.esik)
         t = float(z["t"])
+        sd = seviye_dagilimi(z["m"][h], sikisma(z["rho"][h], z["alpha0"][h]),
+                             esik=a.esik)
         print(f"{yol.name[:22]:>22} {t:>10.3e} {r['cephe_m']:>8.2f} "
               f"{r['ic_kenar_m']:>7.2f} {r['kalinlik_m']:>9.2f} "
               f"%{r['sikisma_max_yuzde']:>8.3f} {r['kutle_kg']:>12,.0f} "
               f"{r['n']:>7}")
+        for d in sd:
+            if d["n_soklu"]:
+                print(f"{'':>22}    seviye {d['kutle_kg']:>10,.1f} kg: "
+                      f"{d['n_soklu']:>5}/{d['n']:<6} soklu "
+                      f"(%{100*d['soklu_oran']:.1f})")
+        if not any(d["n_soklu"] for d in sd[1:]):
+            print(f"{'':>22}    UYARI: yalnizca EN INCE seviye soklanmis "
+                  f"-- sok arayuzu GECMEMIS (A25)")
         if onc is not None and t > onc[0]:
             v = hiz(onc[1], r["cephe_m"], t - onc[0])
             print(f"{'':>22} -> cephe hizi {v:>8.1f} m/s "

@@ -92,3 +92,43 @@ def test_bozuk_konum_REDDEDILIYOR() -> None:
     k["x_referans"] = np.zeros((1, 2))
     with pytest.raises(ValueError, match=r"\(N,3\)"):
         cephe(**k)
+
+
+# ------------------------------------------- SEVIYE DAGILIMI (A25)
+
+def test_seviye_dagilimi_YALNIZ_ince_soklu_durumu_gosteriyor() -> None:
+    """Ölçülen durum: `1 565` ince şoklu, kaba **`0`**.
+
+    Cephe konumu bunu göstermiyordu — `3,41 m` ince bölgenin dış ucu
+    olduğu için *"cephe ilerledi"* diye okunabiliyordu.
+    """
+    from sok_cephesi import seviye_dagilimi
+    m = np.array([46.6] * 3 + [372834.3] * 2)
+    sik = np.array([0.2, 0.1, 0.0, 0.0, 0.0])
+    d = seviye_dagilimi(m, sik)
+    assert len(d) == 2
+    assert d[0]["kutle_kg"] == pytest.approx(46.6)
+    assert d[0]["n"] == 3 and d[0]["n_soklu"] == 2
+    assert d[1]["n"] == 2 and d[1]["n_soklu"] == 0
+
+
+def test_seviye_dagilimi_KABA_soklandiginda_goruyor() -> None:
+    """Çarenin işlediğinin göstergesi: kaba seviyede de şok."""
+    from sok_cephesi import seviye_dagilimi
+    m = np.array([46.6, 46.6, 372834.3, 372834.3])
+    d = seviye_dagilimi(m, np.array([0.2, 0.0, 0.15, 0.0]))
+    assert d[1]["n_soklu"] == 1
+    assert d[1]["soklu_oran"] == pytest.approx(0.5)
+
+
+def test_seviye_dagilimi_kayan_nokta_gurultusune_dayanikli() -> None:
+    from sok_cephesi import seviye_dagilimi
+    m = np.array([46.6, 46.6 * (1 + 1e-12), 372834.3])
+    d = seviye_dagilimi(m, np.array([0.2, 0.2, 0.0]))
+    assert len(d) == 2 and d[0]["n"] == 2
+
+
+def test_seviye_dagilimi_bozuk_girdi_REDDEDIYOR() -> None:
+    from sok_cephesi import seviye_dagilimi
+    with pytest.raises(ValueError, match="ayni olmali"):
+        seviye_dagilimi(np.ones(3), np.ones(2))
