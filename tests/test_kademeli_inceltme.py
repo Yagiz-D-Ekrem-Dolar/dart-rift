@@ -153,10 +153,20 @@ def test_ozbenzer_DISTAN_ICE_donuyor() -> None:
     assert lam == sorted(lam)                # artan
 
 
-def test_ozbenzer_r_disa_ULASIYOR() -> None:
+def test_ozbenzer_r_disi_KAPSIYOR_ve_gerekirse_asiyor() -> None:
+    """`r_dış`'a **ulaşmalı**; tabana bağlanmak için **aşabilir**.
+
+    Sözleşme bilerek *"tam eşit"* değil: merdiven `s_dış`'ta bitip
+    tabana atlarsa orada `15,6×` artık sıçrama kalıyordu. Kapatmak
+    için birkaç kademe daha gerekebilir ve o kademeler `r_dış`'ın
+    ötesine düşer.
+    """
     from dartrift.setup.refine import ozbenzer_kademeler
     k = ozbenzer_kademeler(3.5, 3.0, 0.175, 24.0)
-    assert max(r for r, _ in k) == pytest.approx(24.0)
+    assert max(r for r, _ in k) >= 24.0
+    # ama gereksiz yere buyumemeli: son kademe tabanin yarisini yeni gecmis
+    s_dis = 3.5 / k[0][1]
+    assert s_dis < 3.5 and s_dis >= 3.5 / 2.0 * (1 - 1e-9)
 
 
 def test_OKTAV_maliyeti_r_den_BAGIMSIZ() -> None:
