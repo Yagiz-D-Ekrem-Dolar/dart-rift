@@ -79,7 +79,7 @@ def _en_yakin_site(x: np.ndarray, siteler: np.ndarray,
 
 def coarsen_to_sites(x, v, m, e, siteler, alpha0=None, Y0=None,
                      is_boulder=None, mermi_kesri=None,
-                     hasar=None) -> dict:
+                     hasar=None, rho=None) -> dict:
     """İnce parçacıkları `siteler`e **korunumlu** aktar.
 
     Boş kalan siteler **düşürülür** — parçacığı olmayan bir siteye
@@ -213,6 +213,37 @@ def coarsen_to_sites(x, v, m, e, siteler, alpha0=None, Y0=None,
         sonraki_h = float((out["m"] * out["hasar"]).sum())
         out["hasar_kutle_hatasi"] = (abs(sonraki_h - onceki_h)
                                      / max(onceki_h, 1e-300))
+
+    if rho is not None:
+        # YOGUNLUK: `hasar`/`mermi_kesri` gibi KUTLE-AGIRLIKLI ORTALANMAZ.
+        #
+        # Neden gerekli (rapor A24): asama-1 gercek bir sok uretiyor
+        # (`%26` sikisma, `73 t`) ama `rho` aktarilmiyordu ve
+        # `solver_solid.py` onu HER ZAMAN `rho0/alpha0` ile kuruyordu.
+        # Yani aktarim ISIYI tasiyip SIKISMAYI siliyordu; asama-2
+        # "sicak ama sikismamis" -- soklanmis madde icin fiziksel
+        # olarak olanaksiz -- bir durumla basliyordu. A22'nin
+        # "sikismadan isinan madde" belirtisi tam olarak buydu.
+        #
+        # NEDEN HARMONIK: yogunluk `m/V`. Birlesen parcaciklar hem
+        # kutleyi hem HACMI korumali; yoksa kabalastirma bosluk
+        # yaratir ya da yok eder. Dogru aktarim
+        #     V_k = Sum_i m_i/rho_i   ve   rho_k = m_k / V_k
+        # yani kutle-agirlikli HARMONIK ortalama. Duz ortalama yanlis
+        # olurdu: kutlenin yarisi `2*rho`, yarisi `rho` iken hacim
+        # korunumu `1,333*rho` verir, duz ortalama `1,5*rho`.
+        # Korunan defter: TOPLAM HACIM.
+        rz = np.asarray(rho, dtype=np.float64)
+        if len(rz) != len(m):
+            raise ValueError(f"rho uzunlugu {len(rz)} != {len(m)}")
+        if np.any(rz <= 0.0):
+            raise ValueError("rho pozitif olmali")
+        V = np.bincount(idx, weights=m / rz, minlength=ns)
+        out["rho"] = m_k[dolu] / V[dolu]
+        onceki_V = float((m / rz).sum())
+        sonraki_V = float((out["m"] / out["rho"]).sum())
+        out["hacim_hatasi"] = (abs(sonraki_V - onceki_V)
+                               / max(onceki_V, 1e-300))
 
     # ATAMA MESAFESI: korunum tam olsa bile kutle UZAGA tasinmis olabilir.
     # Bir parcacik komsu olmayan bir siteye atandiysa aktarim maddeyi

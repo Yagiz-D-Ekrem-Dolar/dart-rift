@@ -217,7 +217,8 @@ def _alpha0_denetle(alpha0, gozeneksiz: bool):
 
 def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None, D0=None,
             cfl: float = 0.25, u_tabani: bool = False,
-            alpha_av: float = 1.0, beta_av: float = 2.0):
+            alpha_av: float = 1.0, beta_av: float = 2.0,
+            rho_durum=None):
     # Kusur tohumlamasi sahneyle AYNI koke baglanir; boylece hasarli kol
     # da yeniden uretilebilir ve "hangi tohum" sorusu tek yerde yanitlanir.
     from dartrift.warp_core.solver_solid import WarpSolid3D
@@ -230,7 +231,7 @@ def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None, D0=None,
         alpha0=np.ascontiguousarray(alpha0), Y0=np.ascontiguousarray(Y0),
         device=device, check_every=10 ** 9,
         damage_seed=int(SAHNE["root_seed"]), D0=D0,
-        u_tabani=u_tabani)
+        u_tabani=u_tabani, rho_durum=rho_durum)
 
 
 def _kos(sol, t_bas: float, t_end: float, azami: int, etiket: str,
@@ -353,6 +354,12 @@ def main() -> int:
     ap.add_argument("--t1", type=float, default=T1_OLCULEN)
     ap.add_argument("--t-end", type=float, default=0.20)
     ap.add_argument("--azami-adim", type=int, default=200000)
+    # A24 CARESI VARSAYILAN ACIK, ama KAPATILABILIR: acmak butun kayitli
+    # iki asamali sayilari degistirir ve eski kosularla kiyas icin eski
+    # davranisa donebilmek gerekir.
+    ap.add_argument("--rho-tasima-yok", action="store_true",
+                    help="A24 oncesi davranis: asama-1'in sikismasini "
+                         "asama-2'ye TASIMA (kiyas kolu)")
     ap.add_argument("--tek-asama", action="store_true",
                     help="kontrol kolu: lam=2 ile TEK BASINA t_end'e git")
     ap.add_argument("--out", default=str(REPO.parent / "faz48_sonuc.json"))
@@ -533,7 +540,15 @@ def main() -> int:
                    cfl=a.cfl, u_tabani=a.u_tabani,
                    alpha_av=a.alpha_av, beta_av=a.beta_av,
                    mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli),
-                   D0=sahne.hasar if a.hasarli else None)
+                   D0=sahne.hasar if a.hasarli else None,
+                   # ASAMA-1'IN SIKISMASI DEVRALINIYOR (rapor A24).
+                   # Devralinmazsa cozucu `rho`yu `rho0/alpha0` ile
+                   # kurar ve asama-1'in urettigi sok (`%26` sikisma,
+                   # `73 t`) `t1`'de SILINIR. `u` tasindigi icin
+                   # asama-2 "sicak ama sikismamis" bir maddeyle
+                   # baslardi -- soklanmis madde icin OLANAKSIZ ve
+                   # A22'nin belirtisinin ta kendisi.
+                   rho_durum=None if a.rho_tasima_yok else sahne.rho)
     izler = []
     # Aktarimdan sonra parcacik kimlikleri degisti; krater referansi
     # ASAMA-1'in baslangic konumlarindan ALINAMAZ. Bu yuzden aktarim

@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 9 — A11, A12, A17, A18, A19, A20, A21, A22, A23 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 10 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -2680,6 +2680,77 @@ H1'in *eşik* dediği yerde ölçüm **doyum** gösterdi; ikisi aynı şey
 değil ve ben eşik yazmıştım. Ama `r/h ≈ 1`'in özel olduğu — doyumun
 tam orada gelmesi — ayakta. Asıl soruya gelince: **H0 çöktü** ve
 yerine ekstrapolasyon değil **ölçüm** geçti.
+
+---
+
+### A24 — **Aşama-1 şoku üretiyor; aktarım ısıyı taşıyıp sıkışmayı atıyor** (2026-08-29)
+
+A22 *"model şok üretmiyor"* dedi. **Yanlıştı.** A22 doğumu değil,
+**cesedi** ölçmüştü: aktarımdan sonraki `t = 0,2 s`'yi.
+
+#### Uzlaştırma: `1,750e-5` = `1,81e-5`
+
+`λ₂ = 20` (`s = 0,350 m`), `t = 4,767e-3 s` — yani üretim aşama-1'in
+(`λ₁ = 19`, `s = 0,368 m`) neredeyse aynısı:
+
+| | |
+|---|---|
+| sıkışma max | **`%26,08`** |
+| şoklanan kütle (`>%1`) | `72 936 kg` |
+| **kütle kesri** | **`1,750e-5`** |
+
+Deftere `t₁`'de yazılan (KAYIT-053): *"`ρ`: `%1`'den fazla sapan
+`2 181` parçacık, **kütlece `1,81e-5`**"*.
+
+> **Aynı sayı.** Üretim aşama-1 şok **üretiyor** — `%26` sıkışma,
+> `73` ton. Ben o kaydı *"şok yok"* diye okumuştum; oysa şokun
+> **kendisiydi**.
+
+#### Aktarım sıkışmayı **taşıyamıyor** — kod düzeyinde kesin
+
+| durum değişkeni | aşama-2'ye taşınıyor mu |
+|---|---|
+| `x`, `v`, `m` | evet |
+| `u` (ısı) | evet (`sahne.e`) |
+| `D` (hasar) | evet (bu turda eklendi) |
+| **`ρ` (sıkışma)** | **hayır** |
+
+`solver_solid.py:139` `ρ`'yu **her zaman** `ρ₀/α₀` ile kuruyor ve
+`_cozucu`'nun `rho` parametresi **yok**
+(`faz48_iki_asama.py:218`, `:531`). Yani aktarım sıkışmayı
+kaybetmiyor — **kurulumda siliyor**. Ölçüme gerek yok, imzada yazılı.
+
+#### Bu, A22'nin belirtisinin **tam kendisi**
+
+Aşama-2, **sıcak ama sıkışmamış** maddeyle başlıyor. Şoklanmış madde
+için bu fiziksel olarak **olanaksız** bir durum. A22 aynen bunu
+ölçmüştü:
+
+> *"En sıcak parçacıklar `u = 1,03e5 J/kg`'a çıkmış ama sıkışmaları
+> `%0,4 – 0,5`."*
+
+O bir ayrıklaştırma artığı değil, **aktarımın parmak izi**.
+
+#### Zincir, baştan sona
+
+| adım | ne oluyor |
+|---|---|
+| aşama-1 | gerçek şok: `%26` sıkışma **+** ısı, `73 t` |
+| **aktarım** | ısı geçer, **sıkışma sıfırlanır** |
+| aşama-2 | sıcak-ama-sıkışmamış madde; genleşir, kazmaz |
+| `t = 0,2 s` | sıkışma `%0,25`, krater `9 cm`, `β` hedeften beslenmez |
+
+#### İkinci sınır: şok `3,4 m`'de duruyor
+
+`t = 1e-3 -> 4,767e-3 s` (`4,8×` süre) cephe `3,41 m`'de **kalıyor**;
+`3 400 m/s` ile `16 m` gitmeliydi. İnce bölge `r_ince = 3 m`.
+Şoklanan hacim `82 m³`; en küçük literatür krateri (`D = 13,3 m`)
+bile `~6,5 m` yarıçap ister — **`2` kat büyük**.
+
+Yani iki ayrı sınır var: **(a)** aktarım sıkışmayı siliyor,
+**(b)** ince bölge şokun taşınabileceği yeri sınırlıyor. `(b)`'nin
+inceltmeden mi yoksa doğal sönümden mi geldiği `r_ince = 12 m` kolu
+ile sınanıyor (ölçüt yazılı).
 
 ---
 

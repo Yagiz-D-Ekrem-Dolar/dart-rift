@@ -55,6 +55,7 @@ class WarpSolid3D:
         damage_seed: int = 0,
         D0: np.ndarray | None = None,
         u_tabani: bool = False,
+        rho_durum: np.ndarray | None = None,
     ):
         _init_warp()
         self.mat = mat
@@ -136,9 +137,35 @@ class WarpSolid3D:
             # kapatilinca %0.56). Kombinasyon (sureklilik + porozite) hicbir
             # testte kosulmadigi icin gorulmemisti (ADR-0022).
             rho0 = mat.rho0_linear if mat.eos == "linear" else mat.tillotson.rho0
-            self.rho = wp.array(np.asarray(rho0 / a0, np.float64), dtype=F, device=dev)
+            # DEVRALINAN YOGUNLUK (rapor A24). Iki asamali kosuda asama-1
+            # gercek bir sok uretiyor (`%26` sikisma) ama buraya kadar
+            # `rho` HER ZAMAN `rho0/alpha0` ile kuruluyordu: aktarim ISIYI
+            # tasiyip SIKISMAYI siliyordu. Asama-2 boylece "sicak ama
+            # sikismamis" -- soklanmis madde icin OLANAKSIZ -- bir
+            # durumla basliyordu ve A22'nin belirtisi tam olarak buydu.
+            #
+            # `rho_durum` verilmezse davranis DEGISMEZ (dinlenmedeki
+            # sahne icin dogru olan `rho0/alpha0`).
+            if rho_durum is None:
+                rho_bas = np.asarray(rho0 / a0, np.float64)
+            else:
+                rho_bas = np.asarray(rho_durum, dtype=np.float64)
+                if rho_bas.shape != (n,):
+                    raise ValueError(
+                        f"rho_durum sekli {rho_bas.shape} != ({n},)")
+                if np.any(rho_bas <= 0.0):
+                    raise ValueError("rho_durum pozitif olmali")
+            self.rho = wp.array(rho_bas, dtype=F, device=dev)
         elif mat.density_method != "summation":
             raise ValueError(f"bilinmeyen yogunluk yontemi: {mat.density_method!r}")
+        elif rho_durum is not None:
+            # SESSIZ YOKSAYMA TUZAGI: toplam yonteminde `rho` her adimda
+            # cekirdek toplamindan YENIDEN hesaplanir; devralinan deger
+            # ilk adimda silinir. Sessizce yoksaymak, cagiranin sikismayi
+            # tasidigini SANMASINA yol acar -- A24'un tam kendisi.
+            raise ValueError(
+                "rho_durum yalnizca sureklilik yonteminde anlamli; "
+                f"density_method={mat.density_method!r}")
         self.u_kirpilan = wp.zeros(n, dtype=F, device=dev)
         self.a = wp.zeros(n, dtype=V3, device=dev)
         self.g = wp.zeros(n, dtype=V3, device=dev)

@@ -44,7 +44,7 @@ class IkiAsamaSahne:
     """Aşama-2'ye verilecek birleşik durum + **kütle defteri**."""
 
     __slots__ = ("x", "v", "m", "e", "h", "alpha0", "Y0", "is_boulder",
-                 "is_impactor", "mermi_kesri", "hasar", "kaynak",
+                 "is_impactor", "mermi_kesri", "hasar", "rho", "kaynak",
                  "diagnostics")
 
     def __init__(self, **kw):
@@ -198,7 +198,9 @@ def asama2_sahnesi(a1_durum: dict, a1_ince_maske, a1_m, a1_alpha0, a1_Y0,
                          # %69'unu atiyordu). Alan sifir veriliyor ki
                          # `__slots__` eksik kalmasin ve okuyan bunun
                          # bir SECIM oldugunu gorsun.
-                         hasar=np.zeros(len(m)), kaynak=kaynak,
+                         hasar=np.zeros(len(m)),
+                         # Yogunluk da tasinmiyor -- ayni gerekce (A24).
+                         rho=None, kaynak=kaynak,
                          diagnostics=tani)
 
 
@@ -257,13 +259,24 @@ def asama2_sahnesi_ucseviye(a1, a1_durum: dict) -> IkiAsamaSahne:
     D1 = np.asarray(a1_durum.get("D", np.zeros(len(m1))), dtype=np.float64)
     if D1.shape != (len(m1),):
         raise ValueError(f"D uzunlugu {D1.shape} != {(len(m1),)}")
+    # YOGUNLUK (rapor A24): asama-1'in urettigi SIKISMA buraya kadar
+    # tasinmiyordu ve asama-2 cozucusu `rho`yu `rho0/alpha0` ile
+    # kuruyordu -- yani sok her aktarimda SILINIYORDU. `u` tasindigi
+    # icin asama-2 "sicak ama sikismamis" bir maddeyle basliyordu;
+    # soklanmis madde icin bu OLANAKSIZ bir durum.
+    rho1 = a1_durum.get("rho")
+    if rho1 is not None:
+        rho1 = np.asarray(rho1, dtype=np.float64)
+        if rho1.shape != (len(m1),):
+            raise ValueError(f"rho uzunlugu {rho1.shape} != {(len(m1),)}")
     kaba = coarsen_to_sites(
         x1[ince], v1[ince], m1[ince], e1[ince],
         sites_from_cloud(x1[ince], s2),
         alpha0=np.asarray(a1.alpha0)[ince], Y0=np.asarray(a1.Y0)[ince],
         is_boulder=np.asarray(a1.is_boulder)[ince],
         mermi_kesri=f_mermi1[ince],
-        hasar=D1[ince])
+        hasar=D1[ince],
+        rho=None if rho1 is None else rho1[ince])
 
     dis = ~ince                       # zaten `s2` cozunurlugunde
     nk = len(kaba["m"])
@@ -284,6 +297,9 @@ def asama2_sahnesi_ucseviye(a1, a1_durum: dict) -> IkiAsamaSahne:
     # Kopyalanan bolge hasarini BIREBIR tasir; kabalastirilan bolge
     # kutle-agirlikli ortalamayi.
     hasar = np.concatenate([kaba["hasar"], D1[dis]])
+    # Kabalastirilan bolge HACIM KORUNUMLU ortalamayi, kopyalanan bolge
+    # yogunlugu birebir tasir (orada birlesme YOK).
+    rho = None if rho1 is None else np.concatenate([kaba["rho"], rho1[dis]])
     kaynak = np.concatenate([np.zeros(nk, np.int8),
                              np.ones(int(dis.sum()), np.int8)])
 
@@ -315,7 +331,19 @@ def asama2_sahnesi_ucseviye(a1, a1_durum: dict) -> IkiAsamaSahne:
         "hasar_kutle_agirlikli": float((m * hasar).sum()
                                        / max(float(m.sum()), 1e-300)),
     })
+    # YOGUNLUK DEFTERI (A24): korunan buyukluk TOPLAM HACIM. Ve tasinan
+    # sikismanin BUYUKLUGU gorunmeli -- sifir cikarsa aktarim soku yine
+    # yutmus demektir. Hasarda tam bu olmus ve bir kosu boyunca fark
+    # edilmemisti.
+    if rho is not None:
+        tani.update({
+            "hacim_hatasi": float(kaba["hacim_hatasi"]),
+            "rho_max": float(rho.max()),
+            "rho_tasindi": True,
+        })
+    else:
+        tani["rho_tasindi"] = False
     return IkiAsamaSahne(x=x, v=v, m=m, e=e, h=h, alpha0=alpha0, Y0=Y0,
                          is_boulder=blok, is_impactor=is_imp,
-                         mermi_kesri=f_mermi, hasar=hasar, kaynak=kaynak,
-                         diagnostics=tani)
+                         mermi_kesri=f_mermi, hasar=hasar, rho=rho,
+                         kaynak=kaynak, diagnostics=tani)
