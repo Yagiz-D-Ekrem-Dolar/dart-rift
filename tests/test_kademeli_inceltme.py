@@ -130,3 +130,56 @@ def test_kademe_sinavi_MERDIVEN_kurabiliyor() -> None:
     assert "refine_scene_kademeli(kaba, mesh, kad)" in k
     # cephe yargisi EN IC yaricapa gore olmali, r1'e degil
     assert 'a.kademeler[-1].split(":")[0]' in k
+
+
+# ------------------------------------------------ OZ-BENZER merdiven
+
+def test_ozbenzer_s_bolu_r_SABIT_tutuyor() -> None:
+    """Elle yazılan merdiven dıştan içe bozuluyordu (`0,058 -> 0,233`)."""
+    from dartrift.setup.refine import ozbenzer_kademeler
+    k = ozbenzer_kademeler(3.5, 3.0, 0.175, 24.0)
+    oranlar_sr = [(3.5 / lam) / r for r, lam in k]
+    assert max(oranlar_sr) - min(oranlar_sr) < 1e-9
+    assert oranlar_sr[0] == pytest.approx(0.175 / 3.0, rel=1e-9)
+
+
+def test_ozbenzer_DISTAN_ICE_donuyor() -> None:
+    """`refine_scene_kademeli` dıştan içe bekliyor; sıra yanlışsa atar."""
+    from dartrift.setup.refine import ozbenzer_kademeler
+    k = ozbenzer_kademeler(3.5, 3.0, 0.175, 24.0)
+    r = [r for r, _ in k]
+    lam = [lam for _, lam in k]
+    assert r == sorted(r, reverse=True)      # azalan
+    assert lam == sorted(lam)                # artan
+
+
+def test_ozbenzer_r_disa_ULASIYOR() -> None:
+    from dartrift.setup.refine import ozbenzer_kademeler
+    k = ozbenzer_kademeler(3.5, 3.0, 0.175, 24.0)
+    assert max(r for r, _ in k) == pytest.approx(24.0)
+
+
+def test_OKTAV_maliyeti_r_den_BAGIMSIZ() -> None:
+    """`N = 20,7 (r/s)³` — her oktav aynı maliyette.
+
+    Bu, kraterin yarıçapına ulaşmanın **geometrik** olarak ucuz
+    olmasının sebebi ve `ozbenzer_kademeler`'in belgelediği yasa.
+    """
+    def n_oktav(r: float, s: float) -> float:
+        V = (14.0 / 3.0) * np.pi * r ** 3          # r -> 2r, yarim kure
+        return V / (0.707 * s ** 3)
+    # ayni r/s, farkli r -> ayni N
+    assert n_oktav(3.0, 3.0 / 8.6) == pytest.approx(n_oktav(24.0, 24.0 / 8.6),
+                                                    rel=1e-9)
+    # ve katsayi 20,7
+    assert n_oktav(1.0, 1.0) == pytest.approx(20.7, rel=0.01)
+
+
+def test_ozbenzer_bozuk_girdi_REDDEDIYOR() -> None:
+    from dartrift.setup.refine import ozbenzer_kademeler
+    with pytest.raises(ValueError, match="r_ic < r_dis"):
+        ozbenzer_kademeler(3.5, 24.0, 0.175, 3.0)
+    with pytest.raises(ValueError, match="s_ic pozitif"):
+        ozbenzer_kademeler(3.5, 3.0, 0.0, 24.0)
+    with pytest.raises(ValueError, match="kat > 1"):
+        ozbenzer_kademeler(3.5, 3.0, 0.175, 24.0, kat=1.0)
