@@ -2964,6 +2964,37 @@ Sıra doğrulaması zorunlu: yarıçaplar dıştan içe **azalmalı**, `λ`
 **artmalı**. Ters sıra sessizce daha kötü bir sahne üretirdi; ikisi
 de `ValueError`.
 
+#### **ÖLÇÜLDÜ: çare işliyor** (2026-08-29)
+
+Merdiven koşuldu (`24:2.5`'e gerek kalmadan,
+`12:1.25 8:2.5 6:5 4.5:10 3:20`, `t = 4,767e-3 s`, `N = 96 483`):
+
+| ölçü | tek basamak | **merdiven** |
+|---|---|---|
+| şoklanan **seviye** sayısı | **`1`** | **`3`** |
+| kaba seviyelerde şoklu parçacık | **`0`** | **`2 983`** |
+| şoklanan kütle | `72 936 kg` | **`240 905 kg`** |
+| sıkışma max | `%26,08` | **`%45,18`** |
+| cephe | `3,41 m` (= ızgara sınırı) | **`5,41 m`** |
+
+Seviye dağılımı — A25'in kütle parmak izi ölçüsü, artık **geçiyor**:
+
+| seviye | şoklu / toplam | oran |
+|---|---|---|
+| `5,8 kg` (`s = 0,175`) | `14 129 / 14 233` | `%99,3` |
+| `46,5 kg` (`s = 0,350`) | `2 922 / 4 134` | `%70,7` |
+| `372,3 kg` (`s = 0,700`) | `61 / 1 039` | `%5,9` |
+
+> Şok **iki arayüzü geçti** ve üçüncüsüne giriyor. Tek basamaklı
+> şemada üç ölçümde de kaba seviyede **sıfır** parçacık şoklanmıştı.
+
+Ve sıkışma `%45,18`: Hugoniot bandının alt ucu **`%45,6`**. Model
+şoku artık **doğru değerde** üretiyor *ve* ızgarada taşıyor.
+(Yargı hâlâ `KISMI` — bandın `%99,1`'inde, kıl payı altında.)
+
+Kalan `%13` parçacık maliyetiyle: şoklanan kütle `3,3` kat,
+sıkışma `1,7` kat.
+
 #### Asıl sınır kütle oranı **değil**: **kabuk kalınlığı**
 
 Bir kaba parçacığın şoku alabilmesi için desteğinde yeterli ince
