@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 8 — A11, A12, A17, A18, A19, A20, A21, A22
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 9 — A11, A12, A17, A18, A19, A20, A21, A22, A23 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -2590,6 +2590,96 @@ Ara noktalar: `A1 = 8` -> `1 saat` (sıkışma `~%7` beklenir),
 kilitli, blok/matris tabanı `α₀` ile **kesin** (koşular artık `α₀`'ı
 da kaydediyor), ve tahmin yolunun sınırı (`%30` üstü sıkışmada
 yanılır) testle yazılı.
+
+---
+
+### A23 — **Şok `λ₂ = 20`'de doğuyor; A22'nin `55 gün`'ü `470` kat yanlış** (2026-08-28)
+
+A22 iki noktadan `sıkışma ~ A1^0,92` çıkarıp *"Hugoniot için
+`A1 ≈ 64`, `~55 gün`"* dedi. O iki nokta **farklı düzeneklerdendi**
+(tek aşama `λ = 2` ve iki aşama `λ₁ = 38`). Tek düzenekte, tek
+değişkenli tarama koşuldu (ölçüt: `docs/truba/OLCUT-sok-cozunurlugu.md`,
+**koşudan önce** kilitli).
+
+Düzenek ucuz çünkü **şok mikro-saniyede kurulur**: `t_end = 1e-3 s`,
+`r_ince2 = 3 m`, tek aşama (aktarım denklem dışında).
+
+| `λ₂` | `s` | `r_mermi/h` | **sıkışma max** | `u_max` | yargı |
+|---|---|---|---|---|---|
+| `2` | `3,500` | `0,053` | `%0,0057` | `2,3e3` | `SOK_YOK` |
+| `8` | `0,875` | `0,212` | `%1,683` | `9,0e5` | `SOK_YOK` |
+| `20` | `0,350` | `0,531` | `%22,024` | `3,5e6` | `KISMI` |
+| **`40`** | `0,175` | **`1,061`** | **`%40,521`** | `5,6e6` | **`KISMI`** |
+
+> `λ₂ = 40`'ta sıkışma Hugoniot alt ucunun (`%45,6`) **`%89`**'u.
+> **Model şok üretebiliyor.** Yalnızca `s ≤ 0,175 m` istiyor.
+
+Ve yükseliş **doyuma gidiyor** — fiziksel tavana yaklaşan bir
+yakınsamanın imzası:
+
+| geçiş | artış | üs |
+|---|---|---|
+| `2 -> 8` | `296×` | `4,10` |
+| `8 -> 20` | `13,1×` | `2,81` |
+| `20 -> 40` | `1,8×` | **`0,88`** |
+
+Doyum noktası `r_mermi/h = 1,06`'da: **mermi bir yumuşatma boyuna
+sığdığı anda** sıkışma Hugoniot değerine oturuyor. Artık
+**ekstrapolasyona gerek yok** — cevap ölçüldü.
+
+A22'nin yasası `λ₂ = 20` için `%0,047` derdi. Ölçülen `%22,02` —
+**`470` kat**. `A1^0,92` **yanlış**.
+
+#### Bu bir sayı artığı değil: **cephe var, hızı da tutuyor**
+
+`λ₂ = 20`, `t = 1e-3 s`, temas noktasına göre (Lagrange'cı):
+
+| sıkışma | parçacık | kütle | temastan uzaklık |
+|---|---|---|---|
+| `> %1` | `1 306` | `60 865 kg` | `0,67 – 3,41 m` |
+| `> %5` | `580` | `27 031 kg` | `0,67 – 2,83 m` |
+| `> %10` | `184` | `8 575 kg` | `0,67 – 2,54 m` |
+| `> %20` | `2` | `93 kg` | `0,68 m` |
+
+Sıkışma uzaklıkla **düzgün azalıyor** — sönümlenen bir şok cephesinin
+tam profili. `λ₂ = 8`'de aynı ölçü **tek** parçacık veriyor: cephe
+`h = 1,75 m`'nin içine sığıyor, yani yok.
+
+> **Bağımsız sınav.** Ölçülen tepe sıkışma `%22,02`'yi
+> Rankine-Hugoniot'a sokarsak `Us = 3 565 m/s`. Cephe `1e-3 s`'de
+> `3,41 m` gitmiş → **`3 410 m/s`**. Sapma **`%4,3`**.
+>
+> Bu iki sayı birbirine **uydurulmadı**: biri yoğunluktan, öteki
+> konumdan geliyor ve aralarındaki bağıntı literatürden. Şok
+> **gerçek**.
+
+#### Maliyet: sorun çözünürlük değil, **dağılım**
+
+| seçenek | `N` | H100 / nokta | `40` nokta |
+|---|---|---|---|
+| A22'nin ima ettiği (`A1 ≈ 64`) | — | **`5 324` gün** | — |
+| `λ₂ = 20`'yi `r = 25 m`'ye yaymak | `1 089 581` | `30,6 saat` | `1 225 saat` |
+| **üç seviyeli** (`0,35` / `0,875` / `3,5`) | **`33 008`** | **`56 dakika`** | **`37 saat`** |
+
+Üçüncü satır **bugünkü üretim bütçesinin `1,16` katı**. Bugün o bütçe
+`25 m`'lik bir küreye `s = 3,5 m` ile harcanıyor — şokun olmadığı
+yere. Şok `5 m` içinde ve `s ≤ 0,35 m` istiyor.
+
+> Sıkıntı çözünürlüğün **yetmemesi** değil, **yanlış yere
+> konması**. Ve gereken düzenek depoda zaten var:
+> `refine_scene_ucseviye` / `asama2_sahnesi_ucseviye`.
+
+#### Kendi ölçütümün kusuru
+
+Kilitlediğim kural *"`20 -> 40` artışı `8 -> 20`'den büyük olmalı"*
+diyordu. `8 -> 20` artışı `13,1×`; bunu aşmak `λ₂ = 40`'ta `%288`
+sıkışma isterdi — Hugoniot tavanı `%74`. **Kural tek yönde
+sınanamazdı ve H1 kendi kuralımla düştü** (`1,8× < 13,1×`).
+
+H1'in *eşik* dediği yerde ölçüm **doyum** gösterdi; ikisi aynı şey
+değil ve ben eşik yazmıştım. Ama `r/h ≈ 1`'in özel olduğu — doyumun
+tam orada gelmesi — ayakta. Asıl soruya gelince: **H0 çöktü** ve
+yerine ekstrapolasyon değil **ölçüm** geçti.
 
 ---
 

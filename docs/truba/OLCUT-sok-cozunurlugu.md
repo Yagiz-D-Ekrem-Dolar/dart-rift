@@ -73,3 +73,53 @@ Bu ölçüt yalnızca **şokun doğup doğmadığını** sorar.
 
 Dört kol, yerel RTX 3050, `< 20` dakika beklenir. Bu, `55` günlük
 tahmini **çürütebilecek** en ucuz deney.
+
+---
+
+# EK ÖLÇÜT — Şok **doğduktan sonra** ne oluyor? (koşudan **önce**)
+
+**Tarih:** 2026-08-29 · **Öncül:** A23'ün dört noktası
+
+## 7. Çelişki
+
+Üretim **aşama-1**'i `λ₁ = 19` ile koşuyor: `s = 0,368 m`. Bu,
+`%22` sıkışma üreten `λ₂ = 20` (`s = 0,350`) ile **neredeyse aynı**.
+Öyleyse aşama-1 şok üretiyor olmalı. Ama `t₁ = 4,767e-3 s`'de
+ölçülen: kütlenin yalnızca `1,8e-5`'i `%1`'den fazla sapmış.
+
+**Şok doğuyor ama `t₁`'e kalmıyor.**
+
+## 8. Hipotez
+
+Cephe `~3 400 m/s`. İnce bölge `r_ince = 3 m`. Cephe orayı
+`3/3400 = 0,88e-3 s`'de terk ediyor — ölçtüğüm `t = 1e-3` **tam o
+an**. Ötesinde `h = 7 m` ve A23'e göre orada şok taşınamıyor.
+
+> **H2:** Şok, ince bölgenin **sınırında** ölüyor. Yani sıkıntı
+> çözünürlüğün derecesi değil, ince bölgenin **kapsamı**.
+
+## 9. Sınav — iki kol, tek değişken
+
+| kol | `r_ince2` | `t_end` |
+|---|---|---|
+| **dar** | `3 m` | `4,767e-3 s` |
+| **geniş** | `12 m` | `4,767e-3 s` |
+
+`λ₂ = 20` sabit. Karşılaştırma noktası: A23'ün `t = 1e-3`'teki
+`%22,02`'si.
+
+## 10. Yargı (kilitli)
+
+**H2 geçer** ⟺ dar kolda `t_end`'de sıkışma `%22,02`'nin **yarısının
+altına** düşer **ve** geniş kolda `%11`'in **üstünde** kalır.
+
+**H2 düşer** eğer iki kol da benzer sonuç verirse (o zaman sönüm
+çözünürlükten değil, fizikten/AV'den gelir) ya da dar kol da
+sıkışmayı korursa (o zaman `t₁`'deki `1,8e-5` başka bir sebepten —
+aktarımdan — gelir ve **aktarım** suçlanır).
+
+## 11. Neden önemli
+
+H2 doğruysa çare **çözünürlüğü artırmak değil**, ince bölgeyi
+cepheyle birlikte **taşımak** — ADR-0048'in hareketli inceltmesi.
+Ve maliyet ince bölgenin **hacmiyle** değil **kabuğuyla** ölçeklenir.
