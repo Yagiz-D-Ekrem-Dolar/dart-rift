@@ -96,9 +96,25 @@ def test_MERDIVEN_soku_arayuzden_GECIRIYOR() -> None:
     ve bu depoda *"ölçüt geçti ama fizik kurulmadı"* bir kez oldu
     (`λ₂` `β`'yı `%5` oynatıp geçti dedi, iç enerjiyi `450×`
     değiştirmişti).
+
+    **Ölçüldü** (`2026-08-29`, `t = 4,767e-3 s`, `N = 96 483`):
+
+    | seviye | şoklu / toplam |
+    |---|---|
+    | `5,8 kg` | `14 129 / 14 233` |
+    | `46,5 kg` | `2 922 / 4 134` |
+    | `372,3 kg` | `61 / 1 039` |
+
+    Toplam kaba şoklu **`2 983`**; sıkışma `%45,18`. Eşikler o
+    ölçümün **çok altında** tutuluyor: test çarenin **çalıştığını**
+    korumalı, tek bir koşunun sayısını değil.
     """
-    r = _kos([(12.0, 1.25), (8.0, 2.5), (6.0, 5.0), (4.5, 10.0), (3.0, 20.0)])
+    r = _kos([(12.0, 1.25), (8.0, 2.5), (6.0, 5.0), (4.5, 10.0), (3.0, 20.0)],
+             t_end=4.767e-3)
     soklu_kaba = int((r["soklu"] & ~r["ince"]).sum())
-    assert soklu_kaba > 0, (
-        "merdiven kurulu ama sok yine yalnizca ince parcaciklarda; "
-        "arayuz duzeltmesi ISLEMIYOR")
+    assert soklu_kaba > 100, (
+        f"merdivende yalnizca {soklu_kaba} kaba parcacik soklanmis; "
+        f"olculen 2 983 idi -- arayuz duzeltmesi bozulmus olabilir")
+    # ve sikisma Hugoniot mertebesine ulasmali (olculen %45,18)
+    assert float(r["sikisma"].max()) > 0.25, (
+        f"sikisma max %{100 * r['sikisma'].max():.2f}; olculen %45,18 idi")
