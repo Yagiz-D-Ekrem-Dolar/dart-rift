@@ -230,3 +230,65 @@ M4 her zaman elde: M1/M2 sonuç vermezse `β` dürüstçe düşer.
 **1 olmadan hiçbir mimari kararı verilmemeli:** modelin krateri
 literatürle uyumluysa sorun yalnızca ejekta muhasebesidir ve M1
 yeter; uyumsuzsa mesele daha derindir ve M2/M3 bile yetmeyebilir.
+
+---
+
+## SONRADAN ÖLÇÜLEN (2026-08-29) — kararın gerekçesi **sayıya** bağlandı
+
+Bu ADR yazıldığında *"bütçe yanlış yere harcanıyor"* bir **öneriydi**.
+A23/A24/A25 onu ölçtü ve öneriyi **gerekliliğe** çevirdi.
+
+### 1. Kama değil, **merdiven** — ve neden
+
+ADR'nin `36×` kazanç öneren eksenel-simetrik kaması hâlâ geçerli bir
+seçenek. Ama asıl tıkanma başka çıktı: şok **arayüzde** ölüyordu
+(arayüz kütle oranı `8 000`, rapor A25). Kademeli inceltme onu
+`%13` parçacık maliyetiyle çözdü ve **ölçüldü**:
+
+| | tek basamak | merdiven |
+|---|---|---|
+| kaba seviyelerde şoklu | `0` | **`2 983`** |
+| şoklanan kütle | `72 936 kg` | **`240 905 kg`** |
+| sıkışma max | `%26,08` | **`%45,18`** |
+
+### 2. İki aşamalı şemanın **sezgisi doğru, uygulaması yanlıştı**
+
+Şok cephesi `~3 400 m/s`. İnce çekirdek (`r < 3 m`) yalnızca ilk
+**`0,88 ms`** boyunca gerekli — `t_end = 0,2 s` koşusunun
+**`%0,44`**'ü. Yani *"sonra kabalaştır"* fikri **doğru**.
+
+Yanlış olan **neyi** kabalaştırdığı: aşama-2 her şeyi `s₂`'ye
+indiriyordu ve `ρ` taşınmadığı için şoku **siliyordu** (A24).
+
+> Doğrusu: **yalnızca en iç seviye**, ve **şok oradan çıktıktan
+> sonra** kabalaştırılır; merdivenin dışı yerinde kalır.
+
+`dt` en ince seviyeden geldiği için kazanç doğrudan:
+
+| evre | `s_min` | `dt` |
+|---|---|---|
+| `0 – 1 ms` | `0,175` | `7,3e-6` |
+| `1 – 3 ms` | `0,350` | `1,5e-5` |
+| `> 3 ms` | `0,700` | `2,9e-5` |
+
+Son evrede **`4` kat** az adım.
+
+### 3. Tam koşunun maliyeti (ölçülen `dt` ile)
+
+`t_end = 0,2 s` -> `50 094` adım:
+
+| şema | `N` | maliyet | H100 |
+|---|---|---|---|
+| merdiven, tek aşama | `96 483` | `12,4×` | **`9,9 saat`** |
+| öz-benzer `r_dış = 24` | `126 176` | `16,2×` | `13,0 saat` |
+| bugünkü üretim (**şok yok**) | `71 134` | `1,0×` | `0,8 saat` |
+
+Yani şok üreten bir tam koşu **`~10 – 13 saat/nokta`**. Doğrulama
+için kabul edilebilir; `40` noktalık ensemble için değil — orada
+azalan çekirdek ve/veya kama gerekli.
+
+### 4. Bu ADR'nin **değişmeyen** kısmı
+
+Bütçenin yeniden dağıtılması gerektiği. Değişen: **nasıl**. Kama bir
+seçenekti; merdiven **ölçülmüş** bir gerekliliktir ve ikisi
+birbirini dışlamıyor.
