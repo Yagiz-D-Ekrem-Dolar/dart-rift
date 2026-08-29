@@ -2883,6 +2883,29 @@ parçacık çok ağır. Çare kütle basamağını küçültmek.
 | cephe `0,0 m/s` (A24) | aynı kusurun **arayüz** ucundaki hâli |
 | şoklanan hacim `82 m³` | duvarın içinde kalan hacmin ta kendisi |
 
+#### Çare kuruldu ve **ölçüldü**: `%13` parçacığa `1 000` kat iyileşme
+
+`refine_scene_kademeli` — `(r, λ)` çiftleri **dıştan içe**, her adım
+bir öncekinin çekirdeğini oyup daha ince kafesle dolduruyor.
+
+Aynı sahne, aynı en ince aralık (`s = 0,175 m`), `r_iç = 3 m`:
+
+| şema | `N` | **en dik basamak** | `h` | yargı |
+|---|---|---|---|---|
+| tek basamak | `90 950` | **`8 000×`** | `0,35 – 7,0` | TEHLİKELİ |
+| **merdiven** (`20,10,5,2.5,1.25`) | `102 367` | **`8×`** | `0,35 – 7,0` | **OLAĞAN** |
+
+Basamaklar: `8,0× -> 8,0× -> 8,0×` (kalan `1,2 – 4,8×` oranları
+inceltme değil, **blok/matris** yoğunluk farkı).
+
+> Arayüz oranı **`1 000` kat** iyileşiyor; bedeli **`%13`** parçacık.
+> Ve `h_min` değişmediği için **`dt` aynı** — yani maliyet gerçekten
+> yalnızca `%13`.
+
+Sıra doğrulaması zorunlu: yarıçaplar dıştan içe **azalmalı**, `λ`
+**artmalı**. Ters sıra sessizce daha kötü bir sahne üretirdi; ikisi
+de `ValueError`.
+
 Ölçüt aracı `scripts/arayuz_orani.py`, dokuz test: kayan nokta
 gürültüsü seviye sayılmıyor (A11'de sayılmıştı), eşikler ayrı,
 kademe önerisi elden hesapla kilitli, ve *"inceltme arttıkça

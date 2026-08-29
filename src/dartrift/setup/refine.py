@@ -518,3 +518,168 @@ def refine_scene_ucseviye(kaba, mesh, r1: float, lam1: float,
         impact_direction=np.asarray(kaba.impact_direction),
         surface_normal=np.asarray(kaba.surface_normal),
         diagnostics=tani)
+
+
+def _en_yakin_indeks(hedef_x: np.ndarray, sorgu: np.ndarray,
+                     hucre: float) -> np.ndarray:
+    """`sorgu`'nun her noktası için en yakın `hedef_x` indeksi — **ızgarayla**.
+
+    Elden yazılan `argmin` `O(N·M)` ve merdivende (beş seviye)
+    dakikalarca sürüyordu. Izgara ile `O(N + M)`.
+
+    `hucre` arama yarıçapı: hedefler `hucre` aralıklı bir kafeste
+    olduğu için `hucre` içinde **her zaman** en az bir komşu var.
+    Bulunamazsa yarıçap ikiye katlanıp yeniden deneniyor — sessizce
+    yanlış komşu döndürmek yerine.
+    """
+    if len(hedef_x) == 0:
+        raise ValueError("hedef_x bos")
+    taban = hedef_x.min(axis=0)
+    out = np.empty(len(sorgu), dtype=np.int64)
+    r = float(hucre)
+    for _ in range(8):
+        kutu = np.floor((hedef_x - taban) / r).astype(np.int64)
+        harita: dict = {}
+        for i, k in enumerate(map(tuple, kutu)):
+            harita.setdefault(k, []).append(i)
+        eksik = []
+        sk = np.floor((sorgu - taban) / r).astype(np.int64)
+        for j, k in enumerate(map(tuple, sk)):
+            aday = []
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    for dz in (-1, 0, 1):
+                        aday.extend(harita.get((k[0] + dx, k[1] + dy,
+                                                k[2] + dz), ()))
+            if not aday:
+                eksik.append(j)
+                continue
+            a = np.asarray(aday)
+            out[j] = a[np.argmin(np.linalg.norm(
+                hedef_x[a] - sorgu[j], axis=1))]
+        if not eksik:
+            return out
+        r *= 2.0
+    raise ValueError("en yakin komsu bulunamadi; hucre cok kucuk olabilir")
+
+
+def _cekirdek_degistir(taban: RefinedScene, kaba, mesh, r: float,
+                       s_yeni: float, rho0_solid: float) -> RefinedScene:
+    """`r` içindeki **hedef** parçacıklarını `s_yeni` kafesiyle değiştir.
+
+    :func:`refine_scene_ucseviye`'nin çekirdek adımı; merdiven
+    (:func:`refine_scene_kademeli`) bunu üst üste uyguluyor.
+    Mermi **dokunulmadan** geçer; `h`'si en sonda en ince seviyeye
+    ayarlanır.
+    """
+    from .rubble_generator import lattice_points, particle_volume
+    from .shape_mesh import inside_points
+
+    mp = np.asarray(kaba.impact_point, dtype=np.float64)
+    imp = np.asarray(taban.is_impactor, dtype=bool)
+    d_t = np.linalg.norm(np.asarray(taban.x) - mp[None, :], axis=1)
+    tut = ~((~imp) & (d_t < r))
+
+    pay = 2.0 * s_yeni
+    pts = lattice_points(mp - (r + pay), mp + (r + pay), s_yeni, "fcc")
+    pts = pts[np.linalg.norm(pts - mp[None, :], axis=1) < r]
+    if len(pts) == 0:
+        raise ValueError(f"r={r} içinde kafes noktası yok (s={s_yeni})")
+    x_c = pts[inside_points(mesh, pts)]
+    if len(x_c) == 0:
+        raise ValueError(f"r={r} çekirdeği mesh'in tamamen dışında")
+
+    k_hedef = ~np.asarray(kaba.is_impactor, dtype=bool)
+    hedef_x = np.asarray(kaba.x)[k_hedef]
+    idx = _en_yakin_indeks(hedef_x, x_c, float(kaba.spacing))
+    a0_c = np.asarray(kaba.alpha0)[k_hedef][idx]
+    y0_c = np.asarray(kaba.Y0)[k_hedef][idx]
+    blok_c = np.asarray(kaba.is_boulder)[k_hedef][idx]
+    m_c = (rho0_solid / a0_c) * particle_volume(s_yeni, "fcc")
+    n_c = len(x_c)
+
+    def _kat(cek, ad):
+        return np.concatenate([cek, np.asarray(getattr(taban, ad))[tut]])
+
+    tani = dict(taban.diagnostics)
+    tani.setdefault("kademeler", [])
+    tani["kademeler"] = list(tani["kademeler"]) + [
+        {"r": float(r), "s": float(s_yeni), "n": int(n_c),
+         "n_silinen": int((~tut).sum())}]
+    return RefinedScene(
+        x=_kat(x_c, "x"), v=_kat(np.zeros_like(x_c), "v"),
+        m=_kat(m_c, "m"), alpha0=_kat(a0_c, "alpha0"),
+        Y0=_kat(y0_c, "Y0"),
+        h=np.concatenate([np.full(n_c, 2.0 * s_yeni),
+                          np.asarray(taban.h)[tut]]),
+        is_impactor=np.concatenate([np.zeros(n_c, bool), imp[tut]]),
+        is_boulder=_kat(blok_c, "is_boulder"),
+        is_fine=np.concatenate([np.ones(n_c, bool),
+                                np.asarray(taban.is_fine, bool)[tut]]),
+        spacing_coarse=float(kaba.spacing), spacing_fine=float(s_yeni),
+        target_radius=float(kaba.target_radius), impact_point=mp,
+        impact_direction=np.asarray(kaba.impact_direction),
+        surface_normal=np.asarray(kaba.surface_normal),
+        diagnostics=tani)
+
+
+def refine_scene_kademeli(kaba, mesh, kademeler,
+                          rho0_solid: float = 2700.0) -> RefinedScene:
+    """**Kademeli** inceltme — arayüz kütle basamağını küçültmek için.
+
+    ## Neden gerekli (rapor A25)
+
+    Tek basamaklı inceltmede `λ = 20` şu arayüzü üretiyor: ince
+    parçacık `46,6 kg`, hemen dışındaki `372 834 kg` — **oran
+    `8 000`**. Ve ölçüldü: şoklanan `73` tonun **tamamının**
+    momentumu, **tek** bir kaba parçacığı şok hızına (`643 m/s`)
+    çıkarmaya `107` kat yetmiyor. Şok engellenmiyor; `1,56 m/s`'lik
+    yavaş bir itmeye dönüşüp **şok olmaktan çıkıyor**.
+
+    Daha kötüsü: inceltme arttıkça arayüz **kötüleşiyor**
+    (`λ = 40` -> `64 000`). Şoku doğuran şey aynı anda onu hapsediyor.
+
+    ## Ne yapıyor
+
+    `kademeler` **dıştan içe** `(r, λ)` çiftleri. Her adım bir öncekinin
+    çekirdeğini oyup daha ince kafesle dolduruyor, böylece kütle
+    basamağı tek sıçrama yerine **merdivene** yayılıyor.
+
+    AMR'de olağan basamak aralıkta `2` (kütlede `8`);
+    `arayuz_orani.kademe_onerisi` gereken ara seviye sayısını veriyor.
+
+    ## Zaman adımı
+
+    `dt` en ince seviyeden gelir — ara seviyeler **`dt`'yi
+    değiştirmez**, yalnızca parçacık sayısını artırır. `λ = 20` için
+    dört ara seviyenin maliyeti, şokun hapsolmasının yanında küçük.
+    """
+    kademeler = [(float(r), float(lam)) for r, lam in kademeler]
+    if len(kademeler) < 2:
+        raise ValueError(f"en az iki kademe gerekir, {len(kademeler)} geldi")
+    r_ler = [r for r, _ in kademeler]
+    lam_ler = [lam for _, lam in kademeler]
+    if any(r_ler[i] <= r_ler[i + 1] for i in range(len(r_ler) - 1)):
+        raise ValueError(f"yaricaplar DISTAN ICE azalmali, {r_ler} geldi")
+    if any(lam_ler[i] >= lam_ler[i + 1] for i in range(len(lam_ler) - 1)):
+        raise ValueError(f"lam DISTAN ICE artmali (ic bolge daha ince), "
+                         f"{lam_ler} geldi")
+
+    s = refine_scene_local(kaba, mesh, r_ince=r_ler[0], lam=lam_ler[0],
+                           rho0_solid=rho0_solid)
+    for r, lam in kademeler[1:]:
+        s = _cekirdek_degistir(s, kaba, mesh, r,
+                               float(kaba.spacing) / lam, rho0_solid)
+
+    # MERMI en ince seviyeye baglanir: `A1` olcutu merminin yerel
+    # aralikla oranidir ve mermi her zaman cekirdektedir.
+    s_min = float(kaba.spacing) / lam_ler[-1]
+    h = np.asarray(s.h).copy()
+    imp = np.asarray(s.is_impactor, dtype=bool)
+    h[imp] = 2.0 * s_min
+    s.h = h
+    s.diagnostics["kademeli"] = True
+    s.diagnostics["n_kademe"] = len(kademeler)
+    s.diagnostics["h_min"] = float(h.min())
+    s.diagnostics["h_max"] = float(h.max())
+    return s
