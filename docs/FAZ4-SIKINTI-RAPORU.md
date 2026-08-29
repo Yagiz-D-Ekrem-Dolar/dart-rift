@@ -2964,6 +2964,29 @@ Sıra doğrulaması zorunlu: yarıçaplar dıştan içe **azalmalı**, `λ`
 **artmalı**. Ters sıra sessizce daha kötü bir sahne üretirdi; ikisi
 de `ValueError`.
 
+#### Merdiven yetmezse: **yedek çare** `h_ij`'nin kendisi
+
+`solid_stress.py:178` `hij = 0,5 (h_i + h_j)` kullanıyor ve bu
+**hem** çekirdek gradyanına **hem** yapay viskoziteye giriyor.
+Arayüzde ikisi birden `7,35 m`'ye şişiyor: etkileşim `14,7 m`'ye
+yayılıyor **ve** AV'nin dağıtımı aynı oranda büyüyor.
+
+Merdiven bu oranı `8×`'e indirerek sorunu **dolaylı** çözüyor
+(`h_ij` `0,5(2s + 4s) = 3s`, yani ince `h`'nin `1,5` katı — kabul
+edilebilir). Doğrudan çare ise değişken-`h` SPH'nin standart yolu:
+
+| yaklaşım | çekirdek | durum |
+|---|---|---|
+| bugün (ADR-0041) | `W(r, (h_i+h_j)/2)` | çok çözünürlükte **şişiyor** |
+| simetrikleştirilmiş | `½[∇W(r,h_i) + ∇W(r,h_j)]` | her parçacık **kendi** `h`'siyle |
+
+İkincisi korunumu bozmuyor (Hernquist & Katz 1989) ve tam olarak
+değişken çözünürlük için tasarlanmış. Ama çekirdeğin kendisine
+dokunuyor — ADR-0041'in *"tüm `h` eşitken tam olarak `h` verir, bit
+uyumu korunur"* güvencesini yeniden kurmak gerekir.
+
+**Sıra:** önce merdiven ölçülür. Yetiyorsa çekirdeğe dokunulmaz.
+
 Ölçüt aracı `scripts/arayuz_orani.py`, dokuz test: kayan nokta
 gürültüsü seviye sayılmıyor (A11'de sayılmıştı), eşikler ayrı,
 kademe önerisi elden hesapla kilitli, ve *"inceltme arttıkça
