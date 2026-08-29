@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 10 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 11 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -2764,6 +2764,71 @@ Yani iki ayrı sınır var: **(a)** aktarım sıkışmayı siliyor,
 **(b)** ince bölge şokun taşınabileceği yeri sınırlıyor. `(b)`'nin
 inceltmeden mi yoksa doğal sönümden mi geldiği `r_ince = 12 m` kolu
 ile sınanıyor (ölçüt yazılı).
+
+---
+
+### A25 — **Şok, inceltmenin kendi ördüğü duvara çarpıyor**: arayüz oranı `8 000` (2026-08-29)
+
+A24 cephenin `3,41 m`'de durduğunu buldu. **Neden** durduğu ölçüldü.
+
+`λ₂ = 20`, `r_ince = 3 m`, `t = 4,767e-3 s`, çarpma noktasından
+kabuk kabuk parçacık kütlesi:
+
+| kabuk | `n` | kütle medyan |
+|---|---|---|
+| `0 – 3,0 m` | `1 420` | `46,6 kg` |
+| `3,0 – 3,5 m` | `409` | `46,6 kg` (ve bir tane `372 834`) |
+| **`3,5 – 4,0 m`** | `1` | **`372 834 kg`** |
+
+> **Arayüz oranı `8 000`.** Şok, kendisinden `8 000` kat ağır bir
+> duvara çarpıyor ve geçemiyor.
+
+Bu, KAYIT-053'ün *"mermi hedefe giremiyor"* dediği `μ = 80`'in
+**`100` katı**. Aynı patoloji, aynı büyüklük — bu kez duvar
+**ayrıklaştırmanın kendi ürünü**.
+
+#### Ve inceltme arttıkça **kötüleşiyor**
+
+| `λ` | ince kütle | en dik basamak | aralık sıçraması | yargı |
+|---|---|---|---|---|
+| `2` | `46 604 kg` | `8` | `2,0×` | OLAĞAN |
+| `8` | `728 kg` | `512` | `8,0×` | TEHLİKELİ |
+| `20` | `46,6 kg` | **`8 000`** | `20,0×` | TEHLİKELİ |
+| `40` | `5,8 kg` | **`64 000`** | `40,0×` | TEHLİKELİ |
+
+> Şoku **doğurmak** için inceltiyoruz; aynı inceltme şoku
+> **hapsedecek duvarı** örüyor. `λ = 2` bu ölçüde *"olağan"* çıkıyor
+> — çünkü orada taşınacak şok zaten yok.
+
+Kütle `s³` ile gittiği için `8 000` kat = **`20` kat aralık**
+sıçraması, hem de **tek** basamakta. AMR uygulamasında olağan
+basamak `2` katı (kütlede `8`).
+
+#### Gereken kademe **sayıyla** belli
+
+`8^k ≥ oran` en küçük `k`, eksi bir:
+
+| `λ` | oran | **gereken ara seviye** |
+|---|---|---|
+| `8` | `512` | `2` |
+| `20` | `8 000` | **`4`** |
+| `40` | `64 000` | **`5`** |
+
+Bugünkü şema **tek** basamak kullanıyor. Üç seviyeli yol (`refine_scene_ucseviye`)
+bir ara seviye ekliyor — `λ₂ = 20` için gereken **dördün biri**.
+
+#### Bu, üç bulguyu tek sebebe bağlıyor
+
+| bulgu | bu ışıkta |
+|---|---|
+| `μ = 80` (KAYIT-053) | aynı kusurun **mermi** ucundaki hâli |
+| cephe `0,0 m/s` (A24) | aynı kusurun **arayüz** ucundaki hâli |
+| şoklanan hacim `82 m³` | duvarın içinde kalan hacmin ta kendisi |
+
+Ölçüt aracı `scripts/arayuz_orani.py`, dokuz test: kayan nokta
+gürültüsü seviye sayılmıyor (A11'de sayılmıştı), eşikler ayrı,
+kademe önerisi elden hesapla kilitli, ve *"inceltme arttıkça
+kötüleşiyor"* monotonluğu testte yazılı.
 
 ---
 
