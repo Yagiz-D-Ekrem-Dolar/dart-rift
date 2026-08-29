@@ -234,6 +234,28 @@ def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None, D0=None,
         u_tabani=u_tabani, rho_durum=rho_durum)
 
 
+def _sok_yargisi(rho, u, m, alpha0, hedef) -> dict:
+    """Koşunun **kendi** şok yargısı (ADR-0049 §4).
+
+    Neden koşunun içinde: bu depo **dört kez** bir şeyin etkisiz
+    olduğunu, o şeyin etki edeceği fiziğin hiç oluşmadığı bir koşuda
+    ölçtü. Yargı sonuç dosyasının içinde olursa *"etkisiz"* diyen bir
+    satırın yanında **şok var mıydı** sorusu da yanıtlı durur ve
+    okuyan onu aramak zorunda kalmaz.
+
+    Ölçüt `β`'dan bağımsız: hedef sayı Rankine-Hugoniot'tan,
+    **dışarıdan** gelir.
+    """
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from sok_sinavi import sinav
+    r = sinav(np.asarray(rho)[hedef], np.asarray(u)[hedef],
+              np.asarray(m)[hedef], alpha0=np.asarray(alpha0)[hedef])
+    return {k: r[k] for k in ("sikisma_max_yuzde", "sikisma_medyan_yuzde",
+                              "hugoniot_bandi_yuzde", "bandin_kacta_biri",
+                              "n_yuzde5_ustu", "n_bant_icinde", "yargi")}
+
+
 def _kos(sol, t_bas: float, t_end: float, azami: int, etiket: str,
          ornekle=None, her: int = 0) -> float:
     """`t_end`'e kadar ilerlet; son adım **kırpılır**.
@@ -472,6 +494,9 @@ def main() -> int:
         Path(a.out).write_text(json.dumps(
             {"kip": "tek_asama", "lam": a.lam2, "N": a2.n, "t_sim": t,
              "hasar": hasar_tek,
+             "sok": _sok_yargisi(st_tek["rho"], st_tek["u"], st_tek["m"],
+                                 a2.alpha0,
+                                 ~np.asarray(a2.is_impactor, bool)),
              "duvar_s": time.perf_counter() - t0, **b}, indent=2))
         print(f"\nyazildi: {a.out}", flush=True)
         return 0
@@ -654,6 +679,23 @@ def main() -> int:
     print(f"  hasar     = {'ACIK' if a.hasarli else 'kapali'}  "
           f"D_ort {hasar['D_ort']:.4f}  D_max {hasar['D_max']:.4f}  "
           f"tam kirik {hasar['n_tam_kirik']}", flush=True)
+    # SOK YARGISI EKRANA. Bir kolun sonucunu okuyan kisi, sokun olup
+    # olmadigini gormek icin dosya acmak zorunda kalmasin -- A22 tam
+    # bu yuzden bir asama yanlis yerde arandi.
+    _s2 = _sok_yargisi(st_son["rho"], st_son["u"], st_son["m"],
+                       sahne.alpha0, hedef2)
+    _s1 = _sok_yargisi(st1["rho"], st1["u"], st1["m"], a1.alpha0,
+                       ~np.asarray(a1.is_impactor, bool))
+    print(f"  SOK       = t1: %{_s1['sikisma_max_yuzde']:.3f} "
+          f"[{_s1['yargi']}]   t_end: %{_s2['sikisma_max_yuzde']:.3f} "
+          f"[{_s2['yargi']}]   (Hugoniot %45,6-74,3)", flush=True)
+    if _s1["yargi"] != "SOK_YOK" and _s2["yargi"] == "SOK_YOK":
+        print("    UYARI: sok t1'de VARDI, t_end'de YOK -- aktarim ya da "
+              "asama-2 cozunurlugu onu yutuyor (rapor A24).", flush=True)
+    if _s2["yargi"] == "SOK_YOK":
+        print("    UYARI: bu kosuda SOK YOK; hedefe ait hicbir seyin "
+              "etkisi olculemez (ADR-0049).", flush=True)
+
     print("\n  KARSILASTIRMA icin: --tek-asama kolunu da kos.", flush=True)
 
     Path(a.out).write_text(json.dumps(
@@ -663,6 +705,13 @@ def main() -> int:
          "N_asama1": a1.n, "N_asama2": sahne.n,
          "aktarim": {k: v for k, v in d.items() if k != "atama"},
          "hasar": hasar, "krater": krater,
+         # SOK YARGISI (ADR-0049): `t_end`'de VE `t1`'de. Ikisi birden
+         # gerekli cunku sok `t1` civarinda tepe yapip sonra soner;
+         # yalnizca `t_end`'e bakmak A22'nin hatasi olurdu.
+         "sok": _sok_yargisi(st_son["rho"], st_son["u"], st_son["m"],
+                             sahne.alpha0, hedef2),
+         "sok_t1": _sok_yargisi(st1["rho"], st1["u"], st1["m"], a1.alpha0,
+                                ~np.asarray(a1.is_impactor, bool)),
          "izler": izler,
          "duvar_s": time.perf_counter() - t0, **b}, indent=2, default=float))
     print(f"\nyazildi: {a.out}", flush=True)
