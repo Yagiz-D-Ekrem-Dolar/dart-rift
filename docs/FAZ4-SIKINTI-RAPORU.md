@@ -2883,6 +2883,64 @@ parçacık çok ağır. Çare kütle basamağını küçültmek.
 | cephe `0,0 m/s` (A24) | aynı kusurun **arayüz** ucundaki hâli |
 | şoklanan hacim `82 m³` | duvarın içinde kalan hacmin ta kendisi |
 
+#### Kütle parmak izi: **hiçbir kaba parçacık şoklanmamış**
+
+Bağımsız bir teşhis (kullanıcı, 2026-08-29) daha keskin bir sınav
+önerdi ve doğrulandı — **her iki zamanda da**:
+
+| `t` | şoklanan | **ince** | **kaba** | `n × 46,6043 kg` | ölçülen |
+|---|---|---|---|---|---|
+| `1e-3` | `1 306` | `1 306` | **`0`** | `60 865,2` | `60 865,2` |
+| `4,767e-3` | `1 565` | `1 565` | **`0`** | `72 935,7` | `72 935,7` |
+
+Şoklanan kütle, ince parçacık kütlesinin **tam katı**. Yani `>%1`
+sıkışan parçacıkların **tamamı ince**; kaba bölgeye şok **hiç
+girmemiş**.
+
+> Bu, benim *"cephe `3,41 m`'de duruyor"* ifademi düzeltiyor.
+> `3,41 m` bir şok cephesi **değil** — başlangıçta `r < 3 m`'de olan
+> ince parçacıkların dışarı taşınmış **kenarı**. Kaba bölgede
+> ölçülecek bir cephe hiç oluşmadı.
+
+#### Ve `h_ij` mekanizması
+
+SPH eşleşmesi `h_ij = (h_i + h_j)/2` kullanıyor. Arayüzde:
+
+| | |
+|---|---|
+| `h` ince (`s = 0,35`) | `0,70 m` |
+| `h` kaba (`s = 7,0`) | `14,00 m` |
+| **`h_ij`** | **`7,35 m`** |
+| **destek `2h_ij`** | **`14,70 m`** |
+
+Şoklanan bölgenin **yarıçapı** `3,41 m`. Yani etkileşim desteği,
+şokun tamamından **`4,3` kat geniş**. Aynı `h_ij` yapay viskozitede
+de kullanılıyor (`solid_stress.py`), dolayısıyla dar şok darbesi
+`14,7 m`'lik bir hacme yayılıp **sayısal olarak siliniyor**.
+
+İki mekanizma birbirini tamamlıyor: alıcı parçacık `8 000` kat
+**ağır** (momentum `107` kat yetmiyor) **ve** etkileşim şoktan `4,3`
+kat **geniş** bir desteğe yayılıyor.
+
+#### Uyarı: `λ`'yı tek başına artırmak **kötüleştirir**
+
+Kütle duvarı `λ³` ile büyüyor. Keskin sınır korunarak `λ` artırılırsa:
+
+| `λ` | duvar |
+|---|---|
+| `8` | `512` |
+| `20` | `8 000` |
+| `40` | `64 000` |
+
+Çözünürlüğü artırmak, aynı maskeyle, **duvarı `λ³` oranında
+yükseltir**.
+
+#### A24 bu kilidin sebebi **değil**
+
+Yoğunluk aktarımı kusuru (A24) gerçek ve ayrı bir kusur. Ama
+buradaki koşu **tek aşamalı** — aktarım hiç yok. `3,4 m` kilidinin
+sebebi yalnızca **arayüz**.
+
 #### Çare kuruldu ve **ölçüldü**: `%13` parçacığa `1 000` kat iyileşme
 
 `refine_scene_kademeli` — `(r, λ)` çiftleri **dıştan içe**, her adım
