@@ -144,6 +144,36 @@ Ama dikkat: aşama-2 aktarımı bu inceliği `t₁`'de **kabalaştırıp
 atıyor**. Yani Ç4 tek başına yetmez; Ç2 (hareketli inceltme) ile
 birlikte anlamlı.
 
+#### SONRADAN ÖLÇÜLDÜ (2026-08-29, A23 · A24)
+
+Yukarıdaki tablo `β`'nın `A1` ile değişimine dayanıyordu — yani
+modelin **kendi** çıktısına. Şok sınavı dışarıdan bir hedef verdi ve
+sayılar **değişti**:
+
+| | tabloda | **ölçülen** |
+|---|---|---|
+| şok için gereken `s` | ima: `≤ 0,094 m` (`A1 = 8`) | **`0,175 m`** (`λ₂ = 40`) |
+| o noktada sıkışma | bilinmiyordu | `%40,5` — Hugoniot'un `%89`'u |
+| `s = 0,350 m` | *"yetersiz"* | `%22,0` — **şok var** |
+
+Ve *"aktarım inceliği kabalaştırıp atıyor"* sezgisi **eksik**
+çıktı: aktarım kabalaştırmıyor, **sıfırlıyor**. `ρ` hiç
+taşınmıyordu; çözücü onu her zaman `ρ₀/α₀` ile kuruyordu (A24).
+Çare yazıldı (hacim korunumlu aktarım) ve Ç2'nin gerekçesi
+**güçlendi**: hareketli inceltme olmadan şok, ince bölgenin
+sınırında (`3,4 m`) duruyor.
+
+Maliyet de düzeldi. Üretim bütçesine göre, `t_end = 0,2 s`:
+
+| şema | `N` | H100 / nokta | `40` nokta |
+|---|---|---|---|
+| `λ₂ = 20`'yi `r = 25 m`'ye yaymak | `1 089 581` | `30,6 saat` | `1 225 saat` |
+| **üç seviyeli** (`0,35`/`0,875`/`3,5`) | **`33 008`** | **`56 dk`** | **`37 saat`** |
+
+Yani şoku kurmak için gereken şey **daha çok parçacık değil**,
+parçacıkları **doğru yere koymak** — ki bu ADR'nin tezi zaten buydu.
+Artık dışarıdan ölçülmüş bir hedefle destekli.
+
 ### Birleşik etki
 
 `Ç1 × Ç3` tek başına: `399 saat -> ~2 saat`. Üçü birlikte, `μ ≪ 1`
