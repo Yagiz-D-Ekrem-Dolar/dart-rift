@@ -2817,6 +2817,35 @@ basamak `2` katı (kütlede `8`).
 Bugünkü şema **tek** basamak kullanıyor. Üç seviyeli yol (`refine_scene_ucseviye`)
 bir ara seviye ekliyor — `λ₂ = 20` için gereken **dördün biri**.
 
+#### İkinci açıklama sınandı ve **düştü**
+
+*"Belki arayüzde komşu çölü vardır"* — kaba parçacıklar `7 m`
+aralıklı, ince bölge `3 m`'de bitiyor; sınırdaki ince parçacıkların
+`2h = 1,4 m` içinde dışa doğru komşusu olmayabilirdi (A21'in yetim
+parçacıklarıyla aynı kusur). Ölçüldü:
+
+| kabuk | `n` | komşu ortalama | komşu min | `<30` komşulu |
+|---|---|---|---|---|
+| `2,8 – 3,0 m` | `267` | `202,5` | `93` | `%0,0` |
+| `3,0 – 3,2 m` | `278` | `177,3` | `96` | `%0,0` |
+
+Ve en dıştaki ince parçacık `3,41 m`, en yakın kaba parçacık
+`3,43 m` — **boşluk `0,02 m`**, destek yarıçapının (`1,40 m`)
+yetmiş'te biri.
+
+> **Komşu çölü yok.** Sınırdaki parçacıkların bol komşusu var; onlar
+> yalnızca **çok ağır**. Açıklama kütle oranında kalıyor.
+
+#### Ve örtüşme **tam**
+
+| | |
+|---|---|
+| cephe konumu | `3,41 m` |
+| ince bölgenin dış ucu | `3,41 m` |
+
+Sönen bir şok cephesi değil: **şok ince bölgeyi doldurup durmuş.**
+Ölçtüğüm *"cephe"*, fiziğin değil **ızgaranın** sınırı.
+
 #### Bu, üç bulguyu tek sebebe bağlıyor
 
 | bulgu | bu ışıkta |
