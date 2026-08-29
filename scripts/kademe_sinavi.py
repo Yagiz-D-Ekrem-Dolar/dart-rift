@@ -51,7 +51,10 @@ from faz48_iki_asama import (  # noqa: E402
 from sok_cephesi import cephe  # noqa: E402
 from sok_sinavi import sinav  # noqa: E402
 
-from dartrift.setup.refine import refine_scene_ucseviye  # noqa: E402
+from dartrift.setup.refine import (  # noqa: E402
+    refine_scene_kademeli,
+    refine_scene_ucseviye,
+)
 from dartrift.setup.scene import _build_mesh, build_scene  # noqa: E402
 
 
@@ -64,18 +67,32 @@ def main() -> int:
     ap.add_argument("--t-end", type=float, default=4.767e-3)
     ap.add_argument("--azami-adim", type=int, default=200000)
     ap.add_argument("--device", default="cuda:0")
+    # MERDIVEN: `r:lam` ciftleri, DISTAN ICE. Ornek:
+    #   --kademeler 20:1.25 13:2.5 8:5 5:10 3:20
+    # Uc seviyeli yol bir ara basamak ekler; merdiven gerekeni kadar.
+    ap.add_argument("--kademeler", nargs="+", default=None,
+                    help="r:lam ciftleri (distan ice); verilirse uc "
+                         "seviyeli yol yerine MERDIVEN kurulur")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
 
     t0 = time.perf_counter()
     kaba = build_scene(spacing=3.5, device="cpu", **_sahne_kolu(False))
     mesh = _build_mesh("icosphere", radius=SAHNE["radius"], subdiv=4)
-    s = refine_scene_ucseviye(kaba, mesh, r1=a.r1, lam1=a.lam1,
-                              r2=a.r2, lam2=a.lam2)
+    if a.kademeler:
+        kad = []
+        for c in a.kademeler:
+            r, lam = c.split(":")
+            kad.append((float(r), float(lam)))
+        s = refine_scene_kademeli(kaba, mesh, kad)
+        etiket = "MERDIVEN " + " ".join(a.kademeler)
+    else:
+        s = refine_scene_ucseviye(kaba, mesh, r1=a.r1, lam1=a.lam1,
+                                  r2=a.r2, lam2=a.lam2)
+        etiket = f"UC SEVIYE lam1={a.lam1} (r<{a.r1}) lam2={a.lam2} (r<{a.r2})"
     hedef = ~np.asarray(s.is_impactor, dtype=bool)
     ar = oranlar(np.asarray(s.m)[hedef])
-    print(f"KADEME SINAVI  lam1={a.lam1} (r<{a.r1}) lam2={a.lam2} "
-          f"(r<{a.r2})  N={s.n}", flush=True)
+    print(f"KADEME SINAVI  {etiket}  N={s.n}", flush=True)
     print("  seviyeler (kg): "
           + " -> ".join(f"{v:,.1f}" for v in ar["seviyeler"]), flush=True)
     print(f"  EN DIK BASAMAK: {ar['en_dik']:,.0f}x  ({ar['yargi']})",
@@ -93,14 +110,17 @@ def main() -> int:
     sv = sinav(st["rho"][hedef], st["u"][hedef], st["m"][hedef],
                alpha0=np.asarray(s.alpha0)[hedef])
     print(f"\n  t_sim = {t:.5e}", flush=True)
-    print(f"  CEPHE   = {c['cephe_m']:.2f} m  (ince bolge siniri "
-          f"{a.r1:.1f} m)  kalinlik {c['kalinlik_m']:.2f} m", flush=True)
+    r_ic0 = float(a.kademeler[-1].split(":")[0]) if a.kademeler else a.r1
+    print(f"  CEPHE   = {c['cephe_m']:.2f} m  (en ince bolge siniri "
+          f"{r_ic0:.1f} m)  kalinlik {c['kalinlik_m']:.2f} m", flush=True)
     print(f"  sikisma = %{sv['sikisma_max_yuzde']:.3f}  [{sv['yargi']}]  "
           f"soklanan {c['kutle_kg']:,.0f} kg", flush=True)
-    gecti = c["cephe_m"] > a.r1 * 1.05
+    r_ic = float(a.kademeler[-1].split(":")[0]) if a.kademeler else a.r1
+    gecti = c["cephe_m"] > r_ic * 1.05
     print(f"\n  DUVARI ASTI MI: {'EVET' if gecti else 'HAYIR'}", flush=True)
 
     Path(a.out).write_text(json.dumps({
+        "sema": etiket, "kademeler": a.kademeler,
         "lam1": a.lam1, "r1": a.r1, "lam2": a.lam2, "r2": a.r2,
         "N": s.n, "t_sim": t, "en_dik_basamak": ar["en_dik"],
         "seviyeler_kg": [float(v) for v in ar["seviyeler"]],
