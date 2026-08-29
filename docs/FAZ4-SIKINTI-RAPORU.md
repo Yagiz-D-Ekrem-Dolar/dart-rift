@@ -2846,6 +2846,35 @@ yetmiş'te biri.
 Sönen bir şok cephesi değil: **şok ince bölgeyi doldurup durmuş.**
 Ölçtüğüm *"cephe"*, fiziğin değil **ızgaranın** sınırı.
 
+#### Şok **engellenmiyor** — yavaş bir itmeye dönüşüyor
+
+Momentum arayüzü **geçiyor**, ama şok olarak değil:
+
+| bölge | `n` | hız medyan | `u` medyan |
+|---|---|---|---|
+| ince `2,8 – 3,41 m` | `675` | **`25,3 m/s`** | `1 755` |
+| kaba `3,43 – 6 m` | `2` | `1,56 m/s` | `-68` |
+| kaba `6 – 12 m` | `10` | `0,27 m/s` | `36` |
+| kaba `12 – 25 m` | `100` | `0,019 m/s` | `0,001` |
+
+Arayüzde hız **`15` kat** düşüyor. Ve gereken hız `1,56` değil:
+
+| | |
+|---|---|
+| şoklanan bölgenin **toplam** momentumu | `2 246 474 kg m/s` |
+| `%22` sıkışma için gereken `up` | `643 m/s` |
+| **tek** kaba parçacığı `up`'a çıkarmak | `239 864 135 kg m/s` |
+| **oran** | **`107` kat eksik** |
+
+> Şoklanan `73` tonun **tamamının** momentumu, **tek bir** kaba
+> parçacığı şok hızına çıkarmaya yetmiyor. Bu yüzden şok
+> engellenmiyor — `1,56 m/s`'lik **yavaş bir itmeye** dönüşüyor ve
+> şok olmaktan çıkıyor.
+
+Ayrım önemli: *"engelleniyor"* deseydik çare bir sınır koşulu
+olurdu. Ölçülen şey başka — **momentum yeterli değil**, çünkü alıcı
+parçacık çok ağır. Çare kütle basamağını küçültmek.
+
 #### Bu, üç bulguyu tek sebebe bağlıyor
 
 | bulgu | bu ışıkta |
