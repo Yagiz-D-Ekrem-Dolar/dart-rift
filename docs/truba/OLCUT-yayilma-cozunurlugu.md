@@ -112,6 +112,38 @@ Bugün şoklanan kütle `72 936 kg` ve **kaçan `0 kg`**. Yani gereken
 Yani *"`β`'ya ulaşmak için gereken çözünürlük ne kadara mal olur"*
 sorusu, bu ölçütün ölçtüğü **tek sayıya** indirgenmiş durumda.
 
-## 7. Ne ölçmüyor
+## 7. Malzeme mi sayısal mı — **üç bağımsız hesap** aynı bandı veriyor
+
+Bütün bu iş, sıkıntının **ayrıklaştırmada** olduğu varsayımına
+dayanıyor. O varsayım sınanabilir: malzeme parametreleri doğruysa
+kraterin boyutunu **açıklamalılar**.
+
+Şok basıncı `P(r) = P₀ (r₀/r)ⁿ` ile sönüyor; krater `P > Y₀` olan
+bölgeye kadar. `P₀ = 20,3 – 59,8 GPa` (A22'nin Hugoniot bandı),
+`r₀ = 0,371 m`, `Y₀ = 10 MPa` (üretim matrisi):
+
+| `n` | `P₀ = 20,3 GPa` | `P₀ = 59,8 GPa` |
+|---|---|---|
+| `2,0` | `16,7 m` | `28,7 m` |
+| `2,5` | `7,8 m` | `12,0 m` |
+| `3,0` | `4,7 m` | `6,7 m` |
+
+Üç **bağımsız** yoldan gelen bant:
+
+| kaynak | yarıçap |
+|---|---|
+| `β = 3,22`'nin kütle bütçesi | `6,8 – 13,5 m` |
+| Housen-Holsapple ölçeklemesi | `6,7 – 42,8 m` |
+| malzemenin **kendi** `Y₀`'ı + şok sönümü | `4,7 – 16,5 m` |
+
+> Üçü de `~5 – 17 m`. **Malzeme parametreleri kraterin boyutunu
+> açıklıyor.** Kusur malzemede değil; şokun oraya **taşınamamasında**.
+
+Bu, çıkarım probleminin (iç yapıyı `β`'dan çıkarmak) yanlış malzeme
+modeliyle çökmediğini söylüyor — sayısalı düzeltmek gerçekten
+hedefe götürebilir. Ama bir tutarlılık kontrolü, kanıt değil: `n`
+literatürden alınmış bir bant ve model onu kendisi üretmiyor.
+
+## 8. Ne ölçmüyor
 
 `β`, krater. `t = 6e-3 s`'de kazı akışı yok.
