@@ -118,3 +118,39 @@ ADR-0049'un istediği gerçek eleme `t_end = 0,2 s` ister:
 çökmesi** (`%28,6 -> %0,518`) ucuza ayrılıyor.
 
 Sıra: `K4` -> (krater varsa) `K5 = elemeler @ 0,2 s` -> ensemble.
+
+---
+
+## Maliyet güncellendi (2026-08-31): `13 saat` değil **`4,3 saat`**
+
+`K4`'ün merdiveni `spacing = 7,0` tabanında kuruluyor ve orada daha
+ekonomik çıkıyor:
+
+| kabuk | `s` | `kalınlık/s` | yeterli |
+|---|---|---|---|
+| `24 – 48` | `2,800` | `8,6` | evet |
+| `12 – 24` | `1,400` | `8,6` | evet |
+| `6 – 12` | `0,700` | `8,6` | evet |
+| `3 – 6` | `0,350` | `8,6` | evet |
+| `0 – 3` | `0,175` | `17,1` | evet |
+
+| | |
+|---|---|
+| `N` | `76 659` |
+| adım (`t_end = 0,2 s`) | `27 429` |
+| maliyet | `5,4×` üretim |
+| **H100** | **`4,3 saat/nokta`** |
+
+Önceki tahmin `13 saat`'ti; `3` kat düştü. Sonucu:
+
+| | eski | **yeni** |
+|---|---|---|
+| `40` noktalık ensemble, seri | `~22 gün` | **`~7 gün`** |
+| `20` GPU paralel | `~26 saat` | **`~9 saat`** |
+
+> Ensemble artık *"pahalı ama olur"* değil, **rahat**. Vekil modelin
+> önündeki engel hesap değil, `K4`'ün fizik yargısı.
+
+Son basamak (`2,8 -> 7,0 = 15,6×` kütle) `r = 48 m`'de ve şok
+`0,2 s`'de oraya ulaşmıyor — bu koşu için önemsiz, ama daha uzun
+sürelerde `ozbenzer_kademeler` ile kapatılmalı.
