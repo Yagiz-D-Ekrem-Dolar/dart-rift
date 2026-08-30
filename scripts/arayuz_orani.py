@@ -38,11 +38,42 @@ OLAGAN_ORAN = 8.0
 TEHLIKE_ORANI = 100.0
 
 
+#: Kati yogunluk (`configs/p3_scene.yaml`) ve fcc dolgu carpani.
+RHO0_KATI = 2700.0
+FCC_DOLGU = 0.707
+
+
+def aralik(m, alpha0) -> np.ndarray:
+    """Parçacık **aralığı**, kütle ve `α₀`'dan **kesin**.
+
+    `m = (ρ₀/α₀) · 0,707 s³` -> `s = (m α₀ / (ρ₀ · 0,707))^(1/3)`.
+
+    ## Neden gerekli
+
+    Kütleye göre kümelemek `α₀`'ı **basamak sanıyor**: blok
+    (`α₀ = 1,05`) ve matris (`α₀ = 1,76`) aynı aralıkta bile `1,67`
+    kat farklı kütleye sahip. Öz-benzer merdiven ölçüldüğünde araç
+    *"en dik `9×` (DİK)"* dedi — oysa o `9×`, `s = 1,4` blok ile
+    `s = 3,5` matris arasındaydı; **inceltme basamağı değildi**.
+    """
+    m = np.asarray(m, dtype=np.float64)
+    a0 = np.asarray(alpha0, dtype=np.float64)
+    if m.shape != a0.shape:
+        raise ValueError(f"m {m.shape} ile alpha0 {a0.shape} ayni olmali")
+    if np.any(a0 <= 0.0) or np.any(m <= 0.0):
+        raise ValueError("m ve alpha0 pozitif olmali")
+    return np.cbrt(m * a0 / (RHO0_KATI * FCC_DOLGU))
+
+
 def basamaklar(m: np.ndarray, *, tol: float = 1e-6) -> np.ndarray:
     """Ayrık kütle **seviyeleri**, küçükten büyüğe.
 
     Kayan nokta gürültüsü ayrı seviye sayılmamalı — bu depoda bir kez
     `np.unique` `40` sahte seviye saydı (rapor A11).
+
+    **Sınır:** `α₀` farkı burada ayrı seviye görünür. Gerçek
+    inceltme basamağı için :func:`aralik` ile birlikte
+    :func:`oranlar`'ın `alpha0` yolunu kullanın.
     """
     m = np.asarray(m, dtype=np.float64)
     if m.ndim != 1 or len(m) == 0:
@@ -57,9 +88,20 @@ def basamaklar(m: np.ndarray, *, tol: float = 1e-6) -> np.ndarray:
     return np.array(kes)
 
 
-def oranlar(m: np.ndarray, *, tol: float = 1e-6) -> dict:
-    """Komşu seviyeler arasındaki kütle oranları ve en dik basamak."""
-    k = basamaklar(m, tol=tol)
+def oranlar(m: np.ndarray, *, tol: float = 1e-6, alpha0=None) -> dict:
+    """Komşu seviyeler arasındaki kütle oranları ve en dik basamak.
+
+    `alpha0` verilirse seviyeler **aralığa** göre kümeleniyor ve
+    blok/matris farkı basamak sayılmıyor (bkz. :func:`aralik`).
+    Oranlar yine **kütle** cinsinden (`(s_i+1/s_i)³`), çünkü şokun
+    gördüğü şey kütle.
+    """
+    if alpha0 is not None:
+        s = aralik(m, alpha0)
+        sk = basamaklar(s, tol=tol)
+        k = RHO0_KATI * FCC_DOLGU * sk ** 3        # esdeger KUTLE (alpha0=1)
+    else:
+        k = basamaklar(m, tol=tol)
     if len(k) == 1:
         return {"seviyeler": k, "oranlar": np.array([]),
                 "en_dik": 1.0, "aralik_sicramasi": 1.0, "yargi": "TEK_SEVIYE"}
