@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 12 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 13 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -2753,6 +2753,28 @@ O bir ayrıklaştırma artığı değil, **aktarımın parmak izi**.
 | aşama-2 | sıcak-ama-sıkışmamış madde; genleşir, kazmaz |
 | `t = 0,2 s` | sıkışma `%0,25`, krater `9 cm`, `β` hedeften beslenmez |
 
+#### **ÖLÇÜLDÜ: çare işliyor** (TRUBA `J3`, 2026-08-30)
+
+İki aşamalı koşu, `λ₁ = 19`, `λ₂ = 8`, `t_end = 6e-3 s`, tek değişken:
+
+| kol | `t₁` | `t_end` | yargı |
+|---|---|---|---|
+| **A** — `ρ` taşınıyor | `%27,593` | **`%10,435`** | `KISMI` |
+| **B** — `--rho-tasima-yok` | `%27,593` | **`%0,219`** | **`SOK_YOK`** |
+
+`t₁` değerleri **bit düzeyinde aynı** — yani tarama gerçekten tek
+değişkenli. `t_end`'de fark **`47,6` kat**.
+
+Ve `B` kolu, bu turda yazdığım uyarıyı kendiliğinden bastı:
+
+> `UYARI: sok t1'de VARDI, t_end'de YOK -- aktarim ya da asama-2
+> cozunurlugu onu yutuyor (rapor A24).`
+
+Kalan `%10,4 < %27,6`: sıkışma hâlâ **sönüyor**, çünkü aşama-2
+`λ₂ = 8` (`s = 0,875 m`) ve A23'e göre o çözünürlük `%1,68`'den
+fazlasını taşıyamaz. Aktarım artık **silmiyor**; aşama-2'nin
+çözünürlüğü **eritiyor**. İkisi ayrı sıkıntı ve ayrı çareleri var.
+
 #### İkinci sınır: şok `3,4 m`'de duruyor
 
 `t = 1e-3 -> 4,767e-3 s` (`4,8×` süre) cephe `3,41 m`'de **kalıyor**;
@@ -3117,6 +3139,49 @@ betiğin de** ayrıştırıcıyı kullandığı kilitli.
 merdivenleri **istendiği gibi** kuruldu (`N = 104 – 126 bin`,
 `s_min = 0,175`). `J1`'in sonucu geçerli — ama başka bir sebeple
 eksik (§A27).
+
+---
+
+### A27 — **Şok tüpü düzeneği geçersiz**: denetim kolu kendi kuralımla düştü (2026-08-30)
+
+A25'in sorusunu sahnesiz sormak için düzlemsel bir şok tüpü kuruldu
+(`arayuz_sok_tupu.py`). Ölçüt, **koşudan önce**, şunu yazmıştı:
+
+> `κ = 1` **denetim**: aynı çözünürlük, şok `x > 0`'a ulaşmalı.
+> Ulaşmazsa düzenek geçersizdir ve öteki kollar **okunmaz**.
+
+TRUBA `J2` (`400` ve `1 200` adım):
+
+| `κ` | kütle oranı | `N` | ince sıkışma | kaba şoklu |
+|---|---|---|---|---|
+| **`1`** | `1×` | `864` | **`%0,294`** | `0` |
+| `2` | `8×` | `2 160` | `%-0,144` | `0` |
+| `4` | `64×` | `7 344` | `%0,128` | `0` |
+| `8` | `512×` | `28 080` | `%0,122` | `0` |
+| `20` | `8 000×` | `173 232` | `%0,406` | `4` |
+
+**Denetim kolunda bile şok yok** (`%0,294`, Hugoniot `%45,6`).
+Düzenek geçersiz; tablodaki hiçbir satır okunmaz.
+
+#### Sebep: **yanal boşalma**
+
+Tüpün enine boyutu `6 s_kaba`; `κ = 1` için `1,05 m`. Şokun kat
+etmesi gereken yol `2,1 m`. Serbest yan yüzeylerden gelen boşalma
+dalgaları eksene, şok ucundan **önce** varıyor ve sıkışmayı
+öldürüyor. SPH'de periyodik sınır olmadığı için çare tüpü **çok**
+genişletmek — ki o zaman ucuzluk avantajı gider.
+
+#### `κ = 20`'nin `4` parçacığı **yanlış pozitif**
+
+Kısa koşuda `κ = 20` *"GEÇTİ"* dedi (`4` parçacık); uzun koşuda
+`0`. Denetim kolu geçersiz olduğu için o satır zaten okunmuyordu —
+**kural, kendi yazdığım yanlış pozitifi engelledi.**
+
+#### Ne yapıldı
+
+Araç ve `8` testi **duruyor** (depo kuralı: hiçbir satır silinmez),
+ama bu belgeyle *"geçerli düzenek değil"* damgası taşıyor. A25'in
+kanıtı **küresel sahne** ölçümünden geliyor ve o ölçüm geçerli.
 
 ---
 
