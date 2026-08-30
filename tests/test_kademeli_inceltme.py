@@ -258,3 +258,49 @@ def test_ozbenzer_KABUK_KALINLIGI_hepsi_yeterli() -> None:
     from dartrift.setup.refine import ozbenzer_kademeler
     kk = kabuk_kalinligi(ozbenzer_kademeler(3.5, 3.0, 0.175, 24.0), 3.5)
     assert all(d["yeterli"] for d in kk)
+
+
+# ------------------------------- KADEME AYRISTIRICI: metre, lam DEGIL
+
+def test_ayristirici_TABANDAN_bagimsiz_ayni_araligi_veriyor() -> None:
+    """Kusurun özü: `λ` tabana bağlıydı, iki betiğin tabanı farklıydı.
+
+    `kademe_sinavi.py` `spacing = 3,5`, `faz48_iki_asama.py`
+    varsayılan `7,0`. Aynı `"3:20"` dizgisi birinde `s = 0,175`,
+    ötekinde `s = 0,350` demekti — ve **hiçbir şey hata vermedi**.
+    TRUBA `J4` merdiveni `N = 131 057` yerine `17 201` parçacıkla
+    kurdu, koşu iki kat kaba gitti (`β = 1,216`).
+    """
+    from dartrift.setup.refine import kademe_ayristir
+    for taban in (3.5, 7.0, 14.0):
+        k = kademe_ayristir(["48:2.8", "3:0.175"], taban)
+        s = [taban / lam for _, lam in k]
+        assert s == pytest.approx([2.8, 0.175]), (taban, s)
+
+
+def test_ayristirici_TABANDAN_BUYUK_araligi_REDDEDIYOR() -> None:
+    """Tabandan kaba bir 'inceltme' sessizce sahneyi bozardı."""
+    from dartrift.setup.refine import kademe_ayristir
+    with pytest.raises(ValueError, match="BUYUK olamaz"):
+        kademe_ayristir(["3:9.0"], 7.0)
+
+
+def test_ayristirici_bozuk_bicimi_REDDEDIYOR() -> None:
+    from dartrift.setup.refine import kademe_ayristir
+    with pytest.raises(ValueError, match="'r:s' biciminde"):
+        kademe_ayristir(["3"], 7.0)
+    with pytest.raises(ValueError, match="pozitif"):
+        kademe_ayristir(["0:0.175"], 7.0)
+
+
+def test_her_iki_betik_de_AYRISTIRICIYI_kullaniyor() -> None:
+    """Biri elle ayrıştırmaya dönerse kusur geri gelir."""
+    import inspect
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import faz48_iki_asama as f
+    import kademe_sinavi as ks
+    assert "kademe_ayristir(a.kademeler, a.spacing)" in inspect.getsource(f.main)
+    assert "kademe_ayristir(a.kademeler, kaba.spacing)" in \
+        inspect.getsource(ks.main)

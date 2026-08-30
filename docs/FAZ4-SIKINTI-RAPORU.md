@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 11 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 12 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -3073,6 +3073,50 @@ uyumu korunur"* güvencesini yeniden kurmak gerekir.
 gürültüsü seviye sayılmıyor (A11'de sayılmıştı), eşikler ayrı,
 kademe önerisi elden hesapla kilitli, ve *"inceltme arttıkça
 kötüleşiyor"* monotonluğu testte yazılı.
+
+---
+
+### A26 — **`--kademeler` iki betikte farklı şey demek**: TRUBA `J4` iki kat kaba koştu (2026-08-30)
+
+Merdiven `(r, λ)` çiftleriyle veriliyordu ve `λ` **tabana bağlı**:
+
+| betik | taban `spacing` | `"3:20"` ne demek |
+|---|---|---|
+| `kademe_sinavi.py` | `3,5` (gömülü) | `s = 0,175 m` |
+| `faz48_iki_asama.py` | `7,0` (varsayılan) | **`s = 0,350 m`** |
+
+TRUBA `J4` `faz48` ile koştu. Sonuç:
+
+| | beklenen | **ölçülen** |
+|---|---|---|
+| `N` | `131 057` | **`17 201`** |
+| `s_min` | `0,175 m` | `0,350 m` |
+| `β` | — | `1,216` |
+
+> Koşu **iki kat kaba** gitti ve **hiçbir şey hata vermedi**. Sayı
+> sessizce yanlıştı; `β = 1,216` üretimin `1,411`'inin bile altında.
+
+Aynı sınıf: A14 (bayrağın varsayılanı sessizce kaydırması), A20
+(adım sınırının koşuyu sessizce kesmesi). Ortak yanı: **çıkış kodu
+sıfır**.
+
+#### Çare: `λ` değil **metre**
+
+`--kademeler 48:2.8 24:1.4 12:0.7 6:0.35 3:0.175` — ikisi de metre.
+`kademe_ayristir(ciftler, spacing)` tek yerde çeviriyor ve
+tabandan **büyük** bir aralığı reddediyor (o da sessizce sahneyi
+bozardı).
+
+Dört test: taban `3,5 / 7,0 / 14,0` için **aynı** aralık;
+tabandan büyük reddediliyor; bozuk biçim reddediliyor; **her iki
+betiğin de** ayrıştırıcıyı kullandığı kilitli.
+
+#### `J1` bundan etkilenmedi
+
+`kademe_sinavi.py` kendi tabanını (`3,5`) kullandığı için `J1`'in
+merdivenleri **istendiği gibi** kuruldu (`N = 104 – 126 bin`,
+`s_min = 0,175`). `J1`'in sonucu geçerli — ama başka bir sebeple
+eksik (§A27).
 
 ---
 

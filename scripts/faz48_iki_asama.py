@@ -50,6 +50,7 @@ for _akis in (sys.stdout, sys.stderr):
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
 from dartrift.observables.momentum_transfer import escape_speed, momentum_transfer  # noqa: E402
 from dartrift.setup.refine import (  # noqa: E402
+    kademe_ayristir,
     refine_scene_kademeli,
     refine_scene_local,
     refine_scene_ucseviye,
@@ -390,11 +391,12 @@ def main() -> int:
     # arayuz orani `8 000` uretiyor ve sok orada yavas bir itmeye
     # donusuyor. Merdiven bunu `8`'e indiriyor; bedeli `%13` parcacik ve
     # `dt` DEGISMIYOR (en ince aralik ayni).
-    #   --kademeler 20:1.25 13:2.5 8:5 5:10 3:20      (r:lam, DISTAN ICE)
+    #   --kademeler 48:2.8 24:1.4 12:0.7 6:0.35 3:0.175
+    #   (r:s, ikisi de METRE, DISTAN ICE)
     # Verilirse `--lam2/--r-ince2` yerine gecer (tek asamali kolda).
     ap.add_argument("--kademeler", nargs="+", default=None,
-                    help="r:lam ciftleri (distan ice); tek asamali kolda "
-                         "MERDIVEN kurar (A25)")
+                    help="r:s ciftleri, ikisi de METRE (distan ice); "
+                         "tek asamali kolda MERDIVEN kurar (A25)")
     ap.add_argument("--tek-asama", action="store_true",
                     help="kontrol kolu: lam=2 ile TEK BASINA t_end'e git")
     ap.add_argument("--out", default=str(REPO.parent / "faz48_sonuc.json"))
@@ -468,8 +470,7 @@ def main() -> int:
             raise SystemExit("--kademeler simdilik yalnizca --tek-asama ile "
                              "kullanilabilir; iki asamali yolda aktarim "
                              "merdiveni kabalastirir (A24/A25).")
-        kad = [(float(c.split(":")[0]), float(c.split(":")[1]))
-               for c in a.kademeler]
+        kad = kademe_ayristir(a.kademeler, a.spacing)
         a2 = refine_scene_kademeli(kaba, mesh, kad)
         print(f"MERDIVEN: {' '.join(a.kademeler)}  N={a2.n}", flush=True)
     else:

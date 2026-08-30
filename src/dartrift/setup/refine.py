@@ -685,6 +685,39 @@ def refine_scene_kademeli(kaba, mesh, kademeler,
     return s
 
 
+def kademe_ayristir(ciftler, spacing: float) -> list:
+    """`"r:s"` dizgilerini `(r, λ)` çiftlerine çevir — `s` **metre**.
+
+    ## Neden `λ` değil `s`
+
+    `λ` tabana **bağlı** ve iki betiğin tabanı farklıydı:
+    `kademe_sinavi.py` `spacing = 3,5`, `faz48_iki_asama.py`
+    varsayılan `7,0`. Aynı `"3:20"` dizgisi birinde `s = 0,175`,
+    ötekinde `s = 0,350` demekti.
+
+    Ölçüldü (`2026-08-30`, TRUBA `J4`): merdiven `N = 131 057` yerine
+    **`17 201`** parçacıkla kuruldu ve koşu **iki kat kaba** gitti;
+    `β = 1,216` çıktı. Sayı sessizce yanlıştı çünkü **hiçbir şey
+    hata vermedi**.
+
+    Metre mutlak: `"3:0.175"` her betikte aynı şeyi söyler.
+    """
+    out = []
+    for c in ciftler:
+        parca = str(c).split(":")
+        if len(parca) != 2:
+            raise ValueError(f"kademe 'r:s' biciminde olmali, {c!r} geldi")
+        r, s = float(parca[0]), float(parca[1])
+        if r <= 0.0 or s <= 0.0:
+            raise ValueError(f"r ve s pozitif olmali, {c!r} geldi")
+        if s > float(spacing):
+            raise ValueError(
+                f"kademe araligi {s} m, taban araliktan ({spacing} m) "
+                f"BUYUK olamaz -- {c!r}")
+        out.append((r, float(spacing) / s))
+    return out
+
+
 def ozbenzer_kademeler(spacing: float, r_ic: float, s_ic: float,
                        r_dis: float, kat: float = 2.0) -> list:
     """**Öz-benzer** merdiven: `r` ve `s` birlikte katlanır, `s/r` sabit.

@@ -52,6 +52,7 @@ from sok_cephesi import cephe  # noqa: E402
 from sok_sinavi import sinav  # noqa: E402
 
 from dartrift.setup.refine import (  # noqa: E402
+    kademe_ayristir,
     refine_scene_kademeli,
     refine_scene_ucseviye,
 )
@@ -68,11 +69,11 @@ def main() -> int:
     ap.add_argument("--azami-adim", type=int, default=200000)
     ap.add_argument("--device", default="cuda:0")
     # MERDIVEN: `r:lam` ciftleri, DISTAN ICE. Ornek:
-    #   --kademeler 20:1.25 13:2.5 8:5 5:10 3:20
+    #   --kademeler 48:2.8 24:1.4 12:0.7 6:0.35 3:0.175   (r:s, METRE)
     # Uc seviyeli yol bir ara basamak ekler; merdiven gerekeni kadar.
     ap.add_argument("--kademeler", nargs="+", default=None,
-                    help="r:lam ciftleri (distan ice); verilirse uc "
-                         "seviyeli yol yerine MERDIVEN kurulur")
+                    help="r:s ciftleri, ikisi de METRE (distan ice); "
+                         "verilirse uc seviyeli yol yerine MERDIVEN kurulur")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
 
@@ -80,10 +81,7 @@ def main() -> int:
     kaba = build_scene(spacing=3.5, device="cpu", **_sahne_kolu(False))
     mesh = _build_mesh("icosphere", radius=SAHNE["radius"], subdiv=4)
     if a.kademeler:
-        kad = []
-        for c in a.kademeler:
-            r, lam = c.split(":")
-            kad.append((float(r), float(lam)))
+        kad = kademe_ayristir(a.kademeler, kaba.spacing)
         s = refine_scene_kademeli(kaba, mesh, kad)
         etiket = "MERDIVEN " + " ".join(a.kademeler)
     else:
