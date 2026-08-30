@@ -71,3 +71,35 @@ def test_SOK_YOK_ekrana_UYARI_basiyor() -> None:
     k = inspect.getsource(f.main)
     assert "sok t1'de VARDI, t_end'de YOK" in k
     assert "hedefe ait hicbir seyin " in k and "ADR-0049" in k
+
+
+# ---------------------------------------- IZLEME: sok NE ZAMAN oldu
+
+def test_TEK_ASAMADA_izleme_baglandi() -> None:
+    """`--iz-every` tek aşamada **sessizce yoksayılıyordu**.
+
+    Merdiven kolu tek aşamalı (aktarım yok), yani izin asıl gerektiği
+    yer orası. A14/A20/A26 ile aynı sınıf: bayrak kabul ediliyor,
+    hiçbir şey yapmıyor, çıkış kodu sıfır.
+    """
+    k = inspect.getsource(f.main)
+    assert "ornekle=_ornek_tek if a.iz_every > 0 else None" in k
+    assert '"izler": izler_tek' in k
+
+
+def test_IZ_sikismayi_tasiyor() -> None:
+    """Şok `t_end`'den **önce** sönerse sebep ancak zaman serisinde görünür.
+
+    A22 tam bu yüzden bir aşamayı yanlış yerde aradı: cesedi ölçüp
+    *"şok hiç olmadı"* dedi.
+    """
+    src = inspect.getsource(f._iz_ornegi)
+    assert "alpha0" in inspect.signature(f._iz_ornegi).parameters
+    assert 'd["sikisma_max_yuzde"]' in src
+    assert 'd["n_sikisan_yuzde5"]' in src
+
+
+def test_iz_alpha0_YOKSA_sessizce_geciyor() -> None:
+    """Eski çağıranlar bozulmamalı: `alpha0=None` -> alan yok."""
+    src = inspect.getsource(f._iz_ornegi)
+    assert "if alpha0 is not None:" in src

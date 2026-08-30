@@ -299,7 +299,8 @@ def _kos(sol, t_bas: float, t_end: float, azami: int, etiket: str,
     return t
 
 
-def _iz_ornegi(st, *, hedef, R, v_esc, ehat, p_imp, x0) -> dict:
+def _iz_ornegi(st, *, hedef, R, v_esc, ehat, p_imp, x0,
+               alpha0=None) -> dict:
     """Krater + **balistik** `β` — `2R`'ye varis BEKLENMEDEN.
 
     `momentum_transfer`'in ejekta olcutu `d > 2R` istiyor ve hedef
@@ -358,6 +359,24 @@ def _iz_ornegi(st, *, hedef, R, v_esc, ehat, p_imp, x0) -> dict:
         d["krater_derinlik"] = float("nan")
         d["krater_cap"] = float("nan")
         d["krater_hata"] = str(e)[:80]
+    # SIKISMA IZI (ADR-0049). Sonuc dosyasi yalnizca `t_end`'i tasiyor;
+    # ama sok `t_end`'den ONCE sonebilir ve o zaman krater/`beta`
+    # sifirlarinin sebebi gorunmez olur. A22 tam bu yuzden bir asamayi
+    # yanlis yerde aradi: cesedi olcup "sok hic olmadi" dedi.
+    #
+    # Iz artik "sok NE ZAMAN oldu" sorusunu yanitliyor.
+    if alpha0 is not None:
+        try:
+            import sys as _sys
+            _sys.path.insert(0, str(Path(__file__).resolve().parent))
+            from sok_sinavi import sikisma
+            s = sikisma(np.asarray(st["rho"])[hedef],
+                        np.asarray(alpha0)[hedef])
+            d["sikisma_max_yuzde"] = 100.0 * float(s.max())
+            d["n_sikisan_yuzde5"] = int((s > 0.05).sum())
+        except Exception as e:                             # noqa: BLE001
+            d["sikisma_max_yuzde"] = float("nan")
+            d["sikisma_hata"] = str(e)[:80]
     return d
 
 
@@ -486,7 +505,41 @@ def main() -> int:
                       cfl=a.cfl, u_tabani=a.u_tabani,
                    alpha_av=a.alpha_av, beta_av=a.beta_av,
                       mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
-        t = _kos(sol, 0.0, a.t_end, a.azami_adim, "tek")
+        # IZLEME TEK ASAMADA DA CALISIYOR. Onceden `--iz-every` yalnizca
+        # iki asamali yolda baglanmisti ve tek asamada SESSIZCE
+        # YOKSAYILIYORDU -- A14/A20/A26 ile ayni sinif. Merdiven kolu
+        # tek asamali oldugu icin (aktarim yok) izin asil gerektigi yer
+        # burasi: sok `t_end`'den ONCE sonerse, krater ve `beta`
+        # sifirlarinin sebebi ancak zaman serisinde gorunur.
+        izler_tek = []
+        iz_yolu_tek = Path(a.out).with_suffix(".izler.jsonl")
+        if a.iz_every > 0:
+            iz_yolu_tek.parent.mkdir(parents=True, exist_ok=True)
+            if iz_yolu_tek.exists():
+                iz_yolu_tek.unlink()
+        hedef_tek = ~np.asarray(a2.is_impactor, dtype=bool)
+        v_esc_iz = escape_speed(m_hedef, R)
+        ehat_iz = np.asarray(p_imp) / float(np.linalg.norm(p_imp))
+        P_iz = float(np.linalg.norm(p_imp))
+        x_ref_tek = np.asarray(a2.x, dtype=np.float64)
+
+        def _ornek_tek(adim, tt, st):
+            d = _iz_ornegi(st, hedef=hedef_tek, R=R, v_esc=v_esc_iz,
+                           ehat=ehat_iz, p_imp=P_iz, x0=x_ref_tek,
+                           alpha0=a2.alpha0)
+            d.update(adim=adim, t=tt)
+            izler_tek.append(d)
+            with iz_yolu_tek.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(d) + chr(10))
+            print(f"    iz {adim:6d} t={tt:.4e} "
+                  f"sikisma={d.get('sikisma_max_yuzde', float('nan')):.3f}% "
+                  f"beta_bal={d['beta_bal']:.5f} "
+                  f"ejekta={d['n_hedef_ejekta']:5d} "
+                  f"derinlik={d['krater_derinlik']:.4f}", flush=True)
+
+        t = _kos(sol, 0.0, a.t_end, a.azami_adim, "tek",
+                 ornekle=_ornek_tek if a.iz_every > 0 else None,
+                 her=a.iz_every)
         st_tek = sol.state_numpy()
         b = _beta(st_tek, a2, p_imp, m_hedef, R)
         # HASAR TANISI kontrol kolunda da yaziliyor: hasar kapali kolda
@@ -517,6 +570,7 @@ def main() -> int:
             alpha0=np.asarray(a2.alpha0, dtype=np.float64))
         Path(a.out).write_text(json.dumps(
             {"kip": "tek_asama", "lam": a.lam2, "N": a2.n, "t_sim": t,
+             "kademeler": a.kademeler, "izler": izler_tek,
              "hasar": hasar_tek,
              "sok": _sok_yargisi(st_tek["rho"], st_tek["u"], st_tek["m"],
                                  a2.alpha0,
@@ -628,7 +682,7 @@ def main() -> int:
 
     def _ornek(adim, tt, st):
         d = _iz_ornegi(st, hedef=hedef2, R=R, v_esc=v_esc, ehat=ehat,
-                       p_imp=P, x0=x_ref2)
+                       p_imp=P, x0=x_ref2, alpha0=sahne.alpha0)
         d.update(adim=adim, t=tt)
         izler.append(d)
         with iz_yolu.open("a", encoding="utf-8") as f:
