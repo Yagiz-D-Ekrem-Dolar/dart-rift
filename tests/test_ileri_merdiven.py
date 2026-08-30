@@ -95,3 +95,44 @@ def test_ileri_merdiven_AKTARIM_kullanmiyor() -> None:
     k = inspect.getsource(ileri_kosu_merdiven)
     assert "asama2" not in k and "two_stage" not in k
     assert "refine_scene_kademeli" in k
+
+
+# ------------------------------------------------- ENSEMBLE SURUCUSU
+
+def test_ensemble_surucusu_MERDIVENI_kullaniyor() -> None:
+    """Sürücü eski (şoksuz) ileri modele düşerse ensemble yine boş çıkar."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import faz5_ensemble_merdiven as m
+    k = inspect.getsource(m.main)
+    assert "ileri_kosu_merdiven(" in k
+    assert "kademeler=MERDIVEN" in k
+    assert m.MERDIVEN == ("48:2.8", "24:1.4", "12:0.7", "6:0.35", "3:0.175")
+
+
+def test_ensemble_surucusu_SOK_KAPISI_varsayilan_ACIK() -> None:
+    """Kapıyı kapatmak tanı içindir; varsayılan olmamalı (ADR-0049)."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import faz5_ensemble_merdiven as m
+    k = inspect.getsource(m.main)
+    assert '"--sok-kapisi-kapali", action="store_true"' in k
+    assert "sok_yargisi=not a.sok_kapisi_kapali" in k
+
+
+def test_ensemble_surucusu_EnsembleDurum_alanlarini_dogru_okuyor() -> None:
+    """Yanlış alan adı `AttributeError` ile koşunun **sonunda** patlar —
+    yani bütün GPU işi bittikten sonra. Burada erken yakalanıyor."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import faz5_ensemble_merdiven as m
+
+    from dartrift.inference.ensemble import EnsembleDurum
+    alanlar = set(EnsembleDurum.__dataclass_fields__)
+    k = inspect.getsource(m.main)
+    for ad in ("tamamlanan", "toplam", "dusen", "atlanan", "bozuk_satir"):
+        assert ad in alanlar, ad
+        assert f"durum.{ad}" in k, ad
