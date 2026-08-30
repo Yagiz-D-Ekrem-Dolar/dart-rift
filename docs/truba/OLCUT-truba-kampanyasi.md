@@ -98,3 +98,23 @@ Her iş `sok_sinavi` yargısını sonuç dosyasında taşıyor (ADR-0049).
 
 Bölüm `kolyoz-cuda` (`cuda-ui`); `arf` oturum düğümünde **yok** —
 ilk gönderim oradan reddedildi ve hedef düzeltildi.
+
+---
+
+## Sıralama kararı (2026-08-31, A28'den sonra)
+
+`J5` `t_end = 6e-3 s`'te koşuyor ve orada **mukavemet elemeleri
+anlamsız**: şok basıncı `20,3 GPa`, `Y0` `10 MPa` — `2 034` kat fark,
+ve kazı akışı henüz başlamamış. Beş kolun aynı çıkması bunun
+doğrulaması (A28).
+
+ADR-0049'un istediği gerçek eleme `t_end = 0,2 s` ister:
+`6` kol × `~13 saat` = **`78` GPU-saat**.
+
+> **Karar:** o harcama `K4`'ten **sonra**. `K4` krater üretmiyorsa
+> elemelerin hepsi yine boş çıkar ve `78` saat çöpe gider.
+
+`J5`'in `6e-3`'te kalmasının kendi değeri var: **gözeneksiz kolun
+çökmesi** (`%28,6 -> %0,518`) ucuza ayrılıyor.
+
+Sıra: `K4` -> (krater varsa) `K5 = elemeler @ 0,2 s` -> ensemble.
