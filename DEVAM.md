@@ -1,4 +1,66 @@
-# DEVAM — **2026-08-21 durumu** (yeni oturum buradan başlar)
+# DEVAM — **2026-08-31 durumu** (yeni oturum buradan başlar)
+
+> Bu bölüm, hiçbir önceki bağlam olmadan işe devam edebilmek için
+> yazıldı. Altındaki `2026-08-21` ve `2026-08-03` bölümleri
+> **arşivdir**; sayıları bayattır, oraya karar için bakma.
+
+---
+
+## 0. Otuz saniyede durum
+
+| | |
+|---|---|
+| **Zincir çözüldü** | Şok **doğuyordu**; aktarım **siliyordu**, arayüz **hapsediyordu**. İkisinin de çaresi yazıldı ve **ölçüldü**. |
+| **A22 düzeltildi** | *"Model şok üretmiyor"* **yanlıştı**. Tek düzenekli tarama: `λ₂ = 40`'ta sıkışma `%40,5` — Hugoniot alt ucunun `%89`'u. A22'nin `A1 ≈ 64` / `55 gün` tahmini **`470` kat** yanlış. |
+| **A24 çaresi ölçüldü** | `ρ` aktarımı: `t₁`'de iki kol bit düzeyinde aynı, `t_end`'de **`47,6×`** fark (`%10,44` vs `%0,22`). TRUBA `J3`. |
+| **A25 çaresi ölçüldü** | Kademeli merdiven: kaba seviyede şoklu `0 → 2 983`, sıkışma `%26,08 → %45,18`, bedeli **`%13` parçacık**, `dt` **değişmiyor**. |
+| **Asıl ölçüt** | Kütle oranı **değil**, **kabuk kalınlığı `≥ 4s`**. Pay basamak boyutundan bağımsız (`189,6×`); düşüren şey geometri. |
+| **Hâlâ ölçülmedi** | **`β` ve krater.** Bütün geçerli ölçümler `t ≤ 6e-3 s` ve kazı akışı orada yok. `K4` bunu ilk kez sınıyor. |
+| **Maliyet** | Merdiven tam koşu **`4,3 saat/nokta`** (H100). `40` nokta: seri `~7 gün`, `20` GPU paralel **`~9 saat`**. Ensemble artık **rahat**. |
+| **Açık sıkıntılar** | **14**: A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28 |
+| **Bekleyen karar** | ADR-0046, ADR-0047, ADR-0048, **ADR-0049** — dördü de kullanıcıda. |
+
+## 0.1 Bu turda yakalanan **sessiz** kusurlar
+
+Üçü de **çıkış kodu `0`** veriyordu — bu deponun tekrarlayan sınıfı:
+
+| | |
+|---|---|
+| **A26** | `--kademeler` `λ` cinsindendi ve iki betiğin tabanı farklıydı; `N` `131 057 → 17 201`, koşu **iki kat kaba** gitti. Çare: **metre**. |
+| **A27** | Kendi şok tüpü düzeneğim geçersiz — **kendi denetim kolum** yakaladı ve kendi yanlış pozitifimi engelledi. |
+| `--iz-every` | Tek aşamada **sessizce yoksayılıyordu**; merdiven kolu tek aşamalı, yani asıl gerektiği yer orasıydı. |
+
+## 0.2 Kalıcı kurallar (bu turda kondu)
+
+- **ADR-0049**: hiçbir fizik elemesi, **aynı koşuda** şok sınavı
+  `KISMI`/`SOK_VAR` vermedikçe geçerli değil. Deponun **bütün** eski
+  elemeleri şoksuz rejimde yapıldı.
+- Her koşu kendi şok yargısını taşıyor (`sok`, `sok_t1`); `SOK_YOK` ise
+  ekrana uyarı basıyor.
+- İz artık **sıkışmayı** da taşıyor — *"şok ne zaman söndü"* sorusu
+  yanıtlanabilir.
+
+## 0.3 Yeni araçlar
+
+`sok_sinavi.py` (Hugoniot ölçütü) · `sok_cephesi.py` (cephe + seviye
+dağılımı) · `arayuz_orani.py` (basamak + kabuk kalınlığı) ·
+`kademe_sinavi.py` · `refine_scene_kademeli` / `ozbenzer_kademeler` ·
+`dartrift/observables/sok.py` (kütüphane kapısı) ·
+`ileri_kosu_merdiven` · `faz5_ensemble_merdiven.py`
+
+## 0.4 Koşan işler (TRUBA `kolyoz-cuda`)
+
+| iş | ne | durum |
+|---|---|---|
+| `K1` (`×3`) | yayılma çözünürlüğü `r/s`, `t_end = 40e-3` | koşuyor |
+| `K4` (`×2`) | **`β` + krater**, `t_end = 0,2 s`, merdiven | kuyrukta |
+| `J5` (`×6`) | elemeler, şok varken | kuyrukta |
+
+Sıra: `K4` -> (krater varsa) elemeler `@ 0,2 s` -> **ensemble**.
+
+---
+
+# ARŞİV — 2026-08-21 durumu (bayat; karar için kullanma)
 
 > Bu bölüm, hiçbir önceki bağlam olmadan işe devam edebilmek için
 > yazıldı. Altındaki `2026-08-03` bölümü **arşivdir**; sayıları
