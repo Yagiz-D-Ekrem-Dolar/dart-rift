@@ -84,3 +84,17 @@ değiştirir.
 
 Her iş `sok_sinavi` yargısını sonuç dosyasında taşıyor (ADR-0049).
 `SOK_YOK` ile gelen hiçbir kol fizik sonucu olarak okunmaz.
+
+---
+
+## Gönderildi (2026-08-29)
+
+| iş | JOBID | süre sınırı | ne ölçüyor |
+|---|---|---|---|
+| **J2** tüp | `1538887` | `8 sa` | geçirgenlik eğrisi, `κ = 1 – 20` |
+| **J1** yayılma | `1538888` | `1 gün` | `r/s` eşiği (maliyeti belirleyen sayı) |
+| **J3** `ρ` A/B | `1538889` | `12 sa` | A24 çaresi işliyor mu |
+| **J4** tam koşu | `1538890` | `2 gün` | krater + `β`, ilk kez `t = 0,2 s`'de merdivenle |
+
+Bölüm `kolyoz-cuda` (`cuda-ui`); `arf` oturum düğümünde **yok** —
+ilk gönderim oradan reddedildi ve hedef düzeltildi.
