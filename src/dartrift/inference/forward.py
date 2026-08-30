@@ -385,3 +385,106 @@ def ileri_kosu_ikiasama(x, *, material, device: str, t1: float, t_end: float,
             if ilerleme:
                 ilerleme(i, len(x), f"DUSTU: {e}")
     return Y
+
+
+def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
+                        kademeler, spacing: float, sahne_taban: dict,
+                        azami_adim: int = 400000, ilerleme=None,
+                        krater_ayarlari=KRATER_AYARLARI_DART,
+                        sok_yargisi: bool = True) -> np.ndarray:
+    """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
+
+    ## Neden gerekli
+
+    :func:`ileri_kosu` ve :func:`ileri_kosu_ikiasama` şokun hiç
+    oluşmadığı ya da aktarımda silindiği rejimlerde koşuyordu
+    (rapor A22 – A25). Ölçüldü:
+
+    | şema | kaba seviyede şoklu | sıkışma max |
+    |---|---|---|
+    | tek basamak | `0` | `%26,08` |
+    | **merdiven** | **`2 983`** | **`%45,18`** |
+
+    Hugoniot bandının alt ucu `%45,6`. Yani ensemble'ın anlamlı
+    olabilmesi için ileri modelin **bu** sürümü gerekiyor.
+
+    ## `sok_yargisi` neden **açık** varsayılan
+
+    ADR-0049: hiçbir fizik sonucu, aynı koşuda şok sınavı geçmedikçe
+    okunmaz. Açıkken şok kurulmayan nokta `nan` döner ve vekil onu
+    **görmez** — sessizce zayıf bir noktayı veri saymaktansa eksik
+    saymak doğru.
+
+    Kapatmak yalnızca tanı içindir ve kapatan kişi ne yaptığını
+    bilmelidir.
+
+    ## Aktarım **yok**
+
+    Tek aşamalı: `ρ` hiçbir yerde sıfırlanmıyor (A24) ve merdiven
+    zaten `dt`'yi en ince seviyeden alıyor.
+    """
+    from ..cpu_reference.sph_ref import RefParams
+    from ..setup.refine import kademe_ayristir, refine_scene_kademeli
+    from ..setup.scene import _build_mesh, build_scene
+    from ..warp_core.solver_solid import WarpSolid3D
+
+    x = np.atleast_2d(np.asarray(x, dtype=np.float64))
+    Y = np.full((len(x), len(GOZLENEBILIRLER)), np.nan)
+    kad = kademe_ayristir(kademeler, spacing)
+    for i, th in enumerate(x):
+        kw = sahne_parametreleri(th, sahne_taban)
+        try:
+            kaba = build_scene(spacing=spacing, device="cpu", **kw)
+            mesh = _build_mesh("icosphere",
+                               radius=float(kaba.target_radius), subdiv=4)
+            rs = refine_scene_kademeli(kaba, mesh, kad)
+            x0 = np.array(rs.x, dtype=np.float64, copy=True)
+            sol = WarpSolid3D(
+                np.ascontiguousarray(rs.x), np.ascontiguousarray(rs.v),
+                np.ascontiguousarray(rs.m), np.zeros(rs.n),
+                np.ascontiguousarray(rs.h), material, RefParams(cfl=0.25),
+                alpha0=np.ascontiguousarray(rs.alpha0),
+                Y0=np.ascontiguousarray(rs.Y0), device=device,
+                check_every=10 ** 9)
+            t = 0.0
+            kontrol = max(1, azami_adim // 200)
+            for adim in range(1, azami_adim + 1):
+                dt = sol.compute_dt()
+                if t + dt > t_end:
+                    dt = t_end - t
+                sol.step(dt)
+                t += dt
+                if adim % kontrol == 0 and not np.all(
+                        np.isfinite(sol.state_numpy()["v"])):
+                    raise RuntimeError(
+                        f"kosu PATLADI adim {adim}, t = {t:.4e}")
+                if t >= t_end * (1.0 - 1e-12):
+                    break
+            else:
+                # SESSIZ KISALMA YASAK (rapor A20): adim sinirina takilan
+                # kosu, tam kosmus gibi kaydedilirse vekil YANLIS veriyle
+                # egitilir ve bunu hicbir yerden anlayamaz.
+                raise RuntimeError(
+                    f"ADIM SINIRINA TAKILDI: t = {t:.6e} < {t_end:.6e}")
+            st = sol.state_numpy()
+            if sok_yargisi:
+                from ..observables.sok import sok_gecti
+                if not sok_gecti(st["rho"], np.asarray(rs.alpha0)):
+                    raise RuntimeError(
+                        "SOK KURULMADI -- ADR-0049: bu noktanin fizik "
+                        "sonucu okunmaz")
+            Y[i] = gozlenebilirleri_cikar(
+                st, impactor_momentum=rs.impactor_momentum,
+                target_mass=rs.target_mass, target_radius=rs.target_radius,
+                is_impactor=rs.is_impactor,
+                impact_direction=rs.impact_direction, x_reference=x0,
+                krater_ayarlari=krater_ayarlari)
+        except (RuntimeError, ValueError) as e:
+            if ilerleme:
+                ilerleme(i, len(x), f"DUSTU: {e}")
+            continue
+        if ilerleme:
+            ilerleme(i, len(x), " ".join(
+                f"{a}={v:.5g}"
+                for a, v in zip(GOZLENEBILIRLER, Y[i], strict=False)))
+    return Y
