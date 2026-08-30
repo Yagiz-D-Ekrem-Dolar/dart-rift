@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 13 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 14 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -3182,6 +3182,58 @@ Kısa koşuda `κ = 20` *"GEÇTİ"* dedi (`4` parçacık); uzun koşuda
 Araç ve `8` testi **duruyor** (depo kuralı: hiçbir satır silinmez),
 ama bu belgeyle *"geçerli düzenek değil"* damgası taşıyor. A25'in
 kanıtı **küresel sahne** ölçümünden geliyor ve o ölçüm geçerli.
+
+---
+
+### A28 — **Elemeler ilk kez şok varken ölçüldü**; beşi etkisiz, gözeneklilik şoku çökertiyor (2026-08-31)
+
+ADR-0049 *"hiçbir eleme, aynı koşuda şok sınavı geçmedikçe geçerli
+değil"* diyordu. TRUBA `J5` ilk kez o koşulu sağladı — **ama iki kat
+kaba merdivenle** (A26), yani `s_min = 0,350` yerine `0,175`.
+Sonuçlar geçici; düzeltilmiş koşu kuyrukta.
+
+| kol | sıkışma max | yargı | `β` |
+|---|---|---|---|
+| taban | `%28,615` | `KISMI` | `1,000000` |
+| hasarlı | `%28,616` | `KISMI` | `1,000000` |
+| yerçekimli | `%28,615` | `KISMI` | `1,000000` |
+| zayıf blok (`Y0 = 1 Pa`) | `%28,615` | `KISMI` | `1,000000` |
+| zayıf matris (`Y0 = 1 Pa`) | `%28,615` | `KISMI` | `1,000000` |
+| **gözeneksiz** | **`%0,518`** | **`SOK_YOK`** | `1,000000` |
+
+#### Beş kolun aynı çıkması bir **eleme değil, doğrulama**
+
+Mukavemeti dört mertebe düşürmek (`10 MPa -> 1 Pa`) sıkışmayı
+beşinci ondalıkta bile oynatmıyor. Beklenen:
+
+| | |
+|---|---|
+| şok basıncı (`up = v/4`) | `20,3 GPa` |
+| matris `Y0` | `10 MPa` |
+| **oran** | **`2 034` kat** |
+
+Mukavemetin şok evresinde etkisiz olması **fiziğin gereği**.
+`Y0` geç evrede (kazı akışı) belirleyicidir ve `t = 6e-3 s` orayı
+görmüyor.
+
+> Yani bu koşu *"`Y0` `β`'yı etkilemiyor"* **demiyor**. Yalnızca
+> *"`Y0` şoku etkilemiyor"* diyor — ki zaten öyle olmalıydı.
+> ADR-0049'un istediği eleme hâlâ **yapılmadı**: `t_end = 0,2 s`
+> gerekiyor (`K4`).
+
+Bu ayrımı yazmak önemli, çünkü bu depo **dört kez** bir sonucu
+kapsamının dışında okudu.
+
+#### Gözeneksiz kolun çökmesi: **açıklanmadı**
+
+`%28,6 -> %0,518`. Olası sebep: `α₀ = 1` ile parçacık kütlesi
+`1,7564` kat büyüyor, mermi/hedef kütle oranı o oranda kötüleşiyor
+ve iki kat kaba merdivenle birleşince eşiğin altına düşüyor.
+
+**Ama bu bir tahmin.** Düzeltilmiş koşu (`s_min = 0,175`) bunu
+ayıracak. Eğer orada da çökerse sebep çözünürlük değil,
+gözenekliliğin şok yakalamadaki rolüdür — ve bu, `P-α`'nın bu
+modelde ne yaptığına dair ayrı bir soru açar.
 
 ---
 
