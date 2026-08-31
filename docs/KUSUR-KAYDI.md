@@ -1534,6 +1534,40 @@ belgede, kodda değil.
 ADR-0042'nin DART ölçüm yükümlülüğü de aynı biçimde yıllarca(!)
 uygulanmadan durmuştu.
 
+### ⚠ ÖLÇÜLDÜ — yukarıdaki *"ölçülen etki"* **fazla sertti**
+
+İlk yazdığımda *"ya noktalar reddedilir ya fiziksel olmayan bölgeden
+gelir"* dedim. **İkisi de değil.** K5'in fiilen koştuğu kodla, kendi
+`root_seed`'iyle (`20260801`) 24 nokta üretilip sınandı:
+
+| | ölçülen |
+|---|---|
+| kurulabilen nokta | **`24/24`** (yığın yoğunluğu tutuyor) |
+| türetilen matris `α₀` | `1,2132 – 2,1163` |
+| matris gözenekliliği | `%17,6 – %52,7` |
+| **`%67` eşiğini aşan** | **`0/24`** |
+| matris `α₀ < 1` (imkânsız) | `0/24` |
+| S3 sınırı `1,30` dışında | `19/24` |
+
+`29/29` emsali **eski eşlemeye** aitti (`θ₀ → matrix_alpha0`); orada
+gerçekten `0/24` geçiyor. Ama üretim varsayılanı Seçenek 3 ve orada
+`24/24` geçiyor.
+
+ADR-0044'ün `1,30` sınırını gerekçelendiren şey *"üstü türetilen matris
+`α₀`'ı `%67` gözenekliliğin üstüne çıkarır"*dı. Ölçüm bunu
+**doğrulamıyor**: `f_boulder` de tarandığı için `boulder_alpha0 = 1,97`
+bile matrisi `%52,7`'de bırakıyor.
+
+> **Gerçek kusur daha dar ve hâlâ gerçek:** K5 fiziken sağlam noktalar
+> üretiyor ama kullandığı önsel **kabul edilmiş önsel değil**. Çıktısı
+> *"`DART_UZAYI_S3`'ten örneklendi"* diye kullanılamaz; `19/24` nokta
+> S3'ün gerekçeli sınırının dışında.
+
+**karar** — K5 **iptal edilmedi**. Pilot olarak geniş `α₀` kapsaması
+P-α geri dönüşsüzlüğü hipotezi için bilgi taşıyor. Ama çıktısı
+etiketlenmeli ve çıkarıma S3 önseliymiş gibi verilmemeli.
+
 **kanıt** — `src/dartrift/inference/design.py:113-127`,
 `src/dartrift/inference/forward.py:66-75`,
-`scripts/faz5_ensemble_merdiven.py:78`.
+`scripts/faz5_ensemble_merdiven.py:78`, TRUBA iş `1539871` logu
+(`uzay : ('alpha0', 'Y0', 'f_boulder')`).

@@ -46,6 +46,7 @@ from faz48_iki_asama import SAHNE, _mat  # noqa: E402
 
 from dartrift.inference.design import (  # noqa: E402
     DART_UZAYI,
+    DART_UZAYI_S3,
     factorial_design,
     lhs_design,
 )
@@ -71,18 +72,33 @@ def main() -> int:
     ap.add_argument("--root-seed", type=int, default=None)
     ap.add_argument("--sok-kapisi-kapali", action="store_true",
                     help="TANI AMACLI: ADR-0049 kapisini kapat")
+    ap.add_argument("--eski-uzay", action="store_true",
+                    help="ADR-0044 ONCESI DART_UZAYI kullan "
+                         "(yalnizca gerileme/karsilastirma; sonuc S3 "
+                         "onseli sayilmaz)")
     ap.add_argument("--out", required=True, help="JSONL yolu")
     a = ap.parse_args()
 
     kok = int(SAHNE["root_seed"]) if a.root_seed is None else a.root_seed
-    tasarim = lhs_design(DART_UZAYI, a.n_lhs, root_seed=kok)
+    # UZAY SECIMI -- ADR-0044 (KABUL EDILDI) varsayilani S3'tur.
+    # Onceki surumde burada kosulsuz `DART_UZAYI` yaziliydi ve is 1539871
+    # (K5 pilot) onunla kostu: 19/24 nokta S3'un gerekceli `1,30` sinirinin
+    # DISINDA kaldi. Noktalar fiziken kurulabilir cikti (24/24, matris
+    # gozenekligi %17,6-52,7, hicbiri %67 esigini asmiyor) -- yani sonuc
+    # cop degil, ama kullanilan ONSEL kabul edilmis onsel DEGIL.
+    UZAY = DART_UZAYI if a.eski_uzay else DART_UZAYI_S3
+    if a.eski_uzay:
+        print("  ! TERK EDILMIS UZAY (ADR-0044): sonuc S3 onseli SAYILMAZ",
+              flush=True)
+    tasarim = lhs_design(UZAY, a.n_lhs, root_seed=kok)
     if a.kenarlar:
-        tasarim = np.vstack([factorial_design(DART_UZAYI, levels=2), tasarim])
+        tasarim = np.vstack([factorial_design(UZAY, levels=2), tasarim])
 
     print("=" * 78, flush=True)
     print("FAZ 5 — MERDIVENLI ENSEMBLE", flush=True)
     print("=" * 78, flush=True)
-    print(f"  uzay        : {DART_UZAYI.names}", flush=True)
+    print(f"  uzay        : {UZAY.names}"
+          f"{'  [TERK EDILMIS]' if a.eski_uzay else ''}", flush=True)
     print(f"  nokta       : {len(tasarim)}  (lhs {a.n_lhs}"
           f"{' + kenarlar' if a.kenarlar else ''})", flush=True)
     print(f"  merdiven    : {' '.join(MERDIVEN)}  (metre)", flush=True)
