@@ -1478,3 +1478,62 @@ sayılmadı.
 - Tarama iki eksenli görünüyordu; **eksenlerin iş görüp görmediği** (K3).
 - Yarıçap kestirimi vardı; **varsayılan yol hiç koşulmamıştı** (K4).
 - C2 kütleyi, C3 yoğunluğu ölçüyordu; **tutarlılığı** kimse ölçmüyordu (K7).
+
+---
+
+## K5 pilot ensemble **terk edilmiş parametre uzayıyla** koşuyor (2026-08-18 incelemesi)
+
+> ⚠ **Bu kayıt koşu SÜRERKEN yazıldı** (iş `1539871`). Sonuçlar
+> gelmeden önce uzayın düzeltilmesi gerekiyor; aksi hâlde `24` noktanın
+> tamamı ya düşer ya da sessizce fiziksel olmayan bir bölgeden gelir.
+
+**belirti** — `scripts/faz5_ensemble_merdiven.py` tasarımını
+`DART_UZAYI`'ndan üretiyor (satır 78/80/85). K4 commit'i K5'i
+*"`alpha0 ∈ [1,10 – 2,00]`"* diye tarif ediyor ve bu aralık tam
+`DART_UZAYI`'nınki.
+
+**nasıl bulundu** — Depo incelemesi sırasında `design.py`'nin kendi
+belgesi okundu.
+
+**ölçülen etki (mevcut kayıtlardan)** — `DART_UZAYI`
+[ADR-0044](adr/ADR-0044-cikarim-parametre-uzayi-tutarsiz.md) ile
+**terk edildi** ve ADR **KABUL EDİLDİ**:
+
+> *"Bu uzay `ρ_yığın` kısıtıyla **TUTARSIZ** ve uygulanabilir oranı
+> `0`. Varsayılan artık `DART_UZAYI_S3`."*
+
+`forward.py`'nin kendi notu etkiyi sayıyla veriyor:
+
+> *"serbest `matrix_alpha0` verilince üretici hedef yoğunluğu
+> tutturamadığı için **reddediyordu** — FAZ 4.6 duman testinde
+> **`29/29` nokta** bu yüzden düştü."*
+
+**kök neden** — İki kusur birden, ve hangisinin işlediği `secenek3`
+dalına bağlı:
+
+| dal | ne olur |
+|---|---|
+| eski eşleme (`θ₀ → matrix_alpha0`) | ADR-0030 kısıtı bozulur, noktalar **reddedilir** (`29/29` emsali) |
+| Seçenek 3 (varsayılan, `θ₀ → boulder_alpha0`) | `DART_UZAYI`'nın üst sınırı `2,00`, oysa `boulder_alpha0`'ın gerekçeli sınırı **`[1,00 – 1,30]`**. `1,30` üstü türetilen matris `α₀`'ı `%67` gözenekliliğin üstüne çıkarır. |
+
+Yani uzay hangi dalda okunursa okunsun **yanlış**: ya nokta düşer ya da
+gerekçesi olmayan bir bölgeden gelir.
+
+**neden hiçbir test görmedi** — `DART_UZAYI` **silinmedi** (RULES.txt:
+karar geri alınabilsin diye) ve hâlâ dışa aktarılıyor. Bir betiğin
+terk edilmiş sabiti *import etmesini* engelleyen bir şey yok; terk
+belgede, kodda değil.
+
+**düzeltme (önerilen, uygulanmadı)** — `faz5_ensemble_merdiven.py`
+`DART_UZAYI_S3` kullanmalı. Ayrıca `DART_UZAYI` import edildiğinde
+`DeprecationWarning` verilmeli ve bir test terk edilmiş uzayın
+üretim betiklerinde geçmediğini kilitlemeli.
+
+**yapısal önlem** — Bu, deponun tekrarlayan kalıbının yeni bir örneği:
+**karar belgede kilitli, kodda değil.** ADR-0028'in `β` teşhisi de,
+ADR-0042'nin DART ölçüm yükümlülüğü de aynı biçimde yıllarca(!)
+uygulanmadan durmuştu.
+
+**kanıt** — `src/dartrift/inference/design.py:113-127`,
+`src/dartrift/inference/forward.py:66-75`,
+`scripts/faz5_ensemble_merdiven.py:78`.
