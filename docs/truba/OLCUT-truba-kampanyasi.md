@@ -154,3 +154,48 @@ ekonomik çıkıyor:
 Son basamak (`2,8 -> 7,0 = 15,6×` kütle) `r = 48 m`'de ve şok
 `0,2 s`'de oraya ulaşmıyor — bu koşu için önemsiz, ama daha uzun
 sürelerde `ozbenzer_kademeler` ile kapatılmalı.
+
+---
+
+## K4 SONUCU (2026-08-31) — iki ölçüt geçti, biri düştü
+
+Merdiven, `t_end = 0,2 s`, `N = 69 886`, `49 586` adım.
+
+| ölçüt (koşudan **önce** yazılı) | eşik | **ölçülen** | |
+|---|---|---|---|
+| şok korunuyor mu | `KISMI`/`SOK_VAR` | sıkışma `%45,34`, **`0,2 s` boyunca sabit** | **GEÇTİ** |
+| krater oluşuyor mu | `> 1 m` | **`1,045 m`** (bugün `0,09 m`) | **GEÇTİ** |
+| `β` kımıldıyor mu | `> 1,5` | **`1,0813`** | **DÜŞTÜ** |
+
+### Kraterin zaman serisi — ilk kez görülüyor
+
+| `t` | sıkışma | derinlik | ejekta |
+|---|---|---|---|
+| `8,0e-3` | `%44,69` | `0,259 m` | `110` |
+| `2,4e-2` | `%45,13` | `0,793 m` | `45` |
+| `5,6e-2` | `%45,33` | **`1,017 m`** | `39` |
+| `1,0e-1` | `%45,33` | `1,043 m` | `16` |
+| `2,0e-1` | `%45,34` | `1,029 m` | `16` |
+
+Krater `~56 ms`'te **doyuyor** ve sonra hafifçe **geri kapanıyor**.
+
+### `β` neden **düştü** (`1,379 -> 1,081`)
+
+Kıyas kolu (tek basamak) `β = 1,379` verdi. Ama daha önce ölçülmüştü:
+o `β` **tamamen mermi geri tepmesi**, hedef katkısı tam `0`.
+
+> Merdivenle mermi momentumu hedefe **gerçekten aktarılıyor** (krater
+> oluşuyor), yani sahte geri tepme kayboluyor. `β`'nın düşmesi
+> **beklenen** ve **doğru** yönde bir değişim. Sorun, yerine geçecek
+> ejekta katkısının doğmaması: kaçan parçacık `110 -> 16`.
+
+### Kalan soru: madde neden akmıyor
+
+Sıkışma `0,2 s` boyunca `%45`'te **sabit kalıyor** — yani şoklanan
+madde gevşeyip dışarı akmıyor. Muhtemel sebep **P-α'nın geri
+dönüşsüzlüğü**: çöken gözenek geri açılmaz, enerji **sıkıştırmaya**
+gidip kazıya dönüşmez.
+
+Bu, gözenekli asteroitlerin düşük `β` vermesinin bilinen mekanizması.
+Ve tam olarak çıkarımın sorduğu soru: **`α₀` ne kadar?** `K5`
+ensemble'ı (`α₀ ∈ [1,10 – 2,00]`) bunu tarıyor.
