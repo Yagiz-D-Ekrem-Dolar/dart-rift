@@ -114,3 +114,58 @@ def test_bozuk_girdi_REDDEDILIYOR() -> None:
     with pytest.raises(ValueError, match="p_imp pozitif"):
         momentum_defteri(x, x, np.ones(2), mermi_kesri=np.zeros(2),
                          p_imp=0.0, **KW)
+
+
+# ------------------------------- DELTA BETA ve P_ejekta (yakinsama)
+
+def test_DELTA_BETA_yakinsama_niceligi() -> None:
+    """`β` değil `Δβ = β − 1` ölçülmeli.
+
+    `β = 1,030` ile `1,040` arasında `β`'nın bağıl farkı `%0,97`;
+    `Δβ`'nın bağıl farkı **`%33`**. `β` üzerinden `%20` eşiği koymak,
+    gerçek ejekta katkısı üç katına çıksa bile *"yakınsadı"* der.
+    """
+    b1, b2 = 1.030, 1.040
+    beta_fark = abs(b2 - b1) / b2
+    delta_fark = abs((b2 - 1) - (b1 - 1)) / (b2 - 1)
+    assert beta_fark < 0.01, beta_fark
+    assert delta_fark > 0.24, delta_fark
+    assert delta_fark / beta_fark > 30
+
+
+def test_defter_DELTA_BETAYI_veriyor() -> None:
+    x = np.array([[0.0, 0.0, -2.0]])
+    d = momentum_defteri(x, np.array([[0.0, 0.0, -1.0]]), np.array([1.0]),
+                         mermi_kesri=np.zeros(1), p_imp=10.0, **KW)
+    assert d["delta_beta_hedef"] == pytest.approx(d["beta_hedef"] - 1.0)
+    assert d["delta_beta_hedef"] == pytest.approx(0.1)
+
+
+def test_P_ejekta_VEKTORU_aci_kaymasini_yakaliyor() -> None:
+    """`β` sabit kalıp yön dağılımı değişirse bu ancak vektörde görünür."""
+    x = np.array([[0.0, 0.0, -2.0]])
+    dik = momentum_defteri(x, np.array([[0.0, 0.0, -10.0]]), np.array([1.0]),
+                           mermi_kesri=np.zeros(1), p_imp=100.0, **KW)
+    egik = momentum_defteri(x, np.array([[10.0, 0.0, -10.0]]), np.array([1.0]),
+                            mermi_kesri=np.zeros(1), p_imp=100.0, **KW)
+    # eksenel bilesen ve delta_beta AYNI
+    assert dik["P_ejekta_eksenel"] == pytest.approx(egik["P_ejekta_eksenel"])
+    assert dik["delta_beta_hedef"] == pytest.approx(egik["delta_beta_hedef"])
+    # ama buyukluk FARKLI -> aci kaymasi gorunuyor
+    assert egik["P_ejekta_buyukluk"] > dik["P_ejekta_buyukluk"] * 1.4
+
+
+def test_M_ejekta_kesirle_dogru() -> None:
+    x = np.array([[0.0, 0.0, -2.0]])
+    d = momentum_defteri(x, np.array([[0.0, 0.0, -10.0]]), np.array([10.0]),
+                         mermi_kesri=np.array([0.3]), p_imp=100.0, **KW)
+    assert d["M_ejekta"] == pytest.approx(7.0)
+
+
+def test_P_ejekta_EKSENEL_beta_ile_tutarli() -> None:
+    """`Δβ = −P_ejekta,∥ / p_mermi` — defterden türetiliyor."""
+    x = np.array([[0.0, 0.0, -2.0]])
+    d = momentum_defteri(x, np.array([[0.0, 0.0, -7.0]]), np.array([2.0]),
+                         mermi_kesri=np.zeros(1), p_imp=50.0, **KW)
+    assert d["delta_beta_hedef"] == pytest.approx(
+        -d["P_ejekta_eksenel"] / d["p_imp"])

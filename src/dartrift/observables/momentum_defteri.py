@@ -81,6 +81,11 @@ def momentum_defteri(x, v, m, *, mermi_kesri, R, v_esc, ehat,
         v_r = np.einsum("ij,ij->i", v, x) / np.maximum(r, 1e-300)
     kacan = (r > R) & (v_r > v_esc)
 
+    # P_ejekta EKSENEL izdusum: `beta` carpma dogrultusundaki
+    # momentumdan geliyor, buyuklukten degil. Tam VEKTOR de
+    # kaydediliyor -- cozunurlukle ejekta YON dagilimi degisirse
+    # (`beta` ayni kalip aci degisirse) o degisiklik ancak vektorde
+    # gorunur.
     pe = m * (v @ e)                         # ê eksenine izdusum
     kutu = {
         "P_bagli_hedef": float(pe[(~kacan)] @ (1.0 - f[~kacan])),
@@ -105,6 +110,20 @@ def momentum_defteri(x, v, m, *, mermi_kesri, R, v_esc, ehat,
         "beta_hedef": float(beta_hedef),
         "beta_mermi": float(beta_mermi),
         "beta_toplam": float(beta_hedef + beta_mermi),
+        # P_ejekta VEKTORU (hedef maddesi, kacan). Yakinsama
+        # calismasinda `beta` sabit kalirken acinin kaymasi
+        # yakalanabilsin diye.
+        "P_ejekta_vektor": [float(x) for x in
+                            (m[kacan] * (1.0 - f[kacan])) @ v[kacan]],
+        "P_ejekta_eksenel": float(kutu["P_kacan_hedef"]),
+        "P_ejekta_buyukluk": float(np.linalg.norm(
+            (m[kacan] * (1.0 - f[kacan])) @ v[kacan])),
+        "M_ejekta": float(m[kacan] @ (1.0 - f[kacan])),
+        # DELTA BETA: `beta`nin kendisi degil, `beta - 1` yakinsamali.
+        # `beta = 1,030` ile `1,040` arasinda bagil fark %1 gorunur;
+        # gercek ejekta katkisi `0,030 -> 0,040`, yani %33. `beta ~ 1`
+        # rejiminde `beta` uzerinden esik koymak COK GEVSEK olur.
+        "delta_beta_hedef": float(beta_hedef - 1.0),
         "n_kacan_hedef": int(np.count_nonzero(kacan & (f < 0.5))),
         "n_kacan_mermi": int(np.count_nonzero(kacan & (f >= 0.5))),
         "kutle_kacan_hedef": float(m[kacan] @ (1.0 - f[kacan])),
