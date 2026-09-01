@@ -48,6 +48,10 @@ for _akis in (sys.stdout, sys.stderr):
         pass
 
 from dartrift.cpu_reference.sph_ref import RefParams  # noqa: E402
+from dartrift.observables.momentum_defteri import (  # noqa: E402
+    defter_satiri,
+    momentum_defteri,
+)
 from dartrift.observables.momentum_transfer import escape_speed, momentum_transfer  # noqa: E402
 from dartrift.setup.refine import (  # noqa: E402
     kademe_ayristir,
@@ -553,6 +557,21 @@ def main() -> int:
               f"D_ort {hasar_tek['D_ort']:.4e}  "
               f"D_max {hasar_tek['D_max']:.4f}  "
               f"tam kirik {hasar_tek['n_tam_kirik']}", flush=True)
+        # MOMENTUM DEFTERI (rapor A29). `beta` tek sayi olarak
+        # raporlanmiyor: hedef katkisi ile mermi geri tepmesi AYRI
+        # yaziliyor. Olculdu ki eski `beta = 1,379`'un %100'u geri
+        # tepmeydi ve hedef katkisi TAM SIFIRDI.
+        _defter = momentum_defteri(
+            st_tek["x"], st_tek["v"], st_tek["m"],
+            mermi_kesri=np.asarray(a2.is_impactor, bool).astype(np.float64),
+            R=R, v_esc=escape_speed(m_hedef, R),
+            ehat=np.asarray(p_imp) / float(np.linalg.norm(p_imp)),
+            p_imp=float(np.linalg.norm(p_imp)))
+        print(chr(10) + "  MOMENTUM DEFTERI", flush=True)
+        print(defter_satiri(_defter), flush=True)
+        if not _defter["kapandi"]:
+            print("    UYARI: defter KAPANMIYOR -- beta okunmaz.", flush=True)
+
         # SON DURUM: tek asamali kolda da post-hoc tani yapilabilsin.
         v_esc_t = escape_speed(m_hedef, R)
         ehat_t = np.asarray(p_imp) / float(np.linalg.norm(p_imp))
@@ -571,6 +590,7 @@ def main() -> int:
         Path(a.out).write_text(json.dumps(
             {"kip": "tek_asama", "lam": a.lam2, "N": a2.n, "t_sim": t,
              "kademeler": a.kademeler, "izler": izler_tek,
+             "momentum_defteri": _defter,
              "hasar": hasar_tek,
              "sok": _sok_yargisi(st_tek["rho"], st_tek["u"], st_tek["m"],
                                  a2.alpha0,
