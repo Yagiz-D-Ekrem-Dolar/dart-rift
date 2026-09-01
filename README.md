@@ -26,13 +26,48 @@ gözeneklilik, öz-yerçekimi (FAZ 2), çarpma sahnesi (FAZ 3) ve iki aşamalı
 Her faz, şartnamedeki kabul ölçütlerini **kanıtla** geçmeden bir sonrakine
 geçilmez. Kanıtlar TRUBA/ARF-ACC üzerinde, temiz git ağacıyla üretilir.
 
+## İki ayrı tablo — ve neden ayrı
+
+Aşağıdaki `G` kapıları **mühendislik doğrulamasıdır**: çözücü doğru
+denklemleri doğru çözüyor mu. Hepsi geçti ve kanıtları duruyor.
+
+> **Bunların hiçbiri şunu kanıtlamaz:** *"Bu model DART–Dimorphos
+> çarpışmasındaki momentum aktarımını doğru modelliyor."* İki tabloyu
+> ayırmak zorunlu; yoksa yeşil kapılar sırasını okuyan biri fiziğin
+> doğrulandığını sanır.
+
+### 1. MÜHENDİSLİK DOĞRULAMASI
+
 | Kapı | Kapsam | Sonuç | Karar |
 |---|---|---|---|
 | **G0** | Zemin sağlam (altyapı) | **GEÇTİ** | FAZ 1 başlayabilir |
-| **G1** | Şok motoru çalışıyor | **GEÇTİ** | FAZ 2 başlayabilir |
-| **G2** | Gerçek malzeme fiziği | **GEÇTİ** | FAZ 3 başlayabilir |
+| **G1** | Şok motoru çalışıyor (Sod, Sedov) | **GEÇTİ** | FAZ 2 başlayabilir |
+| **G2** | Gerçek malzeme fiziği (Tillotson, Hugoniot) | **GEÇTİ** | FAZ 3 başlayabilir |
 | **G3** | Sahne kurulumu | **GEÇTİ** 7/7 | FAZ 5 değil — önce G4 |
-| **G4** | Çözünürlük + çıkarım | **GEÇTİ** 10/10 | **FAZ 4 KAPANDI** ([kapanış](docs/FAZ4-KAPANIS.md)) |
+| **G4** | Çözünürlük + çıkarım **altyapısı** | **GEÇTİ** 10/10 | ([kapanış](docs/FAZ4-KAPANIS.md)) |
+
+### 2. BİLİMSEL DOĞRULAMA — **açık**
+
+Hedef problemin kendisi. Durum `2026-09-01` itibarıyla ölçülmüş
+değerlerle:
+
+| # | ölçüt | durum | ölçülen |
+|---|---|---|---|
+| **S1** | DART koşullarında şok kuruluyor mu | **GEÇTİ** | sıkışma `%45,3`; Hugoniot bandı `%45,6 – 74,3` (rapor A23) |
+| **S2** | Şok ızgarada taşınıyor mu | **GEÇTİ** | kaba seviyede şoklu `0 -> 2 983` (A25) |
+| **S3** | Momentum defteri kapanıyor mu | **GEÇTİ** | artık `1,15e-14` (A29) |
+| **S4** | Krater oluşuyor mu | **KISMİ** | `1,03 m`; literatür `6,5 – 43 m` yarıçap |
+| **S5** | Hedef ejektası **ölçülebilir** mi | **DÜŞTÜ** | `16` parçacık = gürültü tabanı (A30) |
+| **S6** | `β_hedef` çözünürlükle yakınsıyor mu | **ölçülmedi** | — |
+| **S7** | DART gözlemi yeniden üretiliyor mu | **DÜŞTÜ** | `β_hedef = 1,033`; gözlem `3,22` |
+| **S8** | Dimorphos iç yapısı sınırlanıyor mu | **ölçülmedi** | S5–S7 kapanmadan anlamsız |
+
+> **Bugünkü tek savunulabilir bilimsel cümle:** bu ileri model,
+> `α₀ = 1,76` gözenekliliğinde DART'ın gözlenen momentum artışını
+> **üretemiyor**; hedef ejektası `16` parçacıkla gürültü tabanında ve
+> hiçbir malzeme parametresi onu oynatmıyor.
+
+Açık kusurlar: [`FAZ4-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md) — **17**.
 
 ### G4 geçti — ve neyin karşılığında
 
