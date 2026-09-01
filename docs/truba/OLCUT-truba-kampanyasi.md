@@ -224,3 +224,39 @@ edilemez.
 artırmazsa P-α **elenmez** — yalnızca *"tek başına belirleyici
 değil"* denir; `u_tabanı` ve düşük AV kolları da benzer büyüklükte
 oynatıyorsa sebep tek bir mekanizma değildir.
+
+---
+
+## L2 KARAR AĞACI (**sonuçlardan önce**, 2026-09-01)
+
+Hangi kol kazanırsa hangi hattın açılacağı **şimdi** yazılı. Böylece
+sonuca bakıp hikâye seçmek imkânsız.
+
+| kazanan kol | açılan hat | **ilk soru** |
+|---|---|---|
+| **gözeneksiz** dramatik fark | sıkıştırma / P-α hattı | parametre seçimi mi (`Pe`, `Ps`), sıkışma eğrisi mi, **boşalma/yeniden açılma** davranışı mı, yoksa enerji defteri mi? |
+| **düşük AV** dramatik fark | şok dağıtımı / yapay viskozite hattı | dağıtım şoku mu yutuyor, yoksa `h_ij` yayılması mı (A25'in yedek çaresi) |
+| **`u` tabanı** dramatik fark | termodinamik başlatma hattı | `u < 0` sızıntısı ne kadar enerji kaçırıyor (A21) |
+| **hiçbiri** ciddi fark yaratmaz | yeni hipotez gerekli | çözünürlük / arayüz / bünye modeli — üçünden hangisi |
+
+**"Dramatik" ne demek:** kaçan hedef parçacığı tabanın (`16`) **iki
+katını** geçmek. Altında kalan kol *"belirleyici değil"* sayılır,
+**"elendi"** sayılmaz.
+
+### Ve kazanan kol ne olursa olsun
+
+Sonuç *"P-α yanlış"* / *"AV yanlış"* **değildir**. Doğru ifade:
+**mevcut parametreleme/uygulama kazıyı baskılıyor.** Model-form
+hatası mı parametre seçimi mi — bu **ayrı** bir deneyin sorusu.
+
+### Asıl kilometre taşı bu değil
+
+`16 -> 500` parçacık sevindiricidir ama **bilimsel zafer değildir**.
+Asıl dönüm noktası:
+
+> `β_hedef(N)` yakınsıyor mu? — `~500`, `~2 000`, `~8 000` kaçan
+> parçacıkta **aynı** `β_hedef` ve **aynı** ejekta momentumu.
+
+`n ≥ 50` yalnızca *"ölçmeye başlanabilir"* eşiği. Yakınsama
+*"ölçüm geçerli"* ölçütü. İkisi karıştırılırsa bu depo yine
+gürültüyü sonuç sanar.
