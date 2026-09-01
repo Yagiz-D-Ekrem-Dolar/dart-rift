@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 14 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 15 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -3234,6 +3234,62 @@ ve iki kat kaba merdivenle birleşince eşiğin altına düşüyor.
 ayıracak. Eğer orada da çökerse sebep çözünürlük değil,
 gözenekliliğin şok yakalamadaki rolüdür — ve bu, `P-α`'nın bu
 modelde ne yaptığına dair ayrı bir soru açar.
+
+---
+
+### A29 — **Momentum defteri kuruldu**: eski `β`'nın `%100`'ü mermi geri tepmesiymiş (2026-08-31)
+
+Bir dış geri bildirim şunu istedi: *"`β`'yı provenance ile ayır ve
+momentum defterini kapat; kapanmıyorsa `β` raporlama."* Defter kuruldu
+ve **makine hassasiyetinde kapandı** (`artık/p = 1,15e-14`).
+
+`p_mermi = 3 560 355 kg m/s`, `t = 0,2 s`:
+
+| | **kıyas** (tek basamak) | **merdiven** |
+|---|---|---|
+| `P_bağlı_hedef` | `4 909 756` | `3 863 797` |
+| `P_kaçan_hedef` | **`0,0`** | **`-117 854`** |
+| `P_bağlı_mermi` | `0,0` | `-21,8` |
+| `P_kaçan_mermi` | `-1 349 401` | `-185 566` |
+| **artık** | `1,15e-14` | `1,15e-14` |
+| **`β_hedef`** (gerçek) | **`1,000000`** | **`1,033102`** |
+| **`β_mermi`** (geri tepme) | **`0,379007`** | `0,052120` |
+| kaçan mermi kütlesi | **`579,4 kg`** = merminin **tamamı** | `233,8 kg` |
+| kaçan hedef kütlesi | **`0,0 kg`** | **`93,2 kg`** |
+
+#### Eski `β`'nın **tamamı** sahteymiş
+
+`β = 1,379`'un hedef katkısı **tam sıfır**. `803` parçacık kaçıyor ve
+kütleleri toplamı `579,4 kg` — yani **merminin kendisi**, olduğu gibi
+sekiyor. Bu daha önce *"β hedeften beslenmiyor"* diye tahmin
+edilmişti; artık **kapanan bir defterle** kanıtlı.
+
+> Ve `β` **defterden türetiliyor**, ayrıca hesaplanmıyor. Defter
+> kapanmazsa `defter_satiri` *"`β` RAPORLANMAZ"* basıyor.
+
+#### Merdivenin iki gerçek kazanımı
+
+| | |
+|---|---|
+| **hedef ejektası ilk kez sıfırdan farklı** | `β_hedef = 1,0331`; `93,2 kg` hedef maddesi kaçıyor |
+| **mermi gömülüyor** | geri tepme `0,379 -> 0,052` (**`7,3` kat**); kaçan mermi kütlesi `579,4 -> 233,8 kg` |
+
+#### Kalan açık — ve büyüklüğü belli
+
+| | |
+|---|---|
+| ölçülen `P_kaçan_hedef` | `117 854 kg m/s` |
+| `β = 3,2225` için gereken | `7 912 889 kg m/s` |
+| **oran** | **`67` kat** |
+
+Yani hedef ejekta momentumu `67` kat büyümeli. Kütle olarak: `93,2 kg`
+-> `~10⁶ kg` mertebesi (ejekta hızına bağlı).
+
+#### Bu, ölçütü de değiştiriyor
+
+Bundan sonra `β` tek sayı olarak raporlanmaz. Her koşu **defteri**
+taşır ve `β_hedef` ile `β_mermi` **ayrı** yazılır. `β_mermi` bir
+sonuç değil, bir **tanı**: büyükse mermi hedefe bağlanamamış demektir.
 
 ---
 
