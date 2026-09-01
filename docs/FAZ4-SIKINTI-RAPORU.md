@@ -3257,12 +3257,19 @@ ve **makine hassasiyetinde kapandı** (`artık/p = 1,15e-14`).
 | kaçan mermi kütlesi | **`579,4 kg`** = merminin **tamamı** | `233,8 kg` |
 | kaçan hedef kütlesi | **`0,0 kg`** | **`93,2 kg`** |
 
-#### Eski `β`'nın **tamamı** sahteymiş
+#### Önceki `β` **başka bir şeyi** ölçüyormuş
 
 `β = 1,379`'un hedef katkısı **tam sıfır**. `803` parçacık kaçıyor ve
 kütleleri toplamı `579,4 kg` — yani **merminin kendisi**, olduğu gibi
-sekiyor. Bu daha önce *"β hedeften beslenmiyor"* diye tahmin
-edilmişti; artık **kapanan bir defterle** kanıtlı.
+sekiyor.
+
+> **Doğru ifade:** önceki `β` tahmini hedef-ejekta momentumunu değil,
+> **baskın olarak mermi geri tepme momentumunu** ölçüyordu.
+> *"Sahteydi"* demek savunması zayıf bir cümle; ölçülen şey gerçekti,
+> yalnızca **başka bir büyüklüktü**.
+
+Bu daha önce *"β hedeften beslenmiyor"* diye tahmin edilmişti; artık
+**kapanan bir defterle** ayrıştırılmış durumda.
 
 > Ve `β` **defterden türetiliyor**, ayrıca hesaplanmıyor. Defter
 > kapanmazsa `defter_satiri` *"`β` RAPORLANMAZ"* basıyor.
@@ -3347,8 +3354,22 @@ gürültü tabanının hemen üstünde.
 | krater çapı | A11'den beri iki nicemleme seviyesi — **diskalifiye** |
 | ejekta kütle kesri | `6,26e-8`, kollar arası **bit düzeyinde aynı** -> ölçülemez |
 
-> **Kural:** ejekta gözlenebilirleri `n_kaçan ≥ 50` olmadıkça
-> çıkarıma girmez.
+> **Mühendislik güvenlik kapısı:** ejekta gözlenebilirleri
+> `n_kaçan ≥ 50` olmadıkça çıkarıma girmez.
+
+Ama bu **nihai bilimsel ölçüt değil**. `51` parçacığa çıkmak tek
+başına hiçbir şey kanıtlamaz. Gerçek ölçüt **yakınsama**:
+
+| gereken | |
+|---|---|
+| `β_hedef` | `N` iki katına çıkınca değişmiyor mu |
+| kaçan hedef kütlesi | aynı |
+| ejekta hız dağılımı | aynı |
+
+Yani `~50`, `~100`, `~500` kaçan parçacıkta **aynı fiziksel sonuç**
+çıkmalı. `n ≥ 50` yalnızca *"ölçmeye başlanabilir"* eşiği; yakınsama
+*"ölçüm geçerli"* ölçütü. İkisi karıştırılırsa bu depo yine
+gürültüyü sonuç sanar.
 
 ---
 

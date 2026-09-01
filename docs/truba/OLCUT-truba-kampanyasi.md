@@ -199,3 +199,28 @@ gidip kazıya dönüşmez.
 Bu, gözenekli asteroitlerin düşük `β` vermesinin bilinen mekanizması.
 Ve tam olarak çıkarımın sorduğu soru: **`α₀` ne kadar?** `K5`
 ensemble'ı (`α₀ ∈ [1,10 – 2,00]`) bunu tarıyor.
+
+---
+
+## L2 yorumlama kuralı (**sonuçlardan önce** yazıldı, 2026-09-01)
+
+`L2` gözeneksiz kolu ejektayı artırırsa çıkarılacak sonuç
+**"P-α yanlış"** *değildir*. Doğru ifade:
+
+> **Mevcut P-α parametrelemesi/uygulaması kazıyı baskılıyor.**
+
+Sonrasında bu **iki ayrı** olasılığa ayrılmalı:
+
+| olasılık | nasıl ayrılır |
+|---|---|
+| **model-form hatası** — P-α bu rejim için yanlış model | literatürde `α₀ ≈ 1,76` gözenekli hedeflerde kazı ölçülmüş mü |
+| **parametre seçimi** — `Pe`, `Ps`, `α₀` değerleri yanlış | `Pe`/`Ps` taraması; kazı geri geliyor mu |
+
+İkisi çok farklı sonuçlar: birincisi modeli değiştirmeyi, ikincisi
+kalibrasyonu gerektirir. Ayrım yapılmadan ikisinden biri iddia
+edilemez.
+
+**Ve karşı olasılık da yazılı:** gözeneksiz kol ejektayı
+artırmazsa P-α **elenmez** — yalnızca *"tek başına belirleyici
+değil"* denir; `u_tabanı` ve düşük AV kolları da benzer büyüklükte
+oynatıyorsa sebep tek bir mekanizma değildir.
