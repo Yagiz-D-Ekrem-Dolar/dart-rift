@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 15 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 17 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -3290,6 +3290,87 @@ Yani hedef ejekta momentumu `67` kat büyümeli. Kütle olarak: `93,2 kg`
 Bundan sonra `β` tek sayı olarak raporlanmaz. Her koşu **defteri**
 taşır ve `β_hedef` ile `β_mermi` **ayrı** yazılır. `β_mermi` bir
 sonuç değil, bir **tanı**: büyükse mermi hedefe bağlanamamış demektir.
+
+---
+
+### A30 — **Hedef ejektası gürültü tabanında**: `16` parçacık, ve hiçbir parametre onu oynatmıyor (2026-09-01)
+
+`K6`: altı kol, `t_end = 0,2 s`, merdiven, tek değişken. Defter her
+kolda `~1e-14` ile kapandı.
+
+| kol | `β_hedef` | `β_mermi` | kaçan hedef | `n` |
+|---|---|---|---|---|
+| güçlü matris (`Y0 = 1e8`) | `1,033146` | `0,055805` | **`262,1 kg`** | `45` |
+| hasarlı | `1,033097` | `0,052155` | `93,2 kg` | `16` |
+| **taban** | `1,033102` | `0,052120` | `93,2 kg` | `16` |
+| yerçekimli | `1,033102` | `0,052120` | `93,2 kg` | `16` |
+| zayıf blok (`1 Pa`) | `1,033116` | `0,052225` | `93,2 kg` | `16` |
+| zayıf matris (`1 Pa`) | `1,033098` | `0,052122` | `93,2 kg` | `16` |
+
+#### Duyarlılık **yok**
+
+`Y0`'ı **sekiz mertebe** değiştirmek (`1 Pa -> 1e8 Pa`) `β_hedef`'i
+`5e-5` oynatıyor. Sinyalin kendisi `0,0331`; yani değişim sinyalin
+**`%0,15`**'i. Hasar, yerçekimi ve blok mukavemeti daha da az.
+
+#### Ve **sebebi** duyarlılık değil, **ölçülemezlik**
+
+| | |
+|---|---|
+| kaçan hedef kütlesi | `93,2 kg` |
+| kaçan parçacık | `16` |
+| **`93,2 / 16`** | **`5,83 kg`** = en ince parçacık kütlesi |
+
+> Ejekta **tam olarak `16` parçacık**. Bu bir fizik sayısı değil,
+> bir **ayrıklaştırma sayısı**. `16` parçacıkla ejekta kütlesi
+> ölçülemez; bir parçacık eksik ya da fazla `%6` oynatır.
+
+Yani *"parametreler `β`'yı etkilemiyor"* demek **yanlış** olur.
+Doğrusu: **`β_hedef` bu çözünürlükte ölçülebilir bir gözlenebilir
+değil.** Beş kolda bit düzeyinde aynı çıkması da bunun kanıtı —
+aynı `16` parçacık kaçıyor.
+
+#### Tek anlamlı fark: **güçlü matris**
+
+`Y0 = 1e8` kolu `262,1 kg` (`45` parçacık) veriyor — `2,8` kat.
+Yönü **fiziksel olarak doğru**: daha mukavim hedef enerjiyi plastik
+işe yutmuyor, daha çok madde fırlatıyor. Ama `45` parçacık da
+gürültü tabanının hemen üstünde.
+
+#### Gözlenebilir niteleme kuralı (yeni)
+
+| gözlenebilir | durum |
+|---|---|
+| `β_mermi` | ölçülüyor ama **fizik değil** — tanı |
+| `β_hedef` | **`< 50` parçacık** -> ölçülemez |
+| krater derinliği | `1,03 m`, ölçülüyor |
+| krater çapı | A11'den beri iki nicemleme seviyesi — **diskalifiye** |
+| ejekta kütle kesri | `6,26e-8`, kollar arası **bit düzeyinde aynı** -> ölçülemez |
+
+> **Kural:** ejekta gözlenebilirleri `n_kaçan ≥ 50` olmadıkça
+> çıkarıma girmez.
+
+---
+
+### A31 — **Paralel ensemble görevleri aynı noktaları koştu**: `6` kat israf (2026-09-01)
+
+`K5` altı görevle koştu ve `30` satır yazdı — ama yalnızca **`5`
+benzersiz nokta**. Her görev `i = 0 … 4`'ü **yeniden** koştu.
+
+`ensemble_kos` tamamlananları **başlangıçta bir kez** okuyor; altı
+görev aynı anda başlayıp **boş** dosya gördü ve hepsi `i = 0`'dan
+başladı. Kaldığı yerden devam tasarımı **sıralı** kesinti için
+doğru, **eşzamanlı** görevler için değil.
+
+| | |
+|---|---|
+| harcanan | `6 × 5 × 3,6 saat` = **`108` GPU-saat** |
+| elde edilen | `5` nokta (`18` GPU-saatlik iş) |
+| israf | **`%83`** |
+
+Çare seçenekleri: (a) her göreve **ayrık** nokta aralığı ver
+(`--dilim i/n`), (b) dosya kilidi, (c) her adımda yeniden oku.
+En basit ve en sağlamı **(a)**: paylaşım yerine **bölüşüm**.
 
 ---
 

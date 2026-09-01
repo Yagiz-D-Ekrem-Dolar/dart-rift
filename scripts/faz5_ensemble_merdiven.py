@@ -76,6 +76,14 @@ def main() -> int:
                     help="ADR-0044 ONCESI DART_UZAYI kullan "
                          "(yalnizca gerileme/karsilastirma; sonuc S3 "
                          "onseli sayilmaz)")
+    # DILIM (rapor A31): alti gorev ayni anda baslayip BOS dosya
+    # gordu ve hepsi i = 0'dan basladi -- 108 GPU-saat harcanip 18
+    # saatlik is elde edildi (%83 israf). `ensemble_kos`'un kaldigi
+    # yerden devami SIRALI kesinti icin dogru, ESZAMANLI gorevler icin
+    # degil. Care: paylasim yerine BOLUSUM.
+    ap.add_argument("--dilim", default=None,
+                    help="'i/n' -- bu gorev tasarimin i. dilimini kossun "
+                         "(A31; eszamanli gorevlerde ZORUNLU)")
     ap.add_argument("--out", required=True, help="JSONL yolu")
     a = ap.parse_args()
 
@@ -94,6 +102,19 @@ def main() -> int:
     if a.kenarlar:
         tasarim = np.vstack([factorial_design(UZAY, levels=2), tasarim])
 
+    tam_n = len(tasarim)
+    dilim_bilgi = "yok (TEK gorev)"
+    if a.dilim:
+        i_s, n_s = (int(v) for v in a.dilim.split("/"))
+        if not (0 <= i_s < n_s):
+            raise SystemExit(f"--dilim 'i/n' ve 0 <= i < n olmali, "
+                             f"{a.dilim!r} geldi")
+        secim = np.arange(tam_n) % n_s == i_s
+        tasarim = tasarim[secim]
+        dilim_bilgi = f"{i_s}/{n_s}  ({len(tasarim)}/{tam_n} nokta)"
+        if len(tasarim) == 0:
+            raise SystemExit(f"dilim {a.dilim} bos -- n cok buyuk")
+
     print("=" * 78, flush=True)
     print("FAZ 5 — MERDIVENLI ENSEMBLE", flush=True)
     print("=" * 78, flush=True)
@@ -101,6 +122,7 @@ def main() -> int:
           f"{'  [TERK EDILMIS]' if a.eski_uzay else ''}", flush=True)
     print(f"  nokta       : {len(tasarim)}  (lhs {a.n_lhs}"
           f"{' + kenarlar' if a.kenarlar else ''})", flush=True)
+    print(f"  dilim       : {dilim_bilgi}", flush=True)
     print(f"  merdiven    : {' '.join(MERDIVEN)}  (metre)", flush=True)
     print(f"  t_end       : {a.t_end} s", flush=True)
     print(f"  sok kapisi  : {'KAPALI (TANI)' if a.sok_kapisi_kapali else 'ACIK'}",
@@ -123,19 +145,25 @@ def main() -> int:
             raise RuntimeError(f"nokta okunamadi: {y}")
         return y
 
-    durum = ensemble_kos(tasarim, _ileri, Path(a.out), root_seed=kok,
+    yol = Path(a.out)
+    if a.dilim:
+        # AYRI DOSYA: ayni dosyaya eszamanli EKLEME de satir bozabilir
+        # (A31'in ikinci yuzu). Dilimler sonradan birlestirilir.
+        yol = yol.with_suffix(f".dilim{a.dilim.replace('/', '_')}.jsonl")
+    durum = ensemble_kos(tasarim, _ileri, yol, root_seed=kok,
                          ilerleme=_ilerleme)
     print(f"\n  tamamlanan : {durum.n_tamam}/{len(tasarim)}", flush=True)
     print(f"  dusen      : {durum.n_dusen}", flush=True)
     print(f"  duvar      : {time.perf_counter() - t0:.0f} s", flush=True)
-    ozet = Path(a.out).with_suffix(".ozet.json")
+    ozet = yol.with_suffix(".ozet.json")
     ozet.write_text(json.dumps({
         "n_nokta": int(durum.toplam), "n_tamam": int(durum.tamamlanan),
         "n_dusen": int(durum.dusen), "n_atlanan": int(durum.atlanan),
         "n_bozuk_satir": int(durum.bozuk_satir),
         "merdiven": list(MERDIVEN),
         "t_end": a.t_end, "spacing": a.spacing, "root_seed": kok,
-        "sok_kapisi": not a.sok_kapisi_kapali,
+        "sok_kapisi": not a.sok_kapisi_kapali, "dilim": a.dilim,
+        "n_tasarim_tam": int(tam_n),
         "gozlenebilirler": list(GOZLENEBILIRLER),
         "duvar_s": time.perf_counter() - t0,
     }, indent=2))

@@ -136,3 +136,53 @@ def test_ensemble_surucusu_EnsembleDurum_alanlarini_dogru_okuyor() -> None:
     for ad in ("tamamlanan", "toplam", "dusen", "atlanan", "bozuk_satir"):
         assert ad in alanlar, ad
         assert f"durum.{ad}" in k, ad
+
+
+# ------------------------------------------- DILIM (A31: 6 kat israf)
+
+def test_dilim_ORTUSMESIZ_ve_TAM_kapsiyor() -> None:
+    """`K5` altı görevle koştu, `30` satır yazdı, **`5`** benzersiz nokta.
+
+    `ensemble_kos` tamamlananları başlangıçta **bir kez** okuyor;
+    altı görev aynı anda başlayıp boş dosya gördü. `108` GPU-saat
+    harcanıp `18` saatlik iş elde edildi — **`%83` israf**.
+    """
+    tam, n_s = 24, 6
+    kaplama: set[int] = set()
+    for i in range(n_s):
+        s = set(np.where(np.arange(tam) % n_s == i)[0].tolist())
+        assert not (s & kaplama), f"gorev {i} ORTUSUYOR"
+        assert len(s) == tam // n_s
+        kaplama |= s
+    assert kaplama == set(range(tam)), "kapsama EKSIK"
+
+
+def test_surucu_DILIM_bayragini_tasiyor() -> None:
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import faz5_ensemble_merdiven as m
+    k = inspect.getsource(m.main)
+    assert '"--dilim"' in k
+    assert "np.arange(tam_n) % n_s == i_s" in k
+
+
+def test_surucu_dilimde_AYRI_dosyaya_yaziyor() -> None:
+    """Aynı dosyaya eşzamanlı ekleme satır bozabilir — A31'in ikinci yüzü."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import faz5_ensemble_merdiven as m
+    k = inspect.getsource(m.main)
+    assert 'yol.with_suffix(f".dilim' in k
+    assert "ensemble_kos(tasarim, _ileri, yol" in k
+
+
+def test_surucu_bozuk_dilimi_REDDEDIYOR() -> None:
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import faz5_ensemble_merdiven as m
+    k = inspect.getsource(m.main)
+    assert "0 <= i < n olmali" in k
+    assert "dilim {a.dilim} bos" in k
