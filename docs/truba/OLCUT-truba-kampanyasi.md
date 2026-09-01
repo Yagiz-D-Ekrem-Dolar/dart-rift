@@ -239,9 +239,15 @@ sonuca bakıp hikâye seçmek imkânsız.
 | **`u` tabanı** dramatik fark | termodinamik başlatma hattı | `u < 0` sızıntısı ne kadar enerji kaçırıyor (A21) |
 | **hiçbiri** ciddi fark yaratmaz | yeni hipotez gerekli | çözünürlük / arayüz / bünye modeli — üçünden hangisi |
 
-**"Dramatik" ne demek:** kaçan hedef parçacığı tabanın (`16`) **iki
-katını** geçmek. Altında kalan kol *"belirleyici değil"* sayılır,
-**"elendi"** sayılmaz.
+**Eşik — ve adı doğru konsun:** kaçan hedef parçacığı tabanın (`16`)
+**iki katını** geçmek. Bu bir *"dramatik fark"* değil, bir
+**mekanizma adayı eşiği** (*mechanism-candidate threshold*):
+`16 -> 33` iki kat olsa bile hâlâ `33` parçacıktır ve fiziksel
+mekanizma **kanıtlanmış olmaz** — yalnızca o hat **takip edilmeye
+değer** hâle gelir.
+
+Altında kalan kol *"belirleyici değil"* sayılır, **"elendi"**
+sayılmaz.
 
 ### Ve kazanan kol ne olursa olsun
 
@@ -254,8 +260,20 @@ hatası mı parametre seçimi mi — bu **ayrı** bir deneyin sorusu.
 `16 -> 500` parçacık sevindiricidir ama **bilimsel zafer değildir**.
 Asıl dönüm noktası:
 
-> `β_hedef(N)` yakınsıyor mu? — `~500`, `~2 000`, `~8 000` kaçan
-> parçacıkta **aynı** `β_hedef` ve **aynı** ejekta momentumu.
+> **`m_p` düşürüldükçe** `β_hedef`, `M_ejekta` ve `P_ejekta`
+> **üçü birden** sabitleniyor mu?
+
+İki düzeltme, ikisi de dış geri bildirimden:
+
+**(a)** Kontrol değişkeni `n_kaçan` **olamaz** — o bir **çıktı**.
+Bağımsız değişken parçacık kütlesi `m_p` (eşdeğer olarak `h`);
+`n_kaçan` sonuç olarak raporlanır.
+
+**(b)** Tek gözlenebilir yetmez: `β ~ M·v` olduğu için `M` iki
+katına çıkıp `v` yarıya inerse `β` **kımıldamaz** ve fizik tamamen
+değişmiş olur. Üçü birden istenir.
+
+Ayrıntılı ölçüt: `OLCUT-yakinsama-gozlenebilir.md`.
 
 `n ≥ 50` yalnızca *"ölçmeye başlanabilir"* eşiği. Yakınsama
 *"ölçüm geçerli"* ölçütü. İkisi karıştırılırsa bu depo yine

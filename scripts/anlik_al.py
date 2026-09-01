@@ -1,4 +1,4 @@
-"""**Değiştirilemez anlık görüntü** — "o gün tam olarak ne biliyorduk?"
+"""**Değişiklik algılanabilir anlık görüntü** — "o gün ne biliyorduk?"
 
 ## Neden gerekli
 
@@ -7,19 +7,22 @@ Artifact aynı URL'de güncelleniyor ve depo sürekli değişiyor. İkisi de
 *"`A30` ortaya çıktığında ne biliyorduk"* sorusunu yanıtlamıyor.
 
 Bir dış geri bildirim bunu istedi: her önemli sürüm için depoda
-**değişmez** bir kayıt — tarih, commit SHA, koşu kimlikleri, anahtar
-sayılar ve **hangi önceki yorumun geçersiz kılındığı**.
+sabit bir kayıt — tarih, commit SHA, koşu kimlikleri, anahtar sayılar
+ve **hangi önceki yorumun geçersiz kılındığı**.
 
-## Değişmezlik nasıl **zorlanıyor**
+## Ne **garanti ediyor**, ne **etmiyor**
 
-`docs/anlik/MANIFEST.sha256` her anlık görüntünün özetini tutuyor ve
+`docs/anlik/MANIFEST.sha256` her görüntünün özetini tutuyor ve
 `tests/test_anlik_degismez.py` her koşuda doğruluyor. Eski bir
-görüntüyü **düzenlemek testi düşürür**; yenisini eklemek yalnızca
-manifeste satır ekler.
+görüntüyü **düzenlemek testi düşürür**.
 
-> Bu, depo kuralının (*"hiçbir satır silinmez"*) makine tarafından
-> uygulanan hâli. Niyet yetmiyor; hata geçmişi ancak
-> **değiştirilemezse** korunur.
+> Bu **değişiklik algılanabilirlik** (*tamper-evident*), değişmezlik
+> (*immutable*) **değil**: depoya tam yetkisi olan biri dosyayı,
+> manifesti ve testi birlikte değiştirebilir. Daha sert kayıt için
+> imzalı etiket + Release gerekir — bkz. `docs/anlik/README.md`.
+
+Yine de depo kuralını (*"hiçbir satır silinmez"*) makine tarafından
+**denetlenir** hâle getiriyor; niyet tek başına yetmiyordu.
 """
 from __future__ import annotations
 
