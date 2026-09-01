@@ -129,8 +129,9 @@ def test_DELTA_BETA_yakinsama_niceligi() -> None:
     beta_fark = abs(b2 - b1) / b2
     delta_fark = abs((b2 - 1) - (b1 - 1)) / (b2 - 1)
     assert beta_fark < 0.01, beta_fark
-    assert delta_fark > 0.24, delta_fark
-    assert delta_fark / beta_fark > 30
+    assert delta_fark == pytest.approx(0.25, abs=1e-9), delta_fark
+    # ORAN 26,0 -- `beta` uzerinden olcmek farki 26 kat KUCUK gosterir
+    assert delta_fark / beta_fark == pytest.approx(26.0, abs=0.1)
 
 
 def test_defter_DELTA_BETAYI_veriyor() -> None:
