@@ -46,6 +46,59 @@ import numpy as np
 ARTIK_ESIGI = 1.0e-3
 
 
+def _aci(vek, e) -> float:
+    """`vek` ile `ê` arasındaki açı (derece); sıfır vektörde `nan`."""
+    n = float(np.linalg.norm(vek))
+    if n < 1e-300:
+        return float("nan")
+    c = float(np.dot(vek, e)) / n
+    return float(np.degrees(np.arccos(max(-1.0, min(1.0, c)))))
+
+
+def plato_gecti(t, deger, *, pencere: float = 0.2,
+                eps_bagil: float = 0.05, eps_mutlak: float = 1.0e-4) -> dict:
+    """Son pencerede **eğim** küçük mü — zamansal yakınsama kapısı.
+
+    ## İki düzeltme (dış geri bildirim, 2026-09-01)
+
+    **(a) Mutlak tolerans şart.** Yalnızca bağıl ölçüt
+    (`|ΔΔβ| / |Δβ| < ε`) kullanmak `Δβ -> 0` rejiminde **patlar**:
+    `Δβ = 1e-5` iken payda sıfıra gider ve gürültü sonsuz bağıl fark
+    üretir. Ölçüt:
+
+        |ΔΔβ| < max(eps_mutlak, eps_bagil · |Δβ|)
+
+    **(b) İki uç nokta yetmez.** `t₁` ve `t₂` tesadüfen aynı olup
+    arada salınım olabilir. Son pencerenin **tamamı** üzerinden en
+    büyük sapma ve doğrusal eğim birlikte bakılıyor.
+    """
+    t = np.asarray(t, dtype=np.float64)
+    d = np.asarray(deger, dtype=np.float64)
+    if t.shape != d.shape or len(t) < 3:
+        raise ValueError(f"t {t.shape} ve deger {d.shape} ayni ve en az "
+                         f"3 nokta olmali")
+    if not (0.0 < pencere < 1.0):
+        raise ValueError(f"pencere (0,1) araliginda olmali, {pencere} geldi")
+    t_kes = t[-1] - pencere * (t[-1] - t[0])
+    sec = t >= t_kes
+    if int(sec.sum()) < 3:
+        sec = np.zeros(len(t), bool)
+        sec[-3:] = True
+    tp, dp = t[sec], d[sec]
+    son = float(dp[-1])
+    tol = max(eps_mutlak, eps_bagil * abs(son))
+    # (b) pencere BOYUNCA en buyuk sapma -- iki uc nokta degil
+    sapma = float(np.max(np.abs(dp - son)))
+    egim = float(np.polyfit(tp, dp, 1)[0])
+    # egimin pencere boyunca tasidigi degisim
+    egim_degisim = abs(egim) * float(tp[-1] - tp[0])
+    return {
+        "n_pencere": int(sec.sum()), "son": son, "tolerans": tol,
+        "sapma": sapma, "egim": egim, "egim_degisim": egim_degisim,
+        "gecti": bool(sapma < tol and egim_degisim < tol),
+    }
+
+
 def momentum_defteri(x, v, m, *, mermi_kesri, R, v_esc, ehat,
                      p_imp: float) -> dict:
     """Momentumu **provenance** ve **kaçış** ile dört kutuya ayır.
@@ -119,6 +172,11 @@ def momentum_defteri(x, v, m, *, mermi_kesri, R, v_esc, ehat,
         "P_ejekta_buyukluk": float(np.linalg.norm(
             (m[kacan] * (1.0 - f[kacan])) @ v[kacan])),
         "M_ejekta": float(m[kacan] @ (1.0 - f[kacan])),
+        # EJEKTA ACISI -- tani, cikarim degil. `beta` yakinsarken
+        # `theta` savruluyorsa hala cozulmemis bir acisal dagilim
+        # problemi var demektir; skaler `beta` bunu TAMAMEN gizler.
+        "theta_ejekta_derece": _aci(
+            (m[kacan] * (1.0 - f[kacan])) @ v[kacan], e),
         # DELTA BETA: `beta`nin kendisi degil, `beta - 1` yakinsamali.
         # `beta = 1,030` ile `1,040` arasinda bagil fark %1 gorunur;
         # gercek ejekta katkisi `0,030 -> 0,040`, yani %33. `beta ~ 1`

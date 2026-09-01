@@ -170,3 +170,67 @@ def test_P_ejekta_EKSENEL_beta_ile_tutarli() -> None:
                          mermi_kesri=np.zeros(1), p_imp=50.0, **KW)
     assert d["delta_beta_hedef"] == pytest.approx(
         -d["P_ejekta_eksenel"] / d["p_imp"])
+
+
+# --------------------------------- ZAMANSAL PLATO KAPISI + ACI
+
+def test_plato_DUZ_sinyali_geciriyor() -> None:
+    from dartrift.observables.momentum_defteri import plato_gecti
+    t = np.linspace(0.0, 0.2, 25)
+    assert plato_gecti(t, np.full(25, 0.033))["gecti"]
+
+
+def test_plato_HALA_BUYUYEN_sinyali_DUSURUYOR() -> None:
+    """Uzamsal yakınsama yeter görünse de ejekta gelişiyorsa ölçüm erken."""
+    from dartrift.observables.momentum_defteri import plato_gecti
+    t = np.linspace(0.0, 0.2, 25)
+    assert not plato_gecti(t, 0.033 + 0.05 * t / 0.2)["gecti"]
+
+
+def test_plato_UCLAR_AYNI_ama_ARADA_SALINIM_dusuyor() -> None:
+    """İki uç nokta tesadüfen aynı olabilir — pencere **boyunca** bakılır."""
+    from dartrift.observables.momentum_defteri import plato_gecti
+    t = np.linspace(0.0, 0.2, 25)
+    salinim = 0.033 + 0.02 * np.sin(8 * np.pi * t / 0.2)
+    assert not plato_gecti(t, salinim)["gecti"]
+
+
+def test_plato_SIFIRA_YAKIN_sinyalde_PATLAMIYOR() -> None:
+    """Yalnız bağıl ölçüt `Δβ -> 0`'da paydayı sıfıra götürür.
+
+    `Δβ = 1e-5` gibi neredeyse sıfır bir sinyalde gürültü sonsuz
+    bağıl fark üretirdi; mutlak taban bunu engelliyor.
+    """
+    from dartrift.observables.momentum_defteri import plato_gecti
+    t = np.linspace(0.0, 0.2, 25)
+    r = plato_gecti(t, 1.0e-5 + 1.0e-7 * np.sin(20 * t))
+    assert r["gecti"]
+    assert r["tolerans"] == pytest.approx(1.0e-4)   # mutlak taban devrede
+
+
+def test_plato_bozuk_girdi_REDDEDIYOR() -> None:
+    from dartrift.observables.momentum_defteri import plato_gecti
+    with pytest.raises(ValueError, match="en az"):
+        plato_gecti(np.array([0.0, 1.0]), np.array([1.0, 1.0]))
+    with pytest.raises(ValueError, match="pencere"):
+        plato_gecti(np.linspace(0, 1, 5), np.ones(5), pencere=1.5)
+
+
+def test_theta_ejekta_yon_degisimini_olcuyor() -> None:
+    """`β` aynı kalıp açı değişirse `θ` yakalar."""
+    x = np.array([[0.0, 0.0, -2.0]])
+    dik = momentum_defteri(x, np.array([[0.0, 0.0, -10.0]]), np.array([1.0]),
+                           mermi_kesri=np.zeros(1), p_imp=100.0, **KW)
+    egik = momentum_defteri(x, np.array([[10.0, 0.0, -10.0]]), np.array([1.0]),
+                            mermi_kesri=np.zeros(1), p_imp=100.0, **KW)
+    assert dik["theta_ejekta_derece"] == pytest.approx(180.0)
+    assert egik["theta_ejekta_derece"] == pytest.approx(135.0)
+    assert dik["delta_beta_hedef"] == pytest.approx(
+        egik["delta_beta_hedef"])          # beta AYNI, aci FARKLI
+
+
+def test_theta_ejekta_YOKSA_nan() -> None:
+    x = np.array([[0.0, 0.0, 0.5]])
+    d = momentum_defteri(x, np.zeros((1, 3)), np.array([1.0]),
+                         mermi_kesri=np.zeros(1), p_imp=10.0, **KW)
+    assert np.isnan(d["theta_ejekta_derece"])

@@ -118,3 +118,49 @@ değildir."*
 başlanabilir"*. Yakınsama ise *"ölçüm geçerli"*. İkisi ayrı ve
 sıralı; kapı geçilmeden yakınsama sorulmaz, yakınsama olmadan
 çıkarım yapılmaz.
+
+---
+
+## 8. `σ_sayısal` nasıl çıkarılır — **kural şimdi konuyor**
+
+`σ_num = |R3 − R2|` deyip geçmek yanlış olur. Üç seviye elde
+olduğunda davranışa göre **farklı** yöntem kullanılacak ve hangisinin
+kullanılacağı **veriden önce** belirlenmiş olmalı:
+
+| davranış | yöntem | gerekçe |
+|---|---|---|
+| **monoton** yakınsama (`R1 < R2 < R3` ya da tersi) | gözlenen mertebe `p`'den süreklilik-limiti hata tahmini | `r = 2` (aralık tam yarıya iniyor), asimptotik rejimdeyse `p` anlamlıdır |
+| **monoton değil** (`R1 < R2 > R3`) | **muhafazakâr zarf**: `σ_num = max\|Rᵢ − Rⱼ\|` | tek bir "mertebe" raporlamak yanıltıcı olur; asimptotik rejime girilmemiştir |
+
+Monotonluk **her nicelik için ayrı** değerlendirilir (`Δβ`,
+`M_ejekta`, `P_ejekta,∥`); biri monoton değilse **o nicelik** zarf
+yöntemine düşer.
+
+> Bu kural, sonucu görüp yöntem seçmeyi engelliyor. Aynı gerekçeyle
+> L2 karar ağacı da sonuçlardan önce yazılmıştı.
+
+## 9. Zamansal kapının **iki** düzeltmesi
+
+**(a) Mutlak taban.** Yalnız bağıl ölçüt `Δβ -> 0`'da patlar
+(`Δβ = 1e-5` iken payda sıfıra gider). Ölçüt:
+
+    |ΔΔβ| < max(ε_mutlak, ε_bağıl · |Δβ|)      ε_mutlak = 1e-4
+
+**(b) İki uç nokta yetmez.** `t₁` ve `t₂` tesadüfen aynı olup arada
+salınım olabilir. Pencerenin **tamamı** üzerinden en büyük sapma
+**ve** doğrusal eğim birlikte bakılıyor — `plato_gecti()`.
+
+Ölçülen ayrım (test): düz plato **geçer**; `%25`/pencere büyüyen
+sinyal **düşer**; uçları aynı ama arada salınan sinyal **düşer**;
+`Δβ = 1e-5` gürültülü sinyal mutlak taban sayesinde **patlamaz**.
+
+## 10. Tanı olarak `θ_ejekta`
+
+    θ = arccos( (P_ejekta · ê) / |P_ejekta| )
+
+Çıkarıma **girmiyor** — tanı. Çözünürlük artarken `Δβ` yakınsayıp
+`θ` savruluyorsa hâlâ çözülmemiş bir **açısal dağılım** problemi var
+demektir ve skaler `β` bunu tamamen gizler.
+
+Ölçülen (test): aynı eksenel momentum, farklı yön -> `Δβ` **aynı**
+(`0,100`), `θ` `180° -> 135°`.

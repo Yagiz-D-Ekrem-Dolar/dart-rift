@@ -4,6 +4,8 @@
 # 4.4 -> 4.5 -> 4.6 -> 4.7 (kapi raporu). Her adim bir onceki adimin
 # JSON'unu YAZAR, kapi hepsini OKUR. Ara adim duserse kapi zaten
 # "kosulmadi" der; zincir sessizce yesil gorunmez.
+set -euo pipefail
+
 set -u                      # -e YOK: bir adim duserse kalanlar da kosmali
 # Depo koku betigin KENDI konumundan turetiliyor -- Python kosucularla
 # ayni kural. Sabit yol, depo tasindiginda sessizce yanlis src'yi bulur.

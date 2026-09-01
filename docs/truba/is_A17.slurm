@@ -10,7 +10,7 @@
 #SBATCH -o /arf/scratch/egitimg16u1/driftclaude/ciktilar/a17_%j.out
 #SBATCH -e /arf/scratch/egitimg16u1/driftclaude/ciktilar/a17_%j.err
 
-set -u
+set -euo pipefail
 KOK=/arf/scratch/egitimg16u1/driftclaude
 mkdir -p "$KOK/ciktilar"
 module load apps/truba-ai/gpu-2024.0

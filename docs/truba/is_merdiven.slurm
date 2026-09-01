@@ -19,7 +19,7 @@
 # OLCUT 0 (plumbing): uretim kolu once kosulur ve beta/A1 birebir tutmali;
 # tutmazsa merdiven kolu KOSULMAZ. Bu deponun kurali.
 
-set -u
+set -euo pipefail
 KOK=/arf/scratch/egitimg16u1/driftclaude
 mkdir -p "$KOK/ciktilar"
 module load apps/truba-ai/gpu-2024.0

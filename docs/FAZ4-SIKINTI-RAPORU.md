@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 17 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 18 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -3392,6 +3392,40 @@ doğru, **eşzamanlı** görevler için değil.
 Çare seçenekleri: (a) her göreve **ayrık** nokta aralığı ver
 (`--dilim i/n`), (b) dosya kilidi, (c) her adımda yeniden oku.
 En basit ve en sağlamı **(a)**: paylaşım yerine **bölüşüm**.
+
+---
+
+### A32 — **`pytest | tail` düşen testi yuttu**: aynı kusurun araç sürümü (2026-09-01)
+
+Bir test düşük kaldı ve **yine de push edildi**. Sebep bir boru hattı:
+
+```
+pytest ... | tail -2 && git commit && git push
+```
+
+`pipefail` olmadan bir boru hattının çıkış kodu **son** komutundan
+gelir. `pytest` düştü (`1`), `tail` başarılı oldu (`0`) — dışarıya
+`0` çıktı ve zincir devam etti.
+
+#### Bu, deponun **kendi** kusur sınıfının araç sürümü
+
+| | |
+|---|---|
+| fizik sürümü | `β = 1,4112` — hedef ejektası değil, **mermi geri tepmesi** ölçülüyordu |
+| araç sürümü | `pytest \| tail` — test düştü, **çıkış kodu `0`** |
+
+İkisinde de aynı: **program "başarılı" diyor, ölçüm başka bir şeyi
+temsil ediyor.** Ve çözüm de aynı: başarı bayrağına değil,
+**başarının nasıl üretildiğine** güvenmek.
+
+#### Çare: kural + test
+
+Bütün kabuk/SLURM betiklerinde `set -euo pipefail`.
+`tests/test_kabuk_pipefail.py` bunu her koşuda denetliyor —
+ve **yazıldığı anda beş betikte eksik olduğunu buldu**.
+
+Düşen testin eşiği de uydurmaydı (`> 30`); gerçek oran `26,0` ve
+artık ölçülen değere kilitli.
 
 ---
 
