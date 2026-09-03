@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 20 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 23 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -3505,6 +3505,106 @@ yargısını taşımıyor** ve ADR-0049'un istediği bu.
 
 **Çare:** SLURM betikleri işin **içinde** `git pull` yapmalı; gönderim
 anındaki sürüm değil, **koşum anındaki** sürüm kullanılmalı.
+
+---
+
+### A35 — **Şok kapısının üst sınırı yok**, ve bandın türetimi sezgisel (2026-09-03)
+
+`L2`'nin düşük AV kolu sıkışmayı `%75,65`'e çıkardı ve kapı
+`SOK_VAR` dedi. Ama band `%45,6 – 74,3`; yani **üst ucun dışında**.
+
+Kapı yalnızca **alt** sınır kontrol ediyor:
+
+```python
+return sikisma_max(rho, alpha0) >= kesir * alt
+```
+
+#### İki ayrı eksik
+
+**(a) Üst sınır yok.** Fiziksel tavanı aşan bir sıkışma
+`SOK_VAR` alıyor. Oysa Hugoniot'u aşmak şok yakalamanın
+**bozulduğunun** işareti — yetersiz yapay viskoziteyle parçacık iç
+içe geçmesi ve şok sonrası salınım (Monaghan & Gingold 1983'ten beri
+bilinen davranış).
+
+**(b) Bandın türetimi sezgisel.** `beklenen_bant()` `up ∈ [v/4, v/2]`
+alıyor. `v/2` **aynı malzeme ve empedanstaki simetrik düzlemsel**
+çarpma için doğru. DART'ta mermi alüminyum, hedef gözenekli bazalt —
+arayüz parçacık hızı **empedans eşleşmesiyle** belirlenir, `v/2` ile
+değil.
+
+> Yani *"`up > v/2` olanaksız"* dedim; bu **fazla güçlü** bir ifade.
+> Doğrusu: `%74,3` bir **sezgisel üst kenar**, empedans eşleşmesinden
+> türetilmiş bir sınır değil.
+
+Bu, ölçütün **sonuçla çürütülmesi**dir ve kaydı budur.
+
+---
+
+### A36 — **`n_kaçan` sayısı yeterli değil**: düşük AV kolunun ejektası **kaba** parçacıklar (2026-09-03)
+
+Karar ağacı eşiği `n_kaçan > 32` idi ve düşük AV kolu `33` ile geçti.
+Ama parçacıkların **hangi seviyeden** geldiği sorulmamıştı:
+
+| kol | `n` | toplam | **medyan parçacık** | seviye |
+|---|---|---|---|---|
+| **düşük AV** | `33` | `12 303 kg` | **`372,83 kg`** | **`s = 0,700 m`** |
+| taban | `16` | `93,2 kg` | `5,83 kg` | `s = 0,175 m` |
+| `u` tabanı | `16` | `93,2 kg` | `5,83 kg` | `s = 0,175 m` |
+
+> Düşük AV kolunda kaçan `33` parçacığın **hepsi kaba seviyeden** ve
+> her biri tabandakinin **`64` katı**. Bu, ejektanın **çözülmesi**
+> değil; kaba blokların savrulması.
+
+`33` ince parçacık ile `33` kaba parçacık **aynı sayısal kanıt
+değildir**. Eşik bunu ayırt etmiyordu.
+
+#### Sonuç: mekanizma adayı okuması **düşüyor**
+
+Düşük AV kolu üç bağımsız sebeple kanıt sayılamaz:
+
+| | |
+|---|---|
+| sıkışma bandın **üstünde** (`%75,65`) | A35 |
+| ejekta **tamamen kaba** parçacık | bu kayıt |
+| `Δβ` **düştü** (`0,03310 -> 0,00137`) | ejekta yavaş ya da geniş konide |
+
+---
+
+### A37 — **`L1`'in `β` değerleri kullanılamaz**: durum kaydı yok (2026-09-03)
+
+`ileri_kosu_merdiven` yalnızca gözlenebilir vektörünü döndürüyor;
+**`npz` kaydetmiyor**. Sonuçları:
+
+| | |
+|---|---|
+| momentum defteri post-hoc uygulanamıyor | `24` noktanın hiçbirine |
+| `Δβ_hedef`, `M_ejekta`, `P_ejekta,∥`, `θ` | **hesaplanamıyor** |
+| parçacık kimliği karşılaştırması (Jaccard) | **yapılamıyor** |
+
+Ve koşu `3bbc722` ile yapıldığı için (A34) döndürdüğü `β`
+provenance'la ayrıştırılmamış eski tanım.
+
+> `L1`'in `β = 1,10077 – 1,10106` değerleri **bilimsel gözlenebilir
+> olarak kullanılmıyor**.
+
+#### `L1`'den savunulabilen tek şey
+
+| gözlenebilir | ne söylüyor |
+|---|---|
+| krater derinliği | `0,08 – 0,79 m` — parametrelere **duyarlı** |
+| ejekta kütle kesri | `24` noktada **bit düzeyinde aynı** (`6,2597e-08`) |
+
+Ve ikinci satır için **dar** ifade gerekli: bit düzeyinde aynı olmak,
+**aynı parçacıkların** kaçtığını tek başına kanıtlamaz — parçacık
+kütleleri nicemli olduğu için farklı bir küme de aynı toplamı
+verebilir. Doğru ifade:
+
+> Ejekta kütlesi gözlenebiliri **ayrıklaştırmayla nicemli** ve
+> parametre taramasında toplam düzeyinde **ayırt edilemiyor**.
+
+`npz` kaydı eklendi; bundan sonraki ensemble koşuları defteri ve
+parçacık kimliğini taşıyacak.
 
 ---
 

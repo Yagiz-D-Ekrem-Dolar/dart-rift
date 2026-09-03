@@ -196,3 +196,61 @@ def test_surucu_bozuk_dilimi_REDDEDIYOR() -> None:
     k = inspect.getsource(m.main)
     assert "0 <= i < n olmali" in k
     assert "dilim {a.dilim} bos" in k
+
+
+# ----------------------------------- PROTOKOL v2: iki tarafli kapi
+
+def test_v2_kapisi_ASIRI_sikismayi_DUSURUYOR() -> None:
+    """v1 yalnızca alt sınıra bakıyordu (rapor A35).
+
+    Hugoniot'u **açıkça** aşmak şok yakalamanın bozulduğunun
+    işareti: yetersiz yapay viskoziteyle parçacık iç içe geçmesi.
+    """
+    from dartrift.observables.sok import sok_gecti, sok_yargisi_ayrintili
+    a0 = np.array([1.7564])
+    taban = 2700.0 / 1.7564
+    r = sok_yargisi_ayrintili(np.array([taban * (1 + 1.20)]), a0)
+    assert r["yargi"] == "SOK_ASIRI"
+    assert not r["gecti"]
+    assert not sok_gecti(np.array([taban * (1 + 1.20)]), a0)
+
+
+def test_v2_ust_payi_bandi_KESIN_saymiyor() -> None:
+    """`%74,3` bir **sezgisel** üst kenar; `up = v/2` yalnızca aynı
+    malzeme/empedanstaki simetrik düzlemsel çarpma için doğru.
+
+    DART'ta mermi alüminyum, hedef gözenekli bazalt — arayüz hızı
+    empedans eşleşmesiyle belirlenir. Pay o belirsizliği kapıya
+    yazıyor, bu yüzden `%75,65` **elenmiyor**.
+    """
+    from dartrift.observables.sok import UST_PAY, sok_yargisi_ayrintili
+    a0 = np.array([1.7564])
+    taban = 2700.0 / 1.7564
+    r = sok_yargisi_ayrintili(np.array([taban * (1 + 0.7565)]), a0)
+    assert r["yargi"] == "SOK_VAR" and r["gecti"]
+    assert UST_PAY > 1.0, "pay 1,0 olsaydi sezgisel band KESIN sayilirdi"
+
+
+def test_v2_alt_sinir_DEGISMEDI() -> None:
+    """v1 -> v2 yalnızca **üst** sınır ekledi; alt eşik aynı kalmalı."""
+    from dartrift.observables.sok import GECME_KESRI, sok_yargisi_ayrintili
+    a0 = np.array([1.7564])
+    taban = 2700.0 / 1.7564
+    assert sok_yargisi_ayrintili(
+        np.array([taban * 1.0168]), a0)["yargi"] == "SOK_YOK"   # lam2=8
+    assert sok_yargisi_ayrintili(
+        np.array([taban * 1.2200]), a0)["gecti"]                # lam2=20
+    assert GECME_KESRI == 0.1
+
+
+def test_ileri_model_NPZ_kaydediyor() -> None:
+    """`L1`'in `β`'ları kullanılamadı çünkü durum kaydı yoktu (A37).
+
+    Defter post-hoc uygulanamadı, parçacık kimliği karşılaştırılamadı.
+    """
+    from dartrift.inference.forward import ileri_kosu_merdiven
+    s = inspect.signature(ileri_kosu_merdiven)
+    assert "durum_dizini" in s.parameters
+    k = inspect.getsource(ileri_kosu_merdiven)
+    assert "savez_compressed" in k
+    assert "mermi_kesri" in k          # provenance kaydediliyor

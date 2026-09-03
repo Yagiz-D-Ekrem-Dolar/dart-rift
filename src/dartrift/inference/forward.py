@@ -391,7 +391,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         kademeler, spacing: float, sahne_taban: dict,
                         azami_adim: int = 400000, ilerleme=None,
                         krater_ayarlari=KRATER_AYARLARI_DART,
-                        sok_yargisi: bool = True) -> np.ndarray:
+                        sok_yargisi: bool = True,
+                        durum_dizini=None) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
     ## Neden gerekli
@@ -473,6 +474,26 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                     raise RuntimeError(
                         "SOK KURULMADI -- ADR-0049: bu noktanin fizik "
                         "sonucu okunmaz")
+            # DURUM KAYDI (rapor A37). `L1`'in `beta`lari kullanilamadi
+            # cunku `npz` yoktu: momentum defteri post-hoc uygulanamadi,
+            # parcacik kimligi karsilastirilamadi. Provenance
+            # (`mermi_kesri`) ve `alpha0` da kaydediliyor.
+            if durum_dizini is not None:
+                from pathlib import Path as _P
+                _d = _P(durum_dizini)
+                _d.mkdir(parents=True, exist_ok=True)
+                np.savez_compressed(
+                    _d / f"nokta_{i:04d}.npz",
+                    x=st["x"], v=st["v"], m=st["m"], u=st["u"],
+                    rho=st["rho"], x_referans=x0,
+                    mermi_kesri=np.asarray(rs.is_impactor,
+                                           dtype=bool).astype(np.float64),
+                    alpha0=np.asarray(rs.alpha0, dtype=np.float64),
+                    R=float(rs.target_radius),
+                    p_imp=float(np.linalg.norm(rs.impactor_momentum)),
+                    ehat=np.asarray(rs.impactor_momentum, dtype=np.float64)
+                    / float(np.linalg.norm(rs.impactor_momentum)),
+                    theta=np.asarray(th, dtype=np.float64), t=t)
             Y[i] = gozlenebilirleri_cikar(
                 st, impactor_momentum=rs.impactor_momentum,
                 target_mass=rs.target_mass, target_radius=rs.target_radius,

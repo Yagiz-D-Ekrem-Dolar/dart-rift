@@ -136,20 +136,23 @@ def main() -> int:
         print(f"    [{i + 1:>3}/{n}] {mesaj}  "
               f"({time.perf_counter() - t0:.0f} s)", flush=True)
 
+    yol = Path(a.out)
+    if a.dilim:
+        yol = yol.with_suffix(f".dilim{a.dilim.replace('/', '_')}.jsonl")
+
     def _ileri(theta):
         y = ileri_kosu_merdiven(
             np.atleast_2d(theta), material=_mat(), device=a.device,
             t_end=a.t_end, kademeler=MERDIVEN, spacing=a.spacing,
-            sahne_taban=None, sok_yargisi=not a.sok_kapisi_kapali)[0]
+            sahne_taban=None, sok_yargisi=not a.sok_kapisi_kapali,
+            durum_dizini=yol.with_suffix(".durumlar"))[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
         return y
 
-    yol = Path(a.out)
-    if a.dilim:
-        # AYRI DOSYA: ayni dosyaya eszamanli EKLEME de satir bozabilir
-        # (A31'in ikinci yuzu). Dilimler sonradan birlestirilir.
-        yol = yol.with_suffix(f".dilim{a.dilim.replace('/', '_')}.jsonl")
+    # AYRI DOSYA (A31'in ikinci yuzu): ayni dosyaya eszamanli EKLEME
+    # satir bozabilir. Dilimler sonradan birlestirilir. `yol` yukarida
+    # tanimli cunku `_ileri` durum dizinini ondan tureti yor.
     durum = ensemble_kos(tasarim, _ileri, yol, root_seed=kok,
                          ilerleme=_ilerleme)
     print(chr(10) + f"  tamamlanan : {durum.tamamlanan}/{durum.toplam}", flush=True)
