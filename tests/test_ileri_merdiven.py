@@ -200,19 +200,27 @@ def test_surucu_bozuk_dilimi_REDDEDIYOR() -> None:
 
 # ----------------------------------- PROTOKOL v2: iki tarafli kapi
 
-def test_v2_kapisi_ASIRI_sikismayi_DUSURUYOR() -> None:
-    """v1 yalnızca alt sınıra bakıyordu (rapor A35).
+def test_v2_ASIRI_sikismayi_ISARETLIYOR_ama_IPTAL_ETMIYOR() -> None:
+    """v1 yalnızca alt sınıra bakıyordu (A35); v2 üst sınırı **işaretliyor**.
 
-    Hugoniot'u **açıkça** aşmak şok yakalamanın bozulduğunun
-    işareti: yetersiz yapay viskoziteyle parçacık iç içe geçmesi.
+    İlk v2 taslağı bunu **sert kapı** yapmıştı ve o yanlıştı:
+    `%74,3` bandın üst kenarı `up = v/2`'den geliyor ve bu **aynı
+    malzeme/empedanstaki simetrik düzlemsel** çarpma için doğru.
+    DART'ta mermi alüminyum, hedef gözenekli bazalt — arayüz hızı
+    **empedans eşleşmesiyle** belirlenir.
+
+    Gerçek bir üst tavan ancak EOS/Hugoniot ve çarpma empedans
+    probleminden **türetilirse** sert kapıya dönüşür. O türetim
+    yapılana kadar bu yalnızca **şüphe işareti**.
     """
     from dartrift.observables.sok import sok_gecti, sok_yargisi_ayrintili
     a0 = np.array([1.7564])
     taban = 2700.0 / 1.7564
     r = sok_yargisi_ayrintili(np.array([taban * (1 + 1.20)]), a0)
-    assert r["yargi"] == "SOK_ASIRI"
-    assert not r["gecti"]
-    assert not sok_gecti(np.array([taban * (1 + 1.20)]), a0)
+    assert r["yargi"] == "SOK_ASIRI_ADAY"
+    assert r["asiri_suphe"] is True
+    assert r["gecti"] is True, "tani bayragi sonucu IPTAL ETMEMELI"
+    assert sok_gecti(np.array([taban * (1 + 1.20)]), a0)
 
 
 def test_v2_ust_payi_bandi_KESIN_saymiyor() -> None:
@@ -228,6 +236,7 @@ def test_v2_ust_payi_bandi_KESIN_saymiyor() -> None:
     taban = 2700.0 / 1.7564
     r = sok_yargisi_ayrintili(np.array([taban * (1 + 0.7565)]), a0)
     assert r["yargi"] == "SOK_VAR" and r["gecti"]
+    assert not r["asiri_suphe"], "dusuk AV kolu supheli bile isaretlenmemeli"
     assert UST_PAY > 1.0, "pay 1,0 olsaydi sezgisel band KESIN sayilirdi"
 
 

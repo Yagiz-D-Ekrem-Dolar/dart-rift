@@ -25,9 +25,24 @@ Sessizce değiştirmek `p`-hacking olurdu. Bu, tersi: değişiklik
 
 | | v1 | **v2** |
 |---|---|---|
-| alt sınır | `≥ %4,56` (bandın `1/10`'u) | **aynı** |
-| üst sınır | **yok** | `≤ 1,2 × %74,3 = %89,1` |
-| yargılar | `SOK_YOK` / `KISMI` / `SOK_VAR` | `+ SOK_ASIRI` |
+| **sert kapı** | `≥ %4,56` (bandın `1/10`'u) | **aynı — yalnız alt sınır** |
+| üst sınır | yok | **tanı bayrağı** `> 1,2 × %74,3` |
+| yargılar | `SOK_YOK` / `KISMI` / `SOK_VAR` | `+ SOK_ASIRI_ADAY` |
+
+### Üst sınır neden **sert kapı değil**
+
+İlk v2 taslağı onu sert kapı yapmıştı; **yanlıştı**. Bandın üst
+kenarı `up = v/2`'den geliyor ve bu **aynı malzeme ve empedanstaki
+simetrik düzlemsel** çarpma için doğru. DART'ta mermi alüminyum,
+hedef gözenekli bazalt — arayüz parçacık hızı **empedans
+eşleşmesiyle** belirlenir.
+
+> Gerçek bir üst tavan ancak kullanılan EOS/Hugoniot ve çarpma
+> empedans probleminden **türetilirse** sert kapıya dönüşür. O türetim
+> yapılana kadar `SOK_ASIRI_ADAY` yalnızca **şüphe işaretidir** ve
+> tek başına sonucu iptal etmez.
+
+Aksi hâlde *"neden `1,2`?"* sorusunun savunulabilir bir cevabı olmaz.
 
 ### Neden üst sınır
 
@@ -75,6 +90,15 @@ post-hoc uygulanamadı, parçacık kimliği karşılaştırılamadı. Bu bir
 | gözeneksiz | `SOK_YOK` | **hayır** | ADR-0049 |
 | düşük AV | `SOK_VAR` | evet **ama** | ejekta **tamamen kaba** (A36) |
 
+### Düşük AV kolunun **doğru** ifadesi
+
+> Düşük AV kolundaki artmış kaçış sinyali, **çözülmüş ejekta kanıtı
+> olarak reddedildi**; sinyal tamamen **kaba çözünürlük
+> seviyesindeki** parçacıklardan geliyor.
+
+Bu, düşük AV'nin dinamikleri **etkilemediği** anlamına gelmez —
+tersine, başka bir **sayısal rejime** ittiğini gösterir.
+
 ### Dar ifadeler
 
 - `u` hattı için: *"test edilen `u` pertürbasyonu, taban koşulunda
@@ -87,3 +111,39 @@ post-hoc uygulanamadı, parçacık kimliği karşılaştırılamadı. Bu bir
   parametre taramasında toplam düzeyinde ayırt edilemiyor"* —
   *"aynı parçacıklar kaçıyor"* **değil**; parçacık kimliği
   karşılaştırılamadı.
+
+
+---
+
+## L1'in krater sonucu **kullanılabilir** — diff denetlendi
+
+`3bbc722 -> HEAD` farkı yalnızca şunlara dokunuyor:
+
+| dosya | ne |
+|---|---|
+| `anlik_al.py` | yeni araç |
+| `faz4_zincir.sh` | `pipefail` |
+| `faz5_ensemble_merdiven.py` | raporlama + `npz` + dilim |
+| `forward.py` | **yalnızca ekleme** — `durum_dizini` ve `npz` bloğu |
+| `momentum_defteri.py`, `sok.py` | gözlenebilir/kapı |
+
+`warp_core/`, `setup/`, `crater_shape.py`, `cpu_reference/`,
+`faz48_iki_asama.py` — **hiçbirine dokunulmadı**.
+
+> İleri fizik, inceltme, parçacık durumu ve krater çıkarıcısı `L1`
+> koşusuyla **birebir aynı**. Krater duyarlılığı (`0,08 – 0,79 m`)
+> savunulabilir; `β`'lar (A37) yine de kullanılmıyor.
+
+## Ejekta bileşimi artık **her ölçümde** raporlanıyor
+
+Yeni kapı değil; mevcut ölçümün parçası (A36):
+
+| alan | ne |
+|---|---|
+| `ejekta_seviyeleri` | her ayrıklaştırma seviyesinde `n`, kütle, `P_eksenel` |
+| `m_ej_medyan`, `m_ej_max` | kaçan parçacık kütlesi dağılımı |
+| `en_agir_1_pay`, `en_agir_5_pay` | momentumun **yoğunlaşması** |
+
+`R1/R2/R3`'te `M_ejekta` tek başına değil, **seviye başına** da
+görülecek. `β` yakınsarken momentumu bir-iki kaba parçacık taşıyorsa
+gözlenebilir hâlâ kırılgandır — bu bir **tanı**, kapı değil.

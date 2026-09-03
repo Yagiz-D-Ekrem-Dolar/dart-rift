@@ -234,3 +234,80 @@ def test_theta_ejekta_YOKSA_nan() -> None:
     d = momentum_defteri(x, np.zeros((1, 3)), np.array([1.0]),
                          mermi_kesri=np.zeros(1), p_imp=10.0, **KW)
     assert np.isnan(d["theta_ejekta_derece"])
+
+
+# ------------------------- SEVIYE BILESIMI ve YOGUNLASMA (A36)
+
+def test_ejekta_SEVIYE_bilesimini_ayiriyor() -> None:
+    """`33` ince ile `33` kaba parçacık **aynı sayısal kanıt değil**.
+
+    Ölçülen (`L2`): düşük AV kolunda kaçan `33` parçacığın hepsi
+    `372,83 kg` — tabandakinin (`5,83 kg`) **`64` katı**.
+    """
+    x = np.array([[0.0, 0.0, -2.0]] * 4)
+    v = np.array([[0.0, 0.0, -10.0]] + [[0.0, 0.0, -1.0]] * 3)
+    m = np.array([372.8, 5.83, 5.83, 5.83])
+    d = momentum_defteri(x, v, m, mermi_kesri=np.zeros(4),
+                         p_imp=1.0e5, **KW)
+    sev = d["ejekta_seviyeleri"]
+    assert len(sev) == 2
+    assert sev[0]["parcacik_kg"] == pytest.approx(5.83)
+    assert sev[0]["n"] == 3
+    assert sev[1]["parcacik_kg"] == pytest.approx(372.8)
+    assert sev[1]["n"] == 1
+    assert d["m_ej_medyan"] == pytest.approx(5.83)
+    assert d["m_ej_max"] == pytest.approx(372.8)
+
+
+def test_TEK_KABA_parcacik_domine_ediyorsa_GORUNUYOR() -> None:
+    """`β` yakınsarken momentumu bir-iki kaba parçacık taşıyorsa
+    gözlenebilir **kırılgandır** — tanı, kapı değil."""
+    x = np.array([[0.0, 0.0, -2.0]] * 4)
+    v = np.array([[0.0, 0.0, -10.0]] + [[0.0, 0.0, -1.0]] * 3)
+    m = np.array([372.8, 5.83, 5.83, 5.83])
+    d = momentum_defteri(x, v, m, mermi_kesri=np.zeros(4),
+                         p_imp=1.0e5, **KW)
+    assert d["en_agir_1_pay"] > 0.99
+
+
+def test_ESIT_dagilimda_yogunlasma_DUSUK() -> None:
+    x = np.array([[0.0, 0.0, -2.0]] * 10)
+    v = np.array([[0.0, 0.0, -5.0]] * 10)
+    d = momentum_defteri(x, v, np.full(10, 5.83), mermi_kesri=np.zeros(10),
+                         p_imp=1.0e5, **KW)
+    assert d["en_agir_1_pay"] == pytest.approx(0.1, abs=1e-9)
+    assert len(d["ejekta_seviyeleri"]) == 1
+
+
+def test_kacan_YOKSA_bilesim_nan() -> None:
+    x = np.array([[0.0, 0.0, 0.5]])
+    d = momentum_defteri(x, np.zeros((1, 3)), np.array([1.0]),
+                         mermi_kesri=np.zeros(1), p_imp=10.0, **KW)
+    assert d["ejekta_seviyeleri"] == []
+    assert np.isnan(d["en_agir_1_pay"])
+
+
+# ------------------------- PROTOKOL v2: ust sinir TANI, kapi DEGIL
+
+def test_asiri_sikisma_SONUCU_IPTAL_ETMIYOR() -> None:
+    """Üst sınırın türetimi ampirik; sert kapı yapmak savunulamaz.
+
+    `%74,3` bandın üst kenarı `up = v/2`'den geliyor ve bu **aynı
+    malzeme/empedanstaki** simetrik düzlemsel çarpma için doğru.
+    """
+    from dartrift.observables.sok import sok_gecti, sok_yargisi_ayrintili
+    a0 = np.array([1.7564])
+    taban = 2700.0 / 1.7564
+    r = sok_yargisi_ayrintili(np.array([taban * 2.20]), a0)
+    assert r["yargi"] == "SOK_ASIRI_ADAY"
+    assert r["asiri_suphe"] is True
+    assert r["gecti"] is True, "asiri suphe TEK BASINA sonucu iptal etmemeli"
+    assert sok_gecti(np.array([taban * 2.20]), a0)
+
+
+def test_SERT_KAPI_yalnizca_ALT_sinir() -> None:
+    from dartrift.observables.sok import sok_gecti
+    a0 = np.array([1.7564])
+    taban = 2700.0 / 1.7564
+    assert not sok_gecti(np.array([taban * 1.0168]), a0)   # lam2=8
+    assert sok_gecti(np.array([taban * 1.2200]), a0)       # lam2=20

@@ -46,6 +46,51 @@ import numpy as np
 ARTIK_ESIGI = 1.0e-3
 
 
+def _ejekta_bilesim(m_ej, p_ej) -> dict:
+    """Ejekta kütlesinin **seviye dağılımı** ve momentum yoğunlaşması.
+
+    A36: `n_kaçan` tek başına yeterli değil. `33` ince parçacık ile
+    `33` kaba parçacık **aynı sayısal kanıt değildir** — ölçülen
+    örnekte kaba olanlar tabandakinin `64` katıydı.
+
+    `en_agir_*_pay`: en ağır parçacıkların toplam ejekta momentumunun
+    ne kadarını taşıdığı. Tek bir kaba parçacık momentumun `%40`'ını
+    taşıyorsa gözlenebilir sayısal olarak **kırılgandır** — ama bu bir
+    **tanı**, kapı değil.
+    """
+    n = len(m_ej)
+    if n == 0:
+        return {"ejekta_seviyeleri": [], "en_agir_1_pay": float("nan"),
+                "en_agir_5_pay": float("nan"), "m_ej_medyan": float("nan"),
+                "m_ej_max": float("nan")}
+    p_top = float(np.abs(p_ej).sum())
+    sira = np.argsort(-np.abs(p_ej))
+    def pay(k: int) -> float:
+        if p_top <= 0.0:
+            return float("nan")
+        return float(np.abs(p_ej[sira[:k]]).sum() / p_top)
+    # seviyeler: kutleye gore kumeleme (kayan nokta gurultusu birlesir)
+    sirali = np.sort(m_ej)
+    kes = [sirali[0]]
+    for v in sirali[1:]:
+        if v > kes[-1] * (1.0 + 1e-6):
+            kes.append(v)
+    seviyeler = []
+    for k in kes:
+        sel = np.isclose(m_ej, k, rtol=1e-6)
+        seviyeler.append({
+            "parcacik_kg": float(k), "n": int(sel.sum()),
+            "kutle_kg": float(m_ej[sel].sum()),
+            "P_eksenel": float(p_ej[sel].sum())})
+    return {
+        "ejekta_seviyeleri": seviyeler,
+        "m_ej_medyan": float(np.median(m_ej)),
+        "m_ej_max": float(m_ej.max()),
+        "en_agir_1_pay": pay(1),
+        "en_agir_5_pay": pay(min(5, n)),
+    }
+
+
 def _aci(vek, e) -> float:
     """`vek` ile `ê` arasındaki açı (derece); sıfır vektörde `nan`."""
     n = float(np.linalg.norm(vek))
@@ -172,6 +217,15 @@ def momentum_defteri(x, v, m, *, mermi_kesri, R, v_esc, ehat,
         "P_ejekta_buyukluk": float(np.linalg.norm(
             (m[kacan] * (1.0 - f[kacan])) @ v[kacan])),
         "M_ejekta": float(m[kacan] @ (1.0 - f[kacan])),
+        # SEVIYE BILESIMI ve KUTLE YOGUNLASMASI -- yeni kapi DEGIL,
+        # mevcut olcumun parcasi (rapor A36). Dusuk AV kolunda kacan
+        # 33 parcacigin HEPSI kaba seviyedendi (372,83 kg, tabandakinin
+        # 64 kati); toplam kutle 132 kat artmis gorunuyordu ama bu
+        # ejektanin COZULMESI degildi.
+        #
+        # `beta` yakinsarken momentumu bir-iki kaba parcacik tasiyorsa
+        # gozlenebilir hala kirilgandir; bu alanlar onu gorunur kiliyor.
+        **_ejekta_bilesim(m[kacan] * (1.0 - f[kacan]), pe[kacan]),
         # EJEKTA ACISI -- tani, cikarim degil. `beta` yakinsarken
         # `theta` savruluyorsa hala cozulmemis bir acisal dagilim
         # problemi var demektir; skaler `beta` bunu TAMAMEN gizler.
