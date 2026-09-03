@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 18 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 20 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -3426,6 +3426,85 @@ ve **yazıldığı anda beş betikte eksik olduğunu buldu**.
 
 Düşen testin eşiği de uydurmaydı (`> 30`); gerçek oran `26,0` ve
 artık ölçülen değere kilitli.
+
+---
+
+### A33 — **Testim geçti, kusur duruyordu**: varlık sınandı, yokluk sınanmadı (2026-09-03)
+
+`L1` ensemble'ı TRUBA'da `~15` saat koştu, veriyi yazdı ve **özet
+satırında** çöktü:
+
+```
+AttributeError: 'EnsembleDurum' object has no attribute 'n_tamam'
+```
+
+Bu kusur *"düzeltilmişti"* ve **testi vardı**. Test şöyleydi:
+
+```python
+assert f"durum.{ad}" in k, ad        # tamamlanan, toplam, dusen, ...
+```
+
+Yani `durum.tamamlanan`'ın **var olduğunu** sınıyordu. Ama
+`durum.n_tamam` de kaynakta **duruyordu** — ve varlık sınavı onu
+görmüyordu.
+
+#### Aslında **iki** kusur vardı
+
+Yokluk sınavı eklenince ikisi birden çıktı:
+
+| satır | yanlış alan | doğrusu |
+|---|---|---|
+| `155` | `durum.n_tamam` | `durum.tamamlanan` |
+| `156` | `durum.n_dusen` | `durum.dusen` |
+
+İkisi de aynı düzenlemede kaçmıştı (heredoc içinde satır sonu
+kaçışının üçüncü kez bozulması).
+
+#### Çare: **yokluk** sınavı
+
+```python
+kullanilan = set(re.findall(r"durum\.(\w+)", k))
+assert not (kullanilan - alanlar)
+```
+
+Artık `EnsembleDurum`'da olmayan **hiçbir** alan kullanılamıyor.
+
+#### Aynı sınıf, üçüncü kez
+
+| | |
+|---|---|
+| A29 | `β` doğru sayıydı, **yanlış büyüklüğün** |
+| A32 | `pytest \| tail` — test düştü, **çıkış kodu `0`** |
+| **A33** | **test geçti, kusur duruyordu** |
+
+Üçünde de: *doğrulama olumlu, ama doğruladığı şey amaçlanan şey
+değil.* Varlık sınamak yetmiyor; **yokluk** da sınanmalı.
+
+#### Veri kurtuldu
+
+`ensemble_kos` JSONL'i **satır satır** yazdığı için `24` noktanın
+tamamı diskteydi. Çöküş yalnızca özet satırındaydı. Tasarım kararı
+işe yaradı.
+
+---
+
+### A34 — **TRUBA iki gün geride kaldı**: koşular eski kodla koştu (2026-09-03)
+
+`L1`/`L2` gönderilirken `git pull` yapılmıştı, ama sonraki iki günün
+işi (`A32`'nin `pipefail`'i, `Δβ`, `θ_ejekta`, `plato_gecti`, alan
+adı düzeltmeleri) TRUBA'ya **çekilmedi**. Koşular `3bbc722`'de kaldı.
+
+| sonuç | |
+|---|---|
+| `L1` | alan adı kusuruyla koştu -> özet satırında çöktü |
+| `L2` | sonuç dosyaları **momentum defterini taşımıyor** (o kod sonradan geldi) |
+
+Defter sonradan kayıtlı durumlara uygulanabildi (`son_durum.npz`
+`mermi_kesri`'yi taşıyor), yani veri kaybı yok — ama koşu **kendi
+yargısını taşımıyor** ve ADR-0049'un istediği bu.
+
+**Çare:** SLURM betikleri işin **içinde** `git pull` yapmalı; gönderim
+anındaki sürüm değil, **koşum anındaki** sürüm kullanılmalı.
 
 ---
 

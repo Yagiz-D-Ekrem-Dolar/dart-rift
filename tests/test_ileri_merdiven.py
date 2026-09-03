@@ -136,6 +136,16 @@ def test_ensemble_surucusu_EnsembleDurum_alanlarini_dogru_okuyor() -> None:
     for ad in ("tamamlanan", "toplam", "dusen", "atlanan", "bozuk_satir"):
         assert ad in alanlar, ad
         assert f"durum.{ad}" in k, ad
+    # VARLIK YETMIYOR -- YOKLUK da sinanmali (rapor A33).
+    # Onceki surum yalnizca `durum.tamamlanan` VAR mi diye bakiyordu;
+    # `durum.n_tamam` de kaynakta DURUYORDU ve test GECIYORDU. TRUBA'da
+    # kosu 15 saat surup ozet satirinda AttributeError ile dustu.
+    import re
+    kullanilan = set(re.findall(r"durum\.(\w+)", k))
+    yabanci = kullanilan - alanlar
+    assert not yabanci, (
+        f"EnsembleDurum'da olmayan alan(lar) kullaniliyor: {yabanci}; "
+        f"gecerli alanlar: {sorted(alanlar)}")
 
 
 # ------------------------------------------- DILIM (A31: 6 kat israf)

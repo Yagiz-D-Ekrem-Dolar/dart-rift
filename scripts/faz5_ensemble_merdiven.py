@@ -152,8 +152,11 @@ def main() -> int:
         yol = yol.with_suffix(f".dilim{a.dilim.replace('/', '_')}.jsonl")
     durum = ensemble_kos(tasarim, _ileri, yol, root_seed=kok,
                          ilerleme=_ilerleme)
-    print(f"\n  tamamlanan : {durum.n_tamam}/{len(tasarim)}", flush=True)
-    print(f"  dusen      : {durum.n_dusen}", flush=True)
+    print(chr(10) + f"  tamamlanan : {durum.tamamlanan}/{durum.toplam}", flush=True)
+    print(f"  dusen      : {durum.dusen}   atlanan: {durum.atlanan}", flush=True)
+    if durum.bozuk_satir:
+        print(f"  BOZUK SATIR: {durum.bozuk_satir} -- kesinti aninda "
+              f"yarim yazilmis; o noktalar yeniden kosuldu", flush=True)
     print(f"  duvar      : {time.perf_counter() - t0:.0f} s", flush=True)
     ozet = yol.with_suffix(".ozet.json")
     ozet.write_text(json.dumps({
