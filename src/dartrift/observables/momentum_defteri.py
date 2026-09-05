@@ -58,6 +58,12 @@ def _ejekta_bilesim(m_ej, p_ej) -> dict:
     taşıyorsa gözlenebilir sayısal olarak **kırılgandır** — ama bu bir
     **tanı**, kapı değil.
     """
+    # YALNIZCA HEDEF MADDESI TASIYAN parcaciklar. Kacan mermi
+    # parcaciklarinin hedef kutlesi `0`; onlari dahil etmek `R1`'de
+    # "803 parcacik, 0,0 kg, P = -778 330" gibi anlamsiz bir seviye
+    # uretti (kacan momentum mermininki, hedefin degil).
+    sec = m_ej > 0.0
+    m_ej, p_ej = m_ej[sec], p_ej[sec]
     n = len(m_ej)
     if n == 0:
         return {"ejekta_seviyeleri": [], "en_agir_1_pay": float("nan"),

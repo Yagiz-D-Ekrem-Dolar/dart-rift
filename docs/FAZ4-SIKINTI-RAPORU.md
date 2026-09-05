@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 26 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 28 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -3688,6 +3688,67 @@ gelmiyor.**
 **Çare (şimdilik elle):** eski `JSONL` `kampanya/arsiv_L1_3bbc722/`
 altına taşındı. Kalıcı çare, devam kaydının **hangi sürümle**
 üretildiğini taşıması olurdu.
+
+---
+
+### A41 — **Bileşim tanısı kaçan mermiyi ejekta sayıyordu** (2026-09-05)
+
+`R1`'in çıktısı anlamsız bir seviye gösterdi:
+
+```
+seviyeler [{'parcacik_kg': 0.0, 'n': 803, 'kutle_kg': 0.0,
+            'P_eksenel': -778329.5}]
+```
+
+`803` parçacık, `0,0` kg, ama `P = -778 330`. Sebep: `_ejekta_bilesim`
+kaçan **bütün** parçacıkları alıyordu. Kaçanların hepsi **mermi**ydi;
+hedef kütleleri (`m·(1−f)`) `0`, ama eksenel momentumları `0` değil.
+
+Yani tanı, **merminin** momentumunu **hedef ejektası** kılığında
+raporluyordu.
+
+**Çare:** yalnızca `m_ej > 0` olanlar — hedef maddesi taşıyanlar.
+
+> `R2`/`R3` okunmadan yakalandı. Okunsaydı momentum yoğunlaşması
+> (`en_agir_1_pay`) tamamen yanlış çıkardı.
+
+---
+
+### A42 — `R1`'de hedef ejektası **yok**: gözlenebilir o çözünürlükte var olmuyor (2026-09-05)
+
+İlk yakınsama noktası. Protokol v2, `t_end = 0,2 s`, öz-benzer
+merdiven, tek değişken `m_p`.
+
+| ölçü | **R1** (`m_p = 46,6 kg`) | R2 (`5,83 kg`) |
+|---|---|---|
+| şok kapısı | `%28,561` **KISMI** ✓ | `%45,34` KISMI ✓ |
+| defter artığı | `1,16e-14` ✓ | `1,2e-14` ✓ |
+| **`Δβ_hedef`** | **`0,000000`** | `0,033102` |
+| **`M_ejekta`** | **`0,0 kg`** | `93,2 kg` |
+| **`n_kaçan_hedef`** | **`0`** | `16` |
+| `β_mermi` (tanı) | `0,218610` | `0,052120` |
+| krater | `nan` (çıkarıcı ölçemedi) | `1,029 m` |
+
+`R1`'de kaçan `803` parçacığın **hepsi mermi**. Hedeften **tek
+parçacık bile** çıkmıyor.
+
+#### `0 -> 0,0331` bir **yakınsama değil, doğuş**
+
+Yakınsama, bir niceliğin **var olup** sabitlenmesidir. Burada
+gözlenebilir `R1`'de **yok**; `R2`'de ortaya çıkıyor. `R3`'ün
+söyleyeceği şey bu yüzden belirleyici:
+
+| `R3` ne derse | anlamı |
+|---|---|
+| `Δβ ≈ 0,033` | `R2`'de oturmuş olabilir -> `A1` eşiği sınanır |
+| `Δβ ≫ 0,033` | gözlenebilir hâlâ **büyüyor**, yakınsamamış |
+| `Δβ` düşer | monoton değil -> `σ_num` **zarf** yöntemiyle |
+
+#### Ve şok kapısı `R1`'de de **geçti**
+
+`%28,561` — yani *"şok var ama ejekta yok"*. Şok kapısının tek
+başına yeterli olmadığının bir örneği daha; dört kapının **birlikte**
+istenmesinin gerekçesi tam olarak bu.
 
 ---
 

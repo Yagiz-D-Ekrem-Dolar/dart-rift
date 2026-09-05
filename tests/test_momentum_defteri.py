@@ -311,3 +311,33 @@ def test_SERT_KAPI_yalnizca_ALT_sinir() -> None:
     taban = 2700.0 / 1.7564
     assert not sok_gecti(np.array([taban * 1.0168]), a0)   # lam2=8
     assert sok_gecti(np.array([taban * 1.2200]), a0)       # lam2=20
+
+
+def test_bilesim_MERMI_parcaciklarini_HARIC_tutuyor() -> None:
+    """`R1`'de kaçan `803` parçacığın **hepsi mermi**; hedef kütlesi `0`.
+
+    Onları dahil etmek *"803 parçacık, `0,0` kg, `P = -778 330`"*
+    gibi anlamsız bir seviye üretiyordu — kaçan momentum merminin,
+    hedefin değil.
+    """
+    x = np.array([[0.0, 0.0, -2.0]] * 3)
+    v = np.array([[0.0, 0.0, -10.0]] * 3)
+    m = np.array([5.83, 100.0, 100.0])
+    f = np.array([0.0, 1.0, 1.0])          # ikisi TAMAMEN mermi
+    d = momentum_defteri(x, v, m, mermi_kesri=f, p_imp=1.0e5, **KW)
+    assert len(d["ejekta_seviyeleri"]) == 1
+    assert d["ejekta_seviyeleri"][0]["parcacik_kg"] == pytest.approx(5.83)
+    assert d["ejekta_seviyeleri"][0]["n"] == 1
+    assert d["n_kacan_hedef"] == 1
+    assert d["n_kacan_mermi"] == 2
+
+
+def test_bilesim_hedef_ejektasi_YOKSA_bos() -> None:
+    """`R1`'in gerçek durumu: kaçan hedef parçacığı **sıfır**."""
+    x = np.array([[0.0, 0.0, -2.0]] * 2)
+    v = np.array([[0.0, 0.0, -10.0]] * 2)
+    d = momentum_defteri(x, v, np.array([100.0, 100.0]),
+                         mermi_kesri=np.ones(2), p_imp=1.0e5, **KW)
+    assert d["ejekta_seviyeleri"] == []
+    assert np.isnan(d["en_agir_1_pay"])
+    assert d["delta_beta_hedef"] == pytest.approx(0.0)
