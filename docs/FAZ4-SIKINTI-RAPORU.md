@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 28 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 29 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -3749,6 +3749,42 @@ söyleyeceği şey bu yüzden belirleyici:
 `%28,561` — yani *"şok var ama ejekta yok"*. Şok kapısının tek
 başına yeterli olmadığının bir örneği daha; dört kapının **birlikte**
 istenmesinin gerekçesi tam olarak bu.
+
+---
+
+### A43 — **Üretim parametresini kontrol etmeden yazdım** (2026-09-05)
+
+Uzmana gidecek brifingte *"üretimde `Y₀ = 1e7 Pa` (kaya)
+kullanıyoruz"* yazdım. **Yanlış.** Sahne doğrulandı:
+
+| kol | matris `Y₀` | blok `Y₀` |
+|---|---|---|
+| **üretim** | **`1e4 Pa`** (`10 kPa`) | `1e7 Pa` |
+| `--Y0 1.0` | `1 Pa` | `1e7 Pa` |
+| `--Y0 1e8` | `1e8 Pa` | `1e7 Pa` |
+
+`1e7`, **blokların** değeriydi; matrisinki üç mertebe daha düşük.
+
+#### Sonucu değiştirmiyor, ama sayıyı değiştiriyor
+
+| | yazdığım | doğrusu |
+|---|---|---|
+| şok basıncı / matris `Y₀` | `2 000` kat | **`2 030 000` kat** |
+| rejim geçiş krateri | `1,6e8 m` | `1,6e5 m` |
+
+İkisi de *"tamamen mukavemet rejimi"* diyor — yani **çıkarım
+doğruydu, dayanağı yanlıştı**. Bu, doğru sonuca yanlış gerekçeyle
+varmanın örneği ve düzeltilmesi gerekiyordu.
+
+#### Ve bir şeyi **doğruladı**
+
+Kontrol sırasında `Y₀`'ın sahneye **gerçekten ulaştığı** görüldü.
+Yani `Y₀`'ı sekiz mertebe değiştirmenin `β_hedef`'i `5e-5`
+oynatması bir **bağlantı kusuru değil** — fiziksel bir sonuç
+(ya da koşunun mukavemet evresini hiç görmemesi).
+
+> **Ders:** üretim parametresini bellekten yazma, **sahneden oku**.
+> Brifing uzmana gitmeden yakalandı.
 
 ---
 
