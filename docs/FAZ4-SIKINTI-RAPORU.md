@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 23 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 26 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -3605,6 +3605,89 @@ verebilir. Doğru ifade:
 
 `npz` kaydı eklendi; bundan sonraki ensemble koşuları defteri ve
 parçacık kimliğini taşıyacak.
+
+---
+
+### A38 — **A34'ün çaresi yeni bir yarış hatası yarattı**: eşzamanlı `git pull` (2026-09-05)
+
+A34'ün çaresi *"`git pull` işin **içinde** olsun"*du. `R1/R2/R3` dizi
+görevleri **aynı anda** başlayıp **aynı depoya** `pull` yaptı:
+
+```
+error: cannot lock ref 'refs/remotes/origin/main':
+  is at c94d74e... but expected 44abe54...
+ ! 44abe54..c94d74e  main -> origin/main (unable to update local ref)
+PULL BASARISIZ -- mevcut surumle devam
+KOSUM SURUMU: 44abe54
+```
+
+Biri kazandı, ikisi kaybetti — ve `|| echo` sayesinde **sessizce**
+eski sürümle devam ettiler. Yani çare, düzeltmeye çalıştığı kusurun
+(yanlış sürümle koşmak) **rastgele** bir sürümünü üretti.
+
+**Çare:** `flock` ile serileştirme. Tek bir görev çeker, ötekiler
+bekler.
+
+---
+
+### A39 — **`kolyoz19`'da Slurm GPU verdi, sürücü yoktu** (2026-09-05)
+
+Üç `R` görevi de `kolyoz19`'a düştü. Slurm tahsisi doğruydu
+(`gres/gpu=1`, düğümde `gpu:4`), ama:
+
+```
+Warp 1.15.0 initialized:
+   CUDA Toolkit 12.9, CUDA driver not available
+   Devices:
+     "cpu" : "x86_64"
+ValueError: Invalid device identifier: cuda:0
+```
+
+Üçü de `57` saniyede düştü. **Kod kusuru değil, düğüm arızası** — ama
+iş bunu **kendi başına söyleyemedi**; hata Python yığınının dibinde
+çıktı.
+
+**Çare: tesisat sınavı (ölçüt #0) işin başında.**
+
+```bash
+nvidia-smi -L >/dev/null 2>&1 || { echo "TESISAT SINAVI DUSTU: ..."; exit 91; }
+```
+
+Artık GPU yoksa iş **ilk saniyede**, açık mesajla durur. Ve `kolyoz19`
+dışlandı.
+
+> Depo kuralı *"tesisat testi ölçüt #0"* koda yazılıydı ama **SLURM
+> tarafında yoktu**. Aynı kural iki yerde geçerli olmalıydı.
+
+#### Üç düzeltme tek dosyada
+
+`ortak_bas.sh` her işin başında `source` ediliyor: tesisat sınavı ·
+serileştirilmiş `pull` · koşum sürümü kaydı (+ kirli ağaç uyarısı).
+
+---
+
+### A40 — **`L1` "tamamlandı" dedi, hiçbir şey koşmadı** (2026-09-05)
+
+Yeniden gönderilen `L1` `47` saniyede `COMPLETED` döndü. Sebep:
+kaldığı-yerden-devam mantığı, önceki koşunun `JSONL`'ini görüp
+**bütün noktaları atladı**.
+
+Ama o noktalar `3bbc722` ile ve **`npz` olmadan** hesaplanmıştı
+(A34, A37) — yani kullanılamaz veriydi. Devam mantığı *"veri var"*
+diyordu, *"veri **geçerli**"* demiyordu.
+
+| | |
+|---|---|
+| çıkış kodu | `0` |
+| süre | `47 s` |
+| yapılan iş | **hiç** |
+
+Yine aynı sınıf: **başarı bildirimi, amaçlanan işin yapıldığı anlamına
+gelmiyor.**
+
+**Çare (şimdilik elle):** eski `JSONL` `kampanya/arsiv_L1_3bbc722/`
+altına taşındı. Kalıcı çare, devam kaydının **hangi sürümle**
+üretildiğini taşıması olurdu.
 
 ---
 
