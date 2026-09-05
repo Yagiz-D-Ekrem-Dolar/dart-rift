@@ -79,7 +79,8 @@ Rejim geçişi (`ρ g a ~ Y₀`):
 
 | `Y₀` | geçiş krateri |
 |---|---|
-| `1e7 Pa` (kaya — bizim üretim değeri) | `1,6e8 m` → **tamamen mukavemet rejimi** |
+| **`1e4 Pa` — bizim üretim matrisi** | `1,6e5 m` → **tamamen mukavemet rejimi** |
+| `1e7 Pa` — bizim bloklarımız | `1,6e8 m` → mukavemet |
 | `1 – 100 Pa` (moloz yığını kohezyonu) | `16 – 1 600 m` → **yerçekimi rejimi devreye girer** |
 
 ### Sorular
@@ -88,10 +89,11 @@ Rejim geçişi (`ρ g a ~ Y₀`):
    doyum mu, yoksa akışın **erken ölmesi** mi? Bu ölçekte hangi
    `t_end` anlamlıdır?
 
-5. Üretimde `Y₀ = 1e7 Pa` (kaya) kullanıyoruz. **Moloz yığını için
-   `1 – 100 Pa` mertebesi doğru mu?** Öyleyse rejim tamamen değişir,
-   zaman ölçeği `~100 s`'e çıkar — ve `0,2 s`'de hiçbir şey
-   görememizi açıklar mı?
+5. Üretim değerlerimiz: **matris `Y₀ = 1e4 Pa` (`10 kPa`)**, bloklar
+   `1e7 Pa`. **Moloz yığını matrisi için `10 kPa` çok mu yüksek?**
+   Literatürde kohezyon `1 – 100 Pa` mertebesinde veriliyor; öyleyse
+   rejim değişir, zaman ölçeği `~100 s`'e çıkar — ve `0,2 s`'de hiçbir
+   şey görememizi açıklar mı?
 
 6. Yerçekimini `0,2 s`'de etkisiz sayıp **kapalı** koşuyoruz. Uzun
    koşuda açmak zorunlu mu, yoksa balistik hesap yeterli mi?
@@ -164,6 +166,8 @@ inceltmede kütle oranı `8 000` ve şok arayüzü **geçemiyor** —
 | zayıf blok (`1 Pa`) | `1,033116` | `93,2 kg` (`16`) |
 | zayıf matris (`1 Pa`) | `1,033098` | `93,2 kg` (`16`) |
 
+(Üretim matrisi `Y₀ = 1e4 Pa`; tabloda `1e8` ve `1 Pa` ona göre.)
+
 `Y₀`'ı **sekiz mertebe** değiştirmek `β_hedef`'i `5e-5` oynatıyor.
 
 **Düşük yapay viskozite** kolu (`α_av 1,0 → 0,1`): kaçan kütle `132`
@@ -177,8 +181,13 @@ kat büyüdü, mermi-hedef bağlanması bozuldu, sıkışma `%0,00`.
 ### Sorular
 
 13. **`Y₀`'ın bu kadar etkisiz olması beklenen mi?** Şok basıncı
-    `20 GPa`, `Y₀` `10 MPa` — `2 000` kat fark. Mukavemet yalnızca geç
-    evrede mi belirleyici, ve bizim koşu o evreyi hiç görmüyor mu?
+    `20,3 GPa`, üretim matrisi `Y₀ = 1e4 Pa` — **iki milyon kat** fark.
+    Mukavemet yalnızca geç evrede mi belirleyici, ve bizim koşu
+    (`0,2 s`) o evreyi hiç görmüyor mu?
+
+    (`Y₀`'ın sahneye **doğru ulaştığını** doğruladık: `--Y0 1.0` ve
+    `--Y0 1e8` matris değerini gerçekten değiştiriyor. Yani duyarsızlık
+    bir bağlantı kusuru değil.)
 
 14. Gözenekliliği kapatma hipotezini **temiz** nasıl sınarsınız?
     (Bizim denememiz çözünürlük telafisi yapmadığı için düştü.)
