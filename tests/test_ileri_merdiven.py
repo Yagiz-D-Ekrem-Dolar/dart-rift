@@ -263,3 +263,49 @@ def test_ileri_model_NPZ_kaydediyor() -> None:
     k = inspect.getsource(ileri_kosu_merdiven)
     assert "savez_compressed" in k
     assert "mermi_kesri" in k          # provenance kaydediliyor
+
+
+# ----------------------------- A40: 'dosya var' != 'gecerli veri var'
+
+def test_devam_SURUMU_uysmayan_satiri_ATLIYOR() -> None:
+    """`L1` `47` saniyede `COMPLETED` dönüp **hiçbir şey koşmadı**.
+
+    Devam mantığı önceki satırları gördü ve hepsini atladı — ama o
+    satırlar **iki gün eski kodla** ve provenance kaydı olmadan
+    üretilmişti. Geçerlilik: `var ∧ doğru tohum ∧ doğru şema ∧
+    **doğru sürüm**`.
+    """
+    import json
+    import tempfile
+    from pathlib import Path as _P
+
+    from dartrift.inference.ensemble import oku_tamamlananlar
+    yol = _P(tempfile.mkdtemp()) / "e.jsonl"
+    yol.write_text("\n".join(json.dumps(r) for r in [
+        {"i": 0, "y": [1.0], "root_seed": 7, "surum": "eski"},
+        {"i": 1, "y": [2.0], "root_seed": 7, "surum": "yeni"},
+    ]) + "\n", encoding="utf-8")
+    assert sorted(oku_tamamlananlar(yol, 7, "yeni")[0]) == [1]
+    assert sorted(oku_tamamlananlar(yol, 7, "eski")[0]) == [0]
+    # surum verilmezse eski davranis (geriye uyum)
+    assert sorted(oku_tamamlananlar(yol, 7)[0]) == [0, 1]
+
+
+def test_ensemble_kos_SURUMU_satira_yaziyor() -> None:
+    """Sürüm yazılmazsa sonraki koşu doğrulayamaz."""
+    import inspect
+
+    from dartrift.inference import ensemble
+    k = inspect.getsource(ensemble.ensemble_kos)
+    assert '"surum": surum' in k
+    assert "oku_tamamlananlar(yol, root_seed, surum)" in k
+
+
+def test_surucu_KOD_SURUMUNU_gecirıyor() -> None:
+    import inspect
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import faz5_ensemble_merdiven as m
+    k = inspect.getsource(m.main)
+    assert "rev-parse" in k and "surum=surum" in k

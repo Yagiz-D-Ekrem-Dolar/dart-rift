@@ -63,12 +63,26 @@ class EnsembleDurum:
         return self.tamamlanan + self.dusen >= self.toplam
 
 
-def oku_tamamlananlar(yol, root_seed: int | None = None) -> tuple[dict, int]:
+def oku_tamamlananlar(yol, root_seed: int | None = None,
+                      surum: str | None = None) -> tuple[dict, int]:
     """JSONL'den `{indeks: y}` ve **bozuk satır sayısı**.
 
     Bozuk (yarım yazılmış) satırlar **atlanır**; o noktalar yeniden
     koşulur. `root_seed` verilirse tohumu uyuşmayan satırlar da atlanır —
     tasarım değiştiyse eski sonuçlar **geçersizdir**.
+
+    ## `surum` — aynı gerekçe, **kod** tarafında (rapor A40)
+
+    `L1` bir kez `47` saniyede `COMPLETED` döndü ve **hiçbir şey
+    koşmadı**: devam mantığı önceki koşunun satırlarını görüp bütün
+    noktaları atladı. Ama o satırlar **iki gün eski kodla** ve
+    provenance kaydı (`npz`) olmadan üretilmişti.
+
+    > *"Dosya var"* ile *"geçerli bilimsel veri var"* aynı şey değil.
+    > Geçerlilik: `var ∧ doğru tohum ∧ doğru şema ∧ doğru sürüm`.
+
+    `surum` verilirse sürümü uyuşmayan satırlar da **atlanır** ve o
+    noktalar yeniden koşulur.
     """
     yol = Path(yol)
     if not yol.is_file():
@@ -86,6 +100,9 @@ def oku_tamamlananlar(yol, root_seed: int | None = None) -> tuple[dict, int]:
         except (json.JSONDecodeError, KeyError, TypeError, ValueError):
             bozuk += 1
             continue
+        if surum is not None and d.get("surum") != surum:
+            # KOD DEGISTIYSE eski sonuc gecersiz -- tohumla ayni gerekce.
+            continue
         if root_seed is not None and d.get("root_seed") != root_seed:
             bozuk += 1          # tasarim degismis -> gecersiz
             continue
@@ -101,8 +118,8 @@ def oku_tamamlananlar(yol, root_seed: int | None = None) -> tuple[dict, int]:
 
 
 def ensemble_kos(tasarim, ileri, yol, root_seed: int,
-                 ilerleme=None, yeniden_dene_dusenleri: bool = False
-                 ) -> EnsembleDurum:
+                 ilerleme=None, yeniden_dene_dusenleri: bool = False,
+                 surum: str | None = None) -> EnsembleDurum:
     """Tasarımı koştur; **zaten tamamlanmış** noktaları atla.
 
     Parameters
@@ -112,7 +129,12 @@ def ensemble_kos(tasarim, ileri, yol, root_seed: int,
     ileri
         `ileri(theta) -> (k,)` dizi; patlarsa `Exception` atmalı.
     yol
-        JSONL dosyası. Her satır: `{"i": …, "y": […] | null, "root_seed": …}`.
+        JSONL dosyası. Her satır:
+        `{"i": …, "y": […] | null, "root_seed": …, "surum": …}`.
+    surum
+        Kod sürümü (commit SHA). Verilirse **başka sürümle** üretilmiş
+        satırlar geçersiz sayılır ve o noktalar yeniden koşulur
+        (rapor A40).
     yeniden_dene_dusenleri
         `False` (varsayılan): düşen nokta **tekrar denenmez** — aynı
         parametre aynı şekilde düşer ve GPU boşa gider. `True` yalnızca
@@ -121,7 +143,7 @@ def ensemble_kos(tasarim, ileri, yol, root_seed: int,
     tasarim = np.atleast_2d(np.asarray(tasarim, dtype=np.float64))
     yol = Path(yol)
     yol.parent.mkdir(parents=True, exist_ok=True)
-    tamam, bozuk = oku_tamamlananlar(yol, root_seed)
+    tamam, bozuk = oku_tamamlananlar(yol, root_seed, surum)
 
     atlanan = 0
     dusen = sum(1 for v in tamam.values() if v is None)
@@ -133,10 +155,12 @@ def ensemble_kos(tasarim, ileri, yol, root_seed: int,
             y = np.asarray(ileri(th), dtype=np.float64).ravel()
             if not np.all(np.isfinite(y)):
                 raise RuntimeError(f"sonlu olmayan cikti: {y}")
-            kayit = {"i": i, "y": [float(v) for v in y], "root_seed": root_seed}
+            kayit = {"i": i, "y": [float(v) for v in y],
+                     "root_seed": root_seed, "surum": surum}
             durum = "tamam"
         except Exception as e:                             # noqa: BLE001
             kayit = {"i": i, "y": None, "root_seed": root_seed,
+                     "surum": surum,
                      "hata": str(e)[:400]}
             durum = f"DUSTU: {str(e)[:120]}"
             dusen += 1

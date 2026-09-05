@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -153,8 +154,17 @@ def main() -> int:
     # AYRI DOSYA (A31'in ikinci yuzu): ayni dosyaya eszamanli EKLEME
     # satir bozabilir. Dilimler sonradan birlestirilir. `yol` yukarida
     # tanimli cunku `_ileri` durum dizinini ondan tureti yor.
+    # KOD SURUMU (rapor A40). 'Dosya var' ile 'gecerli bilimsel veri
+    # var' ayni sey degil: L1 bir kez 47 saniyede COMPLETED donup
+    # HICBIR SEY kosmadi cunku devam mantigi iki gun eski kodla ve
+    # provenance kaydi olmadan uretilmis satirlari 'tamam' saydi.
+    # Artik surumu uysmayan satir GECERSIZ ve o nokta yeniden kosulur.
+    surum = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=REPO, capture_output=True,
+        text=True, check=False).stdout.strip() or None
+    print(f"  kod surumu  : {surum or 'BILINMIYOR'}", flush=True)
     durum = ensemble_kos(tasarim, _ileri, yol, root_seed=kok,
-                         ilerleme=_ilerleme)
+                         ilerleme=_ilerleme, surum=surum)
     print(chr(10) + f"  tamamlanan : {durum.tamamlanan}/{durum.toplam}", flush=True)
     print(f"  dusen      : {durum.dusen}   atlanan: {durum.atlanan}", flush=True)
     if durum.bozuk_satir:
@@ -169,6 +179,7 @@ def main() -> int:
         "merdiven": list(MERDIVEN),
         "t_end": a.t_end, "spacing": a.spacing, "root_seed": kok,
         "sok_kapisi": not a.sok_kapisi_kapali, "dilim": a.dilim,
+        "surum": surum,
         "n_tasarim_tam": int(tam_n),
         "gozlenebilirler": list(GOZLENEBILIRLER),
         "duvar_s": time.perf_counter() - t0,
