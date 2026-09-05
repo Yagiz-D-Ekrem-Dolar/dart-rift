@@ -147,3 +147,63 @@ Yeni kapı değil; mevcut ölçümün parçası (A36):
 `R1/R2/R3`'te `M_ejekta` tek başına değil, **seviye başına** da
 görülecek. `β` yakınsarken momentumu bir-iki kaba parçacık taşıyorsa
 gözlenebilir hâlâ kırılgandır — bu bir **tanı**, kapı değil.
+
+---
+
+# Protokol v2.1 — `t_end` `0,2 s -> 0,1 s` (2026-09-05, **sonuçlardan önce**)
+
+## Neden
+
+`R3` (`m_p = 0,73 kg`, `N = 493 330`) ölçüldü:
+
+| | |
+|---|---|
+| `dt` | `1,999e-6 s` |
+| `t = 0,2 s` için | `100 056` adım |
+| ölçülen hız | `0,39 adım/s` (R2'nin `2,76`'sından `7,06` kat yavaş) |
+| **gereken süre** | **`71,2 saat`** |
+| bölüm sınırı | `48 saat` |
+
+**`R3` `t_end = 0,2 s`'e yetişemez.** Sınırda kesilir ve `_kos`
+sessiz kısalmayı reddettiği için (A20) **hiçbir sonuç üretmez**.
+
+## Karar
+
+`t_end = 0,1 s`, **üç kolda da**.
+
+| `t_end` | `R3` süresi | |
+|---|---|---|
+| `0,2 s` | `71,2 sa` | sığmaz |
+| **`0,1 s`** | **`35,6 sa`** | **sığar** |
+| `0,05 s` | `17,8 sa` | sığar ama plato kıl payı |
+
+## Neden bu bir eşik kaydırması **değil**
+
+1. **Üç kola da eşit** uygulanıyor — karşılaştırma bozulmuyor.
+2. **Hesap kısıtı**, sonuç değil: karar `R3`'ün hızı ölçülerek
+   verildi, `R3`'ün *sonucu* görülmeden.
+3. **Zamansal plato kapısı bağımsız olarak doğruluyor.** `K4`'ün izi:
+
+   | `t` | `β_bal` |
+   |---|---|
+   | `0,050 s` | `1,08561` |
+   | `0,100 s` | `1,08519` |
+   | `0,200 s` | `1,08523` |
+
+   `0,1 -> 0,2 s` farkı **`4e-5`**. Plato `t ≈ 0,09 s`'te kurulmuş.
+   Yani `0,1 s`'te ölçmek `0,2 s`'te ölçmekle **aynı**.
+
+4. Kapı yine de her kolda **ayrıca** sınanacak — plato kurulmamışsa
+   o kol düşer.
+
+## Ne değişmedi
+
+`Δβ` ölçütü · üç nicelik · `A1 < 0,20` / `A2 < 0,10` · `σ_num` kuralı ·
+şok kapısı (yalnız alt sınır sert) · tanı alanları · `L2` karar ağacı.
+
+## Yürütme
+
+`R1` ve `R2` de `t_end = 0,1 s` ile **yeniden koşuluyor** ki üç kolun
+da **tam momentum defteri** aynı anda olsun (iz dosyası defteri
+taşımıyor). Koşan `R2 @ 0,2 s` iptal **edilmiyor** — bittiğinde plato
+kanıtı olarak kayda geçecek.
