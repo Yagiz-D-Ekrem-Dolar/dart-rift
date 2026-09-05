@@ -107,8 +107,19 @@ def test_ensemble_surucusu_MERDIVENI_kullaniyor() -> None:
     import faz5_ensemble_merdiven as m
     k = inspect.getsource(m.main)
     assert "ileri_kosu_merdiven(" in k
-    assert "kademeler=MERDIVEN" in k
+    # Merdiven artik SECILEBILIR (`--kademeler`, Protokol G kaba olcekte
+    # kosuyor). Sinav bicimden AMACA cevrildi ve GUCLENDI: secilebilir
+    # olmak varsayilani degistirmemeli.
+    assert "kademeler=merdiven" in k, "surucu secilen merdiveni gecirmiyor"
+    assert "merdiven = MERDIVEN" in k, "VARSAYILAN uretim merdiveni olmali"
     assert m.MERDIVEN == ("48:2.8", "24:1.4", "12:0.7", "6:0.35", "3:0.175")
+    assert m.MERDIVEN_KABA == ("48:5.6", "24:2.8", "12:1.4", "6:0.7", "3:0.35")
+    # Ve `--kademeler` verilmezse GERCEKTEN uretim merdiveni secilmeli.
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--kademeler", nargs="+", default=None)
+    assert ap.parse_args([]).kademeler is None
 
 
 def test_ensemble_surucusu_SOK_KAPISI_varsayilan_ACIK() -> None:

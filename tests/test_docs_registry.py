@@ -29,12 +29,28 @@ def metin() -> str:
     return KAYIT.read_text(encoding="utf-8")
 
 
+# Kayit girisinin KANONIK bicimi. Yalnizca bosluk aramak yetmiyordu:
+# `| S3 sinirii \`1,30\` disinda |` (parametre uzayi VERI satiri) ve
+# `## K5 pilot ensemble ... kosuyor` (K5 KOSUSU hakkinda bolum) kimlik
+# sanildi. Ikisi de kayit girisi degil; capa ayirici karakteri de
+# istemeli: tabloda `|`, govdede uzun tire.
+KIMLIK = r"(K\d+|S\d+|B\d+)"
+TABLO_DSN = rf"^\| {KIMLIK} \|"
+GOVDE_DSN = rf"^## {KIMLIK} —"
+
+# Kayitli giris sayisi. Capa siki oldugu icin, yanlis ayiricili bir
+# giris artik ESLESMEZ -- ve iki listeden birden dustugu icin
+# `birebir_ayni` sinavi bunu goremez. Sayac o deligi kapatir:
+# giris eklendiginde bu sayi da BILEREK artirilir.
+BEKLENEN_GIRIS = 32
+
+
 def _tablo_kimlikleri(t: str) -> list[str]:
-    return re.findall(r"^\| (K\d+|S\d+|B\d+) ", t, re.M)
+    return re.findall(TABLO_DSN, t, re.M)
 
 
 def _govde_kimlikleri(t: str) -> list[str]:
-    return re.findall(r"^## (K\d+|S\d+|B\d+) ", t, re.M)
+    return re.findall(GOVDE_DSN, t, re.M)
 
 
 def test_tablo_ve_govde_birebir_ayni(metin):
@@ -91,3 +107,20 @@ def test_bu_turun_ADRleri_kayitta_aniliyor(metin):
     """ADR-0029..0033 bu turun kararlari; kayitta izleri olmali."""
     for adr in ("0029", "0030", "0031", "0032", "0033"):
         assert adr in metin, f"ADR-{adr} kusur kaydinda anilmiyor"
+
+
+def test_giris_sayisi_sayacla_uyusuyor(metin):
+    """Siki capa bir girisi SESSIZCE dusurmesin.
+
+    `birebir_ayni` iki listeyi kiyasliyor; yanlis ayiricili bir giris
+    IKISINDEN BIRDEN dusecegi icin oradan gorunmez. Sayac tek koruma.
+    """
+    tablo, govde = _tablo_kimlikleri(metin), _govde_kimlikleri(metin)
+    assert len(tablo) == BEKLENEN_GIRIS, (
+        f"tabloda {len(tablo)} giris, beklenen {BEKLENEN_GIRIS}. Giris "
+        f"eklediysen BEKLENEN_GIRIS'i artir; artirmadiysan girisin "
+        f"ayiricisi kanonik degil (tabloda `| K9 |`, govdede `## K9 —`)."
+    )
+    assert len(govde) == BEKLENEN_GIRIS, (
+        f"govdede {len(govde)} bolum, beklenen {BEKLENEN_GIRIS}"
+    )

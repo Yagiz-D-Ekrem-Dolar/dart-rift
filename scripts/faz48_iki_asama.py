@@ -70,7 +70,7 @@ T1_OLCULEN = 4.767e-3
 
 
 def _mat(gozeneksiz: bool = False, yercekimli: bool = False,
-         hasarli: bool = False):
+         hasarli: bool = False, alpha_donuk: bool = False):
     """Malzeme; `gozeneksiz` ise **P-α kapalı**.
 
     Tanı amaçlı: gözeneklilik şok enerjisini **gözenek çökmesine**
@@ -121,8 +121,18 @@ def _mat(gozeneksiz: bool = False, yercekimli: bool = False,
         # config'ten (ve `DamageParams` varsayilanlarindan) gelir.
         m = dataclasses.replace(
             m, damage=dataclasses.replace(m.damage, enabled=True))
-    if not gozeneksiz:
+    if not (gozeneksiz or alpha_donuk):
         return m
+    # `alpha_donuk`: P-alpha GUNCELLEMESI kapali ama SAHNE degismiyor.
+    # Cozucu `alpha0` dizisini disaridan aliyor (solver_solid.py:94-98),
+    # ve `enabled=False` yalnizca `solver_solid.py:434`'teki ezilme
+    # guncellemesini durduruyor. EOS hala P = P_kati(alpha*rho, u)/alpha
+    # kullaniyor -- yani distansiyon URETIM DEGERINDE DONUYOR.
+    #
+    # Fark `--gozeneksiz` ile: o, sahneyi de `bulk_density = 2700`,
+    # `boulder_alpha0 = 1` yapiyor; konumlar, kutleler, h ve baslangic
+    # yogunluklari DEGISIYOR. Bu yuzden gozeneksiz kol A27'de kontrolsuz
+    # kalmisti (parcacik kutlesi 1,76 kat).
     return dataclasses.replace(
         m, porosity=dataclasses.replace(m.porosity, enabled=False))
 
@@ -227,7 +237,7 @@ def _alpha0_denetle(alpha0, gozeneksiz: bool):
 def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None, D0=None,
             cfl: float = 0.25, u_tabani: bool = False,
             alpha_av: float = 1.0, beta_av: float = 2.0,
-            rho_durum=None):
+            rho_durum=None, cekme_kirp_maske=None):
     # Kusur tohumlamasi sahneyle AYNI koke baglanir; boylece hasarli kol
     # da yeniden uretilebilir ve "hangi tohum" sorusu tek yerde yanitlanir.
     from dartrift.warp_core.solver_solid import WarpSolid3D
@@ -240,7 +250,8 @@ def _cozucu(x, v, m, u, h, alpha0, Y0, device, mat=None, D0=None,
         alpha0=np.ascontiguousarray(alpha0), Y0=np.ascontiguousarray(Y0),
         device=device, check_every=10 ** 9,
         damage_seed=int(SAHNE["root_seed"]), D0=D0,
-        u_tabani=u_tabani, rho_durum=rho_durum)
+        u_tabani=u_tabani, rho_durum=rho_durum,
+        cekme_kirp_maske=cekme_kirp_maske)
 
 
 def _sok_yargisi(rho, u, m, alpha0, hedef) -> dict:
@@ -378,6 +389,26 @@ def _iz_ornegi(st, *, hedef, R, v_esc, ehat, p_imp, x0,
                         np.asarray(alpha0)[hedef])
             d["sikisma_max_yuzde"] = 100.0 * float(s.max())
             d["n_sikisan_yuzde5"] = int((s > 0.05).sum())
+            # A45: `sikisma` tek basina CANLI SOK ile KALICI EZILME
+            # ARTIGINI ayirt EDEMIYOR. Ikisi de ayni sayiyi yukseltir;
+            # matrisin salt gozenek tavani %75,64 ve Hugoniot bandi
+            # (%45,6-74,3) TAMAMEN onun altinda. Ayirt eden tek olcu
+            # `rho > rho0_kati`: gozenek kapanmasi oraya kadar gidebilir,
+            # OTESI yalnizca katinin sikismasidir.
+            _rho_h = np.asarray(st["rho"])[hedef]
+            d["rho_max"] = float(_rho_h.max())
+            d["n_kati_sikisan"] = int((_rho_h > 2700.0 * 1.001).sum())
+            # CEKME TANISI (uzman incelemesi, rapor A51). Y0 YALNIZ
+            # deviatorik gerilmeyi sinirliyor; Tillotson'un negatif
+            # hidrostatik dalini SINIRLAMIYOR. Olculdu: u=0, a=1,7564,
+            # rho_s = 0,999 rho_s0 icin P = -15,19 MPa ve bu deger
+            # Y0 = 1 Pa ile Y0 = 100 MPa arasinda DEGISMIYOR.
+            # Yani "1 Pa'lik matris" hala -15 MPa cekme tasiyabilir.
+            if "P" in st:
+                _P_h = np.asarray(st["P"])[hedef]
+                d["P_min"] = float(_P_h.min())
+                d["n_cekmede"] = int((_P_h < 0.0).sum())
+                d["cekme_pay"] = float((_P_h < 0.0).mean())
         except Exception as e:                             # noqa: BLE001
             d["sikisma_max_yuzde"] = float("nan")
             d["sikisma_hata"] = str(e)[:80]
@@ -467,6 +498,14 @@ def main() -> int:
     ap.add_argument("--u-tabani", action="store_true",
                     help="ic enerjiyi 0'in altina indirme; kirpilani SAY "
                          "(rapor A21)")
+    ap.add_argument("--matris-cekme-yok", action="store_true",
+                    help="TANI KOLU: matris hedef parcaciklarinda negatif "
+                         "basinci sifira kirp (uzman incelemesi 1. adayi). "
+                         "Uretim modeli DEGIL.")
+    ap.add_argument("--alpha-donuk", action="store_true",
+                    help="P-alpha GUNCELLEMESINI dondur, sahneyi DEGISTIRME "
+                         "(temiz gozeneklilik tani kolu; --gozeneksiz'in "
+                         "aksine konum/kutle/h ayni kalir)")
     ap.add_argument("--gozeneksiz", action="store_true",
                     help="P-alpha gozenekliligi KAPAT (tani kontrol kolu)")
     # A17: `_malzeme()` hasari KAPALI tutuyor ama config `true` diyor ve
@@ -504,11 +543,22 @@ def main() -> int:
     # ---------------------------------------------------- KONTROL KOLU
     if a.tek_asama:
         print(f"\nKONTROL KOLU: tek asama, lam={a.lam2}, N={a2.n}", flush=True)
+        # CEKME KIRPMA MASKESI: yalniz MATRIS HEDEF parcaciklari.
+        # Bloklar (`is_boulder`) saglam kayadir, mermi de oyle -- ikisinde
+        # de cekme dali fiziksel. Kirpilan yalniz granuler matris.
+        _kirp_maske = None
+        if a.matris_cekme_yok:
+            _kirp_maske = (~np.asarray(a2.is_impactor, dtype=bool)
+                           & ~np.asarray(a2.is_boulder, dtype=bool))
+            print(f"  CEKME KIRPMA acik: {int(_kirp_maske.sum())} matris "
+                  f"parcacigi (toplam {a2.n})")
         sol = _cozucu(a2.x, a2.v, a2.m, np.zeros(a2.n), a2.h,
                       _alpha0_denetle(a2.alpha0, a.gozeneksiz), a2.Y0, a.device,
                       cfl=a.cfl, u_tabani=a.u_tabani,
                    alpha_av=a.alpha_av, beta_av=a.beta_av,
-                      mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
+                      mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli,
+                               alpha_donuk=a.alpha_donuk),
+                      cekme_kirp_maske=_kirp_maske)
         # IZLEME TEK ASAMADA DA CALISIYOR. Onceden `--iz-every` yalnizca
         # iki asamali yolda baglanmisti ve tek asamada SESSIZCE
         # YOKSAYILIYORDU -- A14/A20/A26 ile ayni sinif. Merdiven kolu
@@ -537,6 +587,10 @@ def main() -> int:
                 fh.write(json.dumps(d) + chr(10))
             print(f"    iz {adim:6d} t={tt:.4e} "
                   f"sikisma={d.get('sikisma_max_yuzde', float('nan')):.3f}% "
+                  f"rho_max={d.get('rho_max', float('nan')):.1f} "
+                  f"kati={d.get('n_kati_sikisan', -1)} "
+                  f"P_min={d.get('P_min', float('nan')):.3e} "
+                  f"cekme={100 * d.get('cekme_pay', float('nan')):.1f}% "
                   f"beta_bal={d['beta_bal']:.5f} "
                   f"ejekta={d['n_hedef_ejekta']:5d} "
                   f"derinlik={d['krater_derinlik']:.4f}", flush=True)
@@ -620,7 +674,8 @@ def main() -> int:
                    _alpha0_denetle(a1.alpha0, a.gozeneksiz), a1.Y0, a.device,
                    cfl=a.cfl, u_tabani=a.u_tabani,
                    alpha_av=a.alpha_av, beta_av=a.beta_av,
-                   mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli))
+                   mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli,
+                            alpha_donuk=a.alpha_donuk))
     t = _kos(sol1, 0.0, a.t1, a.azami_adim, "a1")
     print(f"  asama-1 bitti: t = {t:.5e} s "
           f"({time.perf_counter() - t0:.1f} s duvar)", flush=True)
@@ -662,7 +717,8 @@ def main() -> int:
                    _alpha0_denetle(sahne.alpha0, a.gozeneksiz), sahne.Y0, a.device,
                    cfl=a.cfl, u_tabani=a.u_tabani,
                    alpha_av=a.alpha_av, beta_av=a.beta_av,
-                   mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli),
+                   mat=_mat(a.gozeneksiz, a.yercekimli, a.hasarli,
+                            alpha_donuk=a.alpha_donuk),
                    D0=sahne.hasar if a.hasarli else None,
                    # ASAMA-1'IN SIKISMASI DEVRALINIYOR (rapor A24).
                    # Devralinmazsa cozucu `rho`yu `rho0/alpha0` ile

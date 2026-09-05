@@ -60,6 +60,12 @@ from dartrift.inference.forward import (  # noqa: E402
 #: A25/A26 ile dogrulanmis merdiven -- METRE cinsinden, DISTAN ICE.
 MERDIVEN = ("48:2.8", "24:1.4", "12:0.7", "6:0.35", "3:0.175")
 
+#: Kaba merdiven -- `Rb_R1` olcegi. Olculen: `N = 17 201`,
+#: `00:05:06`/kosu. `MERDIVEN` (orta) `N = 69 886` ve `~1,2 sa`.
+#: 48 kosuluk bir ayirt edilebilirlik taramasi orta olcekte
+#: `58` saat, kaba olcekte `4` saat surer.
+MERDIVEN_KABA = ("48:5.6", "24:2.8", "12:1.4", "6:0.7", "3:0.35")
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -71,6 +77,19 @@ def main() -> int:
     ap.add_argument("--spacing", type=float, default=7.0)
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--root-seed", type=int, default=None)
+    ap.add_argument("--sahne-tohum", type=int, default=None,
+                    help="SAHNE gerceklemesi (blok yerlesimi, hasar) "
+                         "icin ayri tohum. Verilmezse tasarim tohumu. "
+                         "Protokol G gurultu tabani bunu kullanir.")
+    ap.add_argument("--kademeler", nargs="+", default=None,
+                    help="r:s ciftleri, ikisi de METRE. Verilmezse "
+                         "uretim merdiveni. `kaba` kisayolu R1 "
+                         "olcegini kurar (N = 17 201, 5 dk/nokta).")
+    ap.add_argument("--alpha-av", type=float, default=1.0,
+                    help="yapay viskozite dogrusal terim (uretim 1,0). "
+                         "A56: bu ensemble'a hic gecmiyordu.")
+    ap.add_argument("--beta-av", type=float, default=2.0,
+                    help="yapay viskozite karesel terim (uretim 2,0)")
     ap.add_argument("--sok-kapisi-kapali", action="store_true",
                     help="TANI AMACLI: ADR-0049 kapisini kapat")
     ap.add_argument("--eski-uzay", action="store_true",
@@ -89,6 +108,16 @@ def main() -> int:
     a = ap.parse_args()
 
     kok = int(SAHNE["root_seed"]) if a.root_seed is None else a.root_seed
+    # A57: TASARIM tohumu ile SAHNE tohumu AYRI olmali.
+    #
+    # Tek tohum ikisini birden suruyordu: `lhs_design(..., root_seed=kok)`
+    # VE `sahne_taban={**SAHNE, "root_seed": kok}`. Protokol G ayni 24
+    # noktayi IKI gerceklemeyle kosup gurultu tabanini olcuyor; tek
+    # tohumla ikinci kol FARKLI theta'lar orneklerdi ve `ayirt_raporu`
+    # hicbir eslesme bulamazdi (F = nan). Kampanya cope giderdi.
+    #
+    # Varsayilan DEGISMIYOR: verilmezse sahne tohumu tasarim tohumudur.
+    sahne_kok = kok if a.sahne_tohum is None else int(a.sahne_tohum)
     # UZAY SECIMI -- ADR-0044 (KABUL EDILDI) varsayilani S3'tur.
     # Onceki surumde burada kosulsuz `DART_UZAYI` yaziliydi ve is 1539871
     # (K5 pilot) onunla kostu: 19/24 nokta S3'un gerekceli `1,30` sinirinin
@@ -116,6 +145,14 @@ def main() -> int:
         if len(tasarim) == 0:
             raise SystemExit(f"dilim {a.dilim} bos -- n cok buyuk")
 
+    # `kaba` kisayolu -- yazim hatasi riskini kaldirir.
+    if a.kademeler is None:
+        merdiven = MERDIVEN
+    elif list(a.kademeler) == ["kaba"]:
+        merdiven = MERDIVEN_KABA
+    else:
+        merdiven = tuple(a.kademeler)
+
     print("=" * 78, flush=True)
     print("FAZ 5 — MERDIVENLI ENSEMBLE", flush=True)
     print("=" * 78, flush=True)
@@ -124,12 +161,13 @@ def main() -> int:
     print(f"  nokta       : {len(tasarim)}  (lhs {a.n_lhs}"
           f"{' + kenarlar' if a.kenarlar else ''})", flush=True)
     print(f"  dilim       : {dilim_bilgi}", flush=True)
-    print(f"  merdiven    : {' '.join(MERDIVEN)}  (metre)", flush=True)
+    print(f"  merdiven    : {' '.join(merdiven)}  (metre)", flush=True)
     print(f"  t_end       : {a.t_end} s", flush=True)
     print(f"  sok kapisi  : {'KAPALI (TANI)' if a.sok_kapisi_kapali else 'ACIK'}",
           flush=True)
     print(f"  gozlenebilir: {GOZLENEBILIRLER}", flush=True)
-    print(f"  root_seed   : {kok}", flush=True)
+    print(f"  root_seed   : {kok}  (tasarim)", flush=True)
+    print(f"  sahne_tohum : {sahne_kok}  (gerceklem)", flush=True)
 
     t0 = time.perf_counter()
 
@@ -144,9 +182,16 @@ def main() -> int:
     def _ileri(theta):
         y = ileri_kosu_merdiven(
             np.atleast_2d(theta), material=_mat(), device=a.device,
-            t_end=a.t_end, kademeler=MERDIVEN, spacing=a.spacing,
-            sahne_taban=None, sok_yargisi=not a.sok_kapisi_kapali,
-            durum_dizini=yol.with_suffix(".durumlar"))[0]
+            t_end=a.t_end, kademeler=merdiven, spacing=a.spacing,
+            # A46: `None` gecince `build_scene` VARSAYILANI `M0` oluyor ve
+            # `M0` dalinda `boulders = None` -- yani `f_boulder` ve
+            # `boulder_alpha0` SESSIZCE yoksayiliyordu. Uc cikarim
+            # ekseninden IKISI sahneye hic ulasmiyordu. `SAHNE`'nin
+            # kendisi `model_class = 'M1'` tasiyor; gonderilmiyordu.
+            sahne_taban={**SAHNE, "root_seed": sahne_kok},
+            sok_yargisi=not a.sok_kapisi_kapali,
+            durum_dizini=yol.with_suffix(".durumlar"),
+            surum=surum, alpha_av=a.alpha_av, beta_av=a.beta_av)[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
         return y
@@ -176,8 +221,9 @@ def main() -> int:
         "n_nokta": int(durum.toplam), "n_tamam": int(durum.tamamlanan),
         "n_dusen": int(durum.dusen), "n_atlanan": int(durum.atlanan),
         "n_bozuk_satir": int(durum.bozuk_satir),
-        "merdiven": list(MERDIVEN),
+        "merdiven": list(merdiven),
         "t_end": a.t_end, "spacing": a.spacing, "root_seed": kok,
+        "sahne_tohum": sahne_kok,
         "sok_kapisi": not a.sok_kapisi_kapali, "dilim": a.dilim,
         "surum": surum,
         "n_tasarim_tam": int(tam_n),

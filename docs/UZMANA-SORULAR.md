@@ -1,3 +1,22 @@
+> ## ⓘ Bu brifing **yanıtlandı** (2026-09-06)
+>
+> Uzman `c94d74e`'yi inceledi. **Beş kod kusuru** buldu; beşi de
+> bağımsız olarak üretildi, beşi de gerçekti, beşi de düzeltildi.
+> İki fizik ölçümü de tuttu ve biri buradaki bir çıkarımı çürüttü.
+>
+> - Yanıt ve doğrulamalar: [`UZMANA-YANIT.md`](UZMANA-YANIT.md)
+> - Kusur kayıtları: `FAZ4-SIKINTI-RAPORU.md` **A46 – A52**
+> - `β` hedefi artık tek sayı değil: [`BETA-HEDEFI.md`](BETA-HEDEFI.md)
+>
+> **Aşağıdaki metin değiştirilmedi** (depo kuralı: hiçbir satır
+> silinmez). Şu iki yeri okurken dikkat:
+>
+> | bölüm | durumu |
+> |---|---|
+> | §1 *"madde gevşemiyor"* | **çürütüldü** — `%45,34` durumun basıncı `≈ 0` |
+> | §5 `β` tablosu | ensemble değil ama `L2` kolları; yine de `β` hedefi aralık |
+
+---
 # DART-RIFT — uzman görüşü için brifing
 
 **Tarih:** 2026-09-05 · **Depo:** `main`, commit `c94d74e`

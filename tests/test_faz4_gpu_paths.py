@@ -9,6 +9,16 @@ Testler **küçük** çözünürlük kullanır: amaç fizik ölçmek değil, kod
 **koşulabilir ve tutarlı** olduğunu göstermek. Fiziksel ölçümler
 KAYIT-023/E3'te ayrıca yapıldı.
 """
+# ISARETLEME (rapor A44/A54). Bu dosyadaki uc test `_cuda_ya_da_atla`
+# ile ZATEN CUDA sartina bagli ama `gpu` ISARETI YOKTU. CUDA'si olan
+# bir makinede `-m "not gpu"` onlari SECIYOR ve
+# `test_shock_interface_iki_bolgeli_kosu` TEK BASINA BIR SAATTEN
+# UZUN suruyor. Olculdu: ayni dosyanin CPU testleri `1,98 s`.
+#
+# Sonucu A44'tu: tam takim koşulamaz hale geldigi icin kimse
+# kosturmadi ve kirmizi bir test bes gun fark edilmedi.
+# Isaret, mevcut sarti BILDIRIME cevirir -- test zayiflamaz.
+
 from __future__ import annotations
 
 import pytest
@@ -25,6 +35,7 @@ def _cuda_ya_da_atla() -> str:
     return str(dev[0])
 
 
+@pytest.mark.gpu
 def test_resolution_scaling_tek_kosu() -> None:
     """`run_single` hem olağan hem **sabit `h`** kolunda koşabiliyor mu?"""
     from dartrift.validation.resolution_scaling import run_single
@@ -40,6 +51,7 @@ def test_resolution_scaling_tek_kosu() -> None:
     assert olagan["n_steps"] > 50
 
 
+@pytest.mark.gpu
 def test_resolution_scaling_kol_platoyu_okuyor() -> None:
     """`run_arm` platoyu ve **oturmuşluğu** raporluyor mu?"""
     from dartrift.validation.resolution_scaling import run_arm
@@ -61,6 +73,7 @@ def test_resolution_scaling_dogrulama() -> None:
         run_arm((48, 32, 64), None, "cpu")
 
 
+@pytest.mark.gpu
 def test_shock_interface_iki_bolgeli_kosu() -> None:
     """İki bölgeli Sedov gerçekten koşuyor ve makul bir yarıçap veriyor mu?"""
     from dartrift.validation.shock_interface import build_two_zone_sedov_ic, run_shock_interface

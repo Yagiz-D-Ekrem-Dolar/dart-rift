@@ -55,6 +55,51 @@ __all__ = ["sahne_parametreleri", "gozlenebilirleri_cikar", "ileri_kosu",
 GOZLENEBILIRLER = ("beta", "krater_derinlik", "ejekta_kutle_kesri")
 
 
+def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
+                 alpha_av=1.0, beta_av=2.0) -> str:
+    """Kosunun FIZIK yapilandirmasinin SHA-256 ozeti (16 hane).
+
+    Iki cikti ayni `theta`yi tasiyip FARKLI fizikle uretilmis
+    olabilir -- merdiven degismis, malzeme degismis, `t_end`
+    degismis. `surum` (commit) bunu YAKALAMAZ: ayni commit'te
+    farkli bayraklarla kosulabilir.
+
+    Ozet, eski bir ciktinin yeniden kullanilip kullanilamayacagini
+    dogrulamak icin.
+    """
+    import hashlib
+
+    parcalar = [
+        repr(sorted((sahne_taban or {}).items())),
+        repr(material),
+        repr(tuple(kademeler) if kademeler is not None else None),
+        f"{float(spacing):.17g}",
+        f"{float(t_end):.17g}",
+        f"{float(alpha_av):.17g}",
+        f"{float(beta_av):.17g}",
+    ]
+    ham = "|".join(parcalar).encode("utf-8")
+    return hashlib.sha256(ham).hexdigest()[:16]
+
+def _durum_adi(i: int, theta) -> str:
+    """Durum dosyasi adi -- `theta`ya bagli, cagrilar arasi CAKISMAZ.
+
+    A49: eski ad `nokta_{i:04d}.npz` idi ve `i` yalnizca **o
+    cagrinin** yigin indeksiydi. Ensemble surucusu her noktayi AYRI
+    cagriyla (`np.atleast_2d(theta)`, tek satir) kosturdugu icin `i`
+    HER ZAMAN `0`; her nokta bir oncekinin uzerine yaziyordu.
+    Olculen: `24` noktalik L1'de dilim basina tek `nokta_0000.npz`.
+
+    Ad artik `theta`nin ozetini tasiyor, yani kimlik dosyanin
+    kendisinde. `i` de kaliyor ki ayni `theta` iki kez kosulursa
+    ikisi de saklansin.
+    """
+    import hashlib
+
+    th = np.asarray(theta, dtype=np.float64).ravel()
+    ozet = hashlib.sha256(th.tobytes()).hexdigest()[:12]
+    return f"nokta_{i:04d}_{ozet}.npz"
+
 def sahne_parametreleri(theta, taban: dict | None = None, *,
                         secenek3: bool = True) -> dict:
     """`θ = (α₀, Y₀, f_boulder)` → `build_scene` argümanları.
@@ -199,7 +244,30 @@ def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,
         reference_radius=float(target_radius),
         x_reference=np.asarray(x_reference, dtype=np.float64)[hedef],
         **(krater_ayarlari or {}))
-    y = np.array([float(mt.beta), float(kr.depth),
+    # A47: `mt.beta` KONTROL YUZEYI `2R` ve mermiyi de sayiyor.
+    # Raporladigim `beta_hedef` ise defterin `R` yuzeyinden ve
+    # YALNIZ hedef maddesinden geliyor. Ikisi AYNI SEY DEGIL:
+    # sentetik, momentumu tam korunan bir durumda defter `1,2809`,
+    # ileri yol `1,0000` verdi -- IKISI DE SIFIR ARTIKLA KAPANDI.
+    # Defterin kapanmasi kacis tanimini DOGRULAMIYOR.
+    #
+    # `2R` yuzeyi ayrica bir ZAMAN SUZGECI: yuzeyden `2R`'ye
+    # `t = 0,2 s`'te varmak icin `R/t = 82/0,2 = 410 m/s` gerekir.
+    # Kazi akisi `0,1 - 10 m/s` mertebesinde; yani cikarima giden
+    # gozlenebilir onu YAPISAL OLARAK goremiyordu.
+    #
+    # Cikarima artik defterin `beta_hedef`'i gidiyor. Eski deger
+    # ATILMIYOR: `beta_2R` olarak dondurulur ki fark denetlenebilsin.
+    from ..observables.momentum_defteri import momentum_defteri
+
+    _ehat = np.asarray(impactor_momentum, dtype=np.float64)
+    _p_imp = float(np.linalg.norm(_ehat))
+    _def = momentum_defteri(
+        st["x"], st["v"], st["m"],
+        mermi_kesri=np.asarray(is_impactor, dtype=bool).astype(np.float64),
+        R=float(target_radius), v_esc=v_kacis, ehat=_ehat / _p_imp,
+        p_imp=_p_imp)
+    y = np.array([float(_def["beta_hedef"]), float(kr.depth),
                   float(mt.ejecta_fraction)], dtype=np.float64)
     if not np.all(np.isfinite(y)):
         raise RuntimeError(
@@ -392,7 +460,9 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         azami_adim: int = 400000, ilerleme=None,
                         krater_ayarlari=KRATER_AYARLARI_DART,
                         sok_yargisi: bool = True,
-                        durum_dizini=None) -> np.ndarray:
+                        durum_dizini=None, surum: str | None = None,
+                        alpha_av: float = 1.0, beta_av: float = 2.0
+                        ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
     ## Neden gerekli
@@ -443,7 +513,14 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             sol = WarpSolid3D(
                 np.ascontiguousarray(rs.x), np.ascontiguousarray(rs.v),
                 np.ascontiguousarray(rs.m), np.zeros(rs.n),
-                np.ascontiguousarray(rs.h), material, RefParams(cfl=0.25),
+                np.ascontiguousarray(rs.h), material,
+                # A56: yapay viskozite ENSEMBLE'a hic gecmiyordu --
+                # `RefParams(cfl=0.25)` `alpha_av`'i varsayilan `1,0`'da
+                # birakiyordu. A53 olctu ki `alpha_av` kacan kutleyi
+                # `132` kat, kutle agirlikli hizi `3 188` kat degistiriyor.
+                # Yani ensemble, mekanizmanin en guclu kontrol
+                # parametresini SABIT tutuyordu ve bunu bildirmiyordu.
+                RefParams(cfl=0.25, alpha_av=alpha_av, beta_av=beta_av),
                 alpha0=np.ascontiguousarray(rs.alpha0),
                 Y0=np.ascontiguousarray(rs.Y0), device=device,
                 check_every=10 ** 9)
@@ -470,7 +547,16 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             st = sol.state_numpy()
             if sok_yargisi:
                 from ..observables.sok import sok_gecti
-                if not sok_gecti(st["rho"], np.asarray(rs.alpha0)):
+                # A48: mermi MASKELENMELI. Aliminyum mermi `alpha0 = 1`
+                # ile carpma aninda cok sikisiyor; maskesiz cagride
+                # `sikisma_max` MERMININ sikismasi olabilir ve kapi,
+                # hedefte hic sok olmasa da gecer. Tersi de olur:
+                # dogru gevsemis bir hedef kapidan duser.
+                # `faz48_iki_asama.py` bu maskeyi hep uyguluyordu;
+                # cikarim yolu uygulamiyordu.
+                _hedef = ~np.asarray(rs.is_impactor, dtype=bool)
+                if not sok_gecti(np.asarray(st["rho"])[_hedef],
+                                 np.asarray(rs.alpha0)[_hedef]):
                     raise RuntimeError(
                         "SOK KURULMADI -- ADR-0049: bu noktanin fizik "
                         "sonucu okunmaz")
@@ -483,9 +569,18 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 _d = _P(durum_dizini)
                 _d.mkdir(parents=True, exist_ok=True)
                 np.savez_compressed(
-                    _d / f"nokta_{i:04d}.npz",
+                    _d / _durum_adi(i, th),
                     x=st["x"], v=st["v"], m=st["m"], u=st["u"],
                     rho=st["rho"], x_referans=x0,
+                    # A50: bunlar YOKTU. `alpha0` baslangic distansiyonu;
+                    # GUNCEL `alpha` olmadan bosalmanin olup olmadigi
+                    # sonradan hic bilinemiyor. `P` olmadan cekme
+                    # gerilmesi, `D` olmadan hasar, `h` olmadan komsuluk
+                    # destegi incelenemiyor. Bulunmayan alan sessizce
+                    # atlanir (eski surumler de okunabilsin).
+                    **{k: np.asarray(st[k]) for k in
+                       ("alpha", "P", "S", "D", "h", "cs", "strain")
+                       if k in st},
                     mermi_kesri=np.asarray(rs.is_impactor,
                                            dtype=bool).astype(np.float64),
                     alpha0=np.asarray(rs.alpha0, dtype=np.float64),
@@ -493,7 +588,15 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                     p_imp=float(np.linalg.norm(rs.impactor_momentum)),
                     ehat=np.asarray(rs.impactor_momentum, dtype=np.float64)
                     / float(np.linalg.norm(rs.impactor_momentum)),
-                    theta=np.asarray(th, dtype=np.float64), t=t)
+                    theta=np.asarray(th, dtype=np.float64), t=t,
+                    # KIMLIK (uzman incelemesi): "Nokta kimligi yalniz
+                    # ic dongu indeksi olmasin. Theta, sahne/config
+                    # ozeti ve commit ile baglanmali; eski ciktilarin
+                    # yeniden kullanimi bunlari dogrulamali."
+                    surum=str(surum or ""),
+                    fizik_ozeti=_fizik_ozeti(sahne_taban, material,
+                                             kademeler, spacing, t_end,
+                                             alpha_av, beta_av))
             Y[i] = gozlenebilirleri_cikar(
                 st, impactor_momentum=rs.impactor_momentum,
                 target_mass=rs.target_mass, target_radius=rs.target_radius,

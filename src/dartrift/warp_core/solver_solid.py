@@ -56,6 +56,7 @@ class WarpSolid3D:
         D0: np.ndarray | None = None,
         u_tabani: bool = False,
         rho_durum: np.ndarray | None = None,
+        cekme_kirp_maske: np.ndarray | None = None,
     ):
         _init_warp()
         self.mat = mat
@@ -102,6 +103,17 @@ class WarpSolid3D:
         # (bloklar gozeneksiz, matris gozenekli). Skaler tavan, onu ASAN
         # parcaciklari ilk adimda EZIYOR ve -1,14 GPa yapay cekme doguruyordu.
         self.alpha_ref = wp.array(a0, dtype=F, device=dev)
+        # CEKME KIRPMA (uzman incelemesi 2026-09-05, rapor A51).
+        # YALNIZCA TANI KOLU. `None` -> davranis BIT-AYNI kalir:
+        # cekirdek hic baslatilmaz.
+        self._cekme_kirp = None
+        if cekme_kirp_maske is not None:
+            _mk = np.asarray(cekme_kirp_maske)
+            if _mk.shape != (n,):
+                raise ValueError(
+                    f"cekme_kirp_maske sekli {_mk.shape}, ({n},) olmali")
+            self._cekme_kirp = wp.array(
+                _mk.astype(np.uint8), dtype=wp.uint8, device=dev)
         # Kohezyon PARCACIK BASINA: moloz yiginlarinda bloklar matristen daha
         # dayanikli (P3-FR-03/04). Homojen kosularda skaler deger dizi olarak
         # doldurulur — tek kod yolu, sonuc bit-ayni kalir.
@@ -313,6 +325,14 @@ class WarpSolid3D:
             )
         else:
             raise ValueError(f"bilinmeyen EOS: {self.mat.eos!r}")
+        # Kirpma EOS'un HEMEN ARDINDA: boylece hem kuvvet terimi
+        # `t = (S - P I)/rho^2` hem de enerji isi `du` AYNI etkin
+        # basinci gorur. Sonraki adimda hasar `P_eff`'i bunun
+        # uzerine uygular; sira degismiyor.
+        if self._cekme_kirp is not None:
+            from .cekme_kirpma import cekme_kirp as _kirp
+
+            self._launch(_kirp, [self._cekme_kirp, self.P])
         self._launch(
             SS.velocity_gradient_3d,
             [gid, self.gridman.x32, self.x, self.v, self.m, self.rho, self.cs, h, r32,
@@ -565,4 +585,8 @@ class WarpSolid3D:
             "D": self.D.numpy() if self._damage else np.zeros(self.n),
             "strain": self.strain.numpy() if self._damage else np.zeros(self.n),
             "u_kirpilan": self.u_kirpilan.numpy(),
+            # A50: yumusatma boyu tani icin gerekliydi ve
+            # disari HIC verilmiyordu -- arayuzde komsuluk
+            # destegi ve `h_ij` sismesi sonradan olculemiyordu.
+            "h": self.h_arr.numpy(),
         }

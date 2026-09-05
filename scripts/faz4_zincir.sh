@@ -4,9 +4,15 @@
 # 4.4 -> 4.5 -> 4.6 -> 4.7 (kapi raporu). Her adim bir onceki adimin
 # JSON'unu YAZAR, kapi hepsini OKUR. Ara adim duserse kapi zaten
 # "kosulmadi" der; zincir sessizce yesil gorunmez.
-set -euo pipefail
-
-set -u                      # -e YOK: bir adim duserse kalanlar da kosmali
+# `-e` BILEREK YOK. Bu bir ZINCIR kosucusu: bir adim duserse kalan
+# adimlar da kosmali, cunku kapi raporu hangi adimin dustugunu ancak
+# hepsi denendikten sonra soyleyebilir. `-e` ile ilk hatada duruyordu
+# ve rapor hic uretilmiyordu (rapor A55).
+#
+# `-u` ve `pipefail` VAR: tanimsiz degisken ve boru hattinda dusen
+# komut yine de yakalanir (A32 kurali; `test_kabuk_pipefail.py`
+# yalnizca `pipefail` istiyor, `-e` istemiyor).
+set -uo pipefail
 # Depo koku betigin KENDI konumundan turetiliyor -- Python kosucularla
 # ayni kural. Sabit yol, depo tasindiginda sessizce yanlis src'yi bulur.
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 29 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 43 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -3788,6 +3788,575 @@ oynatması bir **bağlantı kusuru değil** — fiziksel bir sonuç
 
 ---
 
+### A44 — **Kırmızı testle push ettim; 5 gün fark edilmedi** (2026-09-05)
+
+`test_tablo_ve_govde_birebir_ayni` **`2026-08-31`'den beri kırmızıydı**
+(kıran commit `38d8144`). Aradaki bütün turlarda push edildi.
+
+#### Kırmızının sebebi belgede değil, **testin kalıbındaydı**
+
+Test kimlikleri yalnız boşlukla arıyordu — `^\| (K\d+…) ` ve
+`^## (K\d+…) `. İki **kayıt girişi olmayan** satır kimlik sanıldı:
+
+| satır | metin | gerçekte ne |
+|---|---|---|
+| `1550` | `| S3 sınırı `1,30` dışında | 19/24 |` | parametre uzayı **veri** satırı |
+| `1484` | `## K5 pilot ensemble … koşuyor` | **K5 koşusu** hakkında bölüm |
+
+Yani belge tutarlıydı; ölçen bozuktu. Çapa kanonik ayırıcıyı da
+istiyor artık: tabloda `| K9 |`, gövdede `## K9 —`. Sıkı çapayla
+`32` giriş, iki listede de aynı sırada.
+
+#### Sıkı çapa yeni bir delik açıyordu — kapatıldı
+
+Yanlış ayırıcılı bir giriş artık **eşleşmez**, ve *iki listeden
+birden* düşeceği için `birebir_ayni` bunu **göremez**. Bu yüzden
+`BEKLENEN_GIRIS = 32` sayacı kondu. Mutasyonla sınandı: `S9`
+başlığındaki uzun tire kısa tireyle değiştirilince
+`govdede 31 bolum, beklenen 32` ile düşüyor.
+
+#### Asıl kusur **süreçte**
+
+A32'nin dersi *"`set -o pipefail` + push'tan önce **tüm** takım"*
+idi. A43'ü commit ederken **yalnız `test_sikinti_raporu.py`**
+koşturdum. Tek dosya yeşildi, takım kırmızıydı. A32 bir **araç**
+olarak konmuştu ama **alışkanlık** olarak uygulanmadı.
+
+#### Ve teşhis sırasında ağacı kendim bozdum
+
+Kırılma commit'ini bulmak için yazdığım `for` döngüsü her turda
+`git stash -u` + `git checkout <c> -- docs/` yapıyordu; döngü
+bitince **eski `docs/` sahnede kaldı** ve yeni dosyalarım stash'te
+sıkıştı. O anda test **geçti** — çünkü 5 hafta eski bir belgeyi
+okuyordu. O geçmeye inansaydım *"hatayı A43 düzenlemem yaptı"*
+diye yanlış sonuca varacaktım.
+
+> **Bu deponun tekrar eden sınıfı:** sayı üretilir, sayı yanlıştır.
+> Bu kez sayıyı üreten **teşhis aracının kendisiydi**.
+
+---
+### A45 — **Şok kapısı canlı şoku değil, EZİLME ARTIĞINI ölçüyor** (2026-09-05)
+
+ADR-0049 şunu diyordu: *"hiçbir fizik elemesi, aynı koşuda şok
+sınavı `KISMI`/`SOK_VAR` vermedikçe geçerli değil."* Kapının
+kendisi ölçüldü — **iddia ettiği şeyi ölçmüyor.**
+
+#### 1. Ölçüm zamanı, şok geçişinden `134` kat sonra
+
+| büyüklük | değer |
+|---|---|
+| şok geçiş süresi `r_mermi/Us` | `0,371 / 6145` = **`6,0e-5 s`** |
+| zaman adımı `dt` | `≈ 5,4e-6 s` → şok geçişi **`≈ 11` adım** |
+| iz aralığı | **`2 000` adım** |
+| depodaki **en erken** iz (`R_R2`) | **`8,03e-3 s`** = `134 ×` geçiş |
+
+Yani şok, tek bir iz noktası bile alınmadan gelip geçiyor.
+**Depodaki hiçbir ölçüm canlı şoku görmedi.**
+
+#### 2. Ölçülen sayı gözenek kapanmasıyla **tamamen** açıklanıyor
+
+`sikisma = 100 (ρ α₀ / ρ₀ᵏᵃᵗⁱ − 1)`. Bu iki ayrı şeyle yükselir:
+gözenek kapanması (geri dönüşsüz, tavanı `100(α₀−1)`) ve katı
+maddenin sıkışması (**yalnız `ρ > ρ₀ᵏᵃᵗⁱ` ise**).
+
+| kol (`t = 0,2 s`) | `sikisma_max` | `ρ_max` | `ρ_max/2700` | `ρ > 2700` |
+|---|---|---|---|---|
+| `K4_merdiven` | `%45,336` | `2591,1` | **`0,960`** | **`0`** |
+| `L2_taban` | `%45,336` | `2591,1` | **`0,960`** | **`0`** |
+| `K6_taban` | `%45,336` | `2591,1` | **`0,960`** | **`0`** |
+| `R_R1` | `%28,561` | `2580,3` | **`0,956`** | **`0`** |
+| `L2_av_dusuk` | `%75,650` | `2700,1` | `1,00004` | `0` (pay sonrası) |
+
+En sıkışan parçacık: `ρ = 2234,1`, `α₀ = 1,7564` → `ρ/ρ₀ᵏᵃᵗⁱ =
+**`0,8275`**. **Katı hiç sıkışmamış.**
+
+Matrisin salt gözenek tavanı `100(1,7564−1) =` **`%75,64`**;
+Hugoniot bandı `%45,6 – 74,3`. **Band tamamen tavanın altında.**
+Yani kapı, ortamda hiç canlı şok olmasa da salt ezilmeyle geçilebilir
+— ve ölçüm bunun gerçekten olduğunu gösteriyor.
+
+#### 3. Bu **neyi çürütmüyor**
+
+Şokun hiç oluşmadığını **göstermiyor**. Şok `t ~ 1e-4 s`'te oluşup
+boşalmış ve tam bu artığı bırakmış olabilir — beklenen davranış da
+budur. Ayrıca artığın **büyüklüğü** şok şiddetiyle ölçekleniyor
+(A23 merdiveninde `%0,006 → %40,5`), yani vekil olarak hâlâ
+anlamlı.
+
+Çürüttüğü tek şey **kapının iddiası**: bu ölçüm *"bu koşuda şok
+kuruldu"* demeye yetmez. Adı ve benim onun hakkındaki cümlelerim
+yanlıştı.
+
+#### 4. Ve fiziği tutarlı biçimde açıklıyor
+
+Enerjinin tamamı **geri dönüşsüz gözenek ezilmesine** gidiyorsa:
+
+| gözlem | bu açıklamayla |
+|---|---|
+| sıkışma `0,2 s` donuk | kalıcı olduğu için — **tanımı gereği** |
+| krater `56 ms`'te duruyor, sonra kapanıyor | akışı sürecek elastik enerji yok |
+| `Y₀` sekiz mertebede etkisiz | malzeme akmıyor ki **aksın**; ezilerek duruyor |
+| kaçan `16` parçacık | yalnızca erken jet |
+| **düşük `α_av`: kütle `132×` ↑, `Δβ` `24×` ↓** | keskin şok → **daha çok ezilme** (`kısmen ezilmiş 27 002 → 38 108`) → daha az kazı |
+
+Son satır bir **öngörü sınavıydı ve geçti**: az viskozite = keskin
+şok = daha çok ezilme = daha az momentum. Ölçülen tam bu.
+
+#### 5. Ucuz sınav var
+
+`t_end = 1e-3 s`, `--iz-every 2` → `≈ 185` adım, **dakikalar**.
+Şok geçişini `~11` adımla tam ortasından görür ve
+`ρ > ρ₀ᵏᵃᵗⁱ` var mı sorusunu doğrudan cevaplar.
+
+> **Ders:** bir kapı kurarken *"bu sayı hangi zaman ölçeğinde
+> anlamlı"* diye sormamıştım. Kapı `0,2 s`'te, olay `6e-5 s`'te.
+
+---
+## Uzman incelemesi (2026-09-05) — beş kusur, beşi de sessiz
+
+> Dış uzman `c94d74e`'yi inceledi ve üç bulguyu **kendi CPU
+> denetimleriyle yeniden üretti**. Ben de beşini burada bağımsız
+> olarak ürettim; hepsi doğrulandı. **Beşi de çıkış kodu `0`
+> veriyordu.**
+
+---
+
+### A46 — **Çıkarımın üç ekseninden ikisi sahneye hiç ulaşmıyordu** (2026-09-05)
+
+`faz5_ensemble_merdiven.py:148` `sahne_taban=None` gönderiyordu.
+`build_scene` varsayılanı `model_class="M0"`, ve
+`rubble_generator.py:406`'da:
+
+```python
+boulders = None
+if model_class == "M1":
+    ...
+    boulders = place_boulders(...)
+```
+
+Yani `M0`'da **blok yerleştirilmiyor**; `f_boulder` ve
+`boulder_alpha0` sessizce yoksayılıyor. `SAHNE` sabitinin kendisi
+`model_class = "M1"` taşıyor — **gönderilmiyordu.**
+
+#### Ölçüldü
+
+| θ | `x` | `m` | `α₀` | `Y₀` |
+|---|---|---|---|---|
+| `(1,05; 1e4; 0,10)` vs `(1,30; 1e4; 0,40)` | **birebir aynı** | **birebir aynı** | **birebir aynı** | **birebir aynı** |
+
+`α₀`'ın benzersiz değerleri `[1,0 ; 1,5]` — yani mermi ve matris;
+**hiç blok yok.** Düzeltmeden sonra `A: [1 ; 1,05 ; 2,016]`,
+`B: [1 ; 1,30 ; 1,6518]` — bloklar var ve matris `α₀` yığın
+yoğunluğundan çözülüyor.
+
+#### Sonucu
+
+**Bütün ensemble koşuları** (`K5`, `L1`) fiilen tek eksenli
+taramaydı: yalnız `matrix_Y0` sahneye ulaşıyordu — ve onun `β`'yı
+`5e-5` oynattığını zaten ölçmüştük. *"Ensemble düz çıkıyor"*
+gözleminin sebebi fizik değil, **kablolama**.
+
+`L1` (`1547215`, 6 GPU, 4,5 saat) bu yüzden **iptal edildi.**
+
+---
+
+### A47 — **Raporladığım `β` ile çıkarıma giden `β` aynı şey değildi** (2026-09-05)
+
+| yol | kontrol yüzeyi | kimi sayıyor |
+|---|---|---|
+| `momentum_defteri` (**raporladığım**) | `R` | yalnız hedef (`1−f` ağırlıklı) |
+| `forward.py:193` (**çıkarıma giden**) | **`2R`** | **mermi dâhil** |
+
+Momentumu tam korunan sentetik bir durumda ürettim:
+
+```
+DEFTER  (R,  hedef-özel):  beta_hedef = 1,280871   artık = 0,000e+00
+İLERİ   (2R, mermi dâhil): beta       = 1,000000   kapanış = 0,000e+00
+n_ejekta (2R) = 0
+```
+
+**İkisi de sıfır artıkla kapandı.** Defterin kapanması kaçış
+tanımını **doğrulamıyor** — uzmanın cümlesi: *"antisimetrik fakat
+aşırı sönümlü kuvvetler de momentumu makine hassasiyetinde
+korur."*
+
+#### `2R` bir zaman süzgeci
+
+Yüzeyden `2R`'ye `t = 0,2 s`'te varmak için `R/t = 82/0,2 =`
+**`410 m/s`** gerekiyor. Kazı akışı `0,1 – 10 m/s` mertebesinde.
+Yani çıkarıma giden gözlenebilir, aradığımız sinyali **yapısal
+olarak** göremiyordu.
+
+**Çare:** `y[0]` artık defterin `beta_hedef`'i. Eski değer
+atılmadı; denetlenebilsin diye yanında duruyor.
+
+---
+
+### A48 — **Şok kapısı mermiyle geçilebiliyordu** (2026-09-05)
+
+`forward.py:473` `sok_gecti(st["rho"], rs.alpha0)` — **maskesiz**.
+Alüminyum mermi `α₀ = 1` ile çarpmada çok sıkışıyor;
+`sikisma_max` onun olabiliyor. `faz48_iki_asama.py` maskeyi hep
+uyguluyordu, **çıkarım yolu uygulamıyordu.**
+
+Sınavla gösterildi: hedef hiç sıkışmamışken (`ρ = ρ₀/α₀`) kapı
+düşüyor; aynı hedefe beş sıkışmış mermi parçacığı eklenince
+**geçiyor**.
+
+Tersi de mümkün: doğru gevşemiş bir hedef kapıdan düşer.
+
+---
+
+### A49 — **Durum dosyaları birbirinin üzerine yazıyordu** (2026-09-05)
+
+Ad `nokta_{i:04d}.npz` ve `i` yalnızca **o çağrının** yığın
+indeksi. Sürücü her noktayı `np.atleast_2d(theta)` ile **ayrı**
+çağırdığı için `i` **her zaman `0`**.
+
+Diskteki kanıt: `24` noktalık `L1`'de dilim başına **tek**
+`nokta_0000.npz`. A37'de *"artık `npz` kaydediyoruz"* demiştim;
+kaydediyorduk ama **her nokta bir öncekini siliyordu**.
+
+Ad artık `θ`'nın SHA-256 özetini taşıyor.
+
+---
+
+### A50 — **Kaydedilen durum tanı için eksikti** (2026-09-05)
+
+`npz` **başlangıç** `alpha0`'ı taşıyordu; **güncel `α`** yoktu.
+Yani boşalmanın olup olmadığı sonradan **hiç** bilinemiyordu — ki
+A45'in bütün sorusu buydu. Ayrıca `P` (çekme gerilmesi), `S`, `D`
+(hasar), `h` (komşuluk desteği) yoktu.
+
+`h` çözücüden **hiç** dışarı verilmiyordu: `state_numpy` onu
+içermiyordu ve `self.h` zaten **skaler özet** (`h_arr` dizi).
+
+Eklendi: `alpha, P, S, D, h, cs, strain`.
+
+---
+### A51 — **`Y₀` çekmeyi hiç sınırlamıyor: matris `−15,19 MPa` taşıyor** (2026-09-05)
+
+Uzmanın **birinci** hipotezi ve deponun en iyi açıklaması. İki
+ölçümü de bağımsız olarak ürettim.
+
+#### Ölçüm 1 — `Y₀` sekiz mertebe, basınç yedi haneye kadar aynı
+
+`u = 0`, `α = 1,7564`, `ρ_katı = 0,999 ρ_katı⁰`:
+
+| `Y₀` | EOS basıncı |
+|---|---:|
+| `1 Pa` | `−1,518635e+07` |
+| `1e4 Pa` (üretim) | `−1,518635e+07` |
+| `1e7 Pa` | `−1,518635e+07` |
+| `1e8 Pa` | `−1,518635e+07` |
+
+`Y₀` **yalnız deviatorik gerilmenin** sınırını (Lundborg)
+değiştiriyor; Tillotson'un **negatif hidrostatik dalını**
+sınırlamıyor. Yani *"`1 Pa`'lık matris"* hâlâ **`−15,19 MPa`**
+çekme taşıyabiliyor — sağlam kayanın çekme dalı granüler matrise
+uygulanıyor.
+
+**A17'nin ve A45'in `Y₀` duyarsızlığı bununla açıklanıyor.**
+Duyarsızlık bir bağlantı kusuru değildi (A43'te doğrulanmıştı);
+`Y₀`'ın kırpmadığı bir kuvvet baskındı.
+
+Ayrıca uzmanın hatırlattığı ikinci sebep: sürtünme terimiyle
+`P = 20 GPa`'da `Y ≈ 1,333 GPa` (`Y₀ = 1 Pa`) ve `1,335 GPa`
+(`Y₀ = 10 MPa`). Şok evresinde karşılaştırılacak dayanım
+`Y₀` **değil**.
+
+#### Ölçüm 2 — `%45,34`'lük durum **gevşemiş**
+
+Uzmanın karşı örneği: `α = 1,20848`, `ρ = 2234,22`, `u = 0` →
+sıkışma **`%45,34`**, basınç **`8,33e4 Pa ≈ 0`**.
+
+Bizim ölçtüğümüz durumun tam kendisi, ve **basıncı sıfır**.
+
+---
+
+### A45'in yorumu **düzeltildi** (2026-09-05)
+
+A45 *"sıkışma donuk ⇒ şoklanan madde gevşemiyor"* diyordu.
+**Yanlış.** Ölçüm 2 gösteriyor ki `%45,34` durumu `P ≈ 0`, yani
+**tam gevşemiş**. Uzmanın cümlesi: *"P-α'da kalıcı kompaksiyonla
+birlikte basıncın boşalması mümkündür."*
+
+**A45'in ayakta kalan kısmı:** kapının canlı şoku değil ezilme
+artığını ölçtüğü (ölçüm zamanı geçişin `134` katı), ve `ρ_max`'ın
+hiçbir kolda `ρ₀ᵏᵃᵗⁱ`'yi aşmadığı. Bunlar değişmedi.
+
+**Düşen kısmı:** *"madde gevşemiyor"* çıkarımı. Doğrusu:
+**madde gevşemiş ama itecek basıncı da yok** — ve genişlemeye
+kalkınca `−15 MPa` çekme onu geri çekiyor.
+
+| gözlem | yeni açıklama |
+|---|---|
+| krater `56 ms`'te duruyor | itecek basınç yok (`P ≈ 0`) |
+| krater sonra **kapanıyor** (`1,0409 → 1,0322`) | çekme geri çekiyor |
+| `Y₀` sekiz mertebede etkisiz | `Y₀` çekmeyi kırpmıyor |
+| kaçan `16` parçacık, `⟨v⟩ ≈ 1265 m/s` | yalnız erken jet; kazı akışı hiç doğmuyor |
+
+---
+### A52 — **Komşu arama yarıçapı `2·h_max`: çözünürlük merdivenini kilitliyor** (2026-09-06)
+
+`solver_solid.py:84`:
+
+```python
+self.h = float(_h.max())
+self.support = 2.0 * self.h
+```
+
+ve çekirdek `wp.hash_grid_query(grid, x32[i], radius32)` —
+**her parçacık için aynı yarıçap.** Kademeli merdivende `h`
+`16` kat aralığa yayılıyor; ince parçacıklar **kaba bölgenin**
+yarıçapıyla tarıyor.
+
+#### Ölçüldü
+
+| kol | `N` | hız |
+|---|---:|---:|
+| `Rb_R2` | `69 886` | `2,81` adım/s |
+| `Rb_R3` | `493 330` | **`0,062`** adım/s |
+
+| | değer |
+|---|---:|
+| `N` oranı | `7,06` |
+| hız oranı | **`45,3` kat yavaş** |
+| doğrusal olsa | `7,06` kat |
+| **aşırı maliyet** | **`6,4` kat** |
+
+Mekanizma sayıyla tutuyor: ince bölgede yoğunluk `8` kat artınca
+her ince parçacığın taradığı komşu sayısı da `8` kat artıyor →
+beklenen `7,06 × 8 = 56,5` kat, ölçülen `45,3` kat. (Fark, bütün
+parçacıkların ince bölgede olmamasından.)
+
+#### Sonucu — `R3` **bitemez**
+
+`t_end = 0,1 s` için `≈ 50 000` adım gerekiyor:
+`50 000 / 0,062 =` **`224` saat**. İş sınırı `48` saat.
+Sınırda ulaşılan: `10 714` adım = **`t = 0,0214 s`**.
+
+Yani `R3` `48` saat yandıktan sonra `ADIM SINIRINA TAKILDI` ile
+**hiçbir şey üretmeden** ölecekti. `5:16`'da iptal edildi.
+
+#### Bu, üç noktalı yakınsamayı **şimdilik imkânsız kılıyor**
+
+Richardson `p` için üç nokta gerekiyor. Elde `R1` ve `R2` var
+(`t_end = 0,1 s`). `R3` ancak şu üçünden biriyle mümkün:
+
+1. **Yarıçapı parçacık başına yap** (asıl çare, tasarım işi).
+2. `t_end`'i `~0,01 s`'ye indirip **üç kolu da** yeniden koş.
+3. `R3`'ü merdivensiz, yalnız ince bölgede kur (`h` yayılımını kıs).
+
+> **Ders:** `A25`'te merdiveni *"bedeli `%13` parçacık"* diye
+> ölçmüştüm. **Parçacık sayısını ölçtüm, maliyeti ölçmedim.**
+> Gerçek bedel komşu sorgusunda ve `6,4` kat.
+
+---
+### A53 — **Düşük yapay viskozite kazı akışını ÜRETİYOR; ben onu elemiştim** (2026-09-06)
+
+`L2` kollarını uzmanın işaret ettiği büyüklükle yeniden okudum:
+**kütle ağırlıklı eksenel hız** `⟨v⟩ = P_kaçan / M_kaçan`.
+
+| kol | `M_kaçan` kg | `⟨v⟩` m/s | `n` | `Δβ_hedef` |
+|---|---:|---:|---:|---:|
+| **taban** | `93,21` | **`−1264`** | `16` | `0,0331` |
+| **`α_av 1,0 → 0,1`** | **`12 303`** | **`−0,397`** | `33` | `0,00137` |
+| gözeneksiz | `92,09` | `−1137` | `9` | `0,0294` |
+| `u_tabanı` | `93,21` | `−1264` | `16` | `0,0331` |
+
+| oran | değer |
+|---|---:|
+| kütle | `132,00` kat ↑ |
+| `Δβ` | `24,2` kat ↓ |
+| **`⟨v⟩`** | **`3 188` kat ↓** |
+
+(Uzmanın bağımsız hesabı `~3168` kat; `~1265 m/s` taban hızı da
+birebir tuttu.)
+
+#### Neyi kaçırdım
+
+Taban kolu `93 kg`'ı **`1264 m/s`** ile atıyor — bu **jet**, kazı
+akışı değil. Düşük AV kolu `12,3 ton`'u **`0,4 m/s`** ile atıyor —
+**bu tam olarak kazı akışının hız ölçeği.**
+
+Yani *"madde akmıyor"* dediğimiz koşuda, viskoziteyi düşürünce
+**akış ortaya çıkıyor.**
+
+Ben bu kolu *"kaçan `33` parçacığın hepsi kaba seviyeden"* diye
+**elemiştim**. Eleme gerekçesi hâlâ geçerli — `12 303/33 = 372,8 kg`,
+en incenin `64` katı — ama **sonuç yanlıştı**: bu, kolun
+*çözülmemiş* olduğunu gösterir, *mekanizmanın yanlış* olduğunu
+değil.
+
+Uzmanın uyarısı da bu yönde: *"Kaba parçacıklardan oluşan bu sinyal
+yakınsamış ejekta kanıtı değildir; AV'nin etkisiz olduğunun kanıtı
+da değildir."*
+
+#### Üçüncü aday
+
+| aday | kayıt | durum |
+|---|---|---|
+| geri dönüşsüz kompaksiyon | A45 | E1 sınayacak |
+| matris çekmesi (`−15,19 MPa`) | A51 | E2 sınayacak |
+| **yapay viskozite** | **A53** | **E3 sınayacak** |
+
+AV, üçü içinde **doğrudan olumlu kanıtı olan** tek aday: akışı
+üretmiş olan o. Ama kanıt çözünürlükte yaşamıyor.
+
+> **Ders:** bir kolu elerken *"hangi büyüklük değişti"* diye
+> sormuştum. Sormam gereken *"hangi **hız ölçeğinde** değişti"*
+> imiş. `132×` kütle ve `24×` düşük `Δβ`, tek başına okununca
+> çelişki; `⟨v⟩` ile okununca **mekanizma**.
+
+---
+### A54 — **A44'ün yapısal sebebi: takım koşulamaz haldeydi** (2026-09-06)
+
+A44'te *"kırmızı testle push ettim"* demiştim ve dersi *"push'tan
+önce tüm takımı koştur"* diye yazmıştım. **Ders uygulanamazdı.**
+
+`tests/test_faz4_gpu_paths.py` içindeki üç test `_cuda_ya_da_atla`
+ile zaten CUDA şartına bağlıydı ama **`gpu` işareti yoktu**.
+CUDA'sı olan bir makinede `-m "not gpu"` onları **seçiyor**:
+
+| | süre |
+|---|---:|
+| `test_shock_interface_iki_bolgeli_kosu` | **`> 1` saat** |
+| aynı dosyanın CPU testleri | `1,98 s` |
+| dosyanın tamamı, işaretlemeden **sonra** | **`1,90 s`** |
+
+Yani tam takımı koşturmak saatler alıyordu ve bu yüzden **kimse
+koşturmuyordu** — A44 tam olarak buradan doğdu.
+
+#### İşaret testi zayıflatmıyor
+
+Üç test **zaten** CUDA istiyordu ve CUDA yoksa kendini atlıyordu.
+`@pytest.mark.gpu` yalnızca bu şartı **bildirime** çeviriyor:
+artık `-m "not gpu"` (yerel kapı) onları seçmiyor, `-m gpu`
+(TRUBA kapısı) seçiyor.
+
+> **Ders:** A44'te sebebi *"disiplinsizlik"* diye yazmıştım.
+> Yanlıştı. Sebep **araçtı**: koşulamayan bir kapı, kapı değildir.
+> Bir kuralı koymadan önce *"bu kural uygulanabilir mi"* diye
+> sormak gerekiyormuş.
+
+---
+### A55 — **Zincir betiği kendi yorumunun tersini yapıyordu** (2026-09-06)
+
+A54'ün işaretlemesi takımı `17` dakikaya indirir indirmez **ikinci**
+bir önceden-kırmızı test ortaya çıktı:
+`test_zincir_betigi_TUM_adimlari_cagiriyor`.
+
+`scripts/faz4_zincir.sh`:
+
+```bash
+set -euo pipefail
+
+set -u                      # -e YOK: bir adim duserse kalanlar da kosmali
+```
+
+**Yorum `-e` yok diyor, kod `-e` koyuyor.** A32'de bütün kabuk
+betiklerine `set -euo pipefail` eklerken bunu da eklemişim ve
+altındaki yorumu okumamışım.
+
+#### Sessiz ama gerçek
+
+Zincir `4.4 → 4.5 → 4.6 → 4.7` sırayla koşuyor ve **kapı raporu**
+`4.7`. `-e` ile ilk düşen adımda duruyor — yani bir ara adım
+düştüğünde **kapı raporu hiç üretilmiyor**. Oysa tasarım gereği
+kapının *"şu adım koşulmadı"* demesi gerekiyordu.
+
+Yani `-e`, hata görünürlüğünü artırmak için konmuştu ve tam tersini
+yapıyordu.
+
+#### Kural çakışması değil
+
+`test_kabuk_pipefail.py` yalnızca **`pipefail`** istiyor, `-e`
+istemiyor. `set -uo pipefail` iki kuralı da sağlıyor.
+
+> **Ders:** A32'de bir kuralı **toplu** uyguladım. Toplu uygulama,
+> her dosyanın kendi gerekçesini okumadan yapılınca kuralı bozar.
+> İki kırmızı test (A44, A55) aynı toplu düzenlemeden çıktı.
+
+---
+### A56 — **Yapay viskozite ensemble'a hiç geçmiyordu** (2026-09-06)
+
+`forward.py`'nin merdiven yolu çözücüyü şöyle kuruyordu:
+
+```python
+WarpSolid3D(..., RefParams(cfl=0.25), ...)
+```
+
+`RefParams.alpha_av` varsayılanı **`1,0`**. Yani ensemble `α_av`'yi
+**sabit** tutuyordu ve bunu hiçbir yerde bildirmiyordu.
+
+#### Neden ciddi
+
+A53 ölçtü: `α_av 1,0 → 0,1` kaçan hedef kütlesini **`132` kat**,
+kütle ağırlıklı eksenel hızı **`3 188` kat** değiştiriyor.
+
+Yani ensemble, gözlenebilirin **en güçlü kontrol parametresini**
+tarama dışında bırakıyordu — üstelik o parametre bir *fizik*
+parametresi değil, **sayısal** bir parametre. Duyarlılık
+çalışmasının kaçırdığı en büyük etki buydu.
+
+#### Ayrıca `fizik_ozeti`'ne girmiyordu
+
+Farklı `α_av` ile koşulmuş iki çıktı **aynı** özeti taşıyordu, yani
+karıştırılabilirlerdi. `α_av` ve `β_av` artık özete giriyor.
+
+| eklenen | nereye |
+|---|---|
+| `alpha_av`, `beta_av` | `ileri_kosu_merdiven` imzası |
+| `--alpha-av`, `--beta-av` | `faz5_ensemble_merdiven.py` |
+| ikisi de | `_fizik_ozeti` |
+
+Üretim varsayılanı **değişmedi** (`1,0` / `2,0`); yalnız artık
+seçilebiliyor ve kayda giriyor.
+
+---
+### A57 — **Tek tohum hem tasarımı hem sahneyi sürüyordu** (2026-09-06)
+
+`faz5_ensemble_merdiven.py`'de tek bir `kok` iki ayrı işi yapıyordu:
+
+```python
+tasarim = lhs_design(UZAY, a.n_lhs, root_seed=kok)      # HANGI theta'lar
+sahne_taban = {**SAHNE, "root_seed": kok}               # HANGI gerceklem
+```
+
+#### Neden ciddi — Protokol G'yi çöpe atardı
+
+G, gürültü tabanını **aynı `24` noktayı iki gerçeklemeyle** koşarak
+ölçüyor. Tek tohumla ikinci kol **farklı `θ`'lar** örneklerdi;
+`ayirt_raporu.py` `θ`'ya göre eşleştirdiği için **hiçbir eşleşme
+bulamaz**, `F = nan` çıkar ve `48` koşuluk kampanya boşa giderdi.
+
+**Koşudan önce yakalandı.** Çare: `--sahne-tohum`. Verilmezse
+davranış **değişmiyor** (sahne tohumu = tasarım tohumu).
+
+| kol | `--root-seed` | `--sahne-tohum` |
+|---|---|---|
+| G/0-2 | `20260906` | `20260906` |
+| G/3-5 | **`20260906`** (aynı) | **`99991111`** |
+
+#### Aynı turda kendi ellerimle iki hata daha yaptım
+
+1. `--kademeler` çözümünü `print` bloğundan **sonra** koydum;
+   `merdiven` tanımlanmadan kullanılıyordu → her G koşusu ilk
+   saniyede `NameError` ile ölürdü.
+2. Test `test_surucu_surumu_ileri_modele_gonderiyor` çağrının
+   **birebir metnine** bakıyordu (`"surum=surum)[0]"`); AV bayrağı
+   eklenince kırıldı. Test kusuruydu, kod kusuru değil.
+
+Üçü de **commit'ten önce** yakalandı, ve üçünü de yakalayan şey
+kodun kendisini **koşturmak** oldu — `argparse` yolunu uçtan uca
+çalıştırıp çıktıyı okumak.
+
+> **Ders:** iş betiğini TRUBA'ya göndermeden önce yerelde
+> **`--device cuda:99`** ile koştur. Kurulum, argüman ve yazdırma
+> yolları böyle sınanıyor; GPU gerekmiyor.
+
+---
 ### A18 — **`G4-C`'nin ensemble verisi depoda yok ve geri alınamıyor** (2026-08-21)
 
 Kapı raporu `G4-C`'yi üç ölçütle geçiriyor (`C1 = 1`, `C2 = 0,221142`,
