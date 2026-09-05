@@ -139,3 +139,37 @@ def test_esikler_protokolle_ayni():
     assert ar.RHO_ESIGI == 0.5 and "0,5" in m
     assert ar.P_ESIGI == 0.05 and "0,05" in m
     assert ar.KACAN_ORANI_ESIGI == 0.80 and "%80" in m
+
+
+# --- krater derinligi: beta'nin var olmadigi yerde yedek -----------------
+
+def test_krater_niceligi_kacan_sartini_uygulamiyor():
+    """`β` kaba çözünürlükte var olmuyor; krater derinliği var.
+
+    `Rb_R1` (`N = 17 201`): `n_kacan_hedef = 0`, `krater_derinlik = 0,533 m`.
+    Krater seçilince `n_kacan` ön koşulu ANLAMSIZ olur.
+    """
+    th = (1.05, 1e4, 0.1)
+    tablo = {th: [_k(th, 1.0, n_kacan=0)]}
+    assert ar.on_kosullar(tablo, kacan_sarti=True)["kacan_gecti"] is False
+    ok = ar.on_kosullar(tablo, kacan_sarti=False)
+    assert ok["kacan_gecti"] is True
+    assert ok["kacan_sarti_uygulandi"] is False
+
+
+def test_krater_nicelik_secenegi_var():
+    m = (Path(__file__).resolve().parents[1] / "scripts"
+         / "ayirt_raporu.py").read_text(encoding="utf-8")
+    assert '"krater_derinlik"' in m
+    assert "kacan_sarti=(a.nicelik != \"krater_derinlik\")" in m
+
+
+def test_krater_x_referans_yoksa_nan():
+    """`x_reference` ZORUNLU (R4) — yoksa sessiz sayı üretilmemeli."""
+    class _Sahte:
+        files = ["x", "mermi_kesri", "ehat", "R"]
+
+        def __getitem__(self, k):
+            return np.zeros(3)
+
+    assert np.isnan(ar._krater(_Sahte()))

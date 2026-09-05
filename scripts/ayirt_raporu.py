@@ -70,6 +70,31 @@ def _v_esc(d) -> float:
     return float(escape_speed(float(m[hedef].sum()), float(d["R"])))
 
 
+def _krater(d) -> float:
+    """Krater derinliği — `β`'nın var olmadığı çözünürlükte YEDEK gözlenebilir.
+
+    `Rb_R1` (`N = 17 201`) ölçtü: `n_kacan_hedef = 0`, yani `β` o
+    çözünürlükte **var olmuyor**. Krater derinliği ise `0,533 m` ile
+    **var**. Ve Hera'nın doğrudan görüntüleyeceği nicelik bu.
+
+    `x_reference` ZORUNLU (R4): verilmezse `crater_profile` cismi küre
+    varsayar ve **şekli** krater diye ölçer.
+    """
+    from dartrift.inference.forward import KRATER_AYARLARI_DART
+    from dartrift.observables.crater_shape import crater_profile
+
+    if "x_referans" not in d.files:
+        return float("nan")
+    hedef = np.asarray(d["mermi_kesri"]) < 0.5
+    kr = crater_profile(
+        np.asarray(d["x"])[hedef], center=np.zeros(3),
+        impact_direction=np.asarray(d["ehat"], dtype=np.float64),
+        reference_radius=float(d["R"]),
+        x_reference=np.asarray(d["x_referans"], dtype=np.float64)[hedef],
+        **KRATER_AYARLARI_DART)
+    return float(kr.depth)
+
+
 def _olcumler(k: dict, d) -> dict:
     """`npz`'den defteri post-hoc hesapla."""
     from dartrift.observables.momentum_defteri import momentum_defteri
@@ -88,6 +113,7 @@ def _olcumler(k: dict, d) -> dict:
         n_kacan=md["n_kacan_hedef"],
         artik_bagil=md["artik_bagil"],
         v_ort=(md["P_ejekta_eksenel"] / M) if M > 0 else float("nan"),
+        krater_derinlik=_krater(d),
     )
     return k
 
@@ -162,7 +188,7 @@ def varyans_orani(tablo: dict, nicelik: str) -> dict:
             "n_theta": len(ort), "n_tekrarli": len(ic)}
 
 
-def on_kosullar(tablo: dict) -> dict:
+def on_kosullar(tablo: dict, *, kacan_sarti: bool = True) -> dict:
     hepsi = [k for v in tablo.values() for k in v]
     n = len(hepsi)
     kacanli = sum(1 for k in hepsi if k.get("n_kacan", 0) >= 1)
@@ -173,7 +199,8 @@ def on_kosullar(tablo: dict) -> dict:
     return {
         "n_kosu": n,
         "kacan_orani": oran,
-        "kacan_gecti": bool(oran >= KACAN_ORANI_ESIGI),
+        "kacan_sarti_uygulandi": bool(kacan_sarti),
+        "kacan_gecti": bool(oran >= KACAN_ORANI_ESIGI) if kacan_sarti else True,
         "defter_gecti": bool(defter),
         "M1_gecti": bool(m1_tamam),
         "alpha0_benzersiz": sorted({v for v in m1 if v is not None}),
@@ -184,7 +211,8 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--durumlar", nargs="+", type=Path, required=True)
     ap.add_argument("--nicelik", default="delta_beta",
-                    choices=("delta_beta", "M_ejekta", "v_ort"))
+                    choices=("delta_beta", "M_ejekta", "v_ort",
+                             "krater_derinlik"))
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args(argv)
 
@@ -195,13 +223,17 @@ def main(argv=None) -> int:
         print(f"{dz.name}: {len(ham)} nokta")
 
     tablo = esle(kollar)
-    ok = on_kosullar(tablo)
+    # `krater_derinlik` `beta`'dan BAGIMSIZ bir gozlenebilir: kaba
+    # cozunurlukte `n_kacan = 0` iken bile olculebiliyor. O yuzden
+    # kacan orani on kosulu YALNIZ ejekta tabanli niceliklerde gecerli.
+    ok = on_kosullar(tablo, kacan_sarti=(a.nicelik != "krater_derinlik"))
     print("\n" + "=" * 68)
     print("ON KOSULLAR")
     print(f"  kosu sayisi           : {ok['n_kosu']}")
     print(f"  n_kacan >= 1 orani    : {ok['kacan_orani']:.3f}  "
           f"[{'GECTI' if ok['kacan_gecti'] else 'DUSTU'}]  "
-          f"(esik {KACAN_ORANI_ESIGI})")
+          f"(esik {KACAN_ORANI_ESIGI}"
+          f"{'' if ok['kacan_sarti_uygulandi'] else ', UYGULANMADI'})")
     print(f"  defter kapali         : "
           f"[{'GECTI' if ok['defter_gecti'] else 'DUSTU'}]")
     print(f"  sahne M1 (alpha0 >= 3): "

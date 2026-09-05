@@ -84,3 +84,35 @@ ayarı şart: gözlenebilir önce **var olmalı**.
 Sonuç, *"düzeltilmiş düzenekte ve akışın var olduğu ayarda,
 gözlenebilir `θ` hakkında bilgi taşıyor mu"* sorusunun yanıtıdır.
 Daha fazlası değil — ve daha azı da değil.
+
+---
+
+## Ek: `β` var olmazsa — **krater derinliği** (2026-09-06, koşudan önce)
+
+`Rb_R1` (`N = 17 201`, üretim AV'si) ölçtü: `n_kacan_hedef = 0`.
+Yani `β` o çözünürlükte **var olmuyor**. Ön koşul 1 düşer ve G
+okunamaz.
+
+Krater derinliği ise aynı koşuda **`0,533 m`** ile **var**. Ve
+Hera'nın doğrudan görüntüleyeceği nicelik odur.
+
+### Kural
+
+F kampanyası `F_kaba_av01` kolunda `n_kacan_hedef = 0` verirse
+G, `--nicelik krater_derinlik` ile koşar. O hâlde:
+
+- **`n_kacan` ön koşulu uygulanmaz** (rapor: `UYGULANMADI`);
+  krater `β`'dan bağımsız bir gözlenebilirdir.
+- Diğer üç ön koşul **aynen** geçerli (defter, şok, `M1` nöbetçisi).
+- `F` ve Spearman eşikleri **değişmez** (`4`, `0,5`, `0,05`).
+
+### Bu bir gevşetme değil
+
+Gözlenebilir **değişiyor**, ölçüt değil. `β` üzerine bir iddia
+kurulmuyor; kurulan iddia *"krater derinliği `θ` hakkında bilgi
+taşıyor mu"* oluyor — ve o soru kendi başına anlamlı, çünkü Hera
+krateri ölçecek.
+
+`x_reference` **zorunlu** (R4): verilmezse `crater_profile` cismi
+küre varsayar ve **şekli** krater diye ölçer. Verilmezse `nan`
+döner — sessiz sayı üretilmiyor.
