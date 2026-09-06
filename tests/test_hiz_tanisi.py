@@ -159,3 +159,76 @@ def test_gozeneksiz_kolda_sayisal_artik_sok_sanilmaz():
     # gercek sikisma hala gorunur
     e2 = ht.ezilme_mi_sok_mu(_durum([2700.1, 3500.0], [1.0, 1.0]))
     assert e2["n_kati_sikisan"] == 1
+
+
+# --- A61: kumelenme denetimi --------------------------------------------
+
+def _kume(konumlar, *, m_p=5.826, a0=1.7564):
+    n = len(konumlar)
+    return {
+        "x": np.asarray(konumlar, dtype=float),
+        "m": np.full(n, m_p),
+        "rho": np.full(n, 2900.0),      # hepsi "kati sikismis" gorunsun
+        "alpha0": np.full(n, a0),
+        "mermi_kesri": np.zeros(n),
+    }
+
+
+def test_kumelenme_olculen_kusuru_yakaliyor():
+    """A61'in gerçek sayıları: `0,2013 m` komşu, `0,35 m` aralık."""
+    # nominal aralik: (m / (2700/1,7564))^(1/3) = 0,1494... -> kendi
+    # olcegimizi kuralim: m_p'yi araliga gore sec
+    aralik = 0.35
+    rho_y = 2700.0 / 1.7564
+    m_p = rho_y * aralik ** 3
+    x = np.array([[i * 0.2013, 0.0, 0.0] for i in range(8)])
+    e = ht.ezilme_mi_sok_mu(_kume(x, m_p=m_p))
+    assert e["kumelenme_olculdu"] is True
+    assert e["nominal_aralik"] == pytest.approx(aralik, rel=1e-9)
+    assert e["komsu_orani"] == pytest.approx(0.2013 / aralik, rel=1e-6)
+    assert e["kumelenmis"] is True
+    assert e["sahte_yogunluk_kati"] == pytest.approx(5.26, abs=0.05)
+
+
+def test_duzgun_paketleme_kumelenmis_sayilmaz():
+    aralik = 0.35
+    m_p = (2700.0 / 1.7564) * aralik ** 3
+    x = np.array([[i * aralik * 0.95, 0.0, 0.0] for i in range(8)])
+    e = ht.ezilme_mi_sok_mu(_kume(x, m_p=m_p))
+    assert e["kumelenmis"] is False
+    assert e["komsu_orani"] == pytest.approx(0.95, rel=1e-6)
+
+
+def test_esik_tam_sinirda():
+    assert ht.KUMELENME_ESIGI == 0.75
+    aralik = 0.35
+    m_p = (2700.0 / 1.7564) * aralik ** 3
+    for oran, beklenen in ((0.74, True), (0.76, False)):
+        x = np.array([[i * aralik * oran, 0.0, 0.0] for i in range(6)])
+        e = ht.ezilme_mi_sok_mu(_kume(x, m_p=m_p))
+        assert e["kumelenmis"] is beklenen, f"oran {oran}"
+
+
+def test_tek_parcacikta_olculmez():
+    e = ht.ezilme_mi_sok_mu(_kume([[0.0, 0.0, 0.0]]))
+    assert e["kumelenme_olculdu"] is False
+
+
+def test_kati_sikisma_yoksa_kumelenme_de_olculmez():
+    """`rho < rho0_kati` iken seçim boş → ölçüm yapılmaz."""
+    s = _kume([[0.0, 0, 0], [0.3, 0, 0]])
+    s["rho"] = np.full(2, 2200.0)
+    e = ht.ezilme_mi_sok_mu(s)
+    assert e["n_kati_sikisan"] == 0
+    assert e["kumelenme_olculdu"] is False
+
+
+def test_rapor_kumelenmeyi_yaziyor():
+    aralik = 0.35
+    m_p = (2700.0 / 1.7564) * aralik ** 3
+    x = np.array([[i * 0.2013, 0.0, 0.0] for i in range(8)])
+    e = ht.ezilme_mi_sok_mu(_kume(x, m_p=m_p))
+    metin = ht.ezilme_raporu("sinav", e)
+    assert "kumelenme" in metin
+    assert "KUMELENMIS" in metin
+    assert "SAHTE" in metin

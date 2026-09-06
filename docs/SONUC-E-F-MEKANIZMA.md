@@ -14,6 +14,11 @@
 | **E1 — şok** | *"Çözücü kusuru"* — **hâlâ açık**; çürüttüğünü sandığım kol da düştü (A61) |
 | **F — AV** | **SONUÇSUZ** (monotonluk ölçülemedi) |
 
+**Nicel sonuc (§6):** cekme kaldirildiginda ejekta dagilimi
+`M(>v) ~ v^(-3mu)`, **`mu = 0,47 +/- 0,03`**, `R^2 > 0,99` —
+Housen-Holsapple'in `0,40 - 0,55` araligina oturuyor. Uretim
+kolunda boyle bir dagilim **yok**.
+
 Ve iki bulgu daha:
 
 1. **Şok depoda ilk kez gözlendi.** `E1a`'da sıkışma
@@ -266,3 +271,87 @@ modellemiyor; negatif basıncı **sıfırlıyor**. Uzmanın dediği gibi bu
 
 Gerçek çözüm ayrı bir tasarım kararıdır (ADR) ve uzmana sorulan
 açık sorulardan biri (`UZMANA-YANIT.md` §5.1).
+
+---
+
+## 6. **Nicel sonuç: ejekta dağılımı Housen–Holsapple yasasına oturuyor**
+
+Uzmanın 9. maddesi: *"Doğrudan parçacıklardan `M(>v)` çıkarın;
+evrensel `v⁻³` kuyruğu dayatmayın."* Yapıldı.
+
+### Önce bir ölçüm kusuru düzeltildi
+
+`r > R` şartı `t = 24 ms`'te bir **zaman süzgeci**: `1 m/s`'lik
+madde o sürede yalnız `2,4 cm` ilerler ve yüzeyden **çıkamaz**.
+Yavaş uç sistematik olarak eksik sayılıyor ve eğim yapay olarak
+**sığ** çıkıyor (`−0,640`).
+
+Doğrusu: **dışarı doğru hareket eden tüm maddeyi** saymak.
+
+### E2b — çekme kırpık
+
+| `v_r >` | `n` | `M` (kg) |
+|---:|---:|---:|
+| `1` | `15 870` | `984 480` |
+| `2` | `12 533` | `364 010` |
+| `5` | `8 916` | `101 160` |
+| `10` | `6 604` | `46 016` |
+| `20` | `3 264` | `19 015` |
+| `50` | `684` | `3 985` |
+| `100` | `252` | `1 468` |
+
+İki dekattan uzun, düzgün bir güç yasası.
+
+### Sağlamlık — sekiz uydurma bandı
+
+| band (m/s) | eğim | `μ` | `R²` |
+|---|---:|---:|---:|
+| `1 – 100` | `−1,400` | `0,467` | `0,9967` |
+| `1 – 50` | `−1,359` | `0,453` | `0,9965` |
+| `2 – 100` | `−1,422` | `0,474` | `0,9954` |
+| `1 – 200` | `−1,410` | `0,470` | `0,9982` |
+| `0,5 – 100` | `−1,386` | `0,462` | `0,9972` |
+| `2 – 50` | `−1,369` | `0,456` | `0,9949` |
+| `5 – 100` | `−1,475` | `0,492` | `0,9932` |
+| `1 – 20` | `−1,297` | `0,432` | `0,9982` |
+
+**`μ = 0,463 ± 0,016`** (aralık `0,432 – 0,492`), her bantta
+`R² > 0,993`.
+
+### Housen & Holsapple
+
+Noktasal kaynak yaklaşımının ara bölgesinde `M(>v) ∝ v^(−3μ)`,
+`μ ≈ 0,40` (gözenekli) – `0,55` (kaya).
+
+> **Sekiz bandın sekizi de bu aralığın içinde.**
+
+### Üretim kolunda dağılım **yok**
+
+Aynı `12` eşikte üretim kolu yalnız **`3` farklı kütle değeri**
+veriyor — basamak fonksiyonu. `v_r > 2` ile `v_r > 100` arasında
+hep aynı `16` parçacık, `93,2 kg`. Güç yasası **uydurulamaz**;
+ejekta ayrıklaştırma tabanında.
+
+### Sonucun ifadesi
+
+> Gözenekli hedefli SPH çarpma simülasyonunda, matrisin **sahte
+> çekme dayanımı** — akma dayanımı `Y₀`'ın Tillotson çekme dalını
+> sınırlamamasından doğuyor — kazı akışını **tamamen** bastırıyor.
+> Çekme kaldırıldığında ejekta kütle–hız dağılımı
+> `M(>v) ∝ v^(−3μ)`, **`μ = 0,47 ± 0,03`**, `R² > 0,99` ile
+> Housen–Holsapple'ın `0,40 – 0,55` aralığına oturuyor.
+> Düzeltilmemiş modelde böyle bir dağılım **yok**: ejekta `16`
+> parçacık, ayrıklaştırma tabanında.
+
+### Ne iddia edilmiyor
+
+| kısıt | durum |
+|---|---|
+| tek zaman (`t = 24 ms`) | zaman yakınsaması **yapılmadı** |
+| tek çözünürlük (`N = 69 886`) | uzamsal yakınsama **yapılmadı** (A52) |
+| *"dışarı hareket eden"* ≠ *"kaçacak"* | ölçülen **şekil**, verim değil |
+| çekme kırpma **fiziksel model değil** | tanı kolu; gerçek çözüm granüler sürtünme (ADR gerekiyor) |
+| `β = 3,22` hedefine ulaşılmadı | `Δβ = 0,27`; hedefin `%12`'si |
+
+Ama **şekil** uyuyor, ve şekil laboratuvar ve kuram tarafından
+bağımsız olarak öngörülen şey.

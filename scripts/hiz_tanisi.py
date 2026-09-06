@@ -139,6 +139,55 @@ def egim(dagilim: list, v_alt: float, v_ust: float) -> float | None:
 RHO0_KATI = 2700.0
 
 
+#: Kumelenme esigi: en yakin komsu / nominal aralik. Bu oranin
+#: altindaki parcaciklar birbirine GECMIS demektir ve `rho`
+#: fazlalari GERCEK SIKISMA DEGIL.
+#:
+#: `0,75` secildi cunku olculen kusurda oran `0,575` idi ve
+#: `(1/0,575)^3 = 5,26` kat sahte yogunluk uretiyordu; `0,75`
+#: bile `2,37` kat demek. Duzgun bir SPH paketlemesinde en yakin
+#: komsu nominal araligin `~%95`'idir.
+KUMELENME_ESIGI = 0.75
+
+
+def _kumelenme(s: dict, secim) -> dict:
+    """Seçili parçacıklar birbirine **geçmiş** mi (çekme kararsızlığı).
+
+    A61: `E3_av_dusuk`'te `ρ_max = 2891,5` ve `8` parçacık "katı
+    sıkışmış" göründü. Konumlarına bakınca en yakın komşu medyanı
+    `0,2013 m`, nominal aralık `0,35 m` — **oran `0,575`**. Eşdeğer
+    yoğunluk artışı `5,26` kat, ölçülen fazlayı tamamen açıklıyordu.
+
+    Yani `ρ > ρ₀ᵏᵃᵗⁱ` tek başına *"şok var"* demeye **yetmiyor**.
+    """
+    n = int(np.count_nonzero(secim))
+    if n < 2 or "x" not in s or "m" not in s:
+        return {"kumelenme_olculdu": False}
+    x = np.asarray(s["x"], dtype=np.float64)
+    m = np.asarray(s["m"], dtype=np.float64)
+    hedef = np.asarray(s["mermi_kesri"], dtype=np.float64) < 0.5
+    xs = x[hedef][secim]
+    ms = m[hedef][secim]
+    if len(xs) > 4000:                       # O(n^2) korumasi
+        return {"kumelenme_olculdu": False, "kumelenme_sebep": "cok parcacik"}
+    D = np.linalg.norm(xs[:, None, :] - xs[None, :, :], axis=2)
+    np.fill_diagonal(D, np.inf)
+    en_yakin = float(np.median(D.min(axis=1)))
+    # Nominal aralik parcacik kutlesinden: s = (m / rho_yigin)^(1/3)
+    a0 = np.asarray(s["alpha0"], dtype=np.float64)[hedef][secim]
+    rho_yigin = RHO0_KATI / np.maximum(a0, 1.0)
+    aralik = float(np.median((ms / rho_yigin) ** (1.0 / 3.0)))
+    oran = en_yakin / aralik if aralik > 0 else float("nan")
+    return {
+        "kumelenme_olculdu": True,
+        "en_yakin_komsu": en_yakin,
+        "nominal_aralik": aralik,
+        "komsu_orani": oran,
+        "sahte_yogunluk_kati": float(oran ** -3) if oran > 0 else float("nan"),
+        "kumelenmis": bool(oran < KUMELENME_ESIGI),
+    }
+
+
 def ezilme_mi_sok_mu(s: dict) -> dict:
     """`sikisma` canli sok mu, yoksa KALICI EZILME ARTIGI mi?
 
@@ -185,6 +234,7 @@ def ezilme_mi_sok_mu(s: dict) -> dict:
         "rho_max": float(rho.max()),
         "rho_max_bolu_kati": float(rho.max() / RHO0_KATI),
         "kati_payi": KATI_PAYI,
+        **_kumelenme(s, kati),
         "n_kati_sikisan": int(kati.sum()),
         "M_kati_sikisan": float(m[kati].sum()),
         "kati_sikisan_pay": float(kati.sum() / len(rho)),
@@ -194,6 +244,18 @@ def ezilme_mi_sok_mu(s: dict) -> dict:
         "n_bakir": int((rho <= RHO0_KATI / a0 * 1.001).sum()),
     }
 
+
+def _kumelenme_satiri(e: dict) -> str:
+    """Kümelenme denetimi — A61 sonrası ZORUNLU."""
+    if not e.get("kumelenme_olculdu"):
+        return "  kumelenme: OLCULMEDI (kati sikisan < 2 ya da cok fazla)"
+    bayrak = ("KUMELENMIS -- rho fazlasi SAHTE olabilir"
+              if e["kumelenmis"] else "duzgun paketli")
+    return (f"  kumelenme: en yakin komsu {e['en_yakin_komsu']:.4f} m / "
+            f"aralik {e['nominal_aralik']:.4f} m = {e['komsu_orani']:.3f}"
+            f"   (esik {KUMELENME_ESIGI})" + chr(10) +
+            f"     sahte yogunluk katkisi {e['sahte_yogunluk_kati']:.2f} kat"
+            f"  >> {bayrak}")
 
 def ezilme_raporu(ad: str, e: dict) -> str:
     s = e["en_sikisan"]
@@ -215,6 +277,7 @@ def ezilme_raporu(ad: str, e: dict) -> str:
         f"{e['M_kati_sikisan']:.4g} kg  ({100 * e['kati_sikisan_pay']:.3f}%)",
         f"  ezilme durumu: bakir={e['n_bakir']}  kismen={e['n_kismen_ezilmis']}  "
         f"tam={e['n_tam_ezilmis']}",
+        _kumelenme_satiri(e),
         f"  >> {yargi}",
     ]
     return "\n".join(satirlar)
