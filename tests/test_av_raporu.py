@@ -143,3 +143,41 @@ def test_av_etiketi_cozuluyor():
     assert av._av_degeri("av10") == pytest.approx(1.0)
     assert av._av_degeri("av04") == pytest.approx(0.4)
     assert av._av_degeri("av01") == pytest.approx(0.1)
+
+
+# --- A58: "olculemedi" ile "etki yok" ayni degil -------------------------
+
+def test_olculemeyen_kol_ETKI_YOK_demiyor(tmp_path, capsys):
+    """`α_av = 0,1` kolunda hiç ejekta yoksa monotonluk ÖLÇÜLEMEZ.
+
+    Betik bunu "ETKI YOK ya da TUTARSIZ -- AV aday olmaktan cikar"
+    diye raporluyordu; veri o sonucu DESTEKLEMIYOR.
+    """
+    yollar = _kos(tmp_path, [
+        ("F_kaba_av10", dict(M=93.0, P=-1264.0 * 93.0, av_deg=1.0)),
+        ("F_kaba_av04", dict(M=93.0, P=-100.0 * 93.0, av_deg=0.4)),
+        ("F_kaba_av01", dict(M=0.0, P=0.0, av_deg=0.1, n=0, sev=0)),
+    ])
+    av.main(["--kollar", *[str(y) for y in yollar]])
+    c = capsys.readouterr().out
+    assert "SONUCSUZ" in c, "olculemeyen hal SONUCSUZ olmali"
+    assert "OLCULEMEDI" in c
+    assert "AV aday olmaktan cikar" not in c, (
+        "veri desteklemedigi halde eleme yargisi verilmis"
+    )
+
+
+def test_gercekten_duz_ise_ETKI_YOK_demeye_devam(tmp_path, capsys):
+    """Ölçülebiliyor ve düzse, eleme yargısı YERİNDE."""
+    yollar = _kos(tmp_path, [
+        ("F_kaba_av10", dict(M=93.0, P=-100.0 * 93.0, av_deg=1.0)),
+        ("F_kaba_av04", dict(M=93.0, P=-99.0 * 93.0, av_deg=0.4)),
+        ("F_kaba_av01", dict(M=93.0, P=-98.0 * 93.0, av_deg=0.1)),
+        ("F_orta_av10", dict(M=93.0, P=-100.0 * 93.0, av_deg=1.0)),
+        ("F_orta_av04", dict(M=93.0, P=-99.0 * 93.0, av_deg=0.4)),
+        ("F_orta_av01", dict(M=93.0, P=-98.0 * 93.0, av_deg=0.1)),
+    ])
+    av.main(["--kollar", *[str(y) for y in yollar]])
+    c = capsys.readouterr().out
+    assert "SONUCSUZ" not in c
+    assert "ETKI YOK ya da TUTARSIZ" in c

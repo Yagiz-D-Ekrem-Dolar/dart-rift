@@ -164,8 +164,19 @@ def main(argv=None) -> int:
     print("\n" + "=" * 78)
     kaba_ok = sonuc.get("kaba", {}).get("monoton", False)
     orta_ok = sonuc.get("orta", {}).get("monoton", False)
+    # A58: "OLCULEMEDI" ile "ETKI YOK" AYNI yargiya dusuyordu.
+    # F kampanyasinda alpha_av = 0,1 kolu t = 0,024 s'te HIC ejekta
+    # vermedi (`<v> = nan`); monotonluk sinavi degerlendirilemedi ama
+    # betik "ETKI YOK ya da TUTARSIZ -- AV aday olmaktan cikar" dedi.
+    # Bu, veri desteklemedigi bir SONUC. Once o hal ayrilir.
+    olculemedi = [o for o in OLCEKLER
+                  if "yetersiz" in sonuc.get(o, {}).get("sebep", "")]
     if gecersiz:
         yargi = "OKUNMAZ -- gecersiz kol var"
+    elif olculemedi:
+        yargi = ("SONUCSUZ -- monotonluk OLCULEMEDI: "
+                 + ", ".join(f"{o} ({sonuc[o]['sebep']})" for o in olculemedi)
+                 + ". Bu 'etki yok' DEMEK DEGIL.")
     elif kaba_ok and orta_ok:
         yargi = ("AV GERCEK BIR KONTROL PARAMETRESI -- mekanizma surekli "
                  "ve iki olcekte de duruyor")

@@ -77,6 +77,10 @@ def main() -> int:
     ap.add_argument("--spacing", type=float, default=7.0)
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--root-seed", type=int, default=None)
+    ap.add_argument("--matris-cekme-yok", action="store_true",
+                    help="TANI KOLU (E2 sonucu): matris hedef "
+                         "parcaciklarinda negatif basinci sifira kirp. "
+                         "Uretim modeli DEGIL.")
     ap.add_argument("--sahne-tohum", type=int, default=None,
                     help="SAHNE gerceklemesi (blok yerlesimi, hasar) "
                          "icin ayri tohum. Verilmezse tasarim tohumu. "
@@ -191,7 +195,8 @@ def main() -> int:
             sahne_taban={**SAHNE, "root_seed": sahne_kok},
             sok_yargisi=not a.sok_kapisi_kapali,
             durum_dizini=yol.with_suffix(".durumlar"),
-            surum=surum, alpha_av=a.alpha_av, beta_av=a.beta_av)[0]
+            surum=surum, alpha_av=a.alpha_av, beta_av=a.beta_av,
+            matris_cekme_yok=a.matris_cekme_yok)[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
         return y

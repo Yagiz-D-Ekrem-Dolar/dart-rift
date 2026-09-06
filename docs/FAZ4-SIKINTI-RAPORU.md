@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 43 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 47 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -4355,6 +4355,181 @@ kodun kendisini **koşturmak** oldu — `argparse` yolunu uçtan uca
 > **Ders:** iş betiğini TRUBA'ya göndermeden önce yerelde
 > **`--device cuda:99`** ile koştur. Kurulum, argüman ve yazdırma
 > yolları böyle sınanıyor; GPU gerekmiyor.
+
+---
+### A58 — **Raporum "ölçülemedi"yi "etki yok" diye yazdı** (2026-09-06)
+
+`av_raporu.py`'nin yargı zinciri:
+
+```python
+if gecersiz:            OKUNMAZ
+elif kaba_ok and orta_ok: AV GERCEK KONTROL PARAMETRESI
+elif kaba_ok != orta_ok:  COZUNURLUK ARTEFAKTI SUPHESI
+else:                   ETKI YOK ya da TUTARSIZ -- AV aday olmaktan cikar
+```
+
+F kampanyasında `α_av = 0,1` kolu `t = 0,024 s`'te **hiç ejekta
+vermedi** (`⟨v⟩ = nan`). `monoton_azalan` doğru davrandı ve
+`sebep = "yetersiz/gecersiz nokta"` dedi — ama zincirin **son**
+dalı bunu *"ETKİ YOK, AV aday olmaktan çıkar"* diye raporladı.
+
+**Veri o sonucu desteklemiyor.** Ölçüm yapılamadı; bu, ölçümün
+sıfır çıkmasıyla aynı şey değil.
+
+#### Neden tehlikeli
+
+Bu yargı bir **adayı eleyecekti**. Ve elenen aday (AV), aynı
+kampanyada E1/E3 koluyla **şoku katı sıkışma eşiğinin altına
+bastırdığı** ölçülen mekanizmaydı. Yani rapor, kanıtı olan bir
+mekanizmayı kanıtsız bir cümleyle eleyecekti.
+
+#### Çare
+
+`SONUCSUZ -- monotonluk OLCULEMEDI: ... Bu 'etki yok' DEMEK DEGIL.`
+dalı eklendi ve iki sınavla kilitlendi: biri ölçülemeyen halin
+eleme yargısı **vermediğini**, diğeri gerçekten düz bir dizide
+eleme yargısının **hâlâ verildiğini** sınıyor.
+
+> **Ders:** kilitli bir ölçüt yazarken *"ölçemezsem ne derim"*
+> dalını da yazmak gerekiyormuş. Yoksa `else` her şeyi yutuyor.
+
+---
+
+### A59 — **E1'in ölçütü yetersizdi; kendi dışındaki kol çürüttü** (2026-09-06)
+
+E1 kilitli tablosu iki kolla kurulmuştu ve `ρ_max ≤ 2702,7` her
+ikisinde çıkınca *"**Çözücü kusuru.** En ağır sonuç."* diyordu.
+Ölçülen:
+
+| kol | `ρ_max` | katı sıkışan |
+|---|---:|---:|
+| E1a (üretim) | `2601,6` | `0` |
+| E1b (`α` donuk) | `2571,4` | `0` |
+
+**Çürüten kol E3:** aynı çözücü, aynı sahne, tek değişen `α_av`.
+
+| `α_av` | `ρ_max` | katı sıkışan | zirve sıkışma |
+|---:|---:|---:|---:|
+| `1,0` | `2601,6` | `0` | `%69,2` |
+| `0,4` | `2658,8` | `0` | `%73,0` |
+| **`0,1`** | **`2891,5`** | **`46`** | **`%88,1`** |
+
+Çözücü katı sıkışması **üretebiliyor**. Yalnız üretim `α_av`'sinde
+üretemiyor. Doğru okuma: **üretim yapay viskozitesi şoku katı
+sıkışma eşiğinin altına bastırıyor.**
+
+> ⚠ **BU SATIR GEÇERSİZ — bkz. A61.** E3'ün `ρ = 2891,5`'i şok
+> değil **kümelenme**: `8` parçacık, hepsi en ince seviye, en yakın
+> komşu medyanı `0,2013 m` ve aralık `0,35 m` (**oran `0,575`**).
+> Silinmiyor, işaretleniyor.
+
+#### Kusur ölçütte değil, TASARIMDA
+
+İki kol *"çözücü yapamıyor"* ile *"bu ayarda yapmıyor"* arasını
+ayırt edemiyordu. Ayırt eden kol aynı dizide vardı ama **başka bir
+soru için** konmuştu.
+
+Yargı geriye dönük **değiştirilmiyor**: ölçütün dediği de,
+çürütüldüğü de kayda geçiyor (A45 ile aynı usul).
+
+> **Ders:** *"X olmuyor"* diyen bir ölçüt kurarken, **X'in olduğu
+> bir kol** da aynı deneye konmalı. Pozitif denetimsiz bir olumsuz
+> yargı, çözücüyü suçlamaya kadar gidiyor.
+
+#### E1 bir şeyi kanıtladı
+
+E1a'nın `ρ_max` zirvesi `t = 8,61e-05 s` — öngörülen şok geçiş
+süresi `6,0e-05 s`. Yoğun izleme çalıştı; **depoda ilk kez canlı
+şok görüldü.** A45'in açtığı boşluk kapandı.
+
+---
+
+### A60 — **Kazı akışı doğuyor, sonra ölüyor** (2026-09-06)
+
+Aynı düzenek, iki zaman:
+
+| `t` | `M_kaçan` | `⟨v⟩` | `n` |
+|---|---:|---:|---:|
+| `0,024 s` (E2a) | **`18 735 kg`** | `−6,70 m/s` | `45` |
+| `0,200 s` (L2_taban) | **`93 kg`** | `−1 264 m/s` | `16` |
+
+`24 ms`'te `18,7` **ton** madde `6,7 m/s` ile dışarıda. `200 ms`'te
+geriye `93 kg` ve o da `1 264 m/s`'lik **jet**.
+
+Aradaki `176 ms`'te `18,7` ton madde `8 cm/s`'nin altına yavaşladı.
+
+#### Bu, bütün eski ölçümleri yeniden yorumluyor
+
+`t_end = 0,2 s`'te alınan *"kaçan `16` parçacık"* ölçümü, akışın
+**öldükten sonraki** hâliydi. `β_hedef = 1,033` da öyle.
+
+Ve sebebi E2 ile ölçüldü: yüzeyin medyan `v_r`'si üretimde
+**negatif** (`−0,177 m/s`) — madde geri çekiliyor.
+
+> **Ders:** `t_end`'i *"plato"* gördüğüm için `0,2 s`'te
+> sabitlemiştim (Protokol v2.1). Plato gerçekti — ama **ölü bir
+> platoydu**. Gidişi görmek için erken zamana bakmak gerekiyormuş.
+
+---
+### A61 — **Düşük AV'nin "katı sıkışması" kümelenmeymiş** (2026-09-06)
+
+A59'da *"çözücü katı sıkışması üretebiliyor, yalnız üretim
+`α_av`'sinde üretemiyor"* demiştim. Dayanağım `E3_av_dusuk`'ün
+`ρ_max = 2891,5` ve katı sıkışan parçacıklarıydı.
+
+**Onların nerede olduğuna baktım.**
+
+| ölçüm | değer |
+|---|---:|
+| katı sıkışan parçacık (`t = 24 ms`) | `8` |
+| hepsinin kütlesi | `5,826 kg` — **en ince seviye** |
+| çarpma noktasına uzaklık | `1,69 – 2,10 m` |
+| **en yakın komşu, medyan** | **`0,2013 m`** |
+| ince seviye aralığı | `0,35 m` |
+| **oran** | **`0,575`** |
+
+Nominal aralığın **`%57`**'sinde paketlenmişler. Eşdeğer yoğunluk
+artışı `(1/0,575)³ =` **`5,26` kat** — ölçülen `ρ` fazlası bununla
+tamamen açıklanıyor.
+
+Bu bir şok cephesi değil, **çekme kararsızlığı** (tensile
+instability) imzası: düşük yapay viskozitede beklenen, bilinen bir
+SPH kusuru.
+
+#### İkinci kanıt: zamanlama
+
+Katı sıkışma `t = 1,27e-03 s`'te başlıyor ve `24 ms`'e kadar
+**sürüyor** (`159` iz noktası). Gerçek bir şok cephesi **geçici**
+olur ve dışarı ilerler — `E1a`'da tam öyle davrandı:
+`%14 → %69,2 → %53`, zirve `8,61e-05 s`.
+
+Kalıcı ve sabit bir yüksek yoğunluk **kümelenmedir**.
+
+#### Geriye ne kalıyor
+
+| iddia | durumu |
+|---|---|
+| Şok oluşuyor ve **gözlendi** (E1a) | **ayakta** — zirve `8,61e-05 s`, öngörü `6,0e-05 s` |
+| Şok gözeneklerin `%96`'sını kapatıyor (`ρ = 2601,6 → α = 1,038`) | **ayakta** |
+| Hiçbir kolda **temiz** katı sıkışma yok | **ayakta** |
+| *"AV şoku bastırıyor"* (A59) | **DÜŞTÜ** |
+| *"Çözücü kusuru"* — E1'in kilitli yargısı | **hâlâ açık**: ne doğrulandı ne çürütüldü |
+
+E1'in sorusu **cevapsız kaldı**: şok gözeneği kapatıyor ve orada
+duruyor. Bunun gözenekli hedefte **beklenen fizik** mi yoksa
+çözünürlük yetersizliği mi olduğunu ayıracak deney **henüz
+yapılmadı**.
+
+#### Ne yapmalı
+
+Düşük AV kolları artık **kümelenme denetimi olmadan okunmamalı**.
+`ρ > ρ₀ᵏᵃᵗⁱ` tek başına yetmiyor; en-yakın-komşu ölçüsü şart.
+
+> **Ders:** *"beklediğim yönde bir sayı"* görünce **nereden
+> geldiğine** bakmadan yorumladım. E2'de aynı hatayı yapmadım —
+> seviye dağılımına baktım ve `3 139` ince parçacık çıktı. Aradaki
+> fark: E2'nin protokolünde **dışlama maddesi yazılıydı**,
+> E3'ünkinde yoktu.
 
 ---
 ### A18 — **`G4-C`'nin ensemble verisi depoda yok ve geri alınamıyor** (2026-08-21)

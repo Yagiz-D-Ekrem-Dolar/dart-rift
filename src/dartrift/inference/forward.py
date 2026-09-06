@@ -56,7 +56,8 @@ GOZLENEBILIRLER = ("beta", "krater_derinlik", "ejekta_kutle_kesri")
 
 
 def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
-                 alpha_av=1.0, beta_av=2.0) -> str:
+                 alpha_av=1.0, beta_av=2.0,
+                 matris_cekme_yok=False) -> str:
     """Kosunun FIZIK yapilandirmasinin SHA-256 ozeti (16 hane).
 
     Iki cikti ayni `theta`yi tasiyip FARKLI fizikle uretilmis
@@ -77,6 +78,7 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
         f"{float(t_end):.17g}",
         f"{float(alpha_av):.17g}",
         f"{float(beta_av):.17g}",
+        f"cekme_kirp={bool(matris_cekme_yok)}",
     ]
     ham = "|".join(parcalar).encode("utf-8")
     return hashlib.sha256(ham).hexdigest()[:16]
@@ -461,7 +463,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         krater_ayarlari=KRATER_AYARLARI_DART,
                         sok_yargisi: bool = True,
                         durum_dizini=None, surum: str | None = None,
-                        alpha_av: float = 1.0, beta_av: float = 2.0
+                        alpha_av: float = 1.0, beta_av: float = 2.0,
+                        matris_cekme_yok: bool = False
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
@@ -523,7 +526,16 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 RefParams(cfl=0.25, alpha_av=alpha_av, beta_av=beta_av),
                 alpha0=np.ascontiguousarray(rs.alpha0),
                 Y0=np.ascontiguousarray(rs.Y0), device=device,
-                check_every=10 ** 9)
+                check_every=10 ** 9,
+                # TANI KOLU (E2 sonucu): matris hedef parcaciklarinda
+                # negatif basinci sifira kirp. Bloklar ve mermi saglam
+                # kaya -- onlarda cekme dali fiziksel, kirpilmiyor.
+                # Uretim modeli DEGIL; olculen etkisi Protokol G'nin
+                # ikinci kolunda okunuyor.
+                cekme_kirp_maske=(
+                    (~np.asarray(rs.is_impactor, dtype=bool)
+                     & ~np.asarray(rs.is_boulder, dtype=bool))
+                    if matris_cekme_yok else None))
             t = 0.0
             kontrol = max(1, azami_adim // 200)
             for adim in range(1, azami_adim + 1):
@@ -596,7 +608,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                     surum=str(surum or ""),
                     fizik_ozeti=_fizik_ozeti(sahne_taban, material,
                                              kademeler, spacing, t_end,
-                                             alpha_av, beta_av))
+                                             alpha_av, beta_av,
+                                             matris_cekme_yok))
             Y[i] = gozlenebilirleri_cikar(
                 st, impactor_momentum=rs.impactor_momentum,
                 target_mass=rs.target_mass, target_radius=rs.target_radius,

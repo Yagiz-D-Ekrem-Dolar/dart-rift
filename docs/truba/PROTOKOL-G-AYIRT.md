@@ -116,3 +116,41 @@ krateri ölçecek.
 `x_reference` **zorunlu** (R4): verilmezse `crater_profile` cismi
 küre varsayar ve **şekli** krater diye ölçer. Verilmezse `nan`
 döner — sessiz sayı üretilmiyor.
+
+---
+
+## Ek 2: **iki kol** (2026-09-06, koşudan önce) — E2 sonucundan sonra
+
+E2 ölçtü (`docs/SONUC-E-F-MEKANIZMA.md`): matris çekmesi kırpılınca
+kaçan parçacık `45 → 3 318`, `Δβ_hedef` `0,0352 → 0,2715`, ve yüzey
+`v_r` medyanı `−0,177 → +0,094 m/s` (işaret değiştiriyor).
+
+Yani üretim ayarında **kazı akışı ölüyor**. Ayırt edilebilirliği
+yalnız orada sınamak, gözlenebilirin bilgi taşıyıp taşımadığını
+**akışın olmadığı** bir rejimde sormak olur.
+
+### Kollar
+
+| kol | ayar | sorduğu |
+|---|---|---|
+| **G1** | üretim | Gözlenebilir **olduğu gibi** `θ` bilgisi taşıyor mu? |
+| **G2** | `--matris-cekme-yok` | Akış **var olduğunda** taşıyor mu? |
+
+İkisi de aynı `24` `θ`, aynı **tasarım tohumu**, iki sahne
+gerçeklemesi. `12` görev, kol başına `~1` dakika (ölçüldü: `F_kaba`
+işleri `00:00:57 – 00:01:09`).
+
+### Yorum tablosu — **şimdi kilitleniyor**
+
+| G1 | G2 | sonuç |
+|---|---|---|
+| ayırt etmiyor | **ayırt ediyor** | **En güçlü sonuç.** Bilgi içeriği çekme kusuru yüzünden yok oluyor, kusur giderilince geri geliyor. Gözlenebilir ilkesel olarak kullanılabilir; önce çekme modeli düzeltilmeli. |
+| **ayırt ediyor** | ayırt ediyor | Gözlenebilir **zaten** bilgi taşıyor; çekme kusuru onu yok etmiyor, yalnız zayıflatıyor. |
+| ayırt etmiyor | ayırt etmiyor | Gözlenebilir `θ`'yı **taşımıyor** — ve bu, düzeltilmiş düzenekle alınmış **ilk geçerli** ölçüm olur. |
+| ayırt ediyor | ayırt etmiyor | **Tutarsız.** Kırpma bilgiyi yok ediyorsa tanı kolunun kendisi sorgulanır; sonuç okunmaz, sebep aranır. |
+
+### G2 bir üretim modeli **değil**
+
+`--matris-cekme-yok` granüler sürtünmeyi modellemiyor; negatif
+basıncı sıfırlıyor. G2'nin cevabı *"çekme sorunu çözülürse"*
+koşulludur ve öyle bildirilir.

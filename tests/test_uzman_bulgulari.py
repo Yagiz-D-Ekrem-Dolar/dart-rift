@@ -328,3 +328,43 @@ def test_merdiven_ilk_kullanimdan_ONCE_tanimli():
     assert tanim < kullanim, (
         "merdiven ilk kullanimdan SONRA tanimlaniyor -> NameError"
     )
+
+
+def test_ensemble_cekme_kirpma_kolunu_kurabiliyor():
+    """Protokol G'nin ikinci kolu buna bağlı (E2 sonucu).
+
+    E2 ölçtü: çekme kırpılınca kaçan parçacık `45 → 3 318`,
+    `Δβ` `0,0352 → 0,2715`. G, gözlenebilirin `θ` bilgisini
+    akışın VAR OLDUĞU ayarda da sınıyor.
+    """
+    import inspect
+
+    from dartrift.inference.forward import ileri_kosu_merdiven
+
+    imza = inspect.signature(ileri_kosu_merdiven).parameters
+    assert "matris_cekme_yok" in imza
+    assert imza["matris_cekme_yok"].default is False, (
+        "TANI kolu varsayilan OLMAMALI -- uretim modeli degil"
+    )
+    m = (REPO / "src" / "dartrift" / "inference" / "forward.py").read_text(
+        encoding="utf-8")
+    blok = m[m.index("def ileri_kosu_merdiven"):]
+    assert "cekme_kirp_maske=(" in blok
+    # bloklar ve mermi KIRPILMAMALI -- onlarda cekme dali fiziksel
+    assert "~np.asarray(rs.is_impactor, dtype=bool)" in blok
+    assert "& ~np.asarray(rs.is_boulder, dtype=bool)" in blok
+
+    s = (REPO / "scripts" / "faz5_ensemble_merdiven.py").read_text(
+        encoding="utf-8")
+    assert '"--matris-cekme-yok"' in s
+    assert "matris_cekme_yok=a.matris_cekme_yok" in s
+
+
+def test_fizik_ozeti_cekme_kirpmayi_ayirt_ediyor():
+    """İki G kolu aynı `θ`'yı koşuyor; özet onları AYIRMALI."""
+    from dartrift.inference.forward import _fizik_ozeti
+
+    taban = {"radius": 82.0}
+    a = _fizik_ozeti(taban, "mat", ("48:5.6",), 7.0, 0.024, 1.0, 2.0, False)
+    b = _fizik_ozeti(taban, "mat", ("48:5.6",), 7.0, 0.024, 1.0, 2.0, True)
+    assert a != b, "cekme kirpma fizik ozetine girmiyor -> iki kol karisir"

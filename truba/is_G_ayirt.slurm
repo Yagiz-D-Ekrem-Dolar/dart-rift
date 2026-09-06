@@ -6,8 +6,8 @@
 #SBATCH -n 1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
-#SBATCH --time=12:00:00
-#SBATCH --array=0-5
+#SBATCH --time=06:00:00
+#SBATCH --array=0-11
 #SBATCH --exclude=kolyoz19
 #SBATCH -o /arf/scratch/egitimg16u1/driftclaude/ciktilar/G_%A_%a.out
 #SBATCH -e /arf/scratch/egitimg16u1/driftclaude/ciktilar/G_%A_%a.err
@@ -25,57 +25,54 @@ cd "$KOK/dart-rift"
 # G -- GOZLENEBILIR IC YAPIYI AYIRT EDIYOR MU
 #      (docs/truba/PROTOKOL-G-AYIRT.md, kosudan ONCE commit'lendi)
 #
-# BU SINAV BUGUNE KADAR HIC GECERLI YAPILMADI (rapor A46):
-# surucu `sahne_taban=None` gonderiyordu, `build_scene` varsayilani
-# `M0` idi ve `M0` dalinda BLOK YERLESTIRILMIYOR. Yani theta'nin
-# uc bileseninden IKISI sahneye hic ulasmiyordu.
+# BU SINAV BUGUNE KADAR HIC GECERLI YAPILMADI (rapor A46): surucu
+# `sahne_taban=None` gonderiyordu, sahne M0 oluyordu ve M0 dalinda
+# BLOK YERLESTIRILMIYOR. theta'nin uc bileseninden IKISI sahneye
+# hic ulasmiyordu.
 #
-# Olculdu (duzeltmeden SONRA, uretim olceginde):
-#   theta=(1,05; 1e4; 0,10) -> 1109 blok parcacigi, matris a0 1,5896
-#   theta=(1,30; 1e4; 0,40) -> 3448 blok parcacigi, matris a0 1,6430
-#   ayni theta, tohum 999   -> 1055 blok parcacigi, matris a0 1,5844
-# yani theta etkisi gerceklem gurultusunden ~44 kat buyuk.
+# IKI KOL (E2 sonucu, rapor SONUC-E-F-MEKANIZMA.md):
+#   G1 = URETIM. Gozlenebilir OLDUGU GIBI theta bilgisi tasiyor mu?
+#   G2 = CEKME KIRPIK. E2 olctu: kacan parcacik 45 -> 3 318,
+#        delta_beta 0,0352 -> 0,2715. Yani kazi akisi ORADA VAR.
+#        Soru: akis var oldugunda gozlenebilir theta'yi ayirt ediyor mu?
 #
-# GURULTU TABANI: ayni 24 nokta IKI root_seed ile kosuluyor.
-# root_seed blok YERLESIMINI belirledigi icin ikinci tohum ayni
-# fizigin farkli gerceklemesidir.
-#   F = Var(theta'lar arasi) / ortalama(gerceklemeler arasi)
+#   G1 "hayir" + G2 "evet" -> bilgi icerigi CEKME KUSURU yuzunden
+#   yok oluyor ve kusur giderilince GERI GELIYOR. En guclu sonuc.
 #
-# AV: F kampanyasinin KAZANANI. Sebep (A53/A56): uretim AV'sinde
-# kaba olcekte gozlenebilir HIC VAR OLMUYOR (Rb_R1: n_kacan = 0).
-# Once var olmali ki ayirt edip etmedigi sorulabilsin.
+# GURULTU TABANI: ayni 24 nokta IKI sahne gerceklemesiyle.
+# TASARIM tohumu iki kolda da AYNI (A57) -- yoksa farkli theta'lar
+# orneklenir ve eslestirme sifir cikar.
 # ============================================================
 
-# --- F KAMPANYASI SONUCUNA GORE DOLDURULACAK ---
-# Varsayilan uretim; F "AV gercek kontrol parametresi" derse
-# 0.1/0.2 yapilacak ve bu satir commit'lenerek degistirilecek.
-AV="${G_AV:---alpha-av 0.1 --beta-av 0.2}"
-
-# Kaba merdiven: olculen 5 dk/nokta (Rb_R1 00:05:06, N = 17 201).
-# `--kademeler kaba` kisayolu SURUCUDE tanimli (MERDIVEN_KABA);
-# burada elle yazmak A26 sinifi olcek uyusmazligi riski tasirdi.
-
-# 24 nokta / 3 dilim = 8 nokta/gorev; iki tohum = 6 gorev
-# TASARIM tohumu IKI KOLDA DA AYNI -- yoksa iki kol FARKLI theta'lar
-# ornekler ve `ayirt_raporu` hicbir eslesme bulamaz (rapor A57).
-# Degisen tek sey SAHNE gerceklemesi: `--sahne-tohum`.
 TASARIM_TOHUMU=20260906
 
 case $SLURM_ARRAY_TASK_ID in
-  0) DILIM="0/3"; SAHNE_TOHUM=20260906 ;;
-  1) DILIM="1/3"; SAHNE_TOHUM=20260906 ;;
-  2) DILIM="2/3"; SAHNE_TOHUM=20260906 ;;
-  3) DILIM="0/3"; SAHNE_TOHUM=99991111 ;;
-  4) DILIM="1/3"; SAHNE_TOHUM=99991111 ;;
-  5) DILIM="2/3"; SAHNE_TOHUM=99991111 ;;
+  # --- G1: uretim ---
+  0)  KOL=G1_uretim; DILIM="0/3"; SAHNE_TOHUM=20260906; EK="" ;;
+  1)  KOL=G1_uretim; DILIM="1/3"; SAHNE_TOHUM=20260906; EK="" ;;
+  2)  KOL=G1_uretim; DILIM="2/3"; SAHNE_TOHUM=20260906; EK="" ;;
+  3)  KOL=G1_uretim; DILIM="0/3"; SAHNE_TOHUM=99991111; EK="" ;;
+  4)  KOL=G1_uretim; DILIM="1/3"; SAHNE_TOHUM=99991111; EK="" ;;
+  5)  KOL=G1_uretim; DILIM="2/3"; SAHNE_TOHUM=99991111; EK="" ;;
+  # --- G2: cekme kirpik (TANI kolu, uretim modeli DEGIL) ---
+  6)  KOL=G2_kirpik; DILIM="0/3"; SAHNE_TOHUM=20260906; EK="--matris-cekme-yok" ;;
+  7)  KOL=G2_kirpik; DILIM="1/3"; SAHNE_TOHUM=20260906; EK="--matris-cekme-yok" ;;
+  8)  KOL=G2_kirpik; DILIM="2/3"; SAHNE_TOHUM=20260906; EK="--matris-cekme-yok" ;;
+  9)  KOL=G2_kirpik; DILIM="0/3"; SAHNE_TOHUM=99991111; EK="--matris-cekme-yok" ;;
+  10) KOL=G2_kirpik; DILIM="1/3"; SAHNE_TOHUM=99991111; EK="--matris-cekme-yok" ;;
+  11) KOL=G2_kirpik; DILIM="2/3"; SAHNE_TOHUM=99991111; EK="--matris-cekme-yok" ;;
   *) echo "bilinmeyen gorev"; exit 1 ;;
 esac
 
 echo "=============================================================="
-echo "G/$SLURM_ARRAY_TASK_ID  dilim=$DILIM  tasarim=$TASARIM_TOHUMU  sahne=$SAHNE_TOHUM  AV='$AV'"
+echo "G/$SLURM_ARRAY_TASK_ID  $KOL  dilim=$DILIM"
+echo "  tasarim tohumu = $TASARIM_TOHUMU  (IKI KOLDA DA AYNI)"
+echo "  sahne tohumu   = $SAHNE_TOHUM     (gurultu tabani)"
+echo "  ek bayrak      = '$EK'"
 echo ""
 echo "ON KOSULLAR (biri duserse sonuc OKUNMAZ):"
 echo "  1) n_kacan_hedef >= 1 olan nokta orani >= %80"
+echo "     (nicelik krater_derinlik ise UYGULANMAZ)"
 echo "  2) her noktada defter kapali (|artik_bagil| < 1e-10)"
 echo "  3) her noktada sok yargisi KISMI veya SOK_VAR"
 echo "  4) alpha0 UC benzersiz deger tasimali (mermi+matris+blok)"
@@ -88,8 +85,8 @@ echo "=============================================================="
 python scripts/faz5_ensemble_merdiven.py --device cuda:0 \
     --n-lhs 24 --t-end 0.024 --dilim "$DILIM" \
     --root-seed "$TASARIM_TOHUMU" --sahne-tohum "$SAHNE_TOHUM" \
-    --kademeler kaba $AV \
-    --out "$KOK/kampanya/G_sahne${SAHNE_TOHUM}.jsonl"
+    --kademeler kaba $EK \
+    --out "$KOK/kampanya/${KOL}_sahne${SAHNE_TOHUM}.jsonl"
 rc=$?
-echo "G/$SLURM_ARRAY_TASK_ID rc=$rc"
+echo "G/$SLURM_ARRAY_TASK_ID ($KOL) rc=$rc"
 exit $rc
