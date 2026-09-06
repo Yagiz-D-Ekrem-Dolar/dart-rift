@@ -212,3 +212,42 @@ def test_dizinler_tohuma_gore_GRUPLANIYOR(tmp_path, monkeypatch):
     assert len(x) == 4, f"dort theta beklenirdi, {len(x)} geldi"
     assert len(d) == 4 and len(sap) == 4
     assert np.all(sap > 0), "iki gerceklem arasinda sapma olmali"
+
+
+# --- A67: d_alt negatif olamaz, x0 ekstrapolasyonu bildirilir ------------
+
+def test_d_alt_NEGATIF_olamaz():
+    """Gerçek veride kısıtsız uydurma `d_alt = −0,1523 m` verdi.
+
+    Krater derinliği negatif olamaz; veri alt platoya ulaşmadığı için
+    sigmoid'in alt asimptotu ekstrapolasyondu.
+    """
+    # Yalniz DUSEN kolu ver -- alt plato YOK
+    x = np.linspace(3.1, 6.9, 20)
+    d = vp.sigmoid_model(x, *GERCEK)
+    v = vp.uydur(x, d)
+    assert v["d_alt"] >= 0.0, f"negatif taban: {v['d_alt']}"
+
+
+def test_x0_ekstrapolasyonu_BILDIRILIYOR():
+    x = np.linspace(3.1, 6.9, 20)
+    d = vp.sigmoid_model(x, *GERCEK)
+    v = vp.uydur(x, d)
+    assert "x0_veri_icinde" in v and "x0_uca_yakin" in v
+    assert v["veri_araligi"] == [pytest.approx(3.1), pytest.approx(6.9)]
+
+
+def test_gecis_ortadaysa_uca_yakin_DEMIYOR():
+    x = np.linspace(4.0, 8.0, 24)      # x0 = 5,9 tam ortada
+    d = vp.sigmoid_model(x, *GERCEK)
+    v = vp.uydur(x, d)
+    assert v["x0_veri_icinde"] is True
+    assert v["x0_uca_yakin"] is False
+
+
+def test_kisit_uydurmayi_BOZMUYOR():
+    """`d_alt` zaten pozitifse kısıt sonucu değiştirmemeli."""
+    x, d = _veri()
+    v = vp.uydur(x, d)
+    assert v["R2"] > 0.999
+    assert v["d_alt"] == pytest.approx(GERCEK[0], abs=0.02)

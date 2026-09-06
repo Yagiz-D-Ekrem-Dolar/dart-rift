@@ -68,9 +68,19 @@ def uydur(x, d, *, tohum: int = 0) -> dict:
     d = np.asarray(d, float)
     rng = np.random.default_rng(tohum)
 
+    # A67: `d_alt` KRATER DERINLIGI ve NEGATIF OLAMAZ.
+    #
+    # Kisitsiz uydurma gercek veride `d_alt = -0,1523 m` verdi --
+    # fiziksel olarak imkansiz. Sebep: veri ALT PLATOYA ULASMIYOR
+    # (`Y0` en buyuk `9,3e6 Pa` ve derinlik hala dusuyor), yani
+    # sigmoid'in alt asimptotu EKSTRAPOLASYON.
+    #
+    # Kisit sonucu daha kotu uydurmaz; SAVUNULABILIR yapar.
+    D_ALT_TABAN = 0.0
+
     # Kaba izgara: fiziksel olarak makul baslangiclar
     en_iyi, en_iyi_p = np.inf, None
-    for d_alt in np.linspace(d.min() - 0.05, d.min() + 0.05, 5):
+    for d_alt in np.linspace(D_ALT_TABAN, d.min(), 5):
         for d_ust in np.linspace(d.max() - 0.05, d.max() + 0.05, 5):
             for x0 in np.linspace(x.min(), x.max(), 15):
                 for w in (0.1, 0.2, 0.4, 0.8, 1.5):
@@ -88,7 +98,7 @@ def uydur(x, d, *, tohum: int = 0) -> dict:
             for isaret in (+1.0, -1.0):
                 q = p.copy()
                 q[j] += isaret * adim[j]
-                if q[3] <= 1e-3:
+                if q[3] <= 1e-3 or q[0] < D_ALT_TABAN:
                     continue
                 s = float((_kal(q, x, d) ** 2).sum())
                 if s < en_iyi:
@@ -105,6 +115,12 @@ def uydur(x, d, *, tohum: int = 0) -> dict:
         "x0": float(p[2]), "w": float(p[3]),
         "artik_sigma": float(kal.std(ddof=4)) if len(x) > 4 else float("nan"),
         "R2": float(R2),
+        # A67: `x0` verinin ICINDE mi? Ucunda ya da disindaysa gecis
+        # noktasi EKSTRAPOLASYON'dur ve oyle bildirilmeli.
+        "x0_veri_icinde": bool(x.min() < p[2] < x.max()),
+        "x0_uca_yakin": bool(min(abs(p[2] - x.min()),
+                                 abs(p[2] - x.max())) < 0.5),
+        "veri_araligi": [float(x.min()), float(x.max())],
     }
 
 
@@ -249,6 +265,10 @@ def main(argv=None) -> int:
     print(f"    x0    = {v['x0']:.3f}         (gecis: Y0 = {10**v['x0']:.3g} Pa)")
     print(f"    w     = {v['w']:.3f}          (keskinlik, dekad)")
     print(f"    R^2   = {v['R2']:.4f}   artik sigma = {v['artik_sigma']:.5f} m")
+    if not v["x0_veri_icinde"] or v["x0_uca_yakin"]:
+        print(f"    ! GECIS NOKTASI verinin UCUNDA "
+              f"(veri {v['veri_araligi'][0]:.2f} .. {v['veri_araligi'][1]:.2f}). "
+              f"x0 ve d_alt EKSTRAPOLASYON -- ayri bildirilmeli.")
 
     lo = birak_bir_dogrula(x, d)
     print(f"\n  BIRINI DISARIDA BIRAK ({lo['n']} kat)")
