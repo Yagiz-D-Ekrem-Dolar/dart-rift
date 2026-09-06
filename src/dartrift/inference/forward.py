@@ -619,6 +619,18 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
         except (RuntimeError, ValueError) as e:
             if ilerleme:
                 ilerleme(i, len(x), f"DUSTU: {e}")
+            # A64: TEK NOKTALI cagride sessizce `nan` DONMEK YASAK.
+            #
+            # Ensemble surucusu her noktayi AYRI cagriyla kosturuyor ve
+            # `ilerleme` VERMIYOR; o zaman bu dal sebebi kaybediyor ve
+            # cagiran yalnizca `[nan nan nan]` goruyor. G2 kolunda
+            # 48 noktanin 39'u boyle dustu ve GEREKCE HICBIR YERDE
+            # YAZILI DEGILDI -- ne jsonl'de ne kutukte ne .err'de.
+            #
+            # Yigin cagrisinda `continue` DOGRU (bir nokta digerlerini
+            # dusurmemeli); tek noktalikta gerekce cagirana gitmeli.
+            if len(x) == 1:
+                raise
             continue
         if ilerleme:
             ilerleme(i, len(x), " ".join(

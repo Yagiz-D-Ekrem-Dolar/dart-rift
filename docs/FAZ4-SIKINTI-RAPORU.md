@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 49 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 50 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -4666,6 +4666,56 @@ işaretlenmediği, ve dejenere dalının `AYIRT EDIYOR` dalından
 > **Ders:** *"bölen sıfırsa sonsuz"* kestirmesi, payın da sıfır
 > olabileceğini unutuyor. Ve bu depoda `0/0` **beklenen** bir hâl:
 > gözlenebilirin var olmadığı rejimde çalışıyoruz.
+
+---
+### A64 — **G2'nin `48` noktasından `39`'u düştü ve gerekçe hiçbir yerde yoktu** (2026-09-06)
+
+`ileri_kosu_merdiven`:
+
+```python
+except (RuntimeError, ValueError) as e:
+    if ilerleme:                      # <- surucu ilerleme VERMIYOR
+        ilerleme(i, len(x), f"DUSTU: {e}")
+    continue                          # <- sebep BURADA kayboluyor
+```
+
+Ensemble sürücüsü her noktayı **ayrı** çağrıyla koşturuyor
+(`np.atleast_2d(theta)`, tek satır) ve `ilerleme` geçmiyor. O zaman
+çağıran yalnızca `[nan nan nan]` görüyor ve kendi mesajını yazıyor:
+
+```
+{"i": 0, "y": null, "hata": "nokta okunamadi: [nan nan nan]"}
+```
+
+#### Ne kaybettik
+
+`G2` (çekme kırpık) kolunda `48` noktanın **`39`'u** düştü.
+Gerekçe **hiçbir yerde yazılı değildi** — ne `jsonl`'de, ne iş
+kütüğünde, ne `.err`'de. Kampanya koştu, GPU harcandı, ve *neden*
+düştüğü bilinmiyor.
+
+Yerelde çözücüyü aynı maskeyle kurup bir adım attırdım: **sorun
+orada değil** (`15 069` matris parçacığı, adım atıldı). Yani
+gerekçe koşunun içinde ve görünmüyor.
+
+#### Çare
+
+Tek noktalı çağrıda `raise`; yığın çağrısında `continue` **kalıyor**
+(bir nokta diğerlerini düşürmemeli). Böylece sürücünün
+`ensemble_kos`'u gerçek istisnayı yakalayıp `hata` alanına yazacak.
+
+İki sınav: tek noktalıda `raise` olduğu, ve yığın için `continue`'nun
+`raise`'den **sonra** durduğu.
+
+#### Bu, A20/A37 ile aynı sınıf
+
+A20: *"sessiz kısalma yasak"*. A37: *"`npz` yoktu, post-hoc
+inceleme yapılamadı"*. Şimdi: *"düşme sebebi yoktu"*.
+
+> **Ders:** bir `except` dalında **koşullu** günlükleme varsa, o
+> koşulun sağlanmadığı çağrı yolu sebebi **kaybediyor** demektir.
+> `if ilerleme:` masum görünüyordu; üretimdeki tek çağrı yolu tam
+> olarak `ilerleme` vermeyen yoldu.
 
 ---
 ### A18 — **`G4-C`'nin ensemble verisi depoda yok ve geri alınamıyor** (2026-08-21)

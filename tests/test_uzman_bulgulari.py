@@ -368,3 +368,37 @@ def test_fizik_ozeti_cekme_kirpmayi_ayirt_ediyor():
     a = _fizik_ozeti(taban, "mat", ("48:5.6",), 7.0, 0.024, 1.0, 2.0, False)
     b = _fizik_ozeti(taban, "mat", ("48:5.6",), 7.0, 0.024, 1.0, 2.0, True)
     assert a != b, "cekme kirpma fizik ozetine girmiyor -> iki kol karisir"
+
+
+# --- A64: tek noktali cagride sebep kaybolmasin --------------------------
+
+def test_tek_noktali_cagri_sebebi_KAYBETMIYOR():
+    """G2'de `48` noktanın `39`'u düştü ve gerekçe HİÇBİR YERDE yoktu.
+
+    Sürücü her noktayı ayrı çağırıyor ve `ilerleme` vermiyor; eski dal
+    `continue` edip `[nan nan nan]` döndürüyordu.
+    """
+    m = (REPO / "src" / "dartrift" / "inference" / "forward.py").read_text(
+        encoding="utf-8")
+    # IKI ozdes except blogu var (ileri_kosu ve ileri_kosu_merdiven).
+    # Hedef MERDIVEN olani -- oradan itibaren ara.
+    blok = m[m.index("def ileri_kosu_merdiven"):]
+    blok = blok[blok.index("except (RuntimeError, ValueError) as e:"):][:1400]
+    assert "if len(x) == 1:" in blok and "raise" in blok, (
+        "tek noktali cagri sebebi yutuyor"
+    )
+    # Yigin cagrisinda `continue` KALMALI -- bir nokta digerlerini
+    # dusurmemeli.
+    assert "continue" in blok
+
+
+def test_yigin_cagrisi_hala_devam_ediyor():
+    """Çok noktalı çağrıda bir düşen nokta diğerlerini durdurmamalı."""
+    import inspect
+
+    from dartrift.inference.forward import ileri_kosu_merdiven
+
+    kaynak = inspect.getsource(ileri_kosu_merdiven)
+    i_raise = kaynak.index("if len(x) == 1:")
+    i_cont = kaynak.index("continue", i_raise)
+    assert i_cont > i_raise, "continue, raise'den SONRA gelmeli"
