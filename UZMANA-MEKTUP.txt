@@ -1,0 +1,577 @@
+================================================================================
+DART-RIFT — UZMAN GORUSU ICIN MEKTUP
+Tarih: 2026-09-06
+Depo: https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift   (dal: main)
+Commit: e73aaa7
+================================================================================
+
+
+0. BU MEKTUP NE ICIN
+--------------------------------------------------------------------------------
+
+Onceki incelemeniz icin tesekkur ederim. Bes kod bulgunuzun BESINI DE
+bagimsiz olarak urettim; besi de gercekti, besi de duzeltildi ve her biri
+icin onu yakalayacak bir sinav yazildi. Iki fizik olcumunuz de tuttu ve
+biri benim bir cikarimimi curuttu.
+
+O incelemeden sonra alti kampanya kostu ve proje ONEMLI OLCUDE ILERLEDI.
+Ama simdi ONCEKINDEN DAHA BUYUK bir duvara carptik ve bu mektup onu
+anlatiyor.
+
+Onumuzde DORT AY var. Hedef, projeyi ORIJINAL haliyle bitirmek:
+
+    DART'in olctugu momentum artisindan Dimorphos'un ic yapisi uzerine
+    yakinsamis, dogrulanmis bir posterior.
+
+Bu mektup su uc soruyu yanitlamak icin yazildi:
+  (a) Su an tam olarak neredeyiz -- olculmus sayilarla
+  (b) O hedefe giden yolda ONUMUZDE NE VAR -- eksiksiz engel listesi
+  (c) Hangi sorularda GORUSUNUZE ihtiyacimiz var
+
+Depoda her sey acik: kod, testler (1 692 gecen), 56 kayitli kusur, her
+kampanyanin KOSUDAN ONCE commit'lenmis yargi kurali, ve butun ham
+sonuclar.
+
+Toplu bakis icin: docs/BULGULAR.md
+
+
+1. ONCEKI INCELEMENIZDEN SONRA NE OLDU
+--------------------------------------------------------------------------------
+
+1.1 Bes kod bulgunuz -- hepsi uretildi ve duzeltildi
+
+  A46  Ensemble M0'a dusuyordu. `sahne_taban=None` -> build_scene
+       varsayilani M0 -> rubble_generator.py:406'da `boulders = None`.
+       Olculdu: theta=(1,05; 1e4; 0,10) ve (1,30; 1e4; 0,40) BIREBIR AYNI
+       x, m, alpha0, Y0 uretiyordu; alpha0 benzersizleri [1,0 ; 1,5].
+       SONUCU: cikarimin uc ekseninden IKISI sahneye hic ulasmiyordu.
+       Yani "gozlenebilir ic yapiyi ayirt edemiyor" diye bir BULGUMUZ
+       YOKTU -- yalniz bozuk bir duzenek vardi.
+
+  A47  Iki farkli beta. Momentumu tam korunan sentetik durumda:
+         DEFTER (R yuzeyi, hedef-ozel)  : beta = 1,280871  artik 0,0e+00
+         ILERI  (2R yuzeyi, mermi dahil): beta = 1,000000  kapanis 0,0e+00
+         n_ejekta(2R) = 0
+       Ayrica 2R bir ZAMAN SUZGECI: yuzeyden 2R'ye 0,2 s'te varmak
+       R/t = 410 m/s ister; kazi akisi 0,1-10 m/s. Cikarima giden
+       gozlenebilir aradigimiz sinyali YAPISAL OLARAK goremiyordu.
+
+  A48  Sok kapisi mermiyi maskelemiyordu.
+  A49  Durum dosyalari birbirinin uzerine yaziyordu (`i` her zaman 0).
+  A50  Kayit tani icin eksikti; `h` cozucuden HIC verilmiyordu.
+
+1.2 Iki fizik olcumunuz de tuttu
+
+  Y0 CEKMEYI HIC SINIRLAMIYOR (sizin bulgunuz, bagimsiz uretildi):
+    u=0, alpha=1,7564, rho_s = 0,999 rho_s0 icin
+
+      Y0 = 1 Pa    ->  P = -1,518635e+07 Pa
+      Y0 = 1e4 Pa  ->  P = -1,518635e+07 Pa
+      Y0 = 1e7 Pa  ->  P = -1,518635e+07 Pa
+      Y0 = 1e8 Pa  ->  P = -1,518635e+07 Pa
+
+    SEKIZ MERTEBE, YEDI HANEYE KADAR AYNI.
+
+  %45,34'LUK DURUM GEVSEMIS (sizin karsi orneginiz):
+    alpha = 1,20848, rho = 2234,22, u = 0 -> sikisma %45,34, P = 8,33e4 Pa.
+    Bu benim "madde gevsemiyor" cikarimimi CURUTTU; rapordaki yorum
+    duzeltildi, olcumler yerinde birakildi.
+
+
+2. SIMDI NE BILIYORUZ -- OLCULMUS
+--------------------------------------------------------------------------------
+
+2.1 Sok GERCEKTEN olusuyor ve ILK KEZ gozlendi
+
+  Onceki durum (A45): depodaki EN ERKEN gozlem t = 8,03e-03 s idi, oysa
+  sok mermiyi r_mermi/Us = 0,371/6145 = 6,0e-05 s'te geciyor (dt ~ 5,4e-06
+  ile ~11 ADIM). Iz araligi 2 000 adimdi. Yani sok, tek bir iz noktasi
+  bile alinmadan gelip geciyordu -- butun olcumlerimiz 134 kat GECTI.
+
+  E1 kampanyasi (--iz-every 2, t_end = 1e-3 s):
+
+      t = 1,28e-05  sikisma %14,1   rho_max 2571,4
+      t = 6,09e-05  sikisma %61,5   rho_max 2571,4
+      t = 8,61e-05  sikisma %69,2   rho_max 2601,6   <== ZIRVE
+      t = 1,03e-04  sikisma %68,0   rho_max 2581,8
+      t = 1,67e-04  sikisma %53,5   rho_max 2571,4
+
+  Zirve, ongorulen gecis suresine (6,0e-05 s) cok yakin. Sok yukseliyor,
+  zirve yapiyor, bosaliyor -- duzgun bir sok gecisi.
+
+  AMA: rho_max hicbir zaman 2702,7'yi (= rho0_kati x 1,001) ASMIYOR.
+  Yani HICBIR PARCACIKTA KATI SIKISMASI YOK. Sok gozeneklerin %96'sini
+  kapatiyor (rho 2601,6 -> alpha 1,038) ve ORADA DURUYOR.
+
+  >>> SORU 1 buradan cikiyor (bkz. bolum 5).
+
+2.2 Kazi akisini durduran kuvvet: MATRIS CEKMESI
+
+  Kontrollu deney (E2). ON KOSUL SAGLANDI -- iki kolun soku BIREBIR AYNI:
+    rho_max zirve: 2601,6 her ikisinde
+    bagil fark: medyan %0,007, max %0,072
+  Yani fark yalniz cekmeden gelebilir.
+
+  Uc karar niceligi de ongorulen yonde:
+
+    olcu                              uretim      cekme kirpik
+    ------------------------------------------------------------
+    yuzey v_r medyani                -0,177 m/s   +0,094 m/s
+    yuzey v_r p95                     0,575       13,8   (24 kat)
+    cismin ICINDE v_r > 10 m/s        0 parcacik  3 375 / 23 250 kg
+    krater derinligi (t = 24 ms)      0,780 m     1,457 m
+    delta_beta_hedef                  0,0352      0,2715 (7,7 kat)
+
+  URETIMDE YUZEYIN MEDYAN HIZI NEGATIF. Yani madde iceri cekiliyor --
+  krater kapanmasi DOGRUDAN olculdu. Cekme kirpilinca isaret donuyor.
+
+  Etki 3 139 EN INCE parcacikatan geliyor (16x5,83 kg vs 3 139x5,83 kg),
+  yani birkac kaba parcacik artefakti degil.
+
+  Matrisin P<0 olan kesri uretimde %27,9 -> %47,6 ve ZAMANLA ARTIYOR.
+
+2.3 Ejekta dagilimi Housen-Holsapple'a oturuyor
+
+  Once bir olcum kusuru duzeltildi: `r > R` sarti t = 24 ms'te bir ZAMAN
+  SUZGECI. 1 m/s'lik madde o surede 2,4 cm ilerler ve yuzeyden CIKAMAZ;
+  yavas uc sistematik eksik sayiliyor ve egim yapay olarak SIG cikiyor
+  (-0,640). Dogrusu disari hareket eden TUM maddeyi saymak.
+
+  E2b (cekme kirpik), sekiz farkli uydurma bandinda:
+
+      band (m/s)    egim      mu      R^2
+      1-100        -1,400   0,467   0,9967
+      1-50         -1,359   0,453   0,9965
+      2-100        -1,422   0,474   0,9954
+      1-200        -1,410   0,470   0,9982
+      0,5-100      -1,386   0,462   0,9972
+      2-50         -1,369   0,456   0,9949
+      5-100        -1,475   0,492   0,9932
+      1-20         -1,297   0,432   0,9982
+
+      mu = 0,463 +/- 0,016   (aralik 0,432 - 0,492)
+      H&H: mu = 0,40 (gozenekli) .. 0,55 (kaya)
+      >>> SEKIZ BANDIN SEKIZI DE ARALIGIN ICINDE
+
+  URETIM kolunda dagilim YOK: ayni 12 esikte yalniz 3 farkli kutle
+  degeri (basamak fonksiyonu); v_r>2 ile v_r>100 arasinda hep ayni 16
+  parcacik.
+
+2.4 Kazi akisi doguyor ve OLUYOR
+
+      t = 0,024 s :  18 735 kg  @  -6,70 m/s
+      t = 0,200 s :      93 kg  @  -1 264 m/s   (jet)
+
+  176 ms'te 18,7 TON madde 8 cm/s'nin altina yavasladi. Butun eski
+  t_end = 0,2 s olcumlerimiz akisin OLDUKTEN SONRAKI halini olcmus.
+
+2.5 Gozlenebilir ic yapiyi AYIRT EDIYOR (ama yalniz bir eksende)
+
+  G1 kampanyasi: uretim ayari, kaba merdiven, 24 theta x 2 sahne
+  gerceklemesi = 48 kosu. Tani hilesi YOK. Yargi kurali kosudan once
+  commit'lendi.
+
+      ON KOSULLAR
+        kosu sayisi           : 48
+        defter kapali         : GECTI
+        sahne M1 (alpha0 >= 3): GECTI  benzersiz=[3]   <- A46 nobetcisi
+      VARYANS ORANI (krater_derinlik)
+        S_theta = 0,00879  S_gurultu = 8,74e-06  F = 1006  (esik 4,0)
+      SIRA KORELASYONU
+        blok_alpha0    rho = -0,2348   p = 0,2690
+        matris_Y0      rho = -0,9417   p = 0,0000   ANLAMLI
+        blok_kesri     rho = +0,0904   p = 0,6674
+      YARGI: AYIRT EDIYOR (F = 1,01e+03, eksen: matris_Y0)
+
+  Fiziksel bicim bir MUKAVEMET REJIMI GECISI:
+
+      Y0 = 1,3e3 - 1e5 Pa  ->  d ~ 0,35 m         PLATO
+      Y0 = 3e5 - 9,3e6 Pa  ->  d 0,30 -> 0,081 m  DIK DUSUS
+
+  Sigmoid uydurma R^2 = 0,941; gecis Y0 = 2,19e6 Pa.
+
+  >>> AMA: blok alpha0 ve blok kesri AYIRT EDILMIYOR. Bu, uc parametreli
+      posterior icin dogrudan bir engel. SORU 9.
+
+2.6 Vekil + posterior zinciri kapaniyor
+
+  Sigmoid vekil, birini-disarida-birak dogrulama (24 kat):
+    RMSE 0,0258 m, yanlilik +0,0004 m, z sapmasi 1,318, 1-sigma
+    kapsama 0,750.
+  Posterior (d = 0,25 +/- 0,02 m): Y0 = [4,48e5 ; 1,31e6] Pa (%68).
+
+  AMA bu bir YONTEM GOSTERIMI, fiziksel ongoru DEGIL -- bkz. 3.3.
+
+
+3. NEREDE TAKILDIK -- ENGELLER
+--------------------------------------------------------------------------------
+
+Bunlari onem ve baglilik sirasina gore yaziyorum. E1 ve E2 birbirine
+bagli; digerleri onlara bagli.
+
+--------------------------------------------------------------------------------
+ENGEL 1 (E1) -- COZUNURLUK DUVARI + KOMSU ARAMA MALIYETI      [EN KRITIK]
+--------------------------------------------------------------------------------
+
+  1a. Olculen kusur
+
+  solver_solid.py:84:
+      self.h = float(_h.max())
+      self.support = 2.0 * self.h
+  ve cekirdek: wp.hash_grid_query(grid, x32[i], radius32)
+  -- HER PARCACIK ICIN AYNI YARICAP.
+
+  Kademeli merdivende h 16 kat araliga yayiliyor; ince parcaciklar KABA
+  bolgenin yaricapiyla tariyor. Olculdu:
+
+      kol       N          hiz
+      Rb_R2     69 886     2,81 adim/s
+      Rb_R3     493 330    0,062 adim/s
+
+      N orani        : 7,06
+      hiz orani      : 45,3 KAT YAVAS
+      dogrusal olsa  : 7,06 kat
+      ASIRI MALIYET  : 6,4 kat
+
+  Mekanizma sayiyla tutuyor: ince bolgede yogunluk 8 kat artinca her ince
+  parcacigin taradigi komsu sayisi da 8 kat artiyor -> beklenen
+  7,06 x 8 = 56,5; olculen 45,3.
+
+  SONUCU: R3 (t_end = 0,1 s) icin 224 SAAT gerekiyor; is siniri 48 saat.
+  Uc noktali Richardson, sigma_num, ve niceliksel kalibrasyon KILITLI.
+
+  1b. Ve asil duvar: HEDEF COZUNURLUGE CIKAMIYORUZ
+
+  Onceki incelemenizde "temas bolgesinde a_p/s = 5, 10, 20 denenebilir"
+  demistiniz. Su an 2,12'deyiz (a_p = 0,371 m, en ince s = 0,175 m).
+
+      hedef a_p/s   gereken s   parcacik   A52 COZULMEZSE   A52 COZULURSE
+      2,12 (su an)  0,175 m     69 886     0,5 sa/nokta     --
+      5             0,074 m     13 kat     84 sa/nokta      13 sa/nokta
+      10            0,037 m     105 kat    672 sa (28 gun)  105 sa/nokta
+      20            0,019 m     840 kat    imkansiz         imkansiz
+
+  (Taban: orta merdiven t_end = 0,024 s icin olculen ~30 dk/nokta.)
+
+  Okunacak sey: A52 COZULURSE a_p/s = 5 bir ensemble icin karsilanabilir
+  hale geliyor (48 kosu x 13 sa = 624 GPU-saat, 6 GPU'da ~4 gun).
+  COZULMEZSE 84 sa/nokta ve ensemble IMKANSIZ.
+
+  1c. Kok sebep sizin 12. maddenizde
+
+  h_ij = (h_i + h_j)/2 kullaniyoruz. Arayuzde bu 7,35 m'ye sisiyor ve
+  ince parcacik kaba komsusunu 14 m oteden aramak ZORUNDA. Yani bu bir
+  veri yapisi sorunu degil, CEKIRDEK TASARIMI sorunu.
+
+  >>> SORULAR 5, 6, 7.
+
+--------------------------------------------------------------------------------
+ENGEL 2 (E2) -- URETIM MODELI KAZMIYOR (granuler cekme modeli yok)
+--------------------------------------------------------------------------------
+
+  A51: Y0 yalniz deviatorik gerilmeyi sinirliyor; Tillotson'un negatif
+  hidrostatik dalini SINIRLAMIYOR (-15,19 MPa, sekiz mertebede sabit).
+
+  --matris-cekme-yok tani kolu (negatif basinci sifira kirpma) akisi
+  ORTAYA CIKARIYOR (bolum 2.2) ama bu FIZIKSEL MODEL DEGIL. Sizin
+  dediginiz gibi granuler malzemenin basinca bagli surtunmesini korumak
+  gerekiyor, ve D = 1 kayma gerilmesini tamamen sildigi icin uygun degil.
+
+  SONUCU: uretim modeli DART'in beta'sini uretemiyor, dolayisiyla DART
+  verisi olabilirlik olarak KULLANILAMIYOR. Bitis 3'un tanimi geregi
+  bu sart.
+
+  >>> SORULAR 1, 2.
+
+--------------------------------------------------------------------------------
+ENGEL 3 -- beta HER OLCEKTE AYRIKLASTIRMA TABANINDA
+--------------------------------------------------------------------------------
+
+  kaba (N = 17 201) : 48 kosunun 43'unde beta_hedef TAM 1,0
+                      (en buyuk delta_beta = 1,34e-05)
+  orta (N = 69 886) : 16 parcacik = 16 x en ince parcacik kutlesi
+
+  Protokol G'nin on kosulu (n_kacan >= 1 olan nokta orani >= %80) DUSTU
+  (%10,4) ve kilitli olcut beta'yi OKUNMAZ ilan etti -- F = 18,12 ve
+  matris_Y0 ile p = 0,0026 gormesine ragmen.
+
+  Bu, E1 ve E2'ye bagli: cozunurluk artmadan ve akis dogmadan beta
+  var olmuyor.
+
+--------------------------------------------------------------------------------
+ENGEL 4 -- NICELIKSEL KALIBRASYON YAKINSAMIYOR
+--------------------------------------------------------------------------------
+
+  Protokol H: 6 theta, iki cozunurluk (17 201 ve 69 886), iki gerceklem.
+
+      log10 Y0   d_kaba   d_orta   coz.fark   gurultu   oran
+      3,631      0,3556   0,6120   0,419      0,0244    17
+      4,220      0,3618   0,6951   0,480      0,0043    111
+      4,930      0,3498   0,6483   0,460      0,0152    30
+      5,880      0,2364   0,3706   0,362      0,0008    483
+      6,574      0,1420   0,1658   0,144      0,0273    5
+      6,801      0,0997   0,1056   0,056      0,0005    108
+
+      oran medyani 69; kilitli esik > 10 -> KORUNMUYOR
+
+  AMA IKI SEY AYRI:
+      mutlak derinlik : 0,36 -> 0,61 m  (%72)  YAKINSAMAMIS
+      Y0 ile iliski   : r = -0,943 vs -0,925  NEREDEYSE AYNI
+
+  Yani "bilgi tasidigi" dayanikli, "olcegi" degil. Hesapladigimiz
+  posterior AKTARILAMAZ.
+
+  Su an koşan Protokol I bunu daraltiyor: gecis noktasi x0 iki olcekte
+  ayni mi? (Fiziksel olarak anlamli parametre derinligin DEGERI degil,
+  x0 -- bizim krater 0,5 m, DART'inki ~10 m; mutlak olcek zaten
+  aktarilamaz.)
+
+--------------------------------------------------------------------------------
+ENGEL 5 -- BLOK YAPISI AYIRT EDILMIYOR
+--------------------------------------------------------------------------------
+
+  G1, 24 theta, 2 gerceklem:
+      blok_alpha0    rho = -0,2348   p = 0,2690   ANLAMSIZ
+      blok_kesri     rho = +0,0904   p = 0,6674   ANLAMSIZ
+
+  Krater derinligi blok yapisini GORMUYOR. Uc parametreli posterior icin
+  ya baska bir gozlenebilir gerekiyor ya da sonuc "1 sinirli + 2
+  onsel-baskin" olur.
+
+  >>> SORU 9.
+
+--------------------------------------------------------------------------------
+ENGEL 6 -- ZAMAN OLCEGI
+--------------------------------------------------------------------------------
+
+  Akis 24 ms'te var, 200 ms'te olu. Ama krater olusma sureleri:
+      mukavemet  T ~ L sqrt(rho/Y_eff)  ->  Y0 = 1e7 Pa icin ~0,062 s
+                                            Y0 = 100 Pa icin ~19,6 s
+      yercekimi  T ~ sqrt(L/g)          ->  ~347 s
+
+  Biz 0,024 - 0,2 s kosuyoruz. Sizin isaret ettiginiz gibi yayimlanmis
+  calismalar sok evresinden sonra dusuk ses hizi yaklasimina geciyor
+  (bir calismada gecis 15 s'den sonra).
+
+  Bizde o yok, ve olmadan uzun evre olculemiyor.
+
+  >>> SORU 3.
+
+--------------------------------------------------------------------------------
+ENGEL 7 -- SOK GECERLILIK KAPISI (kismen coozuldu, DOGRULANMADI)
+--------------------------------------------------------------------------------
+
+  A45: kapi SON DURUMDA degerlendiriliyordu ve sok 134 kat once gecmisti.
+  A68: bedeli olculdu -- cekme kirpilinca madde GERCEKTEN gevsiyor,
+  artik sikisma dusuyor ve kapi DUZELTMEYI REDDEDIYOR:
+
+      kol                 son sikisma medyani   gecen
+      G1 uretim           %21,70                24/48
+      G2 cekme kirpik     %5,38                 5/48
+      (kapi esigi %4,561)
+
+  Geçen 5 nokta EN YUKSEK Y0'lar -- ornekleme GUCLU MATRISE SAPIYOR.
+  Sizin uyariniz olculdu: "son zamanda kalici yogunluk isteyen kapi,
+  gozenekli malzemeyi secici bicimde avantajli gosterebilir."
+
+  A70 ile kapi ZIRVEDEN okunacak sekilde degistirildi (sok penceresinde
+  her adim rho okunup kosu boyunca zirve tutuluyor). AMA HENUZ
+  DOGRULANMADI -- G2 yeniden kosulmadan 39/48 reddin kalkip kalkmadigi
+  bilinmiyor.
+
+  >>> SORU 11.
+
+--------------------------------------------------------------------------------
+ENGEL 8 -- KACIS OLCUTU
+--------------------------------------------------------------------------------
+
+  Su an: r > R VE v_r > v_esc, tek zamanda.
+  Sizin onerdiginiz enerji olcutu (eps = 1/2 |v - V_kalan|^2 + Phi_kalan
+  > 0, TOPLAM bagil hizla) uygulanmadi.
+
+  Ayrica olctuk ki `r > R` bir ZAMAN SUZGECI: 24 ms'te 1 m/s'lik madde
+  2,4 cm ilerler ve cikamaz.
+
+  >>> SORU 10.
+
+--------------------------------------------------------------------------------
+ENGEL 9 -- DUSUK AV'DE KUMELENME
+--------------------------------------------------------------------------------
+
+  alpha_av = 0,1 kolunda "kati sikisma" gorundu (rho_max = 2891,5,
+  46 parcacik). Konumlarina bakinca:
+
+      kati sikisan parcacik      : 8 (t = 24 ms'te)
+      hepsinin kutlesi           : 5,826 kg -- EN INCE seviye
+      en yakin komsu medyani     : 0,2013 m
+      nominal aralik (fcc'den)   : 0,1750 m
+      ORAN                       : 1,150
+
+  (Bu sayiyi ONCE 0,575 hesaplamistim -- YANLIS merdiven seviyesini
+  almisim. Duzeltildi; kumelenme YOK.)
+
+  Ama dusuk AV kollari yine de dikkat istiyor: cekme kararsizligi
+  bilinen bir kusur ve olcusu artik kodda (en yakin komsu / nominal
+  aralik).
+
+  >>> SORU 8.
+
+--------------------------------------------------------------------------------
+ENGEL 10 -- HESAP KAYNAGI
+--------------------------------------------------------------------------------
+
+  TRUBA kolyoz-cuda, paylasimli egitim hesabi. Isler baska kullanicilarin
+  arkasinda kuyruga giriyor; is siniri 48 saat. Bugun 48 dugumun tamami
+  dolu gordum. Bu, E1'in maliyet hesabini dogrudan etkiliyor.
+
+
+4. BITIS 3'E GIDEN YOL -- BIZIM PLANIMIZ
+--------------------------------------------------------------------------------
+
+  Ay 1: A52 (komsu arama). Diger her seyin OLCUMU buna bagli ve fizik
+        degil muhendislik -- riski daha kontrollu. Bit-esitligi ve
+        determinizm korunmali (deponun CPU<->GPU bit-esitligi sinavi var).
+
+  Ay 2: Granuler cekme modeli. A52 bittiginde DOGRU COZUNURLUKTE
+        sinanabilir. (Tersini yaparsak, ise yarayip yaramadigini
+        olcemeyiz -- G2'de tam bu basimiza geldi.)
+
+  Ay 3: Kampanyalar. Uc noktali yakinsama + tam ensemble + uc eksende
+        duyarlilik.
+
+  Ay 4: Posterior + dogrulama + Hera ongorusunun dondurulmasi.
+
+  Bu sirayi dogru buluyor musunuz? SORU 14.
+
+
+5. SORULAR
+--------------------------------------------------------------------------------
+
+FIZIK
+
+  1. GRANULER CEKME MODELI. Uretim modeli icin hangi malzeme modelini
+     onerirsiniz? Basinca bagli surtunmeyi koruyup cekmeyi sinirlayan bir
+     davranis gerekiyor. Collins-Melosh-Ivanov mu, Jutzi'nin granuler
+     dali mi, baska bir sey mi? Ve onu SPH'de kararli uygulamanin bilinen
+     tuzaklari neler?
+
+  2. MODEL SINIFI. P-alpha MIKRO gozeneklilik (tane ici ezilme) modeli.
+     Dimorphos bir moloz yigini -- gozeneklilik MAKRO (bloklar arasi
+     bosluk). Bloklar yeniden diziliyor, geri donussuz ezilmiyor.
+     P-alpha bu hedef icin dogru model sinifi mi? Degilse yayimlanmis
+     alternatif ne?
+
+  3. ZAMAN OLCEGI. Sok evresinden sonra dusuk ses hizi yaklasimina
+     gecmekten soz etmistiniz. Gecis ne zaman yapilmali, hangi
+     buyuklukler korunmali, ve gecisin DOGRU yapildigi nasil
+     dogrulanir? Bir referans uygulama onerir misiniz?
+
+  4. SOK GOZENEKTE DURUYOR. Olctugumuz sey: sok gozeneklerin %96'sini
+     kapatiyor (rho 2601,6, alpha 1,038) ve HICBIR parcacikta kati
+     sikismasi olmuyor (rho hicbir zaman 2702,7'yi asmiyor).
+     Bu, %43 gozeneklilikte BEKLENEN fizik mi, yoksa cozunurluk
+     yetersizliginin imzasi mi? Ayirt edecek en ucuz olcum ne olurdu?
+
+SAYISAL
+
+  5. A52 -- COK COZUNURLUKLU KOMSU ARAMA. Parcacik basina sorgu yaricapi
+     yeterli mi, yoksa seviye basina AYRI izgara mi gerekiyor? warp-lang
+     hash grid ile hangisi uygulanabilir? Determinizm ve CPU<->GPU
+     bit-esitligi nasil korunur (komsu SIRASI degisirse toplama sirasi
+     da degisir)?
+
+  6. h_ij SECIMI. 12. maddenizde h_ij = (h_i+h_j)/2 yerine
+     1/2 [grad W(h_i) + grad W(h_j)] onermistiniz. Bunu uygularsak
+     komsu arama maliyeti de duser mi, yoksa yalniz dogruluk mu duzelir?
+     Ve "once ayni malzemeli arayuz testinde degerlendirin" dediginiz
+     sinavin kabul olcutu ne olmali?
+
+  7. HEDEF COZUNURLUK. a_p/s = 5 savunulabilir bir hedef mi? Yayimlanmis
+     DART benzeri SPH calismalari hangi orani kullaniyor? Ensemble icin
+     (48 kosu) hangi oran GERCEKCI?
+
+  8. CEKME KARARSIZLIGI. Dusuk AV'de kumelenme riski var. Monaghan yapay
+     gerilmesi (ADR-0014'te var) yeterli mi, yoksa AV'yi dusurmek bu
+     problemde temelde uygun degil mi?
+
+GOZLENEBILIRLER
+
+  9. BLOK YAPISI ICIN GOZLENEBILIR. Krater derinligi matris Y0'i
+     goruyor (rho = -0,94) ama blok alpha0'i (p = 0,27) ve blok kesrini
+     (p = 0,67) GORMUYOR. Blok yapisina duyarli hangi gozlenebilir?
+     Ejekta hiz dagilimi? Krater asimetrisi/sekli? Ejekta konisinin
+     acisi? Yoksa bu bilgi DART verisinde zaten yok mu?
+
+ 10. KACIS OLCUTU. Onerdiginiz enerji olcutunu uygulamak istiyoruz.
+     Yercekimi KAPALI kosuyoruz (0,2 s'te g t = 8,3e-06 m/s). Phi_kalan'i
+     analitik kure olarak mi kurmali, yoksa yercekimini acmak sart mi?
+     Ve "kalan cismin hizi V_kalan" hangi kumeden hesaplanmali?
+
+ 11. SOK GECERLILIK KAPISI. Kapiyi "kosu boyunca zirve" uzerinden
+     kurduk (A70). Bu dogru cozum mu, yoksa daha iyi bir degismez var mi?
+     Kapinin, sinanmak istenen mudahaleden BAGIMSIZ olmasini nasil
+     garanti edersiniz?
+
+CIKARIM
+
+ 12. TEK EKSENLI POSTERIOR. Uc eksenden yalniz biri ayirt edilebiliyorsa,
+     "1 sinirli + 2 onsel-baskin" bir posterior savunulabilir bir urun
+     mu? Yoksa uc eksen de sinirlanana kadar posterior yayimlanmamali mi?
+
+ 13. DART OLABILIRLIGI. beta = 3,22 yerine 2,2-4,9 araligini kullaniyoruz
+     (Cheng ve digerleri 2023, yogunluk varsayimina bagli). Bu bagimlilik
+     olabilirlige nasil dogru sokulur -- yogunlugu de bir nuisance
+     parametre yapmak mi dogru?
+
+ 14. SIRALAMA. Bolum 4'teki dort aylik sira (A52 -> granuler model ->
+     kampanyalar -> posterior) dogru mu? Baska bir sira daha mi guvenli?
+
+ 15. EN UCUZ AYIRT EDICI. Elinizdeki bilgiyle, Bitis 3'e giden yolda
+     ILK yapmamiz gereken TEK deney ne olurdu?
+
+
+6. YONTEM HAKKINDA
+--------------------------------------------------------------------------------
+
+Depoda su disiplin uygulaniyor ve elestiriniz buna da acik:
+
+  - Her deneyin yargi kurali KOSUDAN ONCE commit'lenir
+    (docs/truba/PROTOKOL-*.md) ve betigi sinavlariyla birlikte yazilir.
+  - Kilitli olcut bu turda beni UC KEZ DURDURDU: beta icin "OKUNMAZ"
+    (on kosul), F kampanyasi icin "SONUCSUZ", E1 icin "cozucu kusuru".
+  - Kendi iddiamı UC KEZ kendi verimle curuttum (A45'in yorumu,
+    A59 -> A61, A61 -> A62).
+  - 56 kusur olcumuyle kayitli; curutulen yorumlar SILINMIYOR,
+    GECERSIZ isaretleniyor.
+  - Testler: 1 692 gecen, 0 kirmizi.
+
+Yontem elestiriniz -- ozellikle "su olcutu yanlis kurmussunuz" turu --
+en degerlisi olur. Onceki incelemenizde tam olarak o tur geri bildirim
+projeyi ilerletti.
+
+
+7. DEPODA NEREYE BAKMALI
+--------------------------------------------------------------------------------
+
+  docs/BULGULAR.md              Ne kanitlandi, ne kanitlanmadi (toplu)
+  docs/SONUC-E-F-MEKANIZMA.md   Cekme mekanizmasi + H&H kiyasi
+  docs/SONUC-G-H-AYIRT.md       Ayirt edilebilirlik + cozunurluk direnci
+  docs/SONUC-R-YAKINSAMA.md     beta yakinsamasi neden dustu
+  docs/FAZ4-SIKINTI-RAPORU.md   56 kusur, olcumleriyle
+  docs/truba/PROTOKOL-*.md      Kampanyalarin KOSUDAN ONCE yazilmis yargi
+                                kurallari (E1, E2, F, G, H, I)
+  docs/UZMANA-YANIT.md          Onceki incelemenize yanit
+
+  src/dartrift/                 Motor
+  scripts/                      Kampanya surucuu ve rapor betikleri
+  tests/                        121 dosya, 1 692 gecen sinav
+
+Ham veriler TRUBA'da; istediginiz herhangi bir olcumu tekrar
+uretebilirim.
+
+
+--------------------------------------------------------------------------------
+Zamaniniz icin tesekkur ederim. Onceki incelemeniz projeyi haftalarca
+ilerletti; ozellikle "kablolama mi fizik mi" ayrimini kurmamiz onunla
+oldu.
+--------------------------------------------------------------------------------
