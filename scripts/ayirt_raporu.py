@@ -183,9 +183,23 @@ def varyans_orani(tablo: dict, nicelik: str) -> dict:
                 "n_tekrarli": len(ic)}
     S_t = float(np.var(ort, ddof=1))
     S_g = float(np.mean(ic))
+    # A63: `0 / 0 = inf` YANLIS POZITIF uretiyordu.
+    #
+    # G1'de `beta_hedef` yirmi dort noktanin HEPSINDE tam `1,0` cikti
+    # (kaba cozunurlukte hedef ejektasi YOK). O zaman hem `S_theta`
+    # hem `S_gurultu` sifir; eski dal `S_g > 0` olmadigi icin
+    # dogrudan `inf` donduruyordu ve rapor "AYIRT EDIYOR" diyecekti.
+    #
+    # Dogrusu: hicbir degisim yoksa gozlenebilir DEJENERE'dir --
+    # ne ayirt eder ne etmez, OLCULEMEZ.
+    if S_t <= 0.0 and S_g <= 0.0:
+        return {"F": float("nan"), "S_theta": S_t, "S_gurultu": S_g,
+                "n_theta": len(ort), "n_tekrarli": len(ic),
+                "dejenere": True}
     return {"F": (S_t / S_g) if S_g > 0 else float("inf"),
             "S_theta": S_t, "S_gurultu": S_g,
-            "n_theta": len(ort), "n_tekrarli": len(ic)}
+            "n_theta": len(ort), "n_tekrarli": len(ic),
+            "dejenere": False}
 
 
 def on_kosullar(tablo: dict, *, kacan_sarti: bool = True) -> dict:
@@ -273,6 +287,12 @@ def main(argv=None) -> int:
     print("\n" + "=" * 68)
     if not (ok["kacan_gecti"] and ok["defter_gecti"] and ok["M1_gecti"]):
         yargi = "OKUNMAZ -- on kosul dustu"
+    elif v.get("dejenere"):
+        yargi = (f"DEJENERE -- `{a.nicelik}` HIC DEGISMIYOR "
+                 f"(S_theta = S_gurultu = 0). Gozlenebilir bu ayarda "
+                 f"VAR OLMUYOR; ayirt edip etmedigi sorulamaz.")
+    elif not np.isfinite(v["F"]):
+        yargi = f"OKUNMAZ -- F hesaplanamadi ({v['F']})"
     elif v["F"] > F_ESIGI and anlamli:
         yargi = f"AYIRT EDIYOR  (F = {v['F']:.3g}, eksen: {', '.join(anlamli)})"
     elif v["F"] > F_ESIGI:

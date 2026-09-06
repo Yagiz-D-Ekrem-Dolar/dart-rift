@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 47 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 49 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -4473,6 +4473,15 @@ Ve sebebi E2 ile ölçüldü: yüzeyin medyan `v_r`'si üretimde
 ---
 ### A61 — **Düşük AV'nin "katı sıkışması" kümelenmeymiş** (2026-09-06)
 
+> ## ⛔ A61 **YANLIŞ** — bkz. A62
+>
+> Nominal aralığı **elle** `0,35 m` aldım; o **kaba** merdivenin en
+> ince seviyesi. `E3` **orta** merdivenle koştu: en ince `0,175 m`.
+> Doğru oran `0,2013 / 0,175 =` **`1,150`** — parçacıklar nominalden
+> **daha uzak**, yani **kümelenme yok**.
+>
+> Aşağıdaki metin silinmiyor; A59'un çürütülmesi de **geri alındı**.
+
 A59'da *"çözücü katı sıkışması üretebiliyor, yalnız üretim
 `α_av`'sinde üretemiyor"* demiştim. Dayanağım `E3_av_dusuk`'ün
 `ρ_max = 2891,5` ve katı sıkışan parçacıklarıydı.
@@ -4530,6 +4539,133 @@ Düşük AV kolları artık **kümelenme denetimi olmadan okunmamalı**.
 > seviye dağılımına baktım ve `3 139` ince parçacık çıktı. Aradaki
 > fark: E2'nin protokolünde **dışlama maddesi yazılıydı**,
 > E3'ünkinde yoktu.
+
+---
+### A62 — **A61 yanlıştı: yanlış merdiven seviyesini aldım** (2026-09-06)
+
+A61'de `E3_av_dusuk`'ün katı sıkışan parçacıklarını *"kümelenmiş"*
+ilan ettim. Dayanağım en yakın komşu `0,2013 m` / aralık `0,35 m`
+= `0,575` idi.
+
+**Aralık `0,35 m` değil.** `E3`, `E` kampanyasının **orta**
+merdiveniyle koştu:
+
+```
+MERDIVEN="48:2.8 24:1.4 12:0.7 6:0.35 3:0.175"   <- en ince 0,175
+```
+
+`0,35 m` ise **kaba** merdivenin (`48:5.6 … 3:0.35`) en incesi —
+`F` kampanyasında kullanılan, `E3`'te **kullanılmayan** ölçek.
+
+#### Bağımsız doğrulama: parçacık kütlesi
+
+Aralığı tahmin etmeye gerek yok, **kütleden türetilebilir**.
+Sahne `fcc` yerleşim kullanıyor (`FCC_VOLUME_FACTOR = 1/√2`):
+
+```
+m_p = 5,826 kg,  rho_yigin = 1537,2  ->  V = 3,7899e-03 m^3
+s = (V / (1/sqrt(2)))^(1/3) = 0,1750 m      <- merdivenle BIREBIR
+```
+
+Ve `fcc`'de en yakın komşu uzaklığı **tam olarak `s`**'dir.
+
+| aralık | kaynak | oran | yargı |
+|---:|---|---:|---|
+| `0,350` | A61'de elle | `0,575` | KÜMELENMİŞ |
+| **`0,175`** | **kütleden türetilen** | **`1,150`** | **kümelenme yok** |
+
+Parçacıklar nominalden `%15` **daha uzak** — genleşmiş, sıkışmamış.
+
+#### Sonucu: A59'un çürütülmesi **geri alındı**
+
+| iddia | A61'den önce | A61 | **şimdi** |
+|---|---|---|---|
+| *"Üretim AV'si şoku katı sıkışma eşiğinin altına bastırıyor"* | ayakta | düştü | **ayakta** |
+| E1'in *"çözücü kusuru"* yargısı | çürütüldü | açıldı | **çürütüldü** |
+
+Destekleyen ölçüm, üç noktada **monoton**:
+
+| `α_av` | zirve sıkışma | `ρ_max` | katı sıkışan |
+|---:|---:|---:|---:|
+| `1,0` | `%69,2` | `2601,6` | `0` |
+| `0,4` | `%73,0` | `2658,8` | `0` |
+| `0,1` | `%88,1` | `2891,5` | `46` |
+
+Ve `%88,1`, matrisin gözenek tavanının (`%75,64`) **üstünde** —
+eşiği yalnız düşük AV'de geçiyor. Bu, yapay viskozitenin şoku
+yayması (smearing) ile birebir uyumlu, ders kitabı davranışı.
+
+#### Çare: seviyeyi bir daha ELLE seçmeyeceğim
+
+`hiz_tanisi.py`'nin kümelenme ölçüsü artık aralığı **parçacık
+kütlesinden** türetiyor ve `fcc` çarpanını kullanıyor. Bir sınav
+onun `rubble_generator.FCC_VOLUME_FACTOR` ile **aynı** olduğunu
+kilitliyor.
+
+> **Ders:** üç turda üç kez aynı hatayı yaptım — A26 (`λ` tabana
+> bağlıydı), A61 (yanlış merdiven), ve arada `--kademeler` metre
+> düzeltmesi. Hepsi *"hangi ölçek"* sorusunu **elle** yanıtlamaktan
+> çıktı. Ölçek her zaman **veriden türetilmeli**.
+
+#### Ve bu doğru işledi
+
+A61'i yakalayan şey, onu **kodlamam** oldu: elle `0,575` çıkmıştı,
+betik gerçek veride `1,291` dedi ve uyuşmazlık beni doğru sayıya
+götürdü. Aynı hesabı iki kez, iki yolla yapmak işe yarıyor.
+
+---
+### A63 — **`0/0 = ∞` yanlış pozitifi: rapor "mükemmel ayırt ediyor" diyecekti** (2026-09-06)
+
+`ayirt_raporu.py`'nin varyans oranı:
+
+```python
+return {"F": (S_t / S_g) if S_g > 0 else float("inf"), ...}
+```
+
+`G1` koştu: `48` koşunun **`43`'ünde** (`%89,6`) `β_hedef` **tam
+`1,0`**; kalan beşinde en büyük `Δβ = 1,34e-05`. Yani kaba
+çözünürlükte hedef ejektası pratik olarak yok (`Rb_R1` bunu zaten
+söylemişti).
+
+Bu **tam** dejenere değil, ama `β`'nın **her noktada aynı sabit**
+çıktığı bir kol (ör. tek dilim, tek tohum) pekâlâ mümkün — ve o
+hâlde:
+
+```
+S_theta = 0,  S_gurultu = 0  ->  S_g > 0 FALSE  ->  F = inf
+```
+
+Ve yargı zinciri `F > 4` görünce **`AYIRT EDIYOR`** diyecekti —
+hem de `F = ∞` ile, yani *"mükemmel ayırt ediyor"*.
+
+**Hiç değişmeyen bir nicelik için.**
+
+#### Sonuçtan önce yakalandı
+
+`G1`'in ilk iki görevi bitmişti ve `y[0]` sekiz noktada da
+`1.0` görünüyordu. Raporu çalıştırmadan önce dejenere hâli
+denedim ve `F = inf` çıktı.
+
+Bir gün önce olsa **sonucu okumuş** ve *"gözlenebilir iç yapıyı
+mükemmel ayırt ediyor"* diye yazmış olabilirdim.
+
+#### Çare
+
+`S_theta ≤ 0` **ve** `S_gurultu ≤ 0` ise `DEJENERE` dalı:
+
+> `DEJENERE -- <nicelik> HIC DEGISMIYOR (S_theta = S_gurultu = 0).`
+> `Gozlenebilir bu ayarda VAR OLMUYOR; ayirt edip etmedigi
+> sorulamaz.`
+
+Ayrıca `F` sonlu değilse ayrı bir `OKUNMAZ` dalı kondu.
+
+Üç sınav: dejenere hâlin `nan` verdiği, dejenere olmayan hâlin
+işaretlenmediği, ve dejenere dalının `AYIRT EDIYOR` dalından
+**önce** geldiği.
+
+> **Ders:** *"bölen sıfırsa sonsuz"* kestirmesi, payın da sıfır
+> olabileceğini unutuyor. Ve bu depoda `0/0` **beklenen** bir hâl:
+> gözlenebilirin var olmadığı rejimde çalışıyoruz.
 
 ---
 ### A18 — **`G4-C`'nin ensemble verisi depoda yok ve geri alınamıyor** (2026-08-21)

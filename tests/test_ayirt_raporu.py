@@ -173,3 +173,50 @@ def test_krater_x_referans_yoksa_nan():
             return np.zeros(3)
 
     assert np.isnan(ar._krater(_Sahte()))
+
+
+# --- A63: 0/0 yanlis pozitif ---------------------------------------------
+
+def test_hic_degismeyen_nicelik_DEJENERE(capsys):
+    """G1'de `β` yirmi dört noktanın HEPSİNDE tam `1,0` çıktı.
+
+    Eski dal `S_g > 0` olmadığı için doğrudan `inf` döndürüyordu ve
+    rapor **"AYIRT EDIYOR"** diyecekti — yanlış pozitif.
+    """
+    tablo = {}
+    for i in range(8):
+        th = (1.0 + 0.1 * i, 1e4, 0.1 * i)
+        tablo[th] = [_k(th, 0.0), _k(th, 0.0)]
+    v = ar.varyans_orani(tablo, "delta_beta")
+    assert v["dejenere"] is True
+    assert np.isnan(v["F"]), "0/0 sonsuz DEGIL, olculemez olmali"
+
+
+def test_dejenere_olmayan_hal_isaretlenmiyor():
+    tablo = {}
+    for i in range(6):
+        th = (1.0 + 0.1 * i, 1e4, 0.1 * i)
+        tablo[th] = [_k(th, 10.0 * i), _k(th, 10.0 * i + 0.01)]
+    v = ar.varyans_orani(tablo, "delta_beta")
+    assert v["dejenere"] is False
+    assert np.isfinite(v["F"])
+
+
+def test_dejenere_yargisi_AYIRT_EDIYOR_demiyor(tmp_path, capsys, monkeypatch):
+    """Uçtan uca: dejenere veri `AYIRT EDIYOR` yargısı üretmemeli."""
+    tablo = {}
+    for i in range(8):
+        th = (1.0 + 0.1 * i, 1e4, 0.1 * i)
+        tablo[th] = [_k(th, 0.0), _k(th, 0.0)]
+    v = ar.varyans_orani(tablo, "delta_beta")
+    # yargi mantiginin girdisi
+    assert v.get("dejenere") and not np.isfinite(v["F"])
+    m = (Path(__file__).resolve().parents[1] / "scripts"
+         / "ayirt_raporu.py").read_text(encoding="utf-8")
+    assert 'elif v.get("dejenere"):' in m
+    assert "DEJENERE" in m
+    # Dejenere dali AYIRT EDIYOR dalindan ONCE gelmeli.
+    # YARGI blogunda ara -- kaynagin ustunde ayni metni tasiyan bir
+    # ACIKLAMA YORUMU var ve naif `index` onu buluyordu.
+    blok = m[m.index('yargi = "OKUNMAZ -- on kosul dustu"'):]
+    assert blok.index('elif v.get("dejenere")') < blok.index('"AYIRT EDIYOR')

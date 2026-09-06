@@ -174,13 +174,18 @@ def _kume(konumlar, *, m_p=5.826, a0=1.7564):
     }
 
 
-def test_kumelenme_olculen_kusuru_yakaliyor():
-    """A61'in gerçek sayıları: `0,2013 m` komşu, `0,35 m` aralık."""
+def test_kumelenme_bilinen_kuruluşta_dogru_olcuyor():
+    """A62: A61'de aralığı YANLIŞ almıştım (`0,35` yerine `0,175`).
+
+    Aralık artık parçacık **kütlesinden** türetiliyor; merdiven
+    seviyesini elle seçmek yok. Bu sınav kurulan aralığın geri
+    geldiğini ve oranın doğru hesaplandığını kilitler.
+    """
     # nominal aralik: (m / (2700/1,7564))^(1/3) = 0,1494... -> kendi
     # olcegimizi kuralim: m_p'yi araliga gore sec
     aralik = 0.35
     rho_y = 2700.0 / 1.7564
-    m_p = rho_y * aralik ** 3
+    m_p = rho_y * aralik ** 3 * ht.FCC_HACIM_CARPANI
     x = np.array([[i * 0.2013, 0.0, 0.0] for i in range(8)])
     e = ht.ezilme_mi_sok_mu(_kume(x, m_p=m_p))
     assert e["kumelenme_olculdu"] is True
@@ -192,7 +197,7 @@ def test_kumelenme_olculen_kusuru_yakaliyor():
 
 def test_duzgun_paketleme_kumelenmis_sayilmaz():
     aralik = 0.35
-    m_p = (2700.0 / 1.7564) * aralik ** 3
+    m_p = (2700.0 / 1.7564) * aralik ** 3 * ht.FCC_HACIM_CARPANI
     x = np.array([[i * aralik * 0.95, 0.0, 0.0] for i in range(8)])
     e = ht.ezilme_mi_sok_mu(_kume(x, m_p=m_p))
     assert e["kumelenmis"] is False
@@ -202,7 +207,7 @@ def test_duzgun_paketleme_kumelenmis_sayilmaz():
 def test_esik_tam_sinirda():
     assert ht.KUMELENME_ESIGI == 0.75
     aralik = 0.35
-    m_p = (2700.0 / 1.7564) * aralik ** 3
+    m_p = (2700.0 / 1.7564) * aralik ** 3 * ht.FCC_HACIM_CARPANI
     for oran, beklenen in ((0.74, True), (0.76, False)):
         x = np.array([[i * aralik * oran, 0.0, 0.0] for i in range(6)])
         e = ht.ezilme_mi_sok_mu(_kume(x, m_p=m_p))
@@ -225,10 +230,37 @@ def test_kati_sikisma_yoksa_kumelenme_de_olculmez():
 
 def test_rapor_kumelenmeyi_yaziyor():
     aralik = 0.35
-    m_p = (2700.0 / 1.7564) * aralik ** 3
+    m_p = (2700.0 / 1.7564) * aralik ** 3 * ht.FCC_HACIM_CARPANI
     x = np.array([[i * 0.2013, 0.0, 0.0] for i in range(8)])
     e = ht.ezilme_mi_sok_mu(_kume(x, m_p=m_p))
     metin = ht.ezilme_raporu("sinav", e)
     assert "kumelenme" in metin
     assert "KUMELENMIS" in metin
     assert "SAHTE" in metin
+
+
+def test_fcc_carpani_uretici_ile_AYNI():
+    """A62: aralık `fcc` yerleşimden türetiliyor; çarpan kaymamalı.
+
+    `cubic` varsayılırsa aralık `%11` küçük çıkar ve oran şişer —
+    kümelenmemiş bir kol "kümelenmiş" görünebilir.
+    """
+    from dartrift.setup.rubble_generator import FCC_VOLUME_FACTOR
+
+    assert ht.FCC_HACIM_CARPANI == pytest.approx(
+        float(FCC_VOLUME_FACTOR), rel=1e-15)
+
+
+def test_A62_gercek_sayilari_geri_geliyor():
+    """`E3_av_dusuk`: `m_p = 5,826 kg` → aralık `0,175 m`, oran `1,150`."""
+    from dartrift.setup.rubble_generator import FCC_VOLUME_FACTOR
+
+    m_p = (2700.0 / 1.7564) * 0.175 ** 3 * float(FCC_VOLUME_FACTOR)
+    assert m_p == pytest.approx(5.826, abs=0.002), "merdiven kutlesi tutmali"
+    x = np.array([[i * 0.2013, 0.0, 0.0] for i in range(8)])
+    e = ht.ezilme_mi_sok_mu(_kume(x, m_p=m_p, a0=1.7564))
+    assert e["nominal_aralik"] == pytest.approx(0.175, abs=1e-4)
+    assert e["komsu_orani"] == pytest.approx(1.150, abs=0.002)
+    assert e["kumelenmis"] is False, (
+        "A61 bunu KUMELENMIS saymisti -- yanlis merdiven seviyesiyle"
+    )

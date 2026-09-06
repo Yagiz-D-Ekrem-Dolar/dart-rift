@@ -11,7 +11,7 @@
 | kampanya | ölçütün dediği |
 |---|---|
 | **E2 — çekme** | **ÇEKME HİPOTEZİ DESTEKLENİYOR** |
-| **E1 — şok** | *"Çözücü kusuru"* — **hâlâ açık**; çürüttüğünü sandığım kol da düştü (A61) |
+| **E1 — şok** | *"Çözücü kusuru"* — **çürütüldü** (E3, A62 ile doğrulandı) |
 | **F — AV** | **SONUÇSUZ** (monotonluk ölçülemedi) |
 
 **Nicel sonuc (§6):** cekme kaldirildiginda ejekta dagilimi
@@ -29,9 +29,11 @@ Ve iki bulgu daha:
    `t = 0,2 s`'te geriye **93 kg** kalıyor. Kazı akışı **doğuyor ve
    ölüyor**.
 
-> **Bu belgede bir iddiayı kendim çürüttüm.** İlk yazdığım
-> *"üretim AV'si şoku bastırıyor"* **yanlıştı**; dayanağı olan
-> `ρ = 2891,5` şok değil **kümelenme** çıktı (§2.1, rapor A61).
+> **Bu belgede bir iddiayı çürütüp sonra çürütmeyi geri aldım.**
+> *"Üretim AV'si şoku bastırıyor"* → A61'de *"hayır, kümelenme"*
+> → A62'de **A61 yanlış çıktı** (aralığı elle yanlış aldım:
+> `0,35` yerine `0,175`; doğru oran `1,150`, kümelenme **yok**).
+> İddia **ayakta**. Üç adımın üçü de kayıtlı.
 
 ---
 
@@ -148,25 +150,41 @@ değil. **En ağır sonuç.**"*
 İlk okumam: *"çözücü katı sıkışması üretebiliyor; üretim AV'si onu
 bastırıyor."*
 
-#### O okuma da düştü (A61)
+#### Önce düştü sanıldı (A61), sonra düşürme geri alındı (A62)
 
-Katı sıkışan parçacıklara **nerede olduklarını** sordum:
+Katı sıkışan parçacıklara **nerede olduklarını** sordum ve en yakın
+komşu medyanı `0,2013 m` çıktı. Aralığı **elle** `0,35 m` alıp
+oranı `0,575` hesapladım → *"kümelenme"* dedim.
 
-| ölçüm | değer |
-|---|---:|
-| katı sıkışan (`t = 24 ms`) | `8` |
-| hepsinin kütlesi | `5,826 kg` — en ince seviye |
-| **en yakın komşu, medyan** | **`0,2013 m`** |
-| ince seviye aralığı | `0,35 m` |
-| oran | **`0,575`** |
+**Aralık `0,35` değil.** `E3` **orta** merdivenle koştu; en ince
+seviyesi `0,175 m`. `0,35` **kaba** merdivenin en incesi.
 
-Nominal aralığın `%57`'sinde paketlenmişler; eşdeğer yoğunluk artışı
-`(1/0,575)³ = 5,26` kat. Bu **çekme kararsızlığı** (kümelenme),
-düşük AV'de bilinen SPH kusuru.
+Aralık artık tahmin edilmiyor, **parçacık kütlesinden** türetiliyor:
 
-İkinci kanıt zamanlama: katı sıkışma `1,27e-03 s`'te başlayıp
-`24 ms`'e kadar **sürüyor**. Gerçek şok cephesi geçicidir —
-E1a'da öyle davrandı.
+```
+m_p = 5,826 kg,  rho_yigin = 1537,2  ->  V = 3,7899e-03 m^3
+s = (V / (1/sqrt(2)))^(1/3) = 0,1750 m       <- merdivenle BIREBIR
+```
+
+| aralık | kaynak | oran | yargı |
+|---:|---|---:|---|
+| `0,350` | A61'de elle | `0,575` | KÜMELENMİŞ |
+| **`0,175`** | **kütleden türetilen** | **`1,150`** | **kümelenme yok** |
+
+Parçacıklar nominalden `%15` **daha uzak**. Kümelenme yok; A59'un
+okuması **ayakta**.
+
+#### Destekleyen ölçüm monoton
+
+| `α_av` | zirve sıkışma | `ρ_max` | katı sıkışan |
+|---:|---:|---:|---:|
+| `1,0` | `%69,2` | `2601,6` | `0` |
+| `0,4` | `%73,0` | `2658,8` | `0` |
+| `0,1` | `%88,1` | `2891,5` | `46` |
+
+`%88,1`, matrisin gözenek tavanının (`%75,64`) **üstünde** — eşik
+yalnız düşük AV'de geçiliyor. Yapay viskozitenin şoku yayması
+(smearing) ile birebir uyumlu.
 
 ### Geriye ne kalıyor
 
@@ -175,12 +193,13 @@ E1a'da öyle davrandı.
 | Şok oluşuyor ve gözlendi | **ayakta** |
 | Gözeneklerin `%96`'sı kapanıyor | **ayakta** |
 | Hiçbir kolda temiz katı sıkışma yok | **ayakta** |
-| *"AV şoku bastırıyor"* | **DÜŞTÜ** |
-| E1'in *"çözücü kusuru"* yargısı | **hâlâ açık** |
+| *"AV şoku bastırıyor"* | **AYAKTA** (A61 düştü, A62) |
+| E1'in *"çözücü kusuru"* yargısı | **çürütüldü** |
 
-**E1'in sorusu cevapsız kaldı.** Şok gözeneği kapatıyor ve duruyor;
-bunun gözenekli hedefte beklenen fizik mi yoksa çözünürlük
-yetersizliği mi olduğu **ayrılmadı**.
+**E1'in kilitli yargısı çürütüldü:** çözücü katı sıkışması
+üretebiliyor; üretim `α_av`'sinde üretmiyor. Yine de açık kalan
+soru var — düşük AV'de ulaşılan `%88,1`'in yakınsamış olup olmadığı
+ölçülmedi (A52 çözünürlük merdivenini kilitliyor).
 
 ### Ve bu benim tasarım hatam
 

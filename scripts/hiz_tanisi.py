@@ -138,6 +138,10 @@ def egim(dagilim: list, v_alt: float, v_ust: float) -> float | None:
 
 RHO0_KATI = 2700.0
 
+#: `fcc` yerlesimde parcacik hacmi = bu carpan x aralik^3.
+#: `rubble_generator.FCC_VOLUME_FACTOR` ile AYNI olmali.
+FCC_HACIM_CARPANI = 1.0 / 2.0 ** 0.5
+
 
 #: Kumelenme esigi: en yakin komsu / nominal aralik. Bu oranin
 #: altindaki parcaciklar birbirine GECMIS demektir ve `rho`
@@ -173,10 +177,18 @@ def _kumelenme(s: dict, secim) -> dict:
     D = np.linalg.norm(xs[:, None, :] - xs[None, :, :], axis=2)
     np.fill_diagonal(D, np.inf)
     en_yakin = float(np.median(D.min(axis=1)))
-    # Nominal aralik parcacik kutlesinden: s = (m / rho_yigin)^(1/3)
+    # Nominal aralik parcacik kutlesinden TURETILIYOR -- merdiven
+    # seviyesini ELLE secmek A62'deki hataya yol aciyor (yanlis
+    # merdivenin en ince seviyesini almistim: 0,35 yerine 0,175).
+    #
+    # Sahne `fcc` yerlesim kullaniyor: V = s^3 / sqrt(2)
+    # (`rubble_generator.FCC_VOLUME_FACTOR`). Bu yerlesimde EN YAKIN
+    # KOMSU UZAKLIGI tam olarak `s`'dir, yani dogru kiyas olcusu.
+    # `cubic` varsayarsak aralik %11 kucuk cikar ve oran sisirilir.
     a0 = np.asarray(s["alpha0"], dtype=np.float64)[hedef][secim]
     rho_yigin = RHO0_KATI / np.maximum(a0, 1.0)
-    aralik = float(np.median((ms / rho_yigin) ** (1.0 / 3.0)))
+    V = ms / rho_yigin
+    aralik = float(np.median((V / FCC_HACIM_CARPANI) ** (1.0 / 3.0)))
     oran = en_yakin / aralik if aralik > 0 else float("nan")
     return {
         "kumelenme_olculdu": True,
