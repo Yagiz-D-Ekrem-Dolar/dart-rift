@@ -16,7 +16,9 @@ gözeneklilik, öz-yerçekimi (FAZ 2), çarpma sahnesi (FAZ 3) ve iki aşamalı
 
 > ### Yeni bir oturuma mı başladın?
 >
-> **[DEVAM.md](DEVAM.md)** en üstteki `2026-08-21` bölümü, hiçbir önceki
+> **[`docs/BULGULAR.md`](docs/BULGULAR.md)** projenin ne kanıtladığını
+> ve neyi kanıtlamadığını tek yerde toplar. Oturuma devam için
+> **[DEVAM.md](DEVAM.md)** en üstteki bölümü, hiçbir önceki
 > bağlam olmadan işe devam edebilmek için yazıldı: nerede çalışıldığı
 > (yerel + **yeni** TRUBA alanı), `β` sonucunun kanıt zinciri, **tekrar
 > koşulmaması gereken** elemeler, bulunan kusurlar ve bekleyen kararlar.
@@ -46,29 +48,44 @@ denklemleri doğru çözüyor mu. Hepsi geçti ve kanıtları duruyor.
 | **G3** | Sahne kurulumu | **GEÇTİ** 7/7 | FAZ 5 değil — önce G4 |
 | **G4** | Çözünürlük + çıkarım **altyapısı** | **GEÇTİ** 10/10 | ([kapanış](docs/FAZ4-KAPANIS.md)) |
 
-### 2. BİLİMSEL DOĞRULAMA — **açık**
+### 2. BİLİMSEL DOĞRULAMA
 
-Hedef problemin kendisi. Durum `2026-09-01` itibarıyla ölçülmüş
-değerlerle:
+Hedef problemin kendisi. Durum `2026-09-06` itibarıyla ölçülmüş
+değerlerle. Tam döküm: **[`docs/BULGULAR.md`](docs/BULGULAR.md)**.
 
 | # | ölçüt | durum | ölçülen |
 |---|---|---|---|
-| **S1** | DART koşullarında şok kuruluyor mu | **GEÇTİ** | sıkışma `%45,3`; Hugoniot bandı `%45,6 – 74,3` (rapor A23) |
-| **S2** | Şok ızgarada taşınıyor mu | **GEÇTİ** | kaba seviyede şoklu `0 -> 2 983` (A25) |
+| **S1** | DART koşullarında şok kuruluyor mu | **GEÇTİ** | zirve `%69,2`, `t = 8,61e-05 s`; öngörü `6,0e-05 s` |
+| **S2** | Şok ızgarada taşınıyor mu | **GEÇTİ** | kaba seviyede şoklu `0 → 2 983` (A25) |
 | **S3** | Momentum defteri kapanıyor mu | **GEÇTİ** | artık `1,15e-14` (A29) |
-| **S4** | Krater oluşuyor mu | **KISMİ** | `1,03 m`; literatür `6,5 – 43 m` yarıçap |
-| **S5** | Hedef ejektası **ölçülebilir** mi | **DÜŞTÜ** | `16` parçacık = gürültü tabanı (A30) |
-| **S6** | `β_hedef` çözünürlükle yakınsıyor mu | **ölçülmedi** | — |
-| **S7** | DART gözlemi yeniden üretiliyor mu | **DÜŞTÜ** | `β_hedef = 1,033`; gözlem `3,22` |
-| **S8** | Dimorphos iç yapısı sınırlanıyor mu | **ölçülmedi** | S5–S7 kapanmadan anlamsız |
+| **S4** | Krater oluşuyor mu | **GEÇTİ** | `0,08 – 0,43 m`, `θ` ile değişiyor |
+| **S5** | Kazı akışını **ne durduruyor** | **GEÇTİ** | matris çekmesi; kontrollü deney, `Δβ` `7,7×` |
+| **S6** | Ejekta dağılımı ölçekleme yasasına uyuyor mu | **GEÇTİ** | `μ = 0,463 ± 0,016`; H&H `0,40 – 0,55` |
+| **S7** | Gözlenebilir iç yapıyı **ayırt ediyor** mu | **GEÇTİ** | `F = 1006`; `Y₀` ile `ρ = −0,94` (`p < 1e-4`) |
+| **S8** | Vekil + posterior zinciri kapanıyor mu | **GEÇTİ** | sigmoid `R² = 0,941`; LOO `RMSE = 0,026 m` |
+| **S9** | `β` gözlenebilir olarak kullanılabilir mi | **DÜŞTÜ** | her ölçekte ayrıklaştırma tabanında |
+| **S10** | Uzamsal yakınsama (üç nokta) | **YAPILAMADI** | A52: `R3` için `224` saat, sınır `48` |
+| **S11** | Niceliksel kalibrasyon (`Y₀ = f(d)`) | **DÜŞTÜ** | `%72` çözünürlük kayması (A69) |
+| **S12** | Üretim modelinde kazı akışı | **DÜŞTÜ** | granüler çekme modeli yok |
 
-> **Bugünkü tek savunulabilir bilimsel cümle:** bu ileri model,
-> `α₀ = 1,76` gözenekliliğinde DART'ın gözlenen momentum artışını
-> **üretemiyor**; hedef ejektası `16` parçacıkla gürültü tabanında ve
-> hiçbir malzeme parametresi onu oynatmıyor.
+> **Bugünkü savunulabilir bilimsel cümleler:**
+>
+> 1. Gözenekli hedefli SPH çarpma simülasyonunda matrisin **sahte
+>    çekme dayanımı** — akma dayanımı `Y₀`'ın Tillotson çekme dalını
+>    sınırlamamasından doğuyor (`−15,19 MPa`, sekiz mertebede sabit) —
+>    kazı akışını **tamamen bastırıyor**.
+> 2. Çekme kaldırıldığında ejekta kütle–hız dağılımı
+>    `M(>v) ∝ v^(−3μ)`, **`μ = 0,47 ± 0,03`**, `R² > 0,99` ile
+>    Housen–Holsapple'ın `0,40 – 0,55` aralığına oturuyor.
+> 3. Krater derinliği matris kohezyonu `Y₀` hakkında **bilgi
+>    taşıyor** (`F = 1006`, `ρ = −0,94`); blok yapısı hakkında
+>    **taşımıyor**.
+>
+> **Ve neyi söyleyemiyoruz:** niceliksel eşleme yakınsamıyor
+> (`%72`), yani hesaplanan posterior bir **yöntem gösterimi**dir,
+> fiziksel öngörü değil.
 
-Açık kusurlar: [`FAZ4-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md) — **17**.
-
+Açık kusurlar: [`FAZ4-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md) — **56**.
 ### G4 geçti — ve neyin karşılığında
 
 | # | ölçüt | ölçülen |
@@ -349,6 +366,18 @@ olarak da duruyor ki dışarıdan görülebilsin.
 |---|---|---|
 | [#6](https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/issues/6) | `β` hedef ejektasını değil merminin sekmesini ölçüyor (A17/A12) | açık |
 | [#7](https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/issues/7) | Krater çapı gerçek ensemble'da gözlenemiyor (A11) | açık |
+
+### Motoru şu an tıkayan **üç** iş
+
+| # | sorun | neyi kilitliyor | maliyet |
+|---|---|---|---|
+| **A52** | komşu arama yarıçapı her parçacık için `2·h_max` | üç noktalı yakınsama; `R3` `224` saat ister, sınır `48` | haftalık |
+| **A51** | `Y₀` Tillotson'un çekme dalını sınırlamıyor (`−15,19 MPa`) | üretim modelinde kazı akışı | granüler model + ADR |
+| **A69** | krater derinliği mutlak olarak yakınsamıyor (`%72`) | `Y₀ = f(d)` niceliksel eşlemesi | A52'ye bağlı |
+
+Kök sebep A52 için `h_ij = (h_i+h_j)/2`: ince parçacık kaba
+komşusunu `14 m` öteden aramak zorunda. `7,06×` parçacık için
+**`45,3×`** yavaşlama ölçüldü.
 
 > Kapanmış sıkıntılar **silinmiyor**, raporda gerekçesiyle duruyor —
 > deponun değeri nerede yanıldığının izlenebilir olmasında (`RULES.txt`).

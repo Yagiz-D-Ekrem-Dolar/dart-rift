@@ -21,9 +21,19 @@ def test_IKI_ayri_baslik_var() -> None:
     assert "BİLİMSEL DOĞRULAMA" in README
 
 
-def test_bilimsel_tablo_ACIK_oldugunu_soyluyor() -> None:
+def test_bilimsel_tablo_TAMAMLANMADIGINI_soyluyor() -> None:
+    """Tablo *"bitti"* izlenimi vermemeli.
+
+    Eskiden başlıkta `**açık**` aranıyordu. `2026-09-06`'da `S1–S8`
+    geçti ve başlık sadeleşti; ama **`S9–S12` düştü/yapılamadı** ve
+    tablo bunu taşımak zorunda. Sınav biçimden AMACA çevrildi:
+    düşen ölçüt **görünür** olacak.
+    """
     i = README.index("BİLİMSEL DOĞRULAMA")
-    assert "**açık**" in README[i:i + 60]
+    blok = README[i:README.index("Açık kusurlar:", i)]
+    assert "DÜŞTÜ" in blok or "YAPILAMADI" in blok, (
+        "bilimsel tablo yalnizca GECTI tasiyorsa okuyan 'bitti' saniyor"
+    )
 
 
 def test_mühendislik_kapilari_bilimsel_iddia_YAPMIYOR() -> None:
@@ -33,24 +43,48 @@ def test_mühendislik_kapilari_bilimsel_iddia_YAPMIYOR() -> None:
 
 
 def test_bilimsel_olcutlerin_hepsi_DURUM_tasiyor() -> None:
-    """`S1 – S8`: her satır GEÇTİ/KISMİ/DÜŞTÜ/ölçülmedi demeli."""
-    for s in ("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"):
+    """`S1 – S12`: her satır GEÇTİ/KISMİ/DÜŞTÜ/YAPILAMADI demeli."""
+    for s in ("S1", "S2", "S3", "S4", "S5", "S6",
+              "S7", "S8", "S9", "S10", "S11", "S12"):
         i = README.index(f"| **{s}** |")
         satir = README[i:README.index("\n", i)]
         assert any(k in satir for k in
-                   ("GEÇTİ", "KISMİ", "DÜŞTÜ", "ölçülmedi")), satir
+                   ("GEÇTİ", "KISMİ", "DÜŞTÜ", "ölçülmedi",
+                    "YAPILAMADI")), satir
 
 
 def test_DUSEN_olcutler_gizlenmiyor() -> None:
-    """`S5` ve `S7` düştü; README bunu **açıkça** yazmalı."""
-    for s in ("S5", "S7"):
+    """Düşen ölçütler README'de **açıkça** yazmalı.
+
+    `2026-09-06`: `S5`/`S7` GEÇTİ'ye döndü (kazıyı durduran kuvvet
+    bulundu, ayırt edilebilirlik gösterildi) ama `S9 – S12` düştü.
+    Sınav SABİT SATIR NUMARASINA değil, **düşenlerin görünür
+    olmasına** bakıyor — yoksa tablo bir sonraki turda sessizce
+    yeşile boyanabilir.
+    """
+    dusenler = []
+    for s in ("S9", "S10", "S11", "S12"):
         i = README.index(f"| **{s}** |")
-        assert "DÜŞTÜ" in README[i:README.index("\n", i)], s
+        satir = README[i:README.index("\n", i)]
+        if "DÜŞTÜ" in satir or "YAPILAMADI" in satir:
+            dusenler.append(s)
+    assert len(dusenler) >= 3, (
+        f"dort acik olcutten en az ucu dusmus gorunmeli, {dusenler} bulundu"
+    )
 
 
 def test_savunulabilir_cumle_yazili() -> None:
-    """Jüriye söylenebilecek tek cümle README'de dursun."""
+    """Jüriye söylenebilecek cümleler README'de dursun.
+
+    Ve yanlarında **söylenemeyeni** de taşımalı — tek başına
+    olumlu cümleler over-claim olur.
+    """
     i = README.index("savunulabilir bilimsel cümle")
-    blok = README[i:i + 400]
-    assert "üretemiyor" in blok
-    assert "gürültü tabanında" in blok
+    blok = README[i:i + 1400]
+    # olculmus sayilar cumlelerin ICINDE olmali
+    assert "0,47" in blok, "H&H sonucu sayisiz yazilmis"
+    assert "1006" in blok or "0,94" in blok, "ayirt edilebilirlik sayisiz"
+    # ve SINIR da yazili olmali
+    assert "söyleyemiyoruz" in blok or "değil" in blok, (
+        "yalniz olumlu cumleler var -- neyi soyleyemedigimiz yazilmali"
+    )
