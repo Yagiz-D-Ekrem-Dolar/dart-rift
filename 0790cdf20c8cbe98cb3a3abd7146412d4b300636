@@ -1,0 +1,19 @@
+DUZELTME (2026-09-06): bu commit'in govdesinde bir kelime EKSIK.
+
+Satir soyle gorunuyor:
+     on kosulu krater seciminde UYGULANMIYOR (rapora yaziliyor)
+
+Dogrusu:
+  `n_kacan` on kosulu krater seciminde UYGULANMIYOR (rapora yaziliyor)
+
+SEBEP: commit mesajini bash'te `git commit -m` ile yazdim ve ters
+tirnaklar KOMUT IKAMESI olarak yorumlandi; `n_kacan` calistirilmaya
+calisildi ('command not found') ve mesajdan DUSTU.
+
+NEDEN AMEND EDILMEDI: bu commit'ten sonraki dort commit'in SHA'si
+116 veri kaydinda provenance olarak yazili (60+32+16+8 jsonl satiri,
+77 npz 'surum' alani). Rebase hepsini kirardi. Deponun kurali
+'hicbir satir silinmez' -- SHA zinciri de oyle.
+
+CARE (kalici): commit mesajlari artik `git commit -F -` ile
+TIRNAKLI heredoc'tan veriliyor; ters tirnak yorumlanmiyor.
