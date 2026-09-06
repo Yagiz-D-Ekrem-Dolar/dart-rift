@@ -179,21 +179,48 @@ def birak_bir_dogrula(x, d, *, tohum: int = 0) -> dict:
     }
 
 
+def _tohum_ayikla(ad: str) -> str:
+    """Dizin adından sahne tohumunu çıkar: `...sahne99991111.dilim1_3...`.
+
+    Dizin sayısı **gerçeklem sayısı değildir**: `3` dilim × `2` tohum
+    = `6` dizin ama `2` gerçeklem. Dilimler AYRI `θ` alt kümeleri
+    taşıdığı için hepsini kesiştirmek BOŞ küme veriyordu.
+    """
+    import re
+
+    m = re.search(r"sahne(\d+)", ad)
+    return m.group(1) if m else ad
+
+
 def _veri(dizinler) -> tuple:
-    """`durumlar` dizinlerinden `(log10 Y0, krater, gurultu)`."""
+    """`durumlar` dizinlerinden `(log10 Y0, krater, gerceklem_sapmasi)`.
+
+    Dizinler **sahne tohumuna göre gruplanır**; her grup bir
+    gerçeklemdir. Gruplar içinde dilimler birleştirilir, gruplar
+    arasında `θ` kesiştirilir.
+    """
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from ayirt_raporu import _krater, _oku
 
-    kollar = []
+    gruplar: dict[str, dict] = {}
     for dz in dizinler:
-        d = {}
+        t = _tohum_ayikla(str(dz))
+        hedef = gruplar.setdefault(t, {})
         for k, z in _oku(Path(dz)):
-            d[tuple(np.round(k["theta"], 12))] = _krater(z)
-        kollar.append(d)
+            hedef[tuple(np.round(k["theta"], 12))] = _krater(z)
+    if not gruplar:
+        raise SystemExit("durumlar bos")
+    kollar = [gruplar[t] for t in sorted(gruplar)]
     ortak = sorted(set(kollar[0]).intersection(*[set(k) for k in kollar[1:]]))
+    if not ortak:
+        raise SystemExit(
+            f"gerceklemler arasinda ORTAK theta yok "
+            f"({len(gruplar)} tohum: {sorted(gruplar)})")
     th = np.array(ortak)
     D = np.array([[k[t] for t in ortak] for k in kollar])
-    return np.log10(th[:, 1]), D.mean(axis=0), D.std(axis=0, ddof=1) if len(D) > 1 else np.zeros(len(ortak))
+    sapma = (D.std(axis=0, ddof=1) if len(D) > 1
+             else np.zeros(len(ortak)))
+    return np.log10(th[:, 1]), D.mean(axis=0), sapma
 
 
 def main(argv=None) -> int:
@@ -207,7 +234,9 @@ def main(argv=None) -> int:
 
     x, d, gur = _veri(a.durumlar)
     print("=" * 70)
-    print(f"VEKIL MODEL  ({len(x)} nokta, {len(a.durumlar)} gerceklem)")
+    n_toh = len({_tohum_ayikla(str(z)) for z in a.durumlar})
+    print(f"VEKIL MODEL  ({len(x)} nokta, {n_toh} gerceklem, "
+          f"{len(a.durumlar)} dizin)")
     print("=" * 70)
     print(f"  log10 Y0 : {x.min():.3f} .. {x.max():.3f}")
     print(f"  krater   : {d.min():.4f} .. {d.max():.4f} m")
@@ -229,7 +258,8 @@ def main(argv=None) -> int:
     print(f"    1-sigma kapsama = {lo['kapsama_1sigma']:.3f}  (0,68 beklenir)")
 
     cikti = {"vekil": v, "birak_bir": lo,
-             "n": int(len(x)), "gerceklem": len(a.durumlar)}
+             "n": int(len(x)), "gerceklem": n_toh,
+             "dizin": len(a.durumlar)}
 
     if a.gozlem is not None:
         po = posterior(v, a.gozlem, a.gozlem_sigma)

@@ -158,3 +158,57 @@ def test_bilgi_orani_plato_ile_gecisi_ayiriyor():
     assert plato["bilgi_orani"] > 3 * gecis["bilgi_orani"], (
         f"plato {plato['bilgi_orani']:.3f} vs gecis {gecis['bilgi_orani']:.3f}"
     )
+
+
+# --- A66: dizin sayisi gerceklem sayisi DEGIL ----------------------------
+
+def test_tohum_ayiklama():
+    """`3` dilim × `2` tohum = `6` dizin ama `2` gerçeklem."""
+    assert vp._tohum_ayikla(
+        "kampanya/G1_uretim_sahne99991111.dilim1_3.durumlar") == "99991111"
+    assert vp._tohum_ayikla(
+        "kampanya/G1_uretim_sahne20260906.dilim0_3.durumlar") == "20260906"
+    # ayni tohum, farkli dilim -> AYNI grup
+    a = vp._tohum_ayikla("x/G1_sahne7.dilim0_3.durumlar")
+    b = vp._tohum_ayikla("x/G1_sahne7.dilim2_3.durumlar")
+    assert a == b
+
+
+def test_dizinler_tohuma_gore_GRUPLANIYOR(tmp_path, monkeypatch):
+    """Dilimleri kesiştirmek BOŞ küme veriyordu — gerçek kusur.
+
+    Her dilim AYRI `θ` alt kümesi taşıyor; hepsini kesiştirince
+    ortak `θ` kalmıyor ve `th` boş dönüyordu (`IndexError`).
+    """
+    cagrilar = {}
+
+    def sahte_oku(yol):
+        # dilim0 -> theta 0,2 ; dilim1 -> theta 1,3   (ayrik alt kumeler)
+        ad = str(yol)
+        idx = (0, 2) if "dilim0" in ad else (1, 3)
+        tohum = vp._tohum_ayikla(ad)
+        cagrilar[ad] = True
+        out = []
+        for i in idx:
+            th = np.array([1.1, 10.0 ** (3.5 + i), 0.2])
+            out.append(({"theta": th}, {"_i": i, "_t": tohum}))
+        return out
+
+    def sahte_krater(z):
+        # tohuma gore kucuk fark -> gerceklem gurultusu
+        return 0.30 - 0.02 * z["_i"] + (0.001 if z["_t"] == "7" else 0.0)
+
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "ayirt_raporu",
+        type("M", (), {"_oku": staticmethod(sahte_oku),
+                       "_krater": staticmethod(sahte_krater)}),
+    )
+    dizinler = [
+        "a/G_sahne7.dilim0_3.durumlar", "a/G_sahne7.dilim1_3.durumlar",
+        "a/G_sahne9.dilim0_3.durumlar", "a/G_sahne9.dilim1_3.durumlar",
+    ]
+    x, d, sap = vp._veri(dizinler)
+    assert len(x) == 4, f"dort theta beklenirdi, {len(x)} geldi"
+    assert len(d) == 4 and len(sap) == 4
+    assert np.all(sap > 0), "iki gerceklem arasinda sapma olmali"
