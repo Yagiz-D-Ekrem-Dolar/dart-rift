@@ -83,6 +83,7 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
     ham = "|".join(parcalar).encode("utf-8")
     return hashlib.sha256(ham).hexdigest()[:16]
 
+
 def _durum_adi(i: int, theta) -> str:
     """Durum dosyasi adi -- `theta`ya bagli, cagrilar arasi CAKISMAZ.
 
@@ -101,6 +102,17 @@ def _durum_adi(i: int, theta) -> str:
     th = np.asarray(theta, dtype=np.float64).ravel()
     ozet = hashlib.sha256(th.tobytes()).hexdigest()[:12]
     return f"nokta_{i:04d}_{ozet}.npz"
+
+
+#: Sok penceresi: bu sureye kadar HER ADIM `rho` okunur ve
+#: kosu boyunca zirve tutulur (A70).
+#:
+#: Olculen (A45/E1a): sok mermiyi `r_mermi/Us = 0,371/6145 =`
+#: **`6,0e-05 s`**'te geciyor ve `E1a`'nin zirvesi `8,61e-05 s`'te.
+#: `1e-3 s` penceresi zirveyi ON KAT payla iceriyor; `dt ~ 5,4e-06`
+#: ile `~185` adim, yani maliyeti ihmal edilebilir.
+SOK_PENCERESI = 1.0e-3
+
 
 def sahne_parametreleri(theta, taban: dict | None = None, *,
                         secenek3: bool = True) -> dict:
@@ -538,12 +550,30 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                     if matris_cekme_yok else None))
             t = 0.0
             kontrol = max(1, azami_adim // 200)
+            # A70: SOK KAPISI ARTIK ZIRVEDEN OKUNUYOR.
+            #
+            # A45 olctu: sok mermiyi `r_p/Us = 6,0e-05 s`'te geciyor
+            # (`dt ~ 5,4e-06` ile `~11 adim`) ve kapi SON DURUMDA
+            # degerlendiriliyordu. A68 bedelini olctu: cekme kirpilinca
+            # madde GERCEKTEN gevsiyor, artik sikisma %21,7 -> %5,4
+            # dusuyor ve kapi 39/48 noktayi REDDEDIYOR. Yani kapi,
+            # duzeltilen kusurdan etkilendigi icin DUZELTMEYI reddediyor.
+            #
+            # Care: sok penceresinde HER ADIM `rho` okunup kosu boyunca
+            # ZIRVE tutuluyor. Pencere disinda seyrek ornekleme yeter --
+            # sok oraya kadar coktan gecmis olur.
+            _h_maske = ~np.asarray(rs.is_impactor, dtype=bool)
+            _a0_h = np.ascontiguousarray(rs.alpha0)[_h_maske]
+            rho_zirve = np.zeros(int(_h_maske.sum()))
             for adim in range(1, azami_adim + 1):
                 dt = sol.compute_dt()
                 if t + dt > t_end:
                     dt = t_end - t
                 sol.step(dt)
                 t += dt
+                if t <= SOK_PENCERESI or adim % kontrol == 0:
+                    _r = np.asarray(sol.rho.numpy())[_h_maske]
+                    np.maximum(rho_zirve, _r, out=rho_zirve)
                 if adim % kontrol == 0 and not np.all(
                         np.isfinite(sol.state_numpy()["v"])):
                     raise RuntimeError(
@@ -566,12 +596,11 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 # dogru gevsemis bir hedef kapidan duser.
                 # `faz48_iki_asama.py` bu maskeyi hep uyguluyordu;
                 # cikarim yolu uygulamiyordu.
-                _hedef = ~np.asarray(rs.is_impactor, dtype=bool)
-                if not sok_gecti(np.asarray(st["rho"])[_hedef],
-                                 np.asarray(rs.alpha0)[_hedef]):
+                # A70: SON DURUM degil, KOSU BOYUNCA ZIRVE.
+                if not sok_gecti(rho_zirve, _a0_h):
                     raise RuntimeError(
-                        "SOK KURULMADI -- ADR-0049: bu noktanin fizik "
-                        "sonucu okunmaz")
+                        "SOK KURULMADI (ZIRVE) -- ADR-0049: bu noktanin "
+                        "fizik sonucu okunmaz")
             # DURUM KAYDI (rapor A37). `L1`'in `beta`lari kullanilamadi
             # cunku `npz` yoktu: momentum defteri post-hoc uygulanamadi,
             # parcacik kimligi karsilastirilamadi. Provenance

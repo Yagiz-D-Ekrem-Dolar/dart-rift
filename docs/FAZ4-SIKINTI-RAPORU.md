@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 50 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 56 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A70 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -4074,7 +4074,12 @@ Bizim ölçtüğümüz durumun tam kendisi, ve **basıncı sıfır**.
 
 ---
 
-### A45'in yorumu **düzeltildi** (2026-09-05)
+### ↩ A45'in yorumu **düzeltildi** (2026-09-05)
+
+> Bu **yeni bir kusur değil**, A45'in düzeltme notudur. Başlığı
+> `### A45 …` biçiminde yazmıştım ve sayaç sınavı onu **ayrı bir
+> kusur** sandı (`55` başlık vs `Açık: 53`). K10/K11/K12 sınıfı:
+> belge kendi biçim kuralına uymuyordu.
 
 A45 *"sıkışma donuk ⇒ şoklanan madde gevşemiyor"* diyordu.
 **Yanlış.** Ölçüm 2 gösteriyor ki `%45,34` durumu `P ≈ 0`, yani
@@ -4716,6 +4721,216 @@ inceleme yapılamadı"*. Şimdi: *"düşme sebebi yoktu"*.
 > koşulun sağlanmadığı çağrı yolu sebebi **kaybediyor** demektir.
 > `if ilerleme:` masum görünüyordu; üretimdeki tek çağrı yolu tam
 > olarak `ilerleme` vermeyen yoldu.
+
+---
+### A65 — **"Tek yanlı" ölçüm biçimim platoda çalışmadı** (2026-09-06)
+
+`vekil_posterior.py`'de posteriorun tek yanlı olup olmadığını
+*"önsel sınırına yığılan olasılık kütlesi"* ile ölçtüm.
+
+**Platoda çalışmadı.** Orada model **düz** olduğu için olabilirlik
+de düz; posterior sınıra **yığılmıyor**, geniş bir bölgeye
+**yayılıyor**. Yığılma ölçüsü `0` çıkıyor ve betik *"iki yanlı
+sınır geçerli"* diyor — oysa gözlenebilir orada `Y₀` hakkında iki
+yanlı bilgi taşımıyor.
+
+`test_platoda_TEK_YANLI_diyor` düştü ve beni düzeltti.
+
+**Doğru ölçü:** `%68` aralığının **bir ucu önsel sınırına dayanıyor
+mu**. Ayrıca `bilgi_orani` eklendi (posterior genişliği ÷ önsel).
+
+> **Ders:** bir istatistiği tanımlarken *"hangi rejimde bu ölçü
+> anlamsızlaşır"* diye sormak gerekiyor. Yığılma ölçüsü **keskin**
+> posteriorlar için doğruydu, **düz** olanlar için değil.
+
+---
+
+### A66 — **Dizin sayısını gerçeklem sayısı sandım** (2026-09-06)
+
+`vekil_posterior._veri` her `--durumlar` dizinini ayrı bir
+**gerçeklem** sayıyordu. Oysa `G1`'de `3` dilim × `2` tohum =
+**`6` dizin ama `2` gerçeklem**.
+
+Her dilim **ayrık** bir `θ` alt kümesi taşıyor; altısını birden
+kesiştirince ortak `θ` **kalmıyor** ve dizi boş dönüyordu:
+
+```
+IndexError: too many indices for array: array is 1-dimensional
+```
+
+**Çare:** dizinler `sahne<TOHUM>` deseninden **gruplanıyor**; grup
+içinde dilimler birleşiyor, gruplar arasında `θ` kesişiyor.
+
+İki sınav: tohum ayıklama (aynı tohum farklı dilim → aynı grup) ve
+uçtan uca gruplama (ayrık alt kümelerle dört nokta geri gelmeli).
+
+---
+
+### A67 — **Vekil negatif krater derinliği üretti** (2026-09-06)
+
+Kısıtsız sigmoid uydurma gerçek `G1` verisinde:
+
+| parametre | değer |
+|---|---:|
+| `d_alt` (yüksek `Y₀` asimptotu) | **`−0,1523 m`** |
+| `x0` (geçiş) | `6,772` |
+| veri üst ucu | `6,968` |
+
+**Negatif krater derinliği fiziksel olarak imkânsız.** Sebep: veri
+alt platoya **ulaşmıyor** — `Y₀` en büyük `9,3e6 Pa` ve derinlik
+hâlâ düşüyor (`0,081 m`). Sigmoidin alt asimptotu **ekstrapolasyon**.
+
+**Çare 1:** `d_alt ≥ 0` kısıtı. `R²` `0,9432 → 0,9411` — yani
+kısıt uydurmayı **kötüleştirmiyor**, savunulabilir yapıyor. Ve
+geçiş noktası veri içine geldi (`x0 = 6,340`).
+
+**Çare 2:** `x0` verinin içinde mi / ucuna yakın mı, ve `d_alt`
+kısıt sınırında mı — ölçülüp **bildiriliyor**. Ekstrapolasyon
+sessizce sonuç diye geçmiyor.
+
+> **Ders:** esnek bir işlev, verinin **kapsamadığı** bölgede ne
+> isterse yapar. Fiziksel kısıt koymak modeli zayıflatmaz;
+> uydurmanın veriden mi kısıttan mı geldiğini **söylenebilir**
+> kılar.
+
+---
+### A68 — **Şok kapısı, maddenin DOĞRU gevşediği kolu reddediyor** (2026-09-06)
+
+`G2` (çekme kırpık) kolunda `48` noktanın **`39`'u** düştü.
+A64'ün düzeltmesi sayesinde gerekçe artık kayıtlı:
+
+```
+39  SOK KURULMADI -- ADR-0049: bu noktanin fizik sonucu okunmaz
+ 9  TAMAM
+```
+
+#### Ölçüldü
+
+Kapı eşiği: Hugoniot alt ucunun `%10`'u = **`%4,561`**.
+Son durumdaki sıkışma:
+
+| kol | medyan | min | geçen |
+|---|---:|---:|---:|
+| `G1` üretim | **`%21,70`** | `%20,57` | `24/48` |
+| `G2` çekme kırpık | **`%5,38`** | `%4,57` | **`5/48`** |
+
+Aynı `θ`'da oran `0,218 – 0,461` — çekme kırpılınca **kalıcı
+sıkışma `2 – 5` kat azalıyor.**
+
+#### Neden bu bir SEÇME YANLILIĞI
+
+Kapı **son durumda** değerlendiriliyor (A45). Çekme kırpılınca madde
+gerçekten gevşiyor → artık sıkışma düşüyor → kapı reddediyor.
+Yani kapı, **maddenin yapışık kaldığı** kolu ödüllendiriyor.
+
+Ve rastgele reddetmiyor: geçen `5` nokta **en yüksek `Y₀`'lar**
+(`log₁₀ Y₀ = 6,22 – 6,97`). Örneklem **güçlü matrise doğru
+sapıyor**.
+
+Uzman tam bunu uyarmıştı:
+
+> *"Son zamanda kalıcı yoğunluk isteyen kapı, gözenekli malzemeyi
+> seçici biçimde avantajlı gösterebilir."*
+
+#### Sonucu
+
+`G2` kolu **bu kapıyla koşulamaz**. Kapı A45'in önerdiği gibi
+**koşu boyunca zirve** üzerinden kurulmadan çekme kolu
+değerlendirilemez.
+
+> **Ders:** bir geçerlilik kapısı, ölçtüğü büyüklük **düzeltilen
+> kusurdan etkileniyorsa**, düzeltmeyi reddeder. Kapıyı kurarken
+> *"bu ölçü, sınamak istediğim müdahaleden bağımsız mı"* diye
+> sormak gerekiyormuş.
+
+---
+
+### A69 — **Krater derinliği MUTLAK olarak yakınsamıyor; `θ`-tepkisi dirençli** (2026-09-06)
+
+Protokol H uygulandı (`6` `θ`, iki çözünürlük, iki gerçeklem).
+
+| `log₁₀ Y₀` | `d_kaba` | `d_orta` | fark | gürültü | oran |
+|---:|---:|---:|---:|---:|---:|
+| `3,631` | `0,3556` | `0,6120` | `0,419` | `0,0244` | `17` |
+| `4,220` | `0,3618` | `0,6951` | `0,480` | `0,0043` | `111` |
+| `4,930` | `0,3498` | `0,6483` | `0,460` | `0,0152` | `30` |
+| `5,880` | `0,2364` | `0,3706` | `0,362` | `0,0008` | `483` |
+| `6,574` | `0,1420` | `0,1658` | `0,144` | `0,0273` | `5` |
+| `6,801` | `0,0997` | `0,1056` | `0,056` | `0,0005` | `108` |
+
+Oran medyanı **`69`**; kilitli eşik `> 10` → **KORUNMUYOR**.
+
+#### Ama iki şey AYRI
+
+| nicelik | kaba | orta | durum |
+|---|---|---|---|
+| **mutlak derinlik** | `0,36 m` | `0,61 m` | **`%72` fark — yakınsamamış** |
+| **`Y₀` ile ilişki** | `r = −0,943` | `r = −0,925` | **neredeyse aynı** |
+
+İşaret aynı; sıralama tam korunmuyor (`6` noktada iki takas).
+
+#### Ne ayakta, ne değil
+
+| iddia | durum |
+|---|---|
+| Krater derinliği `Y₀` hakkında **bilgi taşıyor** (G1) | **ayakta** — ilişki iki ölçekte de aynı güçte |
+| `Y₀ = f(derinlik)` **niceliksel eşlemesi** | **DÜŞTÜ** — ölçeğe bağlı |
+| Hesaplanan posterior (`Y₀ = [4,5e5 ; 1,3e6] Pa`) | **aktarılamaz** — kaba ölçeğe özgü |
+
+Yani `vekil_posterior.py`'nin ürettiği sayı bir **yöntem
+gösterimi**dir, fiziksel bir öngörü değil. Öyle bildirilecek.
+
+> **Ders:** *"gözlenebilir bilgi taşıyor mu"* ile *"o bilgiyi
+> niceliksel olarak okuyabiliyor muyum"* AYRI sorular. Birincisi
+> `4` kat çözünürlük değişimine dayandı, ikincisi dayanmadı.
+
+---
+### A70 — **Şok kapısı artık ZİRVEDEN okunuyor** (2026-09-06) — *A45/A68'in çaresi*
+
+A45 ölçtü: şok mermiyi `6,0e-05 s`'te geçiyor (`≈ 11` adım), ama
+kapı **son durumda** değerlendiriliyordu.
+
+A68 bedelini ölçtü: çekme kırpılınca madde **gerçekten gevşiyor**,
+artık sıkışma `%21,70 → %5,38` düşüyor, ve kapı `39/48` noktayı
+**reddediyor**.
+
+> Yani kapı, **düzeltilen kusurdan etkilendiği için düzeltmeyi**
+> reddediyordu.
+
+#### Çare
+
+Şok penceresinde (`SOK_PENCERESI = 1e-3 s`) **her adım** `rho`
+okunup koşu boyunca zirve tutuluyor; pencere dışında seyrek
+örnekleme yetiyor.
+
+```python
+if t <= SOK_PENCERESI or adim % kontrol == 0:
+    _r = np.asarray(sol.rho.numpy())[_h_maske]
+    np.maximum(rho_zirve, _r, out=rho_zirve)
+...
+if not sok_gecti(rho_zirve, _a0_h):        # SON DURUM DEGIL
+```
+
+Pencere seçimi ölçüme dayalı: geçiş `6,0e-05 s`, `E1a`'nın zirvesi
+`8,61e-05 s`. `1e-3 s` **on kat** pay bırakıyor ve `dt ≈ 5,4e-06`
+ile yalnız `~185` adım demek.
+
+#### Sınavlar
+
+| ne | kilitlenen |
+|---|---|
+| zirve tutuluyor | `rho_zirve` + `np.maximum(...)` var |
+| kapı zirveyi okuyor | `sok_gecti(rho_zirve, ...)` |
+| eski çağrı **kalmadı** | `sok_gecti(st["rho"])` yok |
+| pencere geçişi kat kat kapsıyor | `> 10 ×` geçiş **ve** `> 10 ×` ölçülen zirve |
+| pencere aşırı geniş değil | `< t_end/10` — yoksa her adım okunur |
+| mermi maskesi korunuyor | `_h_maske`, ve zirve **maskeli** okunuyor |
+
+#### Henüz sınanmadı
+
+Bu değişiklik `G2`'yi okunabilir yapmayı **amaçlıyor** ama
+**doğrulanmadı**: `G2` yeniden koşulmadan `39/48` reddin kalkıp
+kalkmadığı bilinmiyor. Öyle bildiriliyor.
 
 ---
 ### A18 — **`G4-C`'nin ensemble verisi depoda yok ve geri alınamıyor** (2026-08-21)

@@ -129,11 +129,15 @@ def test_cikarim_gozlenebiliri_defterden_geliyor():
 def test_sok_kapisi_mermiyi_maskeliyor():
     m = (REPO / "src" / "dartrift" / "inference" / "forward.py").read_text(
         encoding="utf-8")
-    blok = m[m.index("if sok_yargisi:"):][:700]
-    assert "is_impactor" in blok, (
+    # A70 sonrasi maske DONGU ONCESINDE kuruluyor (`_h_maske`) cunku
+    # zirve de maskeli okunuyor. Sinav ISLEVE bakiyor, yerine degil.
+    blok = m[m.index("def ileri_kosu_merdiven"):]
+    assert "_h_maske = ~np.asarray(rs.is_impactor, dtype=bool)" in blok, (
         "sok kapisi mermiyi maskelemiyor: aliminyum mermi (alpha0=1) "
         "carpmada cok sikisir ve kapiyi TEK BASINA gecirebilir"
     )
+    assert "[_h_maske]" in blok, "zirve maskesiz okunuyor"
+    assert "_a0_h = np.ascontiguousarray(rs.alpha0)[_h_maske]" in blok
 
 
 def test_yalniz_mermi_sikisirsa_kapi_gecmemeli():
@@ -402,3 +406,44 @@ def test_yigin_cagrisi_hala_devam_ediyor():
     i_raise = kaynak.index("if len(x) == 1:")
     i_cont = kaynak.index("continue", i_raise)
     assert i_cont > i_raise, "continue, raise'den SONRA gelmeli"
+
+
+# --- A70: sok kapisi ZIRVEDEN okunuyor ----------------------------------
+
+def test_sok_kapisi_ZIRVEDEN_okunuyor():
+    """A68: kapı son durumda değerlendirilince düzeltmeyi reddediyordu.
+
+    Çekme kırpılınca madde gerçekten gevşiyor, artık sıkışma
+    `%21,7 → %5,4` düşüyor ve kapı `39/48` noktayı eliyordu.
+    """
+    m = (REPO / "src" / "dartrift" / "inference" / "forward.py").read_text(
+        encoding="utf-8")
+    blok = m[m.index("def ileri_kosu_merdiven"):]
+    assert "rho_zirve" in blok, "kosu boyunca zirve tutulmuyor"
+    assert "np.maximum(rho_zirve" in blok, "zirve guncellenmiyor"
+    assert "sok_gecti(rho_zirve" in blok, (
+        "kapi hala SON DURUMU okuyor"
+    )
+    # Son durumdan okuyan eski cagri KALMAMALI
+    assert 'sok_gecti(np.asarray(st["rho"])' not in blok
+
+
+def test_sok_penceresi_gecis_suresini_KAT_KAT_kapsiyor():
+    """Pencere, ölçülen şok geçiş süresini rahatça içermeli."""
+    from dartrift.inference.forward import SOK_PENCERESI
+
+    gecis = 0.371 / 6144.9          # r_mermi / Us  = 6,04e-05 s
+    zirve = 8.61e-5                 # E1a'da olculen
+    assert SOK_PENCERESI > 10 * gecis, "pencere cok dar"
+    assert SOK_PENCERESI > 10 * zirve, "olculen zirveyi 10 kat payla gecmeli"
+    # Ama t_end'in tamamini kaplamamali -- yoksa her adim okunur
+    assert SOK_PENCERESI < 0.024 / 10, "pencere cok genis, maliyet artar"
+
+
+def test_pencere_disinda_seyrek_ornekleme():
+    m = (REPO / "src" / "dartrift" / "inference" / "forward.py").read_text(
+        encoding="utf-8")
+    blok = m[m.index("def ileri_kosu_merdiven"):]
+    assert "if t <= SOK_PENCERESI or adim % kontrol == 0:" in blok, (
+        "pencere disinda da HER ADIM okunuyorsa maliyet gereksiz artar"
+    )

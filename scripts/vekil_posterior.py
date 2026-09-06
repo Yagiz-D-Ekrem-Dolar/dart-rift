@@ -45,6 +45,10 @@ import numpy as np
 ONSEL_LOG10_ALT = 3.0
 ONSEL_LOG10_UST = 7.0
 
+#: Rapor metninde kullanilan taban degeri (uydurmadaki
+#: `D_ALT_TABAN` ile ayni olmali).
+D_ALT_TABAN_YAZI = "0 m"
+
 #: Posterior "tek yanlı" sayılır: kütlenin bu kesri üst (ya da alt)
 #: sınıra dayanıyorsa iki yanlı güven aralığı bildirilmez.
 TEK_YANLI_ESIGI = 0.10
@@ -117,6 +121,9 @@ def uydur(x, d, *, tohum: int = 0) -> dict:
         "R2": float(R2),
         # A67: `x0` verinin ICINDE mi? Ucunda ya da disindaysa gecis
         # noktasi EKSTRAPOLASYON'dur ve oyle bildirilmeli.
+        # `d_alt` KISITIN UZERINDE mi durdu? Oyleyse yuksek `Y0`
+        # asimptotu VERIDEN degil KISITTAN geliyor ve oyle bildirilmeli.
+        "d_alt_sinirda": bool(p[0] <= D_ALT_TABAN + 1e-9),
         "x0_veri_icinde": bool(x.min() < p[2] < x.max()),
         "x0_uca_yakin": bool(min(abs(p[2] - x.min()),
                                  abs(p[2] - x.max())) < 0.5),
@@ -265,6 +272,10 @@ def main(argv=None) -> int:
     print(f"    x0    = {v['x0']:.3f}         (gecis: Y0 = {10**v['x0']:.3g} Pa)")
     print(f"    w     = {v['w']:.3f}          (keskinlik, dekad)")
     print(f"    R^2   = {v['R2']:.4f}   artik sigma = {v['artik_sigma']:.5f} m")
+    if v["d_alt_sinirda"]:
+        print(f"    ! d_alt KISIT SINIRINDA ({D_ALT_TABAN_YAZI}). Yuksek Y0"
+              f" asimptotu VERIDEN degil FIZIKSEL KISITTAN geliyor;"
+              f" o bolgede vekil EKSTRAPOLE ediyor.")
     if not v["x0_veri_icinde"] or v["x0_uca_yakin"]:
         print(f"    ! GECIS NOKTASI verinin UCUNDA "
               f"(veri {v['veri_araligi'][0]:.2f} .. {v['veri_araligi'][1]:.2f}). "

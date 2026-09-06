@@ -251,3 +251,19 @@ def test_kisit_uydurmayi_BOZMUYOR():
     v = vp.uydur(x, d)
     assert v["R2"] > 0.999
     assert v["d_alt"] == pytest.approx(GERCEK[0], abs=0.02)
+
+
+def test_d_alt_sinirda_BILDIRILIYOR():
+    """`d_alt` kısıta dayanırsa yüksek `Y₀` asimptotu VERİDEN gelmiyor."""
+    # Yalniz DUSEN kol -- uydurma tabana dayanir
+    x = np.linspace(3.1, 6.9, 20)
+    d = vp.sigmoid_model(x, *GERCEK) - 0.06     # alt platoyu asagi it
+    d = np.maximum(d, 0.005)
+    v = vp.uydur(x, d)
+    assert "d_alt_sinirda" in v
+    # Tam platoyu iceren veride sinira DAYANMAMALI
+    x2, d2 = _veri()
+    v2 = vp.uydur(x2, d2)
+    assert v2["d_alt_sinirda"] is False, (
+        "gercek alt plato varken kisit devreye girmemeli"
+    )
