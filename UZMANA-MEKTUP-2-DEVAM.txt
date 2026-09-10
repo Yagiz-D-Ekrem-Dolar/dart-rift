@@ -1,0 +1,406 @@
+================================================================================
+DART-RIFT — DEVAM MEKTUBU
+Tarih  : 2026-09-10
+Onceki : UZMANA-MEKTUP.txt (2026-09-06, 772 satir)
+Depo   : https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift   (dal: main)
+================================================================================
+
+
+HEDEFIMIZ — LUTFEN SORULARI BUNA GORE YANITLAYIN
+--------------------------------------------------------------------------------
+Amacimiz projeyi ORIJINAL hedefine ulastirmak:
+
+    DART'in olctugu momentum artisindan Dimorphos'un IC YAPISI uzerine
+    (blok alpha0, matris Y0, blok kesri) YAKINSAMIS ve DOGRULANMIS
+    bir posterior.
+
+Daha dar bir sonuc bizi tatmin etmiyor. Dort ayimiz var ve o isi
+yapmaya hazirız. Asagidaki sorular "ne kurtarabiliriz" diye degil,
+"HEDEFE NASIL VARIRIZ" diye soruldu. Bir sorunun yaniti "bu yoldan
+varilmaz" ise, lutfen VARILAN yolu soyleyin.
+
+
+BU MEKTUP NE ICIN
+--------------------------------------------------------------------------------
+Ilk mektubu gonderdikten sonra bekleyen son kampanya (Protokol I) bitti.
+Sonucu, ilk mektuptaki bir UMUDU CURUTTU ve tabloyu netlestirdi.
+
+Bu kisa bir ek: yalniz yeni sonuc, onun neyi degistirdigi, ve ilk
+mektuptaki sorularin hangilerinin artik DAHA KRITIK oldugu.
+
+Ilk mektubu okumadiysaniz once o gerekli. Bu tek basina anlamli degil.
+
+
+================================================================================
+1. YENI SONUC: PROTOKOL I — GECIS NOKTASI  x0
+================================================================================
+
+1.1 Soru neydi
+--------------------------------------------------------------------------------
+Ilk mektupta (Engel 4 / Soru 12) sunu yazmistim:
+
+    "Mutlak krater derinligi %72 kayiyor ama Y0 ile iliski degismiyor
+     (r = -0,943 vs -0,925). SANIYORUZ: aktarilabilecek nicelik
+     derinligin DEGERI degil, GECIS NOKTASI x0 -- cunku bizim krater
+     0,5 m, DART'inki ~10 m; mutlak olcek zaten aktarilamaz."
+
+Protokol I tam bunu sinadi. Yargi kurali KOSUDAN ONCE commit'lendi
+(docs/truba/PROTOKOL-I-GECIS.md) ve betikte kilitlendi
+(scripts/gecis_raporu.py, 9 sinav).
+
+Tasarim: G1 ile AYNI 24 theta, AYNI iki sahne gerceklemesi, ORTA
+merdivende (N = 69 886). 12 gorev, 48/48 nokta tamamlandi.
+
+1.2 Olculen
+--------------------------------------------------------------------------------
+Her olcekte kisitli sigmoid uydurma (d_alt >= 0, A67):
+
+    olcek            n      x0     sigma_x0    Y0(x0)      w       R^2
+    kaba (17 201)   24    6,340     0,1179    2,19e6 Pa  0,538   0,9411
+    orta (69 886)   24    5,950     0,1079    8,91e5 Pa  0,383   0,9633
+
+    |x0_orta - x0_kaba| = 0,3898
+    birlesik sigma      = 0,1599
+    kat                 = 2,44
+
+    Kilitli tablo:  < 2 sigma  -> DAYANIKLI
+                    2 - 4      -> ZAYIF
+                    > 4        -> DAYANIKSIZ
+
+    YARGI: ZAYIF
+
+Her iki uydurma da GECERLI: R^2 = 0,941 / 0,963 ve x0 her ikisinde de
+veri araliginin ICINDE. (Kaba kolda d_alt kisit sinirinda -- yuksek Y0
+asimptotu veriden degil kisittan geliyor; bu bildiriliyor.)
+
+1.3 Ne demek
+--------------------------------------------------------------------------------
+Gecis noktasi Y0 cinsinden 2,5 KAT kayiyor: 2,19e6 -> 8,91e5 Pa.
+Yon ayni, ve gecis KESKINLESIYOR (w = 0,538 -> 0,383).
+
+Umdugum sey OLMADI. "Mutlak deger yakinsamiyor ama su turetilmis
+nicelik yakinsar" hipotezini olctuk ve TUTMADI.
+
+x0 cozunurlukle AZALIYOR (6,340 -> 5,950). Iki nokta bir EGILIM
+gosteriyor ama HANGI DEGERE yakinsadigini soyleyemez. Ucuncu nokta
+Richardson ile onu verirdi -- ve o nokta A52 yuzunden alinamiyor.
+
+
+================================================================================
+1b. IKINCI YENI SONUC: A70 DOGRULANDI — SOK KAPISI DUZELDI
+================================================================================
+
+Ilk mektupta (Engel 7) sunu yazmistim:
+
+    "Kapi SON DURUMDA degerlendiriliyordu ve cekme kirpilinca madde
+     GERCEKTEN gevsiyor, artik sikisma dusuyor, kapi DUZELTMEYI
+     REDDEDIYOR (39/48). A70 ile kapi ZIRVEDEN okunacak sekilde
+     degistirildi AMA HENUZ DOGRULANMADI."
+
+Simdi dogrulandi. G2 (cekme kirpik) kolu ayni tasarimla yeniden
+kosuldu; tek fark kapinin zirveden okunmasi:
+
+    kapi bicimi                   gecen      oran
+    ------------------------------------------------
+    SON DURUM  (A70 oncesi)       9 / 48     %18,8
+    KOSU BOYUNCA ZIRVE (A70)     18 / 18     %100
+
+    (ikinci satir kampanya devam ederken; su ana kadar HICBIR
+     nokta dusmedi.)
+
+Yani sizin uyariniz -- "son zamanda kalici yogunluk isteyen kapi,
+gozenekli malzemeyi secici bicimde avantajli gosterebilir" -- hem
+olculdu hem de caresi dogrulandi.
+
+Bunun bir yan sonucu var: G2 kolu artik OKUNABILIR. Yani
+"gozlenebilir, akis VAR OLDUGUNDA theta bilgisi tasiyor mu"
+sorusunun yaniti bu mektup gonderilirken elimizde olacak.
+
+================================================================================
+1c. UCUNCU YENI SONUC: G2 OKUNDU — CEKME KOLU DA AYIRT EDIYOR
+================================================================================
+
+A70 kapiyi acinca G2 (cekme kirpik) kolu okunabilir hale geldi.
+47/48 nokta, on kosullarin hepsi gecti. Kilitli olcut:
+
+    VARYANS ORANI (krater_derinlik)   F = 25,41   (esik 4,0)
+      blok_alpha0   rho = -0,1800   p = 0,4008
+      matris_Y0     rho = -0,6626   p = 0,0005   ANLAMLI
+      blok_kesri    rho = +0,3583   p = 0,0839
+    YARGI: AYIRT EDIYOR
+
+Protokol G'nin KOSUDAN ONCE yazilmis yorum tablosuna gore:
+G1 ayirt ediyor + G2 ayirt ediyor -> "Gozlenebilir ZATEN bilgi
+tasiyor; cekme kusuru onu yok etmiyor, yalniz zayiflatiyor."
+
+Iki kolun kiyasi:
+
+    eksen           G1 (uretim)        G2 (cekme kirpik)
+    ---------------------------------------------------------
+    F                 1006                 25,4
+    matris_Y0       -0,9417 (p<1e-4)     -0,6626 (p=0,0005)
+    blok_alpha0     -0,2348 (p=0,269)    -0,1800 (p=0,401)
+    blok_kesri      +0,0904 (p=0,667)    +0,3583 (p=0,084)
+
+Dikkat ceken: cekme kirpilinca Y0 sinyali ZAYIFLIYOR ama
+blok_kesri sinyali GUCLENIYOR (p = 0,667 -> 0,084; hala esik alti).
+
+SANIYORUZ  Uretim kolunda krater derinligi neredeyse tamamen matris
+           mukavemetiyle belirleniyor. Cekme kalkinca akis gercekten
+           kaziyor ve krater daha genis bir bolgeyi -- belki bloklara
+           degen bir bolgeyi -- orneklemeye basliyor.
+
+           Bu, ilk mektuptaki Soru 4'u (blok olcegi) destekliyor:
+           blok bilgisi ULASILABILIR olabilir, ama krater yeterince
+           BUYUMEDIGI surece degil.
+
+SORU 22    Bu okuma dogru mu? Oyleyse blok eksenlerini gorunur kilmak
+           icin (a) krateri buyutmek mi (gercek DART olcegi),
+           (b) bloklari kucultmek mu (fiziksel boyut + cozunurluk),
+           yoksa (c) ikisi birden mi gerekiyor?
+ACARDI     Uc parametreli posteriorun -- yani HEDEFIN -- onunu.
+
+================================================================================
+2. TABLO SIMDI NE DURUMDA
+================================================================================
+
+    iddia                                            durum
+    ---------------------------------------------------------------
+    Sok olusuyor ve gozlendi (zirve 8,61e-05 s)      AYAKTA
+    Kaziyi matris cekmesi durduruyor (kontrollu)     AYAKTA
+    Ejekta dagilimi H&H'ye oturuyor (mu = 0,47)      AYAKTA (kosullu)
+    Krater derinligi Y0 bilgisi tasiyor (F = 1006)   AYAKTA
+    ---------------------------------------------------------------
+    beta gozlenebilir olarak kullanilabilir          DUSTU
+    Y0 = f(d) niceliksel eslemesi                    DUSTU  (A69)
+    Gecis noktasi x0 aktarilabilir                   ZAYIF  (A71, YENI)
+    Uc noktali yakinsama                             A52 KILITLIYOR
+
+Yani: NICEL olarak aktarilabilir HICBIR SEYIMIZ YOK.
+NITEL sonuc (gozlenebilir bilgi tasiyor, Y0 ekseninde, esik ustunde)
+ayakta ve saglam.
+
+
+================================================================================
+3. BU, SORULARI NASIL DEGISTIRDI
+================================================================================
+
+3.1 Soru 6 (A52 / komsu arama) artik TEK KRITIK YOL
+--------------------------------------------------------------------------------
+Ilk mektupta A52'yi "en kritik uc"ten biri olarak yazmistim. Simdi
+tek basina kritik:
+
+  - Ucuncu cozunurluk noktasi olmadan x0'in NEREYE yakinsadigini
+    bilemiyoruz (bu mektubun konusu).
+  - Ucuncu nokta olmadan sigma_num uretilemiyor.
+  - Hedef cozunurluge (a_p/s = 5) cikilamiyor -- ensemble icin
+    A52 cozulmezse 84 sa/nokta, cozulurse 13 sa/nokta.
+  - Blok olcegini fizikselleştirmek (Soru 4) da cozunurluk istiyor.
+
+  Dort ayrı engelin hepsi A52'den geciyor.
+
+3.2 Soru 12 kismen yanitlandi -- ama yerine yenisi geldi
+--------------------------------------------------------------------------------
+Soru 12'nin (a) sikki "x0 aktarilabilir mi" idi. Yanit: ZAYIF, 2,44 sigma.
+
+YENI SORU (bkz. bolum 4, Soru 18): iki nokta bir egilim gosteriyor
+(x0 azaliyor, w keskinlesiyor). Bu egilimden -- ucuncu nokta olmadan --
+savunulabilir bir sey soylenebilir mi?
+
+3.3 Soru 13 (tek eksenli posterior) daha da onemli
+--------------------------------------------------------------------------------
+Su an yalniz Y0 ayirt edilebiliyor VE onun bile niceliksel eslemesi
+yakinsamiyor. Yani "1 sinirli + 2 onsel-baskin" bile su an
+kurulamiyor; "0 nicel + 1 nitel" durumundayiz.
+
+
+================================================================================
+4. YENI SORULAR
+================================================================================
+(Ilk mektuptaki 17 soru gecerliligini koruyor; bunlar EK.)
+
+SORU 18 — IKI NOKTALI EGILIMDEN NE SOYLENEBILIR
+--------------------------------------------------------------------------------
+OLCTUK     x0: 6,340 (N = 17 201) -> 5,950 (N = 69 886)
+           w : 0,538 -> 0,383
+           Yani gecis noktasi DUSUYOR ve gecis KESKINLESIYOR.
+SANIYORUZ  Bu, cozunurluk arttikca gercek gecisin daha dusuk Y0'da ve
+           daha keskin oldugunu isaret ediyor olabilir.
+SORU       (a) UCUNCU noktayi hangi cozunurlukte almaliyiz ki
+               Richardson anlamli olsun? (Ikisinin arasinda mi,
+               yoksa daha ince mi?)
+           (b) x0'in yakinsamasi icin kac nokta ve hangi oranla
+               (2x mi, 1,5x mi) gerekir?
+           (c) Bu arada, iki noktali egilimden gecici olarak
+               kullanilabilecek bir SINIR var mi?
+ACARDI     Yakinsama kampanyasinin tasarimini -- yani hedefe giden
+           zincirin ucuncu halkasini.
+
+
+SORU 19 — HANGI YONDE YAKINSIYOR OLABILIR
+--------------------------------------------------------------------------------
+DURUM      x0 azaliyor, w kuculuyor, R^2 artiyor (0,941 -> 0,963).
+SORU       Bu uc egilim birlikte size bir sey soyluyor mu? Ornegin
+           "kaba cozunurluk gecisi yapay olarak yukari ve yumusak
+           gosteriyor" gibi bilinen bir artefakt imzasi mi?
+ACARDI     Ucuncu noktayi hangi cozunurlukte almamiz gerektigini --
+           ve belki iki nokta + fizik argumaniyla yetinilebilecegini.
+
+
+SORU 20 — A52: UCUZ CARE YANLIS, DOGRU CARE KAZANDIRMIYOR   [YENI OLCUM]
+--------------------------------------------------------------------------------
+Bu mektubu yazarken profilledim ve tablo tahmin ettigimden KOTU.
+
+OLCTUK   Orta merdiven, N = 69 379. h dagilimi:
+
+    h (m)     parcacik    pay
+    0,350      14 749    21,3%
+    0,700      12 320    17,8%
+    1,400      12 092    17,4%
+    2,800      11 462    16,5%
+    5,600       9 958    14,4%
+   14,000       8 798    12,7%
+
+   h orani 40  ->  sorgu HACMI orani 40^3 = 64 000
+   Mevcut sorgu yaricapi: 2*h_max = 28 m, HER PARCACIK ICIN.
+
+         Her parcagin TARADIGI aday ve GERCEKTEN kullandigi komsu
+         (60'ar parcaciklik ornekle, seviye seviye):
+
+      h        MEVCUT aday   2*h_i aday   h_i+h_max   GERCEK komsu
+    0,350        51 684          336        40 674         358
+    0,700        51 906          344        41 118         340
+    1,400        51 809          438        40 794         361
+    2,800        49 225          405        17 961         349
+    5,600        11 712          414         2 459         351
+   14,000           442          442           442         336
+    ------------------------------------------------------------
+    agirlikli    39 104          391        26 435         350
+
+   >>> Her parcacik ORTALAMA 39 104 aday tariyor ve 350'sini
+       kullaniyor. ISRAF 112 KAT. Ve israf TAMAMEN ince
+       parcaciklarda (h = 0,35'te 144 kat; h = 14'te yalniz 1,3 kat).
+
+VE ISTE SORUN
+
+   (a) Sorgu yaricapini parcacik basina 2*h_i yapmak:
+         39 104 -> 391  =  100 KAT KAZANC
+       AMA FIZIKSEL OLARAK YANLIS. h_ij = (h_i+h_j)/2 oldugu icin
+       cift, r < 2*h_ij = h_i + h_j iken etkilesiyor; ince i ile
+       kaba j icin bu 0,35 + 14 = 14,35 m'ye kadar cikiyor.
+       2*h_i = 0,70 m yaricapla ince parcacik BUTUN KABA
+       KOMSULARINI KACIRIR.
+
+   (b) Dogru siniri kullanmak (h_i + h_max):
+         39 104 -> 26 435  =  YALNIZ 1,5 KAT
+
+   Yani: UCUZ CARE YANLIS, DOGRU CARE KAZANDIRMIYOR.
+
+SANIYORUZ
+   100 katlik kazanc ancak cekirdek degisirse mumkun. Sizin 12.
+   maddenizdeki 1/2[grad W(h_i) + grad W(h_j)] biciminde, i'nin KENDI
+   cekirdek terimi yalnizca r < 2*h_i icin sifirdan farkli.
+
+   AMA cift hala j'nin terimiyle etkilesiyor (r < 2*h_j) -- yani
+   ince parcacik kaba komsuyu KENDI aramasinda bulamasa bile kuvvet
+   ona ULASMALI. Bu, gather (herkes kendi komsusunu toplar) yerine
+   SCATTER (kaba parcacik kendi etkisini ince komsulara dagitir)
+   demek gibi gorunuyor.
+
+   VE BURADA KISITIMIZ DEVREYE GIRIYOR: scatter atomik toplama
+   demek, atomik toplama sira bagimliligi demek, ve depoda
+   CPU<->GPU BIT-ESITLIGI bir kabul olcutu (ADR-0004). Yani
+   'hizli ama determinizmi bozan' bir cozum bizim icin cozum degil.
+
+SORU
+   (a) Bu teshis dogru mu -- ucuz care gercekten yanlis, dogru care
+       gercekten kazandirmiyor mu?
+   (b) 1/2[grad W(h_i) + grad W(h_j)] biciminde ince parcacik kaba
+       komsusunu ARAMAK ZORUNDA MI, yoksa kuvvet kaba taraftan mi
+       dagitilir? (Yani gather mi kalir, scatter mi gerekir?)
+   (c) Scatter gerekiyorsa, DETERMINIZM ve bit-esitligi nasil
+       korunur? (Sabit sirali indirgeme? Iki asamali toplama?
+       Yoksa bit-esitliginden vazgecmek mi gerekir?)
+   (d) Bunlarin disinda, h yayilimini 40'tan kucultmek (daha az
+       kademe, daha dar merdiven) pratik bir kacis yolu mu?
+       Bedeli ne olur?
+
+ACARDI
+   Dort ayin ilk ayinin kapsamini ve BASARILABILIR olup olmadigini.
+   Su an elimizde 100 katlik bir kazanc GORUNUYOR ama ona giden yol
+   determinizm kisitimizla catisiyor olabilir.
+
+SORU 21 — YAKINSAMAYI SAGLAMANIN EN HIZLI YOLU
+--------------------------------------------------------------------------------
+DURUM      Hedef icin YAKINSAMIS bir posterior sart. Su an uc noktali
+           Richardson A52 yuzunden alinamiyor.
+SORU       (a) A52'yi cozmek disinda, yakinsamayi GOSTERMENIN daha
+               hizli bir yolu var mi? (Ornegin: yalnizca krater
+               bolgesini ince cozup uzak alani kaba birakan bir
+               kurulum? Boyutsuz olcekleme? Yayimlanmis bir sonucu
+               yeniden uretmek?)
+           (b) Bu yollardan biri, hakemli bir yayinda yakinsama
+               kaniti olarak KABUL GORUR MU?
+ACARDI     Dort ayin ilk ayinin hangi ise ayrilacagini -- A52'ye mi,
+           yoksa daha kisa bir yola mi.
+
+
+================================================================================
+5. DEGISMEYENLER
+================================================================================
+
+Ilk mektuptaki su uc soru hala EN KRITIK ve yanitlarina ihtiyacimiz var:
+
+    SORU 1  — Granuler cekme modeli (uretim modeli kazmiyor)
+    SORU 4  — Blok olcegi (bloklarimiz 14-42 m, gozlenen 1,7-6,5 m;
+              krater tek blogun 1/40'i ve tamamen matriste olusuyor)
+    SORU 6  — A52 / cok cozunurluklu komsu arama
+
+Bu mektup yalnizca ucuncusunun agirligini artirdi.
+
+
+================================================================================
+6. DEPODA YENI NE VAR
+================================================================================
+
+  docs/truba/PROTOKOL-I-GECIS.md    Bu kampanyanin KOSUDAN ONCE
+                                    yazilmis yargi kurali
+  scripts/gecis_raporu.py           Yargiyi uygulayan betik
+                                    (esikler kilitli, 9 sinav)
+  kampanya/I_RAPOR.json             Ham sonuc
+
+  docs/BULGULAR.md                  Toplu bakis (guncellenecek)
+  docs/FAZ4-SIKINTI-RAPORU.md       A71 olarak kaydedildi
+
+Ham veriler TRUBA'da; istediginiz herhangi bir olcumu tekrar
+uretebilirim.
+
+
+================================================================================
+7. DURUSUMUZ
+================================================================================
+
+Umdugumuz cikmadi ve bunu boyle yaziyoruz. Protokol I'yi tam da bu
+yuzden KOSUDAN ONCE kilitlemistik: "x0 dayanikli cikarsa aktarilabilir
+sonucumuz olur" demistik, ve olcut "ZAYIF" dedi. Esigi oynatmadik.
+
+Elimizde kalan sey nitel ve saglam:
+
+    Gozenekli hedefli SPH carpma simulasyonunda matrisin sahte cekme
+    dayanimi kazi akisini tamamen bastiriyor; kaldirildiginda ejekta
+    dagilimi Housen-Holsapple'a oturuyor; ve krater derinligi matris
+    kohezyonu hakkinda bilgi tasiyor.
+
+Ama HEDEF bu degil. Hedef, DART verisinden Dimorphos'un ic yapisi
+uzerine yakinsamis bir posterior -- ve dort ayimiz var.
+
+O hedefe giden zincir su an uc yerde kopuk:
+
+    1. Uretim modeli kazmiyor        -> granuler cekme modeli (Soru 1)
+    2. Yakinsama olculemiyor          -> A52 ya da alternatifi (Soru 20, 21)
+    3. Blok eksenleri gorunmuyor      -> blok/krater olcegi (Soru 4, 22)
+
+Bu uc halkayi kapatabilirsek hedef ulasilabilir. Sizden en cok
+istedigimiz sey, her biri icin EN KISA YOLU gostermeniz.
+
+================================================================================
