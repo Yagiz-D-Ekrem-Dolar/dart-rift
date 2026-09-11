@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-11 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 62 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77 · A70 **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-12 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 63 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78 · A70 **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5136,6 +5136,47 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A78 — **Mermi `h/s ≈ 10` ile ÇOK YUMUŞATILMIŞ; `β` ve şok bundan etkileniyor** (2026-09-12) — *uzman Soru 5*
+
+Mermi her merdivende `803` parçacık (kendi aralığı `~0,072 m`), ama
+`h`'si hedefin EN İNCE seviyesine bağlanıyordu (`h = 2 s_min`):
+
+| merdiven | `h_mermi` | `h/s_mermi` |
+|---|---:|---:|
+| kaba | 0,70 | **9,7** |
+| orta | 0,35 | 4,9 |
+| ince | 0,175 | 2,4 |
+
+Yani kaba ölçekte merminin çekirdek desteği (`1,4 m`) kendi çapından
+(`0,74 m`) büyük: mermi **tek bir yumuşak kütle** gibi davranıyor. Ve
+oran merdivenle `4` kat değişiyor — uzman: *"yalnız hedefi inceltmek
+temiz bir çarpan yakınsaması değildir."*
+
+#### Ölçüm (yerel GPU, kaba merdiven, `θ` = G1 tasarımının 1. noktası, `t = 24 ms`)
+
+| kol | `h` kipi | `cfl` | adım | `β_defter` | şok kapısı | krater (yeni) | krater (eski) | `ΔE/E` |
+|---|---|---:|---:|---:|---|---:|---:|---:|
+| **A** | merdiven | 0,25 | 2 050 | 1,00000 | KISMI | 1,910 | 0,351 | −%2,22 |
+| **B** | merdiven | 0,05 | 10 297 | 1,00005 | KISMI | 2,052 | 0,996 | −%0,36 |
+| **C** | **kendi** (`h/s = 2`) | 0,25 | 16 551 | **1,03095** | **SOK_VAR** | 2,056 | 0,374 | −%0,38 |
+
+`B` kolu `C` ile aynı `Δt` mertebesinde koşan **kontrol**: aradaki fark
+`Δt`'den değil **merminin `h`'sinden** geliyor.
+
+- `β − 1`: `5e-5` → **`0,031`** (`600` kat).
+- Şok kapısı: `KISMI` → **`SOK_VAR`** (sıkışma Hugoniot bandına girdi).
+- Yeni yüzey operatörünün kraterı ise `2,05 → 2,06`: **değişmiyor**.
+
+> Yorum (hipotez): aşırı yumuşatılmış mermi momentumunu daha geniş bir
+> hacme yayıyor; şok zayıflıyor ve kaçan madde oluşmuyor. `β`'nın bütün
+> ölçeklerde "ayrıklaştırma tabanında" kalması (S9, A17) bununla
+> ilgili olabilir. **Tek `θ`, tek tohum** — ikinci `θ` koşuyor.
+
+Düzeltme yazıldı: `--mermi-h-kipi kendi` (varsayılan **değişmedi**).
+Üretime alınması ayrı bir karar: `h_mermi` küçülünce `dt` de `~5` kat
+küçülüyor (maliyet) ve arayüz yumuşatması değişiyor.
 
 ---
 ### A77 — **Çarpma başında toplam enerji KAYBOLUYOR; ilk `Δt` bayat** (2026-09-11)
