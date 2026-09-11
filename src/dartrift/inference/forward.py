@@ -156,6 +156,10 @@ def _durum_adi(i: int, theta) -> str:
 #: ile `~185` adim, yani maliyeti ihmal edilebilir.
 SOK_PENCERESI = 1.0e-3
 
+#: Impuls zaman egrisinin ornek sayisi (uzman Soru 11). Her ornek bir
+#: GPU->CPU `v` kopyasi; 50 ornek adim sayisinin (binlerce) yaninda ihmal.
+IMPULS_ORNEK = 50
+
 
 def sahne_parametreleri(theta, taban: dict | None = None, *,
                         secenek3: bool = True) -> dict:
@@ -655,12 +659,25 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             # kosan kampanyalar kendi icinde tutarli kalsin).
             if ilk_degerlendirme:
                 sol.hazirla()
+            # IMPULS ZAMAN EGRISI (uzman Soru 11): hedefin eksenel momentumu
+            # / p_imp, `IMPULS_ORNEK` esit aralikli anda. Fizik TANISI.
+            _p_imp = float(np.linalg.norm(rs.impactor_momentum))
+            _ehat = np.asarray(rs.impactor_momentum, dtype=np.float64) / _p_imp
+            _m_h = np.ascontiguousarray(rs.m)[_h_maske]
+            _imp_t = np.linspace(0.0, t_end, IMPULS_ORNEK + 1)[1:]
+            _imp_k = 0
+            impuls = []
             for adim in range(1, azami_adim + 1):
                 dt = sol.compute_dt()
                 if t + dt > t_end:
                     dt = t_end - t
                 sol.step(dt)
                 t += dt
+                while (_imp_k < len(_imp_t)
+                       and t >= _imp_t[_imp_k] * (1.0 - 1e-12)):
+                    _v = np.asarray(sol.v.numpy(), dtype=np.float64)[_h_maske]
+                    impuls.append([float(t), float(_m_h @ (_v @ _ehat)) / _p_imp])
+                    _imp_k += 1
                 if t <= SOK_PENCERESI or adim % kontrol == 0:
                     _r = np.asarray(sol.rho.numpy())[_h_maske]
                     np.maximum(rho_zirve, _r, out=rho_zirve)
@@ -687,6 +704,25 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             # A72: KUVVET ANINDA q/Y(P) -- yalniz HEDEF (mermi ayri
             # malzeme, onun akmasi bu sorunun parcasi degil).
             akma_tani = sol.akma_tanisi(maske=_h_maske)
+            # UZMAN SORU 11: sayisal gecerlilik ve fizik tanilari AYRI.
+            # Kilitli protokollerin kapilarini DEGISTIRMEZ; kayit.
+            from ..observables.gecerlilik import fizik_tanilari, sayisal_gecerlilik
+            from ..observables.momentum_defteri import momentum_defteri
+            from ..observables.momentum_transfer import escape_speed
+
+            _fk = np.asarray(rs.is_impactor, dtype=bool).astype(np.float64)
+            _defter = momentum_defteri(
+                st["x"], st["v"], st["m"], mermi_kesri=_fk,
+                R=float(rs.target_radius),
+                v_esc=float(escape_speed(float(rs.target_mass),
+                                         float(rs.target_radius))),
+                ehat=_ehat, p_imp=_p_imp)
+            gecerlilik = sayisal_gecerlilik(
+                st=st, t=t, t_end=t_end, enerji=enerji, akma_tani=akma_tani,
+                akma_kipi=akma_kipi, defter=_defter)
+            fizik_tani = fizik_tanilari(
+                rho_zirve=rho_zirve, alpha0_hedef=_a0_h, m_hedef=_m_h,
+                defter=_defter, enerji=enerji, impuls_egrisi=impuls)
             if sok_yargisi:
                 from ..observables.sok import sok_gecti
                 # A48: mermi MASKELENMELI. Aliminyum mermi `alpha0 = 1`
@@ -749,7 +785,9 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                     cfl=float(cfl), akma_kipi=str(akma_kipi),
                     n_adim=n_adim,
                     akma_tani=json.dumps(akma_tani),
-                    enerji=json.dumps(enerji))
+                    enerji=json.dumps(enerji),
+                    gecerlilik=json.dumps(gecerlilik),
+                    fizik_tani=json.dumps(fizik_tani))
             Y[i] = gozlenebilirleri_cikar(
                 st, impactor_momentum=rs.impactor_momentum,
                 target_mass=rs.target_mass, target_radius=rs.target_radius,
