@@ -42,8 +42,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-__all__ = ["CraterShape", "KraterYerdegistirme", "crater_profile",
-           "krater_yerdegistirme", "surface_particles"]
+__all__ = ["CraterShape", "KraterYerdegistirme", "KraterYuzey",
+           "crater_profile", "krater_yerdegistirme", "krater_yuzey",
+           "krater_yuzey_durumdan", "surface_particles"]
 
 
 @dataclass(frozen=True)
@@ -609,3 +610,329 @@ def krater_yerdegistirme(
               "dis_aci_deg": float(dis_aci_deg),
               "en_derin_kutu_deg": (float(merkez[np.nanargmin(profil)])
                                     if derinlik > 0 else float("nan"))})
+
+
+# ---------------------------------------------------------------------------
+# FIZIKSEL YUZEY OPERATORU  (uzman yaniti 2026-09-11, rapor A73)
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class KraterYuzey:
+    """Bagli cismin YUZEYINDEN olculen krater -- sabit fiziksel olcekte.
+
+    Butun uzunluklar metre. `profil[k]`, carpma ekseninden `s[k]` yanal
+    uzaklikta yuzeyin DUSUSU (pozitif = yuzey alcaldi), azimut ortalamasi.
+    """
+
+    derinlik: float            # en buyuk halka-ortalama dusus
+    derinlik_merkez: float     # eksen uzerinde (s = 0) dusus
+    yaricap: float             # profilin derinligin %10'una indigi ilk s
+    hacim: float               # kazilan hacim (dusus > 0 olan halkalar)
+    rijit_kayma: np.ndarray    # (3,) bagli kutle merkezinin yer degistirmesi
+    hacim_degisimi: float      # bagli cismin toplam m/rho degisimi (sikisma < 0)
+    kuresel_dusus: float       # carpmadan uzak kabugun ortalama radyal dususu
+    n_ayrilan: int             # yuzeyden ayrilmis sayilan (ejekta) parcacik
+    s: np.ndarray              # (K,) yanal uzaklik
+    profil: np.ndarray         # (K,)
+    profil_std: np.ndarray     # (K,) azimutlar arasi sapma
+    tani: dict = field(default_factory=dict)
+
+
+def _dik_taban(a: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    t = np.array([1.0, 0.0, 0.0]) if abs(a[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
+    e1 = t - (t @ a) * a
+    e1 /= np.linalg.norm(e1)
+    return e1, np.cross(a, e1)
+
+
+def _doluluk_kesisimi(x, V, h, *, taban, a, z_ust, z_alt, adim, esik,
+                      n_bolme: int = 48) -> float:
+    """Tek dogru uzerinde `phi = sum V_j W(|p - x_j|, h_j)`'nin esigi
+    DISTAN ICE ilk kez astigi yukseklik (`taban`'dan `a` boyunca).
+
+    Kesisim yoksa ya da pencerenin tepesi zaten doluysa `nan` -- sessiz
+    bir sayi yerine.
+    """
+    from ..cpu_reference.sph_ref import kernel_w
+
+    d = x - taban[None, :]
+    z = d @ a
+    yan = d - z[:, None] * a[None, :]
+    yan2 = np.einsum("ij,ij->i", yan, yan)
+    dest = 2.0 * h
+    sec = (yan2 < dest * dest) & (z > z_alt - dest) & (z < z_ust + dest)
+    if not np.any(sec):
+        return float("nan")
+    zs, y2, Vs, hs = z[sec], yan2[sec], V[sec], h[sec]
+
+    def phi(zq: np.ndarray) -> np.ndarray:
+        dz = zq[:, None] - zs[None, :]
+        q = np.sqrt(dz * dz + y2[None, :]) / hs[None, :]
+        return kernel_w(q, hs[None, :], 3) @ Vs
+
+    n = int(np.ceil((z_ust - z_alt) / adim)) + 1
+    zq = z_ust - adim * np.arange(n)
+    f = phi(zq)
+    dolu = np.nonzero(f >= esik)[0]
+    if len(dolu) == 0 or dolu[0] == 0:
+        return float("nan")
+    ust, alt = float(zq[dolu[0] - 1]), float(zq[dolu[0]])
+    for _ in range(n_bolme):
+        orta = 0.5 * (ust + alt)
+        if phi(np.array([orta]))[0] >= esik:
+            alt = orta
+        else:
+            ust = orta
+    return 0.5 * (ust + alt)
+
+
+def krater_yuzey(
+    x: np.ndarray,
+    x_reference: np.ndarray,
+    *,
+    m: np.ndarray,
+    h,
+    rho: np.ndarray,
+    rho_reference: np.ndarray,
+    impact_direction: np.ndarray,
+    v: np.ndarray | None = None,
+    merkez: np.ndarray | None = None,
+    reference_radius: float | None = None,
+    s_max: float = 6.0,
+    ds: float = 0.2,
+    n_azimut: int = 8,
+    esik: float = 0.5,
+    ayrilma_hizi: float | None = None,
+    adim: float | None = None,
+    arama_derinligi: float = 10.0,
+    dis_aci_deg: float = 60.0,
+    kabuk_kalinligi: float | None = None,
+    rijit_duzeltme: bool = False,
+) -> KraterYuzey:
+    """Krateri bagli cismin **yuzeyinden**, sabit fiziksel olcekte olc.
+
+    ## Neden (uzman yaniti 2026-09-11, rapor A73)
+
+    `crater_profile(kutulama="eksen")` acisal halkalardaki BUTUN hacim
+    parcaciklarinin SAYI agirlikli `p95`'ini kullaniyor; bu bir yuzey
+    degil. Uzman olctu: dis `1 m` kabuk SABITKEN yalniz ic noktalar
+    tasininca `0,49 m` "derinlik"; ayni koordinatlar 8 kat
+    cogaltilinca `0,34 -> 0,71 m`; `0,5 m` ayak izli `1 m`'lik cukurda
+    `0,0012 m`.
+
+    ## Tanim
+
+    1. **Doluluk** `phi(p) = sum_j (m_j/rho_j) W(|p - x_j|, h_j)` --
+       SPH birim bolunmesi; cismin icinde `~1`, disinda `0`. Yuzey
+       `phi = esik` (varsayilan `0,5`) es-yuzeyi. Hacim `m/rho` ile
+       agirlanir: bir parcacigi 8 kopyaya `m/8` ile bolmek `phi`'yi
+       DEGISTIRMEZ.
+    2. **Isinlar** carpma eksenine PARALEL, eksenden sabit FIZIKSEL
+       yanal uzakliklarda (`s = 0, ds, 2 ds, ... s_max`), her halkada
+       `n_azimut` isin. Aci degil metre: olcek cozunurlukten bagimsiz.
+    3. Yuzey yuksekligi her isinda disaridan iceri ilk `phi >= esik`
+       gecisi (bolmeyle inceltilir). **Ayni operator** referansa
+       (`x_reference`, `rho_reference`) ve son duruma uygulanir;
+       `profil = z_ref - z_son`.
+    4. **Ayrilan ejekta** (`v` verilirse): bir parcacik, baslangic
+       yaricapinin DISINA cikmis VE disa dogru `ayrilma_hizi`'ndan
+       (varsayilan kacis hizi) hizli gidiyorsa yuzeyden sayilmaz.
+       Iceri giden krater tabani korunur.
+    5. **Rijit kayma** (bagli kutle merkezinin yer degistirmesi),
+       **kuresel dusus** (carpmadan `dis_aci_deg` uzaktaki kabuk) ve
+       **hacim degisimi** (sikisma) AYRI raporlanir, derinlige
+       karistirilmaz.
+
+    ## `rijit_duzeltme` neden varsayilan KAPALI
+
+    Ilk surum kutle merkezi kaymasini ONCE cikariyordu. Olculdu (levha,
+    dis `1,4 m` kabuk SABIT, ic `-0,5 m`): **`-0,375 m`** "derinlik".
+    Ic kutlenin yer degistirmesi kutle merkezini kaydiriyor ve operator
+    bunu rijit hareket sanip SABIT yuzeyi yukari tasiyordu -- tam da
+    ayrilmasi gereken iki seyi karistiriyordu. DART'ta `24 ms`'de rijit
+    kayma `~1e-4 m` (momentum aktarimi `~mm/s`), krater `~0,3-0,6 m`;
+    cikarmamak ihmal edilebilir hata, yanlis cikarmak `0,4 m`. Kayma
+    her durumda `rijit_kayma` olarak RAPORLANIR.
+
+    ## Degismezler (sinanir: `tests/test_krater_yuzey.py`)
+
+    - `x is x_reference` -> profil tam sifir.
+    - Butun cismin rijit otelemesi -> sifir.
+    - Destek kalinligindan (`2 h`) kalin dis kabuk sabitken ic hareket
+      -> sifir.
+    - Yeniden ornekleme (kopya + `m/k`) -> ayni sonuc.
+    """
+    x = np.ascontiguousarray(x, dtype=np.float64)
+    x0 = np.ascontiguousarray(x_reference, dtype=np.float64)
+    if x.shape != x0.shape or x.ndim != 2 or x.shape[1] != 3:
+        raise ValueError(f"x {x.shape} ve x_reference {x0.shape} (N,3) olmali")
+    n = len(x)
+    m = np.asarray(m, dtype=np.float64).reshape(n)
+    h = np.broadcast_to(np.asarray(h, dtype=np.float64), (n,)).copy()
+    rho = np.asarray(rho, dtype=np.float64).reshape(n)
+    rho0 = np.asarray(rho_reference, dtype=np.float64).reshape(n)
+    if np.any(h <= 0) or np.any(rho <= 0) or np.any(rho0 <= 0) or np.any(m <= 0):
+        raise ValueError("m, h, rho, rho_reference pozitif olmali")
+    if ds <= 0 or s_max < 0 or n_azimut < 1:
+        raise ValueError("ds > 0, s_max >= 0, n_azimut >= 1 olmali")
+    e = np.asarray(impact_direction, dtype=np.float64).reshape(3)
+    en = float(np.linalg.norm(e))
+    if en == 0.0:
+        raise ValueError("impact_direction sifir vektor olamaz")
+    a = -e / en                                  # disa dogru krater ekseni
+    c0 = (m @ x0) / m.sum() if merkez is None else np.asarray(
+        merkez, dtype=np.float64).reshape(3)
+
+    # --- ayrilan ejekta + rijit kayma (iki gecis: kayma kucuk ama tutarli)
+    r0 = np.linalg.norm(x0 - c0[None, :], axis=1)
+    R_ref = float(reference_radius) if reference_radius is not None else float(r0.max())
+    ayrilan = np.zeros(n, dtype=bool)
+    v_ayr = float("nan")
+    if v is not None:
+        v = np.asarray(v, dtype=np.float64).reshape(n, 3)
+        if ayrilma_hizi is None:
+            from .momentum_transfer import escape_speed
+
+            v_ayr = float(escape_speed(float(m.sum()), R_ref))
+        else:
+            v_ayr = float(ayrilma_hizi)
+    kayma = np.zeros(3)
+    kayma_olc = np.zeros(3)
+    for _ in range(2 if rijit_duzeltme else 1):
+        xk = x - kayma[None, :]
+        if v is not None:
+            dr = xk - c0[None, :]
+            r = np.linalg.norm(dr, axis=1)
+            vr = np.einsum("ij,ij->i", v, dr) / np.maximum(r, 1e-300)
+            ayrilan = (vr > v_ayr) & (r > r0)
+        b = ~ayrilan
+        if not np.any(b):
+            raise ValueError("butun parcaciklar ayrilmis sayildi -- olcecek cisim yok")
+        mb = m[b]
+        kayma_olc = (mb @ x[b] - mb @ x0[b]) / mb.sum()
+        if rijit_duzeltme:
+            kayma = kayma_olc
+    xk = x - kayma[None, :]
+    bagli = ~ayrilan
+
+    # --- isin penceresi: eksen cevresindeki en yuksek nokta (iki durum)
+    e1, e2 = _dik_taban(a)
+    ust_z = []
+    h_eksen = float("nan")
+    for ad, xx, sec in (("ref", x0, np.ones(n, bool)), ("son", xk, bagli)):
+        d = xx[sec] - c0[None, :]
+        z = d @ a
+        yan = np.linalg.norm(d - z[:, None] * a[None, :], axis=1)
+        yakin = yan < s_max + 2.0 * h[sec]
+        if not np.any(yakin):
+            raise ValueError("carpma ekseni cevresinde parcacik yok")
+        ust_z.append(float(np.max(z[yakin] + 2.0 * h[sec][yakin])))
+        if ad == "ref":
+            h_eksen = float(np.min(h[sec][yakin]))
+    adim = 0.25 * h_eksen if adim is None else float(adim)
+    z_ust = max(ust_z) + adim
+    z_alt = z_ust - float(arama_derinligi)
+
+    V0, V = m / rho0, m / rho
+    K = int(np.floor(s_max / ds + 1e-9)) + 1
+    s = ds * np.arange(K)
+    fi = 2.0 * np.pi * np.arange(n_azimut) / n_azimut
+    z_ref = np.full((K, n_azimut), np.nan)
+    z_son = np.full((K, n_azimut), np.nan)
+    ortak = dict(a=a, z_ust=z_ust, z_alt=z_alt, adim=adim, esik=esik)
+    xb, Vb, hb = xk[bagli], V[bagli], h[bagli]
+    for k in range(K):
+        for j in range(n_azimut if k > 0 else 1):
+            taban = c0 + s[k] * (np.cos(fi[j]) * e1 + np.sin(fi[j]) * e2)
+            z_ref[k, j] = _doluluk_kesisimi(x0, V0, h, taban=taban, **ortak)
+            z_son[k, j] = _doluluk_kesisimi(xb, Vb, hb, taban=taban, **ortak)
+        if k == 0:
+            z_ref[0, :], z_son[0, :] = z_ref[0, 0], z_son[0, 0]
+    dusus = z_ref - z_son
+    if np.any(np.isfinite(dusus)):
+        with np.errstate(invalid="ignore"), _sessiz_nan():
+            profil = np.nanmean(dusus, axis=1)
+            profil_std = np.nanstd(dusus, axis=1)
+    else:
+        profil = np.full(K, np.nan)
+        profil_std = np.full(K, np.nan)
+    if not np.isfinite(profil[0]):
+        raise ValueError(
+            "eksen isininda yuzey bulunamadi (pencere: "
+            f"{z_alt:.3f}..{z_ust:.3f} m) -- arama_derinligi'ni artirin")
+    derinlik = float(np.nanmax(profil))
+    yaricap = float("nan")
+    if derinlik > 0.0:
+        k_max = int(np.nanargmax(profil))
+        for k in range(k_max, K):
+            if np.isfinite(profil[k]) and profil[k] < 0.1 * derinlik:
+                yaricap = float(s[k])
+                break
+    alan = 2.0 * np.pi * s * ds
+    alan[0] = np.pi * (0.5 * ds) ** 2
+    hacim = float(np.nansum(alan * np.maximum(profil, 0.0)))
+
+    kuresel = float("nan")
+    if reference_radius is not None:
+        kal = 2.0 * float(np.max(h)) if kabuk_kalinligi is None else float(
+            kabuk_kalinligi)
+        d0 = x0 - c0[None, :]
+        cos0 = (d0 @ a) / np.maximum(r0, 1e-300)
+        kab = bagli & (r0 > R_ref - kal) & (cos0 < np.cos(np.radians(dis_aci_deg)))
+        if np.any(kab):
+            r_son = np.linalg.norm(xk[kab] - c0[None, :], axis=1)
+            kuresel = float(-np.mean(r_son - r0[kab]))
+
+    return KraterYuzey(
+        derinlik=derinlik, derinlik_merkez=float(profil[0]), yaricap=yaricap,
+        hacim=hacim, rijit_kayma=kayma_olc,
+        hacim_degisimi=float(V[bagli].sum() - V0[bagli].sum()),
+        kuresel_dusus=kuresel, n_ayrilan=int(ayrilan.sum()),
+        s=s, profil=profil, profil_std=profil_std,
+        tani={"z_ust": z_ust, "z_alt": z_alt, "adim": adim, "esik": esik,
+              "h_eksen": h_eksen, "ayrilma_hizi": v_ayr,
+              "rijit_duzeltme": bool(rijit_duzeltme),
+              "n_bos_isin_ref": int(np.isnan(z_ref).sum()),
+              "n_bos_isin_son": int(np.isnan(z_son).sum()),
+              "merkez": c0, "eksen": a})
+
+
+class _sessiz_nan:
+    """`nanmean` bos satir uyarisini sustur -- bos satir `nan` kalir."""
+
+    def __enter__(self):
+        import warnings
+
+        self._w = warnings.catch_warnings()
+        self._w.__enter__()
+        warnings.simplefilter("ignore", RuntimeWarning)
+
+    def __exit__(self, *a):
+        return self._w.__exit__(*a)
+
+
+#: Hedef kati yogunlugu (Tillotson bazalt) -- `rho_ref = RHO0 / alpha0`.
+_RHO0_KATI = 2700.0
+
+
+def krater_yuzey_durumdan(d, **kw) -> KraterYuzey:
+    """`ileri_kosu_merdiven` durum dosyasindan (`npz`) yuzey krateri.
+
+    Hedef = `mermi_kesri < 0,5`. Referans yogunluk `2700 / alpha0`
+    (gerilmesiz baslangic, ADR-0022). `h` alani ZORUNLU (A50'den once
+    kaydedilmiyordu; o dosyalardan bu olcu cikarilamaz).
+    """
+    alan = set(getattr(d, "files", None) or d.keys())
+    for k in ("x", "x_referans", "m", "rho", "alpha0", "h", "ehat", "R",
+              "mermi_kesri"):
+        if k not in alan:
+            raise KeyError(f"durum dosyasinda '{k}' yok -- yuzey olculemez")
+    hedef = np.asarray(d["mermi_kesri"]) < 0.5
+    v = np.asarray(d["v"])[hedef] if "v" in alan else None
+    return krater_yuzey(
+        np.asarray(d["x"])[hedef], np.asarray(d["x_referans"])[hedef],
+        m=np.asarray(d["m"])[hedef], h=np.asarray(d["h"])[hedef],
+        rho=np.asarray(d["rho"])[hedef],
+        rho_reference=_RHO0_KATI / np.asarray(d["alpha0"])[hedef],
+        impact_direction=np.asarray(d["ehat"], dtype=np.float64),
+        v=v, merkez=np.zeros(3), reference_radius=float(d["R"]), **kw)
