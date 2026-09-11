@@ -708,6 +708,7 @@ def krater_yuzey(
     dis_aci_deg: float = 60.0,
     kabuk_kalinligi: float | None = None,
     rijit_duzeltme: bool = False,
+    ayrilma_mesafesi: float = 2.0,
 ) -> KraterYuzey:
     """Krateri bagli cismin **yuzeyinden**, sabit fiziksel olcekte olc.
 
@@ -735,9 +736,17 @@ def krater_yuzey(
        (`x_reference`, `rho_reference`) ve son duruma uygulanir;
        `profil = z_ref - z_son`.
     4. **Ayrilan ejekta** (`v` verilirse): bir parcacik, baslangic
-       yaricapinin DISINA cikmis VE disa dogru `ayrilma_hizi`'ndan
-       (varsayilan kacis hizi) hizli gidiyorsa yuzeyden sayilmaz.
-       Iceri giden krater tabani korunur.
+       yaricapinin `ayrilma_mesafesi * h_i` (varsayilan `2h`, yani KENDI
+       cekirdek desteginin) otesine cikmis VE disa dogru `ayrilma_hizi`'ndan
+       (varsayilan kacis hizi) hizli gidiyorsa yuzeyden sayilmaz. Iceri
+       giden krater tabani korunur.
+
+       Ilk surumde mesafe sarti yoktu (`r > r0` yetiyordu) ve gercek DART
+       durumunda OLCULDU: kacis hizi `8,2 cm/s`; stres dalgasi yuzeye
+       ulasinca 707 yuzey parcacigi `~0,2 m/s` ile disa gidiyor ve yalniz
+       `3-6 mm` yer degistirmisken "ejekta" sayilip silindi -> 6-18 m
+       yanalda `2,75 m`'lik SAHTE bir halka. Mesafe sarti bunu keser:
+       kendi desteginden cikmamis parcacik yuzeyden ayrilmis degildir.
     5. **Rijit kayma** (bagli kutle merkezinin yer degistirmesi),
        **kuresel dusus** (carpmadan `dis_aci_deg` uzaktaki kabuk) ve
        **hacim degisimi** (sikisma) AYRI raporlanir, derinlige
@@ -804,7 +813,7 @@ def krater_yuzey(
             dr = xk - c0[None, :]
             r = np.linalg.norm(dr, axis=1)
             vr = np.einsum("ij,ij->i", v, dr) / np.maximum(r, 1e-300)
-            ayrilan = (vr > v_ayr) & (r > r0)
+            ayrilan = (vr > v_ayr) & (r - r0 > float(ayrilma_mesafesi) * h)
         b = ~ayrilan
         if not np.any(b):
             raise ValueError("butun parcaciklar ayrilmis sayildi -- olcecek cisim yok")
@@ -815,23 +824,36 @@ def krater_yuzey(
     xk = x - kayma[None, :]
     bagli = ~ayrilan
 
-    # --- isin penceresi: eksen cevresindeki en yuksek nokta (iki durum)
+    # --- isin penceresi: eksen cevresindeki en yuksek PARCACIK (iki durum)
+    #
+    # Ilk surum tepeyi `max(z + 2h)` ile aliyordu ve gercek DART durumunda
+    # DUSTU (olculdu): merdivenin kaba parcaciklarinda `h = 14 m`, tepe
+    # `98,8 m`'ye sisiyor, `10 m`'lik pencere `82 m`'deki yuzeye inemiyordu
+    # (sentetik levhada butun h esit oldugu icin gorunmemisti). Artik tepe
+    # yalniz eksenden `s_max` icindeki parcaciklarin EN UST noktasi; `h`
+    # payi da yalniz arama penceresinin ICINDEKI parcaciklardan.
     e1, e2 = _dik_taban(a)
-    ust_z = []
+    tepe = -np.inf
     h_eksen = float("nan")
+    kume = []
     for ad, xx, sec in (("ref", x0, np.ones(n, bool)), ("son", xk, bagli)):
         d = xx[sec] - c0[None, :]
         z = d @ a
         yan = np.linalg.norm(d - z[:, None] * a[None, :], axis=1)
-        yakin = yan < s_max + 2.0 * h[sec]
+        yakin = yan < s_max
+        if not np.any(yakin):
+            yakin = yan < s_max + 2.0 * h[sec]
         if not np.any(yakin):
             raise ValueError("carpma ekseni cevresinde parcacik yok")
-        ust_z.append(float(np.max(z[yakin] + 2.0 * h[sec][yakin])))
+        tepe = max(tepe, float(np.max(z[yakin])))
+        kume.append((z[yakin], h[sec][yakin]))
         if ad == "ref":
             h_eksen = float(np.min(h[sec][yakin]))
+    pencere_ici = [hh[zz > tepe - float(arama_derinligi)] for zz, hh in kume]
+    h_ust = float(max(np.max(p) for p in pencere_ici if len(p)))
     adim = 0.25 * h_eksen if adim is None else float(adim)
-    z_ust = max(ust_z) + adim
-    z_alt = z_ust - float(arama_derinligi)
+    z_ust = tepe + 2.0 * h_ust + adim
+    z_alt = tepe - float(arama_derinligi)
 
     V0, V = m / rho0, m / rho
     K = int(np.floor(s_max / ds + 1e-9)) + 1
@@ -891,6 +913,7 @@ def krater_yuzey(
         s=s, profil=profil, profil_std=profil_std,
         tani={"z_ust": z_ust, "z_alt": z_alt, "adim": adim, "esik": esik,
               "h_eksen": h_eksen, "ayrilma_hizi": v_ayr,
+              "ayrilma_mesafesi_h": float(ayrilma_mesafesi),
               "rijit_duzeltme": bool(rijit_duzeltme),
               "n_bos_isin_ref": int(np.isnan(z_ref).sum()),
               "n_bos_isin_son": int(np.isnan(z_son).sum()),

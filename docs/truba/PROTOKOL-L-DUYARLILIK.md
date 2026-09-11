@@ -102,6 +102,18 @@ vektörler), gözlem başına katkı, düşen gözlemler.
 | İKİ YÖN | TEK YÖN | Bir eksen (en zayıf yön) hâlâ kapalı — o yönü en çok değiştiren gözlem/geometri tasarlanır (uzman) |
 | TEK YÖN | TEK YÖN | Vektör gözlem de yetmiyor; yörünge + LICIACube hız–yön gözlemi (uzman Soru 9) gerekiyor |
 
+## 7b. EK (2026-09-11, L sonuçları GÖRÜLMEDEN önce) — gözlem operatörü düzeltmesi
+
+Protokol commit'lendikten sonra, **başka bir koşuda** (yerel mermi `h`
+deneyi, kol A) yüzey operatörünün "ayrılan ejekta" ölçütünde bir yapıt
+ölçüldü: kaçış hızı `8,2 cm/s`; stres dalgasıyla `~0,2 m/s` dışa giden
+ve yalnız `3–6 mm` yer değiştirmiş 707 yüzey parçacığı ejekta sayılıp
+silindi ve 6–18 m yanalda `2,75 m`'lik sahte bir halka oluştu. Düzeltme:
+parçacık ancak kendi çekirdek desteğinin (`2h`) dışına çıkmışsa ayrılmış
+sayılır (`krater_yuzey(ayrilma_mesafesi=2.0)`). L'in gözlem vektörü bu
+düzeltilmiş operatörü kullanır. L'in hiçbir sonucu bu karardan önce
+okunmadı; yargı eşikleri değişmedi.
+
 ## 8. Maliyet
 
 Kol başına 18 koşu × `~5 dk` = `~1,5` GPU-saat. İki kol `~3` GPU-saat.

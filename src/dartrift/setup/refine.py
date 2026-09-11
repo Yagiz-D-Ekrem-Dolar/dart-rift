@@ -672,7 +672,8 @@ def _cekirdek_degistir(taban: RefinedScene, kaba, mesh, r: float,
 
 def refine_scene_kademeli(kaba, mesh, kademeler,
                           rho0_solid: float = 2700.0,
-                          malzeme_kaynagi: str = "kaba") -> RefinedScene:
+                          malzeme_kaynagi: str = "kaba",
+                          mermi_h_kipi: str = "merdiven") -> RefinedScene:
     """**Kademeli** inceltme — arayüz kütle basamağını küçültmek için.
 
     ## Neden gerekli (rapor A25)
@@ -726,8 +727,28 @@ def refine_scene_kademeli(kaba, mesh, kademeler,
     s_min = float(kaba.spacing) / lam_ler[-1]
     h = np.asarray(s.h).copy()
     imp = np.asarray(s.is_impactor, dtype=bool)
-    h[imp] = 2.0 * s_min
+    # MERMI h'si (uzman Soru 5: "hedef ve carpanin kendi cozunurlukleri,
+    # h/s orani ... ayri sinanmali").
+    #   "merdiven" -- h = 2 s_min (eski, A1). Mermi 803 parcacik, kendi
+    #                 araligi ~0,072 m: kabada h/s ~ 10, ortada ~5,
+    #                 incede ~2,4. Mermi kaba olcekte TEK yumusak kutle.
+    #   "kendi"    -- h = 2 s_mermi: her merdivende AYNI mermi.
+    if mermi_h_kipi == "merdiven":
+        h[imp] = 2.0 * s_min
+    elif mermi_h_kipi == "kendi":
+        v_p = (np.asarray(s.m)[imp] * np.asarray(s.alpha0)[imp]) / rho0_solid
+        s_mermi = float(np.median((v_p * np.sqrt(2.0)) ** (1.0 / 3.0)))
+        h[imp] = 2.0 * s_mermi
+        s.diagnostics["s_mermi"] = s_mermi
+    else:
+        raise ValueError(f"mermi_h_kipi 'merdiven' ya da 'kendi', "
+                         f"{mermi_h_kipi!r} geldi")
     s.h = h
+    s.diagnostics["mermi_h_kipi"] = mermi_h_kipi
+    s.diagnostics["mermi_h_bolu_s"] = float(
+        h[imp].max() / ((np.median(np.asarray(s.m)[imp]
+                                   * np.asarray(s.alpha0)[imp]) / rho0_solid
+                         * np.sqrt(2.0)) ** (1.0 / 3.0)))
     s.diagnostics["kademeli"] = True
     s.diagnostics["malzeme_kaynagi"] = malzeme_kaynagi
     s.diagnostics["n_kademe"] = len(kademeler)

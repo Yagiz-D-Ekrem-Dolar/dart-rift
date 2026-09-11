@@ -131,6 +131,10 @@ def main() -> int:
     ap.add_argument("--matris-cekme-siniri", type=float, default=None,
                     help="GRANULER DAL: matris cekme dayanimi T_m [Pa], "
                          "P_eff = max(P, -T_m) (uzman S1). 0 = --matris-cekme-yok")
+    ap.add_argument("--mermi-h-kipi", choices=("merdiven", "kendi"),
+                    default="merdiven",
+                    help="'merdiven' h_mermi = 2 s_min (eski; kabada h/s~10); "
+                         "'kendi' h_mermi = 2 s_mermi (uzman S5)")
     ap.add_argument("--ilk-dt-duzelt", action="store_true",
                     help="ilk dt'den ONCE degerlendir (A77): ilk dt aksi "
                          "halde temas oncesi alanlarla ~2 kat buyuk secilir")
@@ -271,7 +275,8 @@ def main() -> int:
             malzeme_kaynagi=a.malzeme_kaynagi,
             komsu_arama=a.komsu_arama, mermi_eos=a.mermi_eos,
             ilk_degerlendirme=a.ilk_dt_duzelt,
-            matris_cekme_siniri=a.matris_cekme_siniri)[0]
+            matris_cekme_siniri=a.matris_cekme_siniri,
+            mermi_h_kipi=a.mermi_h_kipi)[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
         return y
@@ -310,6 +315,7 @@ def main() -> int:
         "komsu_arama": a.komsu_arama, "mermi_eos": a.mermi_eos,
         "ilk_dt_duzelt": a.ilk_dt_duzelt,
         "matris_cekme_siniri": a.matris_cekme_siniri,
+        "mermi_h_kipi": a.mermi_h_kipi,
         "sahne_ek": sahne_ek,
         "surum": surum,
         "n_tasarim_tam": int(tam_n),

@@ -62,7 +62,8 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
                  matris_cekme_yok=False, cfl=0.25,
                  akma_kipi="son", malzeme_kaynagi="kaba",
                  komsu_arama="hash", mermi_eos="hedef",
-                 ilk_degerlendirme=False, matris_cekme_siniri=None) -> str:
+                 ilk_degerlendirme=False, matris_cekme_siniri=None,
+                 mermi_h_kipi="merdiven") -> str:
     """Kosunun FIZIK yapilandirmasinin SHA-256 ozeti (16 hane).
 
     Iki cikti ayni `theta`yi tasiyip FARKLI fizikle uretilmis
@@ -108,6 +109,9 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
     # Granuler dal: matris cekme dayanimi.
     if matris_cekme_siniri is not None:
         parcalar.append(f"matris_cekme_siniri={float(matris_cekme_siniri):.17g}")
+    # Mermi h kipi (uzman S5).
+    if str(mermi_h_kipi) != "merdiven":
+        parcalar.append(f"mermi_h_kipi={mermi_h_kipi}")
     ham = "|".join(parcalar).encode("utf-8")
     return hashlib.sha256(ham).hexdigest()[:16]
 
@@ -521,7 +525,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         komsu_arama: str = "hash",
                         mermi_eos: str = "hedef",
                         ilk_degerlendirme: bool = False,
-                        matris_cekme_siniri: float | None = None
+                        matris_cekme_siniri: float | None = None,
+                        mermi_h_kipi: str = "merdiven"
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
@@ -581,7 +586,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             # A74: "geometri" ince parcaciklarin malzemesini SUREKLI blok
             # alanindan yeniden degerlendirir; "kaba" eski kopya (bit-ayni).
             rs = refine_scene_kademeli(kaba, mesh, kad,
-                                       malzeme_kaynagi=malzeme_kaynagi)
+                                       malzeme_kaynagi=malzeme_kaynagi,
+                                       mermi_h_kipi=mermi_h_kipi)
             x0 = np.array(rs.x, dtype=np.float64, copy=True)
             # A75: "aluminyum" -> mermi parcaciklari kendi Tillotson'uyla.
             if mermi_eos == "aluminyum":
@@ -736,7 +742,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                                              akma_kipi, malzeme_kaynagi,
                                              komsu_arama, mermi_eos,
                                              ilk_degerlendirme,
-                                             matris_cekme_siniri),
+                                             matris_cekme_siniri,
+                                             mermi_h_kipi),
                     # A72 / Protokol J: zaman adimi ve kuvvet aninda
                     # akma tanisi. JSON metni -- pickle gerektirmez.
                     cfl=float(cfl), akma_kipi=str(akma_kipi),

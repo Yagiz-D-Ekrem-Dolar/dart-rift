@@ -51,7 +51,9 @@ denklemleri doğru çözüyor mu. Hepsi geçti ve kanıtları duruyor.
 ### 2. BİLİMSEL DOĞRULAMA
 
 Hedef problemin kendisi. Durum `2026-09-06` itibarıyla ölçülmüş
-değerlerle. Tam döküm: **[`docs/BULGULAR.md`](docs/BULGULAR.md)**.
+değerlerle; **uzman yanıtından (2026-09-11) sonra iki cümle koşula
+bağlandı** (tablonun altındaki not). Tam döküm:
+**[`docs/BULGULAR.md`](docs/BULGULAR.md)**.
 
 | # | ölçüt | durum | ölçülen |
 |---|---|---|---|
@@ -85,7 +87,18 @@ değerlerle. Tam döküm: **[`docs/BULGULAR.md`](docs/BULGULAR.md)**.
 > (`%72`), yani hesaplanan posterior bir **yöntem gösterimi**dir,
 > fiziksel öngörü değil.
 
-Açık kusurlar: [`FAZ4-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md) — **56**.
+> **Uzman yanıtından sonra (2026-09-11) — yukarıdaki cümlelerin iki koşulu:**
+>
+> - **A72:** kuvvet, akma sınırını **aşan** gerilmeyi görüyor. Üretim
+>   koşusunda zayıf matriste hedef kütlesinin `%27–42`'si `q/Y ~ 10⁴–10⁵`;
+>   kuvvetin gördüğü gerilme `Y₀`'dan bağımsız `~5e8 Pa`. Cümle 3'teki
+>   `Y₀` sinyalinin bir kısmı sayısal olabilir — **Protokol J** sınıyor.
+> - **A73/A74:** krater ölçüsü bir yüzey değildi; blok kesri ekseni
+>   sahnede `0,10 – 0,37`'ye sıkışmıştı. *"Blok yapısı hakkında
+>   taşımıyor"* bu yüzden **henüz sınanmadı** sayılmalı — **Protokol L**
+>   (üç eksenli duyarlılık pilotu) sınıyor.
+
+Açık kusurlar: [`FAZ4-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md) — **62**.
 ### G4 geçti — ve neyin karşılığında
 
 | # | ölçüt | ölçülen |
@@ -367,13 +380,14 @@ olarak da duruyor ki dışarıdan görülebilsin.
 | [#6](https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/issues/6) | `β` hedef ejektasını değil merminin sekmesini ölçüyor (A17/A12) | açık |
 | [#7](https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/issues/7) | Krater çapı gerçek ensemble'da gözlenemiyor (A11) | açık |
 
-### Motoru şu an tıkayan **üç** iş
+### Motoru şu an tıkayan işler (2026-09-11)
 
-| # | sorun | neyi kilitliyor | maliyet |
+| # | sorun | neyi kilitliyor | durum |
 |---|---|---|---|
-| **A52** | komşu arama yarıçapı her parçacık için `2·h_max` | üç noktalı yakınsama; `R3` `224` saat ister, sınır `48` | haftalık |
-| **A51** | `Y₀` Tillotson'un çekme dalını sınırlamıyor (`−15,19 MPa`) | üretim modelinde kazı akışı | granüler model + ADR |
-| **A69** | krater derinliği mutlak olarak yakınsamıyor (`%72`) | `Y₀ = f(d)` niceliksel eşlemesi | A52'ye bağlı |
+| **A72** | kuvvet akma sınırını aşan gerilmeyi görüyor (`q/Y` üretimde `10⁴–10⁵`) | `Y₀` sinyalinin fiziksel mi sayısal mı olduğu | `--akma-kipi ara` yazıldı; **Protokol J** koşuyor |
+| **A52** | komşu arama yarıçapı her parçacık için `2·h_max` | üç noktalı yakınsama | destek kutulu BVH yazıldı (`--komsu-arama bvh`), yerelde `3,73×`; H100 ölçümü bekleniyor |
+| **A51** | `Y₀` Tillotson'un çekme dalını sınırlamıyor (`−15,19 MPa`) | üretim modelinde kazı akışı | granüler dal için `--matris-cekme-siniri T_m` yazıldı; ADR ve doğrulama bekliyor |
+| **A69** | krater derinliği mutlak olarak yakınsamıyor (`%72`) | `Y₀ = f(d)` niceliksel eşlemesi | adaylar A72 (`Δt`) ve A73 (ölçü); ince merdiven (`N = 487 358`) hazır |
 
 Kök sebep A52 için `h_ij = (h_i+h_j)/2`: ince parçacık kaba
 komşusunu `14 m` öteden aramak zorunda. `7,06×` parçacık için

@@ -98,6 +98,37 @@ def test_beta_ISARET_kurali_defterle_ayni():
     assert s["beta_enerji"] > 1.0
 
 
+def test_iceri_giden_hizli_madde_BETAYA_girmiyor():
+    """Ölçülen yapıt: şoklanıp İÇERİ giden madde de `ε > 0`; ilk sürüm
+    onu `β`'ya katıp `β_enerji = 0,84` (< 1) veriyordu."""
+    x, v, m = _kure()
+    e = np.array([0.0, 0.0, -1.0])
+    r = np.linalg.norm(x, axis=1)
+    ic = np.flatnonzero((x[:, 2] > 0.5 * R) & (r < 0.9 * R))[:20]
+    v[ic] = np.array([0.0, 0.0, -20.0 * _v_esc()])      # iceri, hizli
+    s = kacis_siniflari(x, v, m, R=R, ehat=e, p_imp=1.0e6)
+    assert s["M_bagsiz_hedef"] > 0.0                   # eps > 0
+    assert s["M_bagsiz_disa_hedef"] == 0.0             # ama disa degil
+    assert s["beta_enerji"] == pytest.approx(1.0)      # beta'ya girmiyor
+    assert s["beta_enerji_tum"] < 1.0                  # eski tanim yanlis
+
+
+def test_stres_dalgasi_yuzeyi_EJEKTA_degil_h_mesafesiyle():
+    """Yüzey `mm` yer değiştirip `v_esc`'nin üstünde dışa gidiyor:
+    `ε > 0` ve dışa ama KENDİ desteğinden çıkmamış → ejekta değil."""
+    x, v, m = _kure()
+    r = np.linalg.norm(x, axis=1)
+    ust = np.flatnonzero(r > 0.95 * R)[:50]
+    x1 = x.copy()
+    x1[ust] *= 1.0005                                  # ~5 mm
+    v[ust] = 3.0 * _v_esc() * x[ust] / r[ust, None]
+    s = kacis_siniflari(x1, v, m, R=R, x0=x, h=0.5,
+                        ehat=np.array([0.0, 0.0, -1.0]), p_imp=1.0e6)
+    assert s["M_bagsiz_disa_hedef"] > 0.0
+    assert s["M_ejekta_hedef"] == 0.0
+    assert s["beta_sinifi"] == "ejekta" and s["beta_enerji"] == pytest.approx(1.0)
+
+
 def test_ayrilmis_sinifi_x0_ISTER():
     x, v, m = _kure()
     s = kacis_siniflari(x, v, m, R=R)

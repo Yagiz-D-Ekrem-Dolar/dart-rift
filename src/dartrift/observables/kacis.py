@@ -52,9 +52,27 @@ def _kure_potansiyeli(r: np.ndarray, M: float, R: float, G: float) -> np.ndarray
 
 def kacis_siniflari(x, v, m, *, R: float, G: float = G_SI, x0=None,
                     mermi_kesri=None, ehat=None, p_imp: float | None = None,
+                    h=None, ayrilma_mesafesi: float = 2.0,
                     azami_tur: int = 50, tolerans: float = 1.0e-12,
                     sinir_payi: float = 1.0e-3) -> dict:
-    """Yinelemeli bağlı-kütle kaçış sınıflaması (bkz. modül açıklaması)."""
+    """Yinelemeli bağlı-kütle kaçış sınıflaması (bkz. modül açıklaması).
+
+    ## `β` hangi sınıftan (ölçülen yapıt, 2026-09-11)
+
+    İlk sürüm `β`'yı bütün `ε > 0` maddeden hesaplıyordu ve gerçek DART
+    durumunda `β_enerji = 0,84` (< 1) verdi: şoklanıp İÇERİ hızla giden
+    madde de `ε > 0`. Uzman: *"Enerji >0 ile dışa hız işaretini birbirine
+    karıştırmayın."* Ayrıca yüzeydeki stres dalgası (`~0,2 m/s`, mm yer
+    değiştirme) kaçış hızını (`8,2 cm/s`) aşıyor. Artık sınıflar AYRI:
+
+    - `bagsiz`        : `ε > 0`
+    - `bagsiz_disa`   : `ε > 0` ve dışa (`v_r > 0`)
+    - `ejekta`        : `bagsiz_disa` ve ayrılmış — `x0` verildiyse
+      `r − r0 > ayrilma_mesafesi · h` (`h` yoksa `r > r0`)
+
+    `beta_enerji` `ejekta`dan (yoksa `bagsiz_disa`dan); `beta_enerji_tum`
+    bütün `ε > 0`'dan — şeffaflık için.
+    """
     x = np.asarray(x, dtype=np.float64)
     v = np.asarray(v, dtype=np.float64)
     m = np.asarray(m, dtype=np.float64)
@@ -105,19 +123,36 @@ def kacis_siniflari(x, v, m, *, R: float, G: float = G_SI, x0=None,
         "P_bagsiz_hedef": (agirlik_h[bagsiz] @ v[bagsiz]).tolist(),
         "bagsiz_maske": bagsiz,
     }
+    vr = np.einsum("ij,ij->i", dv, d) / np.maximum(r, 1e-300)
+    disa = vr > 0.0
+    bagsiz_disa = bagsiz & disa
+    out["M_bagsiz_disa_hedef"] = float(agirlik_h[bagsiz_disa].sum())
+    ejekta = None
     if x0 is not None:
         x0 = np.asarray(x0, dtype=np.float64)
         r0 = np.linalg.norm(x0 - X, axis=1)
-        vr = np.einsum("ij,ij->i", dv, d) / np.maximum(r, 1e-300)
-        ayrilmis = (r > r0) & (vr > 0.0)
+        if h is not None:
+            hh = np.broadcast_to(np.asarray(h, dtype=np.float64), (n,))
+            uzak = (r - r0) > float(ayrilma_mesafesi) * hh
+        else:
+            uzak = r > r0
+        ayrilmis = uzak & disa
+        ejekta = bagsiz_disa & uzak
         out["M_ayrilmis_hedef"] = float(agirlik_h[ayrilmis].sum())
         out["M_ayrilmis_bagsiz_hedef"] = float(agirlik_h[ayrilmis & bagsiz].sum())
+        out["M_ejekta_hedef"] = float(agirlik_h[ejekta].sum())
     if ehat is not None and p_imp is not None:
         e = np.asarray(ehat, dtype=np.float64)
         e = e / np.linalg.norm(e)
-        P_eks = float(agirlik_h[bagsiz] @ (v[bagsiz] @ e))
+        pe = agirlik_h * (v @ e)
         # Defterle AYNI isaret kurali: kacan madde -e yonunde -> negatif
         # izdusum -> beta > 1.
-        out["P_bagsiz_hedef_eksenel"] = P_eks
-        out["beta_enerji"] = 1.0 - P_eks / float(p_imp)
+        out["P_bagsiz_hedef_eksenel"] = float(pe[bagsiz].sum())
+        out["beta_enerji_tum"] = 1.0 - float(pe[bagsiz].sum()) / float(p_imp)
+        out["beta_enerji_disa"] = (1.0 - float(pe[bagsiz_disa].sum())
+                                   / float(p_imp))
+        sinif = ejekta if ejekta is not None else bagsiz_disa
+        out["beta_sinifi"] = "ejekta" if ejekta is not None else "bagsiz_disa"
+        out["P_ejekta_eksenel"] = float(pe[sinif].sum())
+        out["beta_enerji"] = 1.0 - float(pe[sinif].sum()) / float(p_imp)
     return out

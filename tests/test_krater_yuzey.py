@@ -55,7 +55,11 @@ def _cukur(levha, a, D, *, kopya=1, perde=False, hizli=True):
     sil = x[:, 2] > z_yuzey + 1e-9
     v = np.zeros_like(x)
     if perde:
-        x[sil, 2] = 0.2 + (x[sil, 2] - x[sil, 2].min())   # hemen USTTE
+        # Perde yuzeyden AYRILMIS olmali: her parcacik kendi destegini
+        # (2h = 1,4 m) asacak kadar yukarida. Ilk surum 0,2 m ustune
+        # koyuyordu; o konumda perde yuzeye DEGIYOR (cekirdekler ortusuyor)
+        # ve ayrilmis sayilmasi fiziksel degil (bkz. ayrilma_mesafesi).
+        x[sil, 2] = 2.0 + (x[sil, 2] - x[sil, 2].min())
         v[sil, 2] = 5.0 if hizli else 0.0
     else:
         x[sil, 2] += 50.0
@@ -165,6 +169,22 @@ def test_hizsiz_perde_dislanamaz_ve_krateri_DOLDURUR(levha):
     k_q, _, _ = _cukur(levha, 2.0, 1.0, perde=True, hizli=False)
     assert k_q.n_ayrilan == 0
     assert k_q.derinlik < 0.6 * k_yok.derinlik
+
+
+def test_stres_dalgasi_yuzey_hareketi_EJEKTA_SAYILMIYOR(levha):
+    """Gerçek DART durumunda ölçülen yapıt: yüzey parçacıkları stres
+    dalgasıyla `~0,2 m/s` dışa gidiyor, yalnız `mm` yer değiştirmiş.
+    Kaçış hızı `8,2 cm/s` olduğu için ilk ölçüt onları ejekta sayıp
+    siliyordu ve `2,75 m`'lik SAHTE halka doğuyordu."""
+    x0, m = levha
+    x = x0.copy()
+    v = np.zeros_like(x)
+    ust = x0[:, 2] > x0[:, 2].max() - 0.5
+    x[ust, 2] += 0.005                     # 5 mm
+    v[ust, 2] = 0.2                        # dalga hizi, kacis hizinin ustunde
+    k = _olc(x, x0, m, v=v, ayrilma_hizi=0.082)
+    assert k.n_ayrilan == 0
+    assert np.nanmax(np.abs(k.profil)) < 0.01
 
 
 def test_hacim_ve_yaricap_mertebesi(levha):

@@ -41,7 +41,8 @@ def nokta(z) -> dict:
                           ehat=np.asarray(z["ehat"], float),
                           p_imp=float(z["p_imp"]))
     ks = kacis_siniflari(z["x"], z["v"], m, R=R, x0=z["x_referans"],
-                         mermi_kesri=f, ehat=z["ehat"], p_imp=float(z["p_imp"]))
+                         mermi_kesri=f, ehat=z["ehat"], p_imp=float(z["p_imp"]),
+                         h=z["h"] if "h" in z.files else None)
     return {"theta": np.asarray(z["theta"], float).ravel().tolist(),
             "beta_defter": md["beta_hedef"], "M_defter": md["M_ejekta"],
             "beta_enerji": ks["beta_enerji"],
