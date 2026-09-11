@@ -509,6 +509,20 @@ class WarpSolid3D:
             return self._komsu.tani()
         return {"komsu_arama": "hash", "sorgu_yaricapi": float(self._radius32)}
 
+    def hazirla(self) -> None:
+        """Ilk degerlendirmeyi ADIMDAN ONCE yap (idempotent) -- rapor A77.
+
+        `step()` ilk degerlendirmeyi kendi icinde yapar; ama `compute_dt()`
+        ondan ONCE cagrilirsa `divv`, `L`, `a` sifirdir ve ilk `dt` yalniz
+        ses hizindan secilir. Olculdu (kaba DART sahnesi): ilk `dt`
+        `1,82e-5 s`, ikincisi `9,96e-6 s`; toplam enerjinin `%0,94`'u o
+        TEK adimda kayboluyor. Bu cagri ilk `dt`'nin gercek alanlari
+        gormesini saglar.
+        """
+        if not self._evaluated:
+            self._eval()
+            self._evaluated = True
+
     # -- KDK + tam trapez (solid_ref.step_kdk_solid ile ayni sira) ----------
     def step(self, dt: float) -> None:
         if not self._evaluated:

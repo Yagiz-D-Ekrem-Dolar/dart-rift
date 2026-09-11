@@ -309,7 +309,19 @@ def test_surucu_kaba_merdiveni_kurabiliyor():
         encoding="utf-8")
     assert "MERDIVEN_KABA" in m
     assert '"--kademeler"' in m
-    assert 'list(a.kademeler) == ["kaba"]' in m, "kisayol yok"
+    # 2026-09-11: tek `kaba` kisayolu, `kaba/orta/ince` sozlugune
+    # donustu (ince merdiven eklendi). Sinav BICIME degil AMACA bakar:
+    # `kaba` kisayolu hala R1 merdivenini veriyor mu.
+    import importlib.util
+    import sys as _sys
+
+    _sys.path.insert(0, str(REPO / "scripts"))
+    _spec = importlib.util.spec_from_file_location(
+        "faz5_surucu", REPO / "scripts" / "faz5_ensemble_merdiven.py")
+    _mod = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(_mod)
+    assert _mod.MERDIVEN_KISAYOL["kaba"] == _mod.MERDIVEN_KABA, "kisayol yok"
+    assert "MERDIVEN_KISAYOL[a.kademeler[0]]" in m, "kisayol cozulmuyor"
     assert "kademeler=merdiven" in m, "secilen merdiven ileri modele gecmiyor"
     # kaba merdiven R1 ile AYNI olmali (Rb_R1: 48:5.6 ... 3:0.35)
     assert '("48:5.6", "24:2.8", "12:1.4", "6:0.7", "3:0.35")' in m

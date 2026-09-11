@@ -61,7 +61,8 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
                  alpha_av=1.0, beta_av=2.0,
                  matris_cekme_yok=False, cfl=0.25,
                  akma_kipi="son", malzeme_kaynagi="kaba",
-                 komsu_arama="hash", mermi_eos="hedef") -> str:
+                 komsu_arama="hash", mermi_eos="hedef",
+                 ilk_degerlendirme=False) -> str:
     """Kosunun FIZIK yapilandirmasinin SHA-256 ozeti (16 hane).
 
     Iki cikti ayni `theta`yi tasiyip FARKLI fizikle uretilmis
@@ -101,8 +102,22 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
     # A75: mermi EOS'u fizigi degistirir.
     if str(mermi_eos) != "hedef":
         parcalar.append(f"mermi_eos={mermi_eos}")
+    # A77: ilk dt'den once degerlendirme ilk adimi degistirir.
+    if bool(ilk_degerlendirme):
+        parcalar.append("ilk_degerlendirme=1")
     ham = "|".join(parcalar).encode("utf-8")
     return hashlib.sha256(ham).hexdigest()[:16]
+
+
+#: Enerji defterinde tutulan skaler alanlar (`WarpSolid3D.budgets`).
+_ENERJI_ALANLARI = ("e_kin", "e_int", "e_pot", "e_tot", "plastic_cum",
+                    "plastic_cum_ara", "e_dev_stored", "rho_min",
+                    "nonpositive_density_count")
+
+
+def _enerji_ozeti(b: dict) -> dict:
+    """`budgets()` satirindan JSON'a yazilabilir skaler ozet."""
+    return {k: float(b[k]) for k in _ENERJI_ALANLARI if k in b}
 
 
 def _durum_adi(i: int, theta) -> str:
@@ -501,7 +516,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         cfl: float = 0.25, akma_kipi: str = "son",
                         malzeme_kaynagi: str = "kaba",
                         komsu_arama: str = "hash",
-                        mermi_eos: str = "hedef"
+                        mermi_eos: str = "hedef",
+                        ilk_degerlendirme: bool = False
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
@@ -617,6 +633,14 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             _h_maske = ~np.asarray(rs.is_impactor, dtype=bool)
             _a0_h = np.ascontiguousarray(rs.alpha0)[_h_maske]
             rho_zirve = np.zeros(int(_h_maske.sum()))
+            # ENERJI DEFTERI (uzman, Soru 1: "tek parcacik ve homojen
+            # kaymada enerji/plastik is"). Uretim olceginde `ara` kipinin
+            # enerji tutarliligi baska turlu gorulemiyordu.
+            _e_bas = _enerji_ozeti(sol.budgets())
+            # A77: ilk `dt` gercek alanlari gorsun (varsayilan KAPALI:
+            # kosan kampanyalar kendi icinde tutarli kalsin).
+            if ilk_degerlendirme:
+                sol.hazirla()
             for adim in range(1, azami_adim + 1):
                 dt = sol.compute_dt()
                 if t + dt > t_end:
@@ -640,6 +664,12 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                     f"ADIM SINIRINA TAKILDI: t = {t:.6e} < {t_end:.6e}")
             st = sol.state_numpy()
             n_adim = int(adim)
+            _e_son = _enerji_ozeti(sol.budgets())
+            enerji = {"bas": _e_bas, "son": _e_son,
+                      "e_tot_bagil_sapma": (
+                          (_e_son["e_tot"] - _e_bas["e_tot"])
+                          / abs(_e_bas["e_tot"]) if _e_bas["e_tot"] else
+                          float("nan"))}
             # A72: KUVVET ANINDA q/Y(P) -- yalniz HEDEF (mermi ayri
             # malzeme, onun akmasi bu sorunun parcasi degil).
             akma_tani = sol.akma_tanisi(maske=_h_maske)
@@ -696,12 +726,14 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                                              alpha_av, beta_av,
                                              matris_cekme_yok, cfl,
                                              akma_kipi, malzeme_kaynagi,
-                                             komsu_arama, mermi_eos),
+                                             komsu_arama, mermi_eos,
+                                             ilk_degerlendirme),
                     # A72 / Protokol J: zaman adimi ve kuvvet aninda
                     # akma tanisi. JSON metni -- pickle gerektirmez.
                     cfl=float(cfl), akma_kipi=str(akma_kipi),
                     n_adim=n_adim,
-                    akma_tani=json.dumps(akma_tani))
+                    akma_tani=json.dumps(akma_tani),
+                    enerji=json.dumps(enerji))
             Y[i] = gozlenebilirleri_cikar(
                 st, impactor_momentum=rs.impactor_momentum,
                 target_mass=rs.target_mass, target_radius=rs.target_radius,

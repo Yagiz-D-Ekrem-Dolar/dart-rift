@@ -276,6 +276,20 @@ def test_ileri_model_NPZ_kaydediyor() -> None:
     assert "mermi_kesri" in k          # provenance kaydediliyor
 
 
+def test_ileri_model_ENERJI_defterini_kaydediyor() -> None:
+    """Uzman (Soru 1): `ara` kipinin enerji tutarlılığı üretimde görülmeli.
+
+    Başta ve sonda `budgets()` özeti npz'ye JSON olarak giriyor.
+    """
+    from dartrift.inference import forward as F
+
+    k = inspect.getsource(F.ileri_kosu_merdiven)
+    assert "_e_bas = _enerji_ozeti(sol.budgets())" in k
+    assert "enerji=json.dumps(enerji)" in k
+    oz = F._enerji_ozeti({"e_tot": 5.0, "e_kin": 2, "momentum": [1, 2, 3]})
+    assert oz == {"e_tot": 5.0, "e_kin": 2.0}   # liste alanlari atlanir
+
+
 # ----------------------------- A40: 'dosya var' != 'gecerli veri var'
 
 def test_devam_SURUMU_uysmayan_satiri_ATLIYOR() -> None:

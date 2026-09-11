@@ -66,6 +66,16 @@ MERDIVEN = ("48:2.8", "24:1.4", "12:0.7", "6:0.35", "3:0.175")
 #: `58` saat, kaba olcekte `4` saat surer.
 MERDIVEN_KABA = ("48:5.6", "24:2.8", "12:1.4", "6:0.7", "3:0.35")
 
+#: INCE merdiven -- ucuncu cozunurluk seviyesi (uzman Soru 18: "ucuncu
+#: nokta araya degil DAHA INCEYE"; oran 2 korunuyor). Olculen
+#: (2026-09-11): `N = 487 358` (orta `69 379`, kaba `16 954`),
+#: `h_min = 0,175`, kurulum `50 s` (CPU). A52 (BVH) olmadan pratik degil.
+MERDIVEN_INCE = ("48:1.4", "24:0.7", "12:0.35", "6:0.175", "3:0.0875")
+
+#: Kisayollar -- yazim hatasi riskini kaldirir.
+MERDIVEN_KISAYOL = {"kaba": MERDIVEN_KABA, "orta": MERDIVEN,
+                    "ince": MERDIVEN_INCE}
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -118,6 +128,9 @@ def main() -> int:
                     default="hedef",
                     help="'hedef' mermi hedefin Tillotson'unu kullanir "
                          "(eski); 'aluminyum' kendi EOS'u (A75)")
+    ap.add_argument("--ilk-dt-duzelt", action="store_true",
+                    help="ilk dt'den ONCE degerlendir (A77): ilk dt aksi "
+                         "halde temas oncesi alanlarla ~2 kat buyuk secilir")
     ap.add_argument("--blok-rmin", type=float, default=None,
                     help="blok yaricapi alt siniri [m] (SAHNE: 14)")
     ap.add_argument("--blok-rmax", type=float, default=None,
@@ -192,8 +205,8 @@ def main() -> int:
     # `kaba` kisayolu -- yazim hatasi riskini kaldirir.
     if a.kademeler is None:
         merdiven = MERDIVEN
-    elif list(a.kademeler) == ["kaba"]:
-        merdiven = MERDIVEN_KABA
+    elif len(a.kademeler) == 1 and a.kademeler[0] in MERDIVEN_KISAYOL:
+        merdiven = MERDIVEN_KISAYOL[a.kademeler[0]]
     else:
         merdiven = tuple(a.kademeler)
 
@@ -253,7 +266,8 @@ def main() -> int:
             matris_cekme_yok=a.matris_cekme_yok,
             cfl=a.cfl, akma_kipi=a.akma_kipi,
             malzeme_kaynagi=a.malzeme_kaynagi,
-            komsu_arama=a.komsu_arama, mermi_eos=a.mermi_eos)[0]
+            komsu_arama=a.komsu_arama, mermi_eos=a.mermi_eos,
+            ilk_degerlendirme=a.ilk_dt_duzelt)[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
         return y
@@ -290,6 +304,7 @@ def main() -> int:
         "cfl": a.cfl, "akma_kipi": a.akma_kipi,
         "blok_uretici": a.blok_uretici, "malzeme_kaynagi": a.malzeme_kaynagi,
         "komsu_arama": a.komsu_arama, "mermi_eos": a.mermi_eos,
+        "ilk_dt_duzelt": a.ilk_dt_duzelt,
         "sahne_ek": sahne_ek,
         "surum": surum,
         "n_tasarim_tam": int(tam_n),

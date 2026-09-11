@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-11 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 61 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76 · A70 **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-11 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 62 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77 · A70 **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5136,6 +5136,41 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A77 — **Çarpma başında toplam enerji KAYBOLUYOR; ilk `Δt` bayat** (2026-09-11)
+
+Üretim koşularında enerji **hiç izlenmiyordu**. Enerji defteri
+eklenince (her npz'de `enerji`) ölçüldü — kaba DART sahnesi, üretim
+malzemesi:
+
+| | `cfl = 0,25` | `cfl = 0,125` |
+|---|---:|---:|
+| ilk adımda kayıp | **%0,94** | %0,22 |
+| `t = 1 ms`'de sapma | **−%2,19** | −%0,95 |
+| `hazirla()` ile, `t = 1 ms` | −%1,73 | −%0,85 |
+
+`son` ve `ara` kipleri **aynı** (`200` adımda `−%2,22` ve `−%2,24`):
+kayıp A72 düzeltmesinden gelmiyor.
+
+**İki ayrı neden:**
+
+1. **Bayat ilk `Δt`.** `compute_dt()` ilk değerlendirmeden önce
+   çağrılıyor; `∇·v`, `L`, `a` sıfır. İlk `dt = 1,82e-5 s`, ikincisi
+   `9,96e-6 s`. Ayrıca mermi–hedef boşluğu `0,236 m`, çekirdek desteği
+   `1,4 m`: yapay viskozite `t = 0`'da, fiziksel temastan önce etkin.
+   `WarpSolid3D.hazirla()` (bayrak `--ilk-dt-duzelt`) ilk kaybı
+   `%0,94 → %0,30`'a indiriyor.
+2. **Şokta birinci mertebe zaman hatası.** Kalan kayıp `Δt` ile
+   yaklaşık doğrusal (`cfl` yarıya → `0,43` kat).
+
+> **Protokol J'nin yorumuna etkisi — koşudan SONRA eklenen not.**
+> J `Δt`'yi değiştiriyor; enerji hatası da `Δt`'ye bağlı. `x₀` iki
+> kipte de `Δt` ile kayarsa, enerji hatası da aday neden olur ve bunu
+> `ara` kaldıramaz. J'nin kilitli yargısı değişmez; bu not yorumda
+> ayrıca yazılacak.
+
+Varsayılan **değişmedi** (koşan J/L kendi içinde tutarlı kalsın).
 
 ---
 ### A76 — **"Katı sıkışma" tanısı ham `ρ`'ya bakıyor** (2026-09-11) — *uzman bulgusu, açık*
