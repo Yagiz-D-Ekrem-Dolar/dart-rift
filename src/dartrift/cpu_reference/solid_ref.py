@@ -73,6 +73,10 @@ class SolidState:
     # en buyuk q / Y(P) orani (her iki kipte de olculur).
     plastic_u_ara: float = 0.0
     akma_oran_max: float = 0.0
+    # A75: mermi parcaciklari (maske) kendi Tillotson parametrelerini
+    # kullanir. `None` -> tek malzeme (eski davranis, bit-ayni).
+    mermi_maske: np.ndarray = field(default=None)  # type: ignore[assignment]
+    mermi_tillotson: object = None
     # --- Grady-Kipp hasar (ADR-0027). mat.damage.enabled ise DOLU olmali ----
     # `eps_min`/`n_flaws` kurulumda BIR KEZ tohumlanir (damage_ref.seed_flaws);
     # rasgelelik adim icine tasinmaz (ADR-0004).
@@ -146,9 +150,19 @@ def compute_eos_solid(state: SolidState, mat: MaterialParams) -> None:
     if mat.eos == "tillotson":
         rho_s = state.rho * state.alpha
         p_s = tillotson_pressure(rho_s, state.u, mat.tillotson)
-        state.P = p_s / state.alpha
         # guvenli taraf: bulk cs yerine kati cs kullan (daha buyuk -> kucuk dt)
-        state.cs = tillotson_sound_speed(rho_s, state.u, mat.tillotson)
+        cs = tillotson_sound_speed(rho_s, state.u, mat.tillotson)
+        # A75: mermi parcaciklari KENDI Tillotson'uyla (GPU eos_solid_iki).
+        mk, tm = state.mermi_maske, state.mermi_tillotson
+        if mk is not None and tm is not None:
+            mk = np.asarray(mk, dtype=bool)
+            if np.any(mk):
+                p_s = np.array(p_s, copy=True)
+                cs = np.array(cs, copy=True)
+                p_s[mk] = tillotson_pressure(rho_s[mk], state.u[mk], tm)
+                cs[mk] = tillotson_sound_speed(rho_s[mk], state.u[mk], tm)
+        state.P = p_s / state.alpha
+        state.cs = cs
     elif mat.eos == "ideal_gas":
         state.P = (mat.gamma - 1.0) * state.rho * state.u
         state.cs = np.sqrt(mat.gamma * np.maximum(state.P, 0.0) / state.rho)

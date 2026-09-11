@@ -114,6 +114,10 @@ def main() -> int:
     ap.add_argument("--komsu-arama", choices=("hash", "bvh"), default="hash",
                     help="'hash' tek kuresel yaricap (eski); 'bvh' destek "
                          "kutulu BVH + sirali CSR (A52)")
+    ap.add_argument("--mermi-eos", choices=("hedef", "aluminyum"),
+                    default="hedef",
+                    help="'hedef' mermi hedefin Tillotson'unu kullanir "
+                         "(eski); 'aluminyum' kendi EOS'u (A75)")
     ap.add_argument("--blok-rmin", type=float, default=None,
                     help="blok yaricapi alt siniri [m] (SAHNE: 14)")
     ap.add_argument("--blok-rmax", type=float, default=None,
@@ -249,7 +253,7 @@ def main() -> int:
             matris_cekme_yok=a.matris_cekme_yok,
             cfl=a.cfl, akma_kipi=a.akma_kipi,
             malzeme_kaynagi=a.malzeme_kaynagi,
-            komsu_arama=a.komsu_arama)[0]
+            komsu_arama=a.komsu_arama, mermi_eos=a.mermi_eos)[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
         return y
@@ -285,7 +289,7 @@ def main() -> int:
         "sok_kapisi": not a.sok_kapisi_kapali, "dilim": a.dilim,
         "cfl": a.cfl, "akma_kipi": a.akma_kipi,
         "blok_uretici": a.blok_uretici, "malzeme_kaynagi": a.malzeme_kaynagi,
-        "komsu_arama": a.komsu_arama,
+        "komsu_arama": a.komsu_arama, "mermi_eos": a.mermi_eos,
         "sahne_ek": sahne_ek,
         "surum": surum,
         "n_tasarim_tam": int(tam_n),

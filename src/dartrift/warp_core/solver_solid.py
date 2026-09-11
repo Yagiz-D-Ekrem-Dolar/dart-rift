@@ -20,7 +20,7 @@ from . import eos_test as E
 from . import integrator as I
 from . import solid_stress as SS
 from .damage_gradykipp import accumulate_damage_k, apply_damage_k, damage_rate_k
-from .eos_tillotson import eos_solid, make_tillotson_wp
+from .eos_tillotson import eos_solid, eos_solid_iki, make_tillotson_wp
 from .gravity_tree import GravitySolver
 from .hash_grid import GridManager
 from .porosity_palpha import make_porosity_wp, porosity_update_k
@@ -63,6 +63,8 @@ class WarpSolid3D:
         rho_durum: np.ndarray | None = None,
         cekme_kirp_maske: np.ndarray | None = None,
         komsu_arama: str = "hash",
+        mermi_tillotson=None,
+        mermi_maske: np.ndarray | None = None,
     ):
         _init_warp()
         # A52: "hash" -- tek kuresel yaricapli hash izgarasi (eski, BIT-AYNI);
@@ -219,6 +221,24 @@ class WarpSolid3D:
 
             self._komsu = BvhKomsu(n, dev)
         self._tp = make_tillotson_wp(mat.tillotson)
+        # A75: MERMININ KENDI EOS'U. `None` -> tek malzeme (bit-ayni).
+        self._mermi = None
+        if mermi_tillotson is not None:
+            if mat.eos != "tillotson":
+                raise ValueError("mermi_tillotson yalniz Tillotson EOS ile")
+            if mermi_maske is None:
+                raise ValueError("mermi_tillotson bir mermi_maske ister")
+            mk = np.asarray(mermi_maske, dtype=bool)
+            if mk.shape != (n,):
+                raise ValueError(f"mermi_maske sekli {mk.shape}, ({n},) olmali")
+            # ADR-0032: mermi alpha'si `rho0_kati / yogunluk` diye TURETILIYOR;
+            # esleme yalniz iki EOS ayni referans yogunluktaysa tutarli.
+            if float(mermi_tillotson.rho0) != float(mat.tillotson.rho0):
+                raise ValueError(
+                    f"mermi rho0 {mermi_tillotson.rho0} != hedef rho0 "
+                    f"{mat.tillotson.rho0}: ADR-0032 alpha eslemesi bozulur")
+            self._mermi = wp.array(mk.astype(np.uint8), dtype=wp.uint8, device=dev)
+            self._tp_m = make_tillotson_wp(mermi_tillotson)
         self._sp = make_strength_wp(mat.strength)
         self._pp = make_porosity_wp(mat.porosity)
         # --- Grady-Kipp hasar (P2 §1.3 STRETCH; ADR-0027) ---
@@ -358,7 +378,12 @@ class WarpSolid3D:
             else:
                 self._launch(D.density_3d, [gid, self.gridman.x32, self.x, self.m, h, r32, self.rho])
         if self.mat.eos == "tillotson":
-            self._launch(eos_solid, [self.rho, self.u, self.alpha, self._tp, self.P, self.cs])
+            if self._mermi is not None:
+                self._launch(eos_solid_iki,
+                             [self.rho, self.u, self.alpha, self._tp, self._tp_m,
+                              self._mermi, self.P, self.cs])
+            else:
+                self._launch(eos_solid, [self.rho, self.u, self.alpha, self._tp, self.P, self.cs])
         elif self.mat.eos == "ideal_gas":
             self._launch(E.eos_ideal_gas, [self.rho, self.u, F(self.mat.gamma), self.P, self.cs])
         elif self.mat.eos == "linear":

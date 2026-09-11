@@ -46,6 +46,21 @@ class TillotsonParams:
         return float(np.sqrt(self.A / self.rho0))
 
 
+#: A75 -- ALUMINYUM Tillotson (Tillotson 1962; Melosh 1989, Tablo AII.3).
+#: cgs: rho0 = 2,7 g/cc, A = 7,52e11, B = 6,5e11 dyn/cm^2, a = 0,5,
+#: b = 1,63, E0 = 5,0e10, E_iv = 3,0e10, E_cv = 1,39e11 erg/g, alpha =
+#: beta = 5. Yaygin kullanilan tablodan alindi; kaynakla SATIR SATIR
+#: dogrulanmadi -- dogrulanana kadar bu not kalir.
+#:
+#: Uzman (Soru 5): cozucu tek Tillotson yapisini BUTUN parcaciklara
+#: uyguluyordu; "aluminyum kure" fiziksel EOS yonlendirmesiyle
+#: uyusmuyordu. `rho0` hedefinkiyle (2700) AYNI: ADR-0032'nin
+#: `alpha_mermi = rho0_kati / yogunluk` eslemesi ayni referansi ister.
+ALUMINYUM_TILLOTSON = TillotsonParams(
+    rho0=2700.0, A=7.52e10, B=6.5e10, a=0.5, b=1.63,
+    u0=5.0e6, u_iv=3.0e6, u_cv=1.39e7, alpha_t=5.0, beta_t=5.0)
+
+
 @dataclass(frozen=True)
 class StrengthParams:
     """Lundborg/Collins tipi basinca bagli akma dayanimi (P2 §2.2).

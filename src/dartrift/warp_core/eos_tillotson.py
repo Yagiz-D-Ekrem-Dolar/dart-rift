@@ -132,3 +132,29 @@ def eos_solid(
     rho_s = rho[i] * alpha[i]
     P[i] = tillotson_p(rho_s, u[i], tp) / alpha[i]
     cs[i] = tillotson_cs(rho_s, u[i], tp)
+
+
+@wp.kernel
+def eos_solid_iki(
+    rho: wp.array(dtype=F),
+    u: wp.array(dtype=F),
+    alpha: wp.array(dtype=F),
+    tp: TillotsonWp,
+    tp_m: TillotsonWp,
+    mermi: wp.array(dtype=wp.uint8),
+    P: wp.array(dtype=F),
+    cs: wp.array(dtype=F),
+):
+    """A75 -- malzeme kimligine gore Tillotson: `mermi[i] != 0` ise `tp_m`.
+
+    Hedef dali `eos_solid` ile AYNI islem sirasi: hedef parcaciklari
+    BIT-AYNI kalir.
+    """
+    i = wp.tid()
+    rho_s = rho[i] * alpha[i]
+    if mermi[i] != wp.uint8(0):
+        P[i] = tillotson_p(rho_s, u[i], tp_m) / alpha[i]
+        cs[i] = tillotson_cs(rho_s, u[i], tp_m)
+    else:
+        P[i] = tillotson_p(rho_s, u[i], tp) / alpha[i]
+        cs[i] = tillotson_cs(rho_s, u[i], tp)

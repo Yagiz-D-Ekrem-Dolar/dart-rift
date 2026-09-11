@@ -61,7 +61,7 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
                  alpha_av=1.0, beta_av=2.0,
                  matris_cekme_yok=False, cfl=0.25,
                  akma_kipi="son", malzeme_kaynagi="kaba",
-                 komsu_arama="hash") -> str:
+                 komsu_arama="hash", mermi_eos="hedef") -> str:
     """Kosunun FIZIK yapilandirmasinin SHA-256 ozeti (16 hane).
 
     Iki cikti ayni `theta`yi tasiyip FARKLI fizikle uretilmis
@@ -98,6 +98,9 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
     # bit-duzeyinde kimlik icin ayri tutulur.
     if str(komsu_arama) != "hash":
         parcalar.append(f"komsu_arama={komsu_arama}")
+    # A75: mermi EOS'u fizigi degistirir.
+    if str(mermi_eos) != "hedef":
+        parcalar.append(f"mermi_eos={mermi_eos}")
     ham = "|".join(parcalar).encode("utf-8")
     return hashlib.sha256(ham).hexdigest()[:16]
 
@@ -497,7 +500,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         matris_cekme_yok: bool = False,
                         cfl: float = 0.25, akma_kipi: str = "son",
                         malzeme_kaynagi: str = "kaba",
-                        komsu_arama: str = "hash"
+                        komsu_arama: str = "hash",
+                        mermi_eos: str = "hedef"
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
@@ -559,6 +563,17 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             rs = refine_scene_kademeli(kaba, mesh, kad,
                                        malzeme_kaynagi=malzeme_kaynagi)
             x0 = np.array(rs.x, dtype=np.float64, copy=True)
+            # A75: "aluminyum" -> mermi parcaciklari kendi Tillotson'uyla.
+            if mermi_eos == "aluminyum":
+                from ..cpu_reference.materials import ALUMINYUM_TILLOTSON
+
+                mermi_kw = {"mermi_tillotson": ALUMINYUM_TILLOTSON,
+                            "mermi_maske": np.asarray(rs.is_impactor, dtype=bool)}
+            elif mermi_eos == "hedef":
+                mermi_kw = {}
+            else:
+                raise ValueError(f"mermi_eos 'hedef' ya da 'aluminyum', "
+                                 f"{mermi_eos!r} geldi")
             sol = WarpSolid3D(
                 np.ascontiguousarray(rs.x), np.ascontiguousarray(rs.v),
                 np.ascontiguousarray(rs.m), np.zeros(rs.n),
@@ -584,7 +599,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                      & ~np.asarray(rs.is_boulder, dtype=bool))
                     if matris_cekme_yok else None),
                 # A52: "bvh" destek kutulu BVH + sirali CSR; "hash" eski.
-                komsu_arama=komsu_arama)
+                komsu_arama=komsu_arama, **mermi_kw)
             t = 0.0
             kontrol = max(1, azami_adim // 200)
             # A70: SOK KAPISI ARTIK ZIRVEDEN OKUNUYOR.
@@ -681,7 +696,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                                              alpha_av, beta_av,
                                              matris_cekme_yok, cfl,
                                              akma_kipi, malzeme_kaynagi,
-                                             komsu_arama),
+                                             komsu_arama, mermi_eos),
                     # A72 / Protokol J: zaman adimi ve kuvvet aninda
                     # akma tanisi. JSON metni -- pickle gerektirmez.
                     cfl=float(cfl), akma_kipi=str(akma_kipi),
