@@ -81,6 +81,20 @@ class RefParams:
     beta_av: float = 2.0
     use_balsara: bool = True
     cfl: float = 0.3
+    # AKMA KIPI (uzman yaniti 2026-09-11, rapor A72).
+    #
+    #   "son" -- gerilme yarim adim ilerletilir, kuvvet o GERI
+    #            DONDURULMEMIS deneme gerilmesiyle hesaplanir, akma
+    #            yuzeyine donus ancak adim SONUNDA yapilir. Olculdu
+    #            (125 parcacik, saf kayma, Y = 100 Pa): kuvvetin
+    #            gordugu esdeger gerilme 196 588 Pa, yani Y'nin
+    #            1 966 kati. Asim ~ (sqrt3/2) G gamma_dot dt.
+    #   "ara" -- HER kuvvet cagrisindan ONCE, o anki P ile akma
+    #            yuzeyine donulur. Kuvvet hicbir zaman Y(P)'yi asan
+    #            gerilme gormez.
+    #
+    # Varsayilan "son": kayitli butun sonuclar BIT-AYNI kalir.
+    akma_kipi: str = "son"
 
     @classmethod
     def from_config(cls, cfg, **overrides) -> RefParams:

@@ -31,6 +31,8 @@ ama bu bir kanıt değildir.
 """
 from __future__ import annotations
 
+import json
+
 import numpy as np
 
 __all__ = ["sahne_parametreleri", "gozlenebilirleri_cikar", "ileri_kosu",
@@ -57,7 +59,8 @@ GOZLENEBILIRLER = ("beta", "krater_derinlik", "ejekta_kutle_kesri")
 
 def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
                  alpha_av=1.0, beta_av=2.0,
-                 matris_cekme_yok=False) -> str:
+                 matris_cekme_yok=False, cfl=0.25,
+                 akma_kipi="son") -> str:
     """Kosunun FIZIK yapilandirmasinin SHA-256 ozeti (16 hane).
 
     Iki cikti ayni `theta`yi tasiyip FARKLI fizikle uretilmis
@@ -80,6 +83,13 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
         f"{float(beta_av):.17g}",
         f"cekme_kirp={bool(matris_cekme_yok)}",
     ]
+    # A72: zaman adimi (cfl) ve akma kipi FIZIGI degistiriyor. Yalniz
+    # varsayilandan farkliysa eklenir -- boylece eski kayitlarin ozeti
+    # AYNEN korunur (geriye donuk kimlik bozulmaz).
+    if float(cfl) != 0.25:
+        parcalar.append(f"cfl={float(cfl):.17g}")
+    if str(akma_kipi) != "son":
+        parcalar.append(f"akma_kipi={akma_kipi}")
     ham = "|".join(parcalar).encode("utf-8")
     return hashlib.sha256(ham).hexdigest()[:16]
 
@@ -476,9 +486,20 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         sok_yargisi: bool = True,
                         durum_dizini=None, surum: str | None = None,
                         alpha_av: float = 1.0, beta_av: float = 2.0,
-                        matris_cekme_yok: bool = False
+                        matris_cekme_yok: bool = False,
+                        cfl: float = 0.25, akma_kipi: str = "son"
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
+
+    ## `cfl` ve `akma_kipi` (rapor A72, Protokol J)
+
+    Uzman yanıtı (2026-09-11) ölçtü: gerilme yarım adım ilerletilip
+    kuvvet **geri döndürülmemiş** deneme gerilmesiyle hesaplanıyor.
+    Kuvvetin gördüğü fazla gerilme `~ (√3/2) G γ̇ Δt`. Yani sabit
+    uzamsal çözünürlükte bile sonuç **zaman adımına** bağlı olabilir.
+    `cfl` Δt'yi, `akma_kipi = "ara"` her kuvvet çağrısından önce
+    akma yüzeyine dönüşü açar. Varsayılanlar eski davranışı **bit-aynı**
+    korur.
 
     ## Neden gerekli
 
@@ -535,7 +556,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 # `132` kat, kutle agirlikli hizi `3 188` kat degistiriyor.
                 # Yani ensemble, mekanizmanin en guclu kontrol
                 # parametresini SABIT tutuyordu ve bunu bildirmiyordu.
-                RefParams(cfl=0.25, alpha_av=alpha_av, beta_av=beta_av),
+                RefParams(cfl=cfl, alpha_av=alpha_av, beta_av=beta_av,
+                          akma_kipi=akma_kipi),
                 alpha0=np.ascontiguousarray(rs.alpha0),
                 Y0=np.ascontiguousarray(rs.Y0), device=device,
                 check_every=10 ** 9,
@@ -587,6 +609,10 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 raise RuntimeError(
                     f"ADIM SINIRINA TAKILDI: t = {t:.6e} < {t_end:.6e}")
             st = sol.state_numpy()
+            n_adim = int(adim)
+            # A72: KUVVET ANINDA q/Y(P) -- yalniz HEDEF (mermi ayri
+            # malzeme, onun akmasi bu sorunun parcasi degil).
+            akma_tani = sol.akma_tanisi(maske=_h_maske)
             if sok_yargisi:
                 from ..observables.sok import sok_gecti
                 # A48: mermi MASKELENMELI. Aliminyum mermi `alpha0 = 1`
@@ -638,7 +664,13 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                     fizik_ozeti=_fizik_ozeti(sahne_taban, material,
                                              kademeler, spacing, t_end,
                                              alpha_av, beta_av,
-                                             matris_cekme_yok))
+                                             matris_cekme_yok, cfl,
+                                             akma_kipi),
+                    # A72 / Protokol J: zaman adimi ve kuvvet aninda
+                    # akma tanisi. JSON metni -- pickle gerektirmez.
+                    cfl=float(cfl), akma_kipi=str(akma_kipi),
+                    n_adim=n_adim,
+                    akma_tani=json.dumps(akma_tani))
             Y[i] = gozlenebilirleri_cikar(
                 st, impactor_momentum=rs.impactor_momentum,
                 target_mass=rs.target_mass, target_radius=rs.target_radius,

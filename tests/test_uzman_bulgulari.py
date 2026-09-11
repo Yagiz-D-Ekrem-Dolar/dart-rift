@@ -265,9 +265,21 @@ def test_ensemble_yapay_viskoziteyi_gecirebiliyor():
     m = (REPO / "src" / "dartrift" / "inference" / "forward.py").read_text(
         encoding="utf-8")
     blok = m[m.index("def ileri_kosu_merdiven"):]
-    assert "RefParams(cfl=0.25, alpha_av=alpha_av, beta_av=beta_av)" in blok, (
-        "merdiven yolu AV'yi cozucuye gecirmiyor"
-    )
+    # A72: cagri artik `cfl` ve `akma_kipi` de tasiyor ve birden cok
+    # satira yayildi. Sinav BICIME degil AMACA bakar: RefParams'a
+    # giden argumanlar AV'yi (ve A72'den beri cfl/akma kipini) tasiyor mu.
+    import re
+
+    # Fonksiyonun ICINDEKI yorum da `RefParams(cfl=0.25)` metnini
+    # tasiyor (A56 gerekcesi); ilk eslesmeyi almak onu secer. Butun
+    # cagrilar taranir, en az biri butun parcalari tasimali.
+    cagrilar = [re.sub(r"\s+", "", c.group(1))
+                for c in re.finditer(r"RefParams\(([^)]*)\)", blok)]
+    assert cagrilar, "merdiven yolunda RefParams cagrisi yok"
+    parcalar = ("alpha_av=alpha_av", "beta_av=beta_av", "cfl=cfl",
+                "akma_kipi=akma_kipi")
+    assert any(all(p in c for p in parcalar) for c in cagrilar), (
+        f"merdiven yolu {parcalar} gecirmiyor: {cagrilar}")
 
 
 def test_surucu_AV_bayragini_tasiyor():

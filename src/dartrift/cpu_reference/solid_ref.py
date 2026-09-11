@@ -68,6 +68,11 @@ class SolidState:
     g: np.ndarray = field(default=None)  # yercekimi ivmesi (N,dim)
     phi: np.ndarray = field(default=None)  # yercekimi potansiyeli (N,)
     plastic_u_total: float = 0.0  # kumulatif plastik is [J] (enerji panosu)
+    # A72: "ara" akma kipinde kuvvet oncesi projeksiyonun plastik isi
+    # (TANI; `u`'ya eklenmez, ADR-0012) ve KUVVET ANINDA gorulen
+    # en buyuk q / Y(P) orani (her iki kipte de olculur).
+    plastic_u_ara: float = 0.0
+    akma_oran_max: float = 0.0
     # --- Grady-Kipp hasar (ADR-0027). mat.damage.enabled ise DOLU olmali ----
     # `eps_min`/`n_flaws` kurulumda BIR KEZ tohumlanir (damage_ref.seed_flaws);
     # rasgelelik adim icine tasinmaz (ADR-0004).
@@ -197,6 +202,28 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
         raise ValueError(f"bilinmeyen yogunluk yontemi: {mat.density_method!r}")
 
     compute_eos_solid(state, mat)
+
+    # A72 -- KUVVET ANINDA KURUCU SINIR. "ara" kipinde S, kuvvetler,
+    # gerilme hizi ve hasar hesaplanmadan ONCE o anki P ile akma
+    # yuzeyine cekilir. Ikinci degerlendirmede (ayni x, ayni rho, ayni
+    # u) P degismedigi icin projeksiyon etkisizdir -- idempotent.
+    if mat.strength.enabled and state.S is not None:
+        kip = getattr(num, "akma_kipi", "son")
+        if kip == "ara":
+            S_new, du_pl = return_mapping(
+                state.S, state.P, state.rho, mat.strength, state.Y0)
+            act = state.active
+            state.S[act] = S_new[act]
+            state.plastic_u_ara += float(np.sum(state.m[act] * du_pl[act]))
+        elif kip != "son":
+            raise ValueError(f"akma_kipi 'son' ya da 'ara' olmali, {kip!r} geldi")
+        j2 = 0.5 * np.einsum("nij,nij->n", state.S, state.S)
+        y_p = np.broadcast_to(
+            mat.strength.yield_stress(state.P, state.Y0), j2.shape)
+        oran = np.sqrt(3.0 * j2) / np.maximum(y_p, 1.0e-300)
+        if np.any(state.active):
+            state.akma_oran_max = max(state.akma_oran_max,
+                                      float(np.max(oran[state.active])))
 
     vji = _embed3(state.v[None, :, :] - state.v[:, None, :], state.dim)
     gw3 = _embed3(grad_w, state.dim)

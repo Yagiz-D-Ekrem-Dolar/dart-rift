@@ -94,6 +94,13 @@ def main() -> int:
                          "A56: bu ensemble'a hic gecmiyordu.")
     ap.add_argument("--beta-av", type=float, default=2.0,
                     help="yapay viskozite karesel terim (uretim 2,0)")
+    ap.add_argument("--cfl", type=float, default=0.25,
+                    help="zaman adimi carpani (uretim 0,25). Protokol J: "
+                         "SABIT h'de Delta t yarilama deneyi (A72).")
+    ap.add_argument("--akma-kipi", choices=("son", "ara"), default="son",
+                    help="'son' eski davranis (kuvvet GERI DONDURULMEMIS "
+                         "gerilmeyi gorur); 'ara' her kuvvet cagrisindan "
+                         "once akma yuzeyine donus (A72)")
     ap.add_argument("--sok-kapisi-kapali", action="store_true",
                     help="TANI AMACLI: ADR-0049 kapisini kapat")
     ap.add_argument("--eski-uzay", action="store_true",
@@ -167,6 +174,8 @@ def main() -> int:
     print(f"  dilim       : {dilim_bilgi}", flush=True)
     print(f"  merdiven    : {' '.join(merdiven)}  (metre)", flush=True)
     print(f"  t_end       : {a.t_end} s", flush=True)
+    print(f"  cfl         : {a.cfl}  (uretim 0,25)", flush=True)
+    print(f"  akma kipi   : {a.akma_kipi}", flush=True)
     print(f"  sok kapisi  : {'KAPALI (TANI)' if a.sok_kapisi_kapali else 'ACIK'}",
           flush=True)
     print(f"  gozlenebilir: {GOZLENEBILIRLER}", flush=True)
@@ -196,7 +205,8 @@ def main() -> int:
             sok_yargisi=not a.sok_kapisi_kapali,
             durum_dizini=yol.with_suffix(".durumlar"),
             surum=surum, alpha_av=a.alpha_av, beta_av=a.beta_av,
-            matris_cekme_yok=a.matris_cekme_yok)[0]
+            matris_cekme_yok=a.matris_cekme_yok,
+            cfl=a.cfl, akma_kipi=a.akma_kipi)[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
         return y
@@ -230,6 +240,7 @@ def main() -> int:
         "t_end": a.t_end, "spacing": a.spacing, "root_seed": kok,
         "sahne_tohum": sahne_kok,
         "sok_kapisi": not a.sok_kapisi_kapali, "dilim": a.dilim,
+        "cfl": a.cfl, "akma_kipi": a.akma_kipi,
         "surum": surum,
         "n_tasarim_tam": int(tam_n),
         "gozlenebilirler": list(GOZLENEBILIRLER),

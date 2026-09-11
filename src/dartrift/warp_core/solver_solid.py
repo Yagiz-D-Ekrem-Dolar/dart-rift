@@ -25,7 +25,12 @@ from .gravity_tree import GravitySolver
 from .hash_grid import GridManager
 from .porosity_palpha import make_porosity_wp, porosity_update_k
 from .solver import _budget_row, _check_finite
-from .strength_lundborg import make_strength_wp, return_mapping_k
+from .strength_lundborg import (
+    akma_orani_k,
+    birikim_k,
+    make_strength_wp,
+    return_mapping_k,
+)
 
 F = wp.float64
 V3 = wp.vec3d
@@ -131,6 +136,21 @@ class WarpSolid3D:
         for name in ("rho", "P", "cs", "divv", "fbal", "dudt", "phi",
                      "drhodt", "plastic_du", "dt_cfl", "dt_acc"):
             setattr(self, name, wp.zeros(n, dtype=F, device=dev))
+        # AKMA KIPI (rapor A72). "son": eski davranis, BIT-AYNI. "ara":
+        # her kuvvet cagrisindan once o anki P ile akma yuzeyine donus.
+        kip = getattr(self.num, "akma_kipi", "son")
+        if kip not in ("son", "ara"):
+            raise ValueError(f"akma_kipi 'son' ya da 'ara' olmali, {kip!r} geldi")
+        self.akma_kipi = kip
+        self._akma_ara = kip == "ara" and mat.strength.enabled
+        if self._akma_ara:
+            self.plastic_du_ara = wp.zeros(n, dtype=F, device=dev)
+            self.plastic_cum_ara = wp.zeros(n, dtype=F, device=dev)
+        # KUVVET ANINDA q/Y(P) TANISI -- iki kipte de olculur; fizigi
+        # degistirmez (yalniz kendi dizilerine yazar).
+        if mat.strength.enabled:
+            self.akma_oran_max = wp.zeros(n, dtype=F, device=dev)
+            self.akma_asim_say = wp.zeros(n, dtype=wp.int32, device=dev)
         # IC ENERJI TABANI (rapor A21). Varsayilan KAPALI: acmak butun
         # kayitli sayilari degistirir ve bu bir KARAR. Acikken kirpilan
         # enerji parcacik basina SAYILIR, sessizce atilmaz.
@@ -333,6 +353,25 @@ class WarpSolid3D:
             from .cekme_kirpma import cekme_kirp as _kirp
 
             self._launch(_kirp, [self._cekme_kirp, self.P])
+        if self.mat.strength.enabled:
+            # A72: KUVVET ANINDA KURUCU SINIR. "ara" kipinde S burada,
+            # gerilme hizi / hasar / kuvvet hesaplanmadan ONCE, o anki
+            # (kirpilmis) P ile akma yuzeyine cekilir. Adimin ikinci
+            # degerlendirmesinde x, rho ve u ayni oldugundan P de ayni:
+            # projeksiyon orada etkisizdir (idempotent).
+            if self._akma_ara:
+                self._launch(
+                    return_mapping_k,
+                    [self.S, self.P, self.rho, self.active, self.Y0,
+                     self._sp, self.plastic_du_ara],
+                )
+                self._launch(birikim_k,
+                             [self.plastic_cum_ara, self.plastic_du_ara])
+            self._launch(
+                akma_orani_k,
+                [self.S, self.P, self.active, self.Y0, self._sp,
+                 self.akma_oran_max, self.akma_asim_say],
+            )
         self._launch(
             SS.velocity_gradient_3d,
             [gid, self.gridman.x32, self.x, self.v, self.m, self.rho, self.cs, h, r32,
@@ -500,6 +539,9 @@ class WarpSolid3D:
         row["e_pot"] = ep
         row["e_tot"] = row["e_kin"] + row["e_int"] + ep
         row["plastic_cum"] = self.plastic_u_total
+        if self._akma_ara:
+            row["plastic_cum_ara"] = float(
+                np.sum(s["m"] * self.plastic_cum_ara.numpy()))
         # K21: rho <= 0 ASLA fizik degildir (sureklilikte drho/dt = -rho*div v
         # ustel azalir, sifiri ancak dt fazla buyukse gecer). EOS artik orada
         # NaN yerine sonlu bir deger dondurur — ama bu, sorunu MASKELEMEK
@@ -568,6 +610,34 @@ class WarpSolid3D:
                 s = self.state_numpy()
                 _check_finite(n_steps, rho=s["rho"], u=s["u"], v=s["v"], x=s["x"])
         return {"t_end": t, "n_steps": n_steps, "budget_series": series}
+
+    def akma_tanisi(self, maske: np.ndarray | None = None) -> dict:
+        """KUVVET ANINDA q / Y(P) ozeti (rapor A72).
+
+        `maske` verilirse (ornegin yalniz hedef) ozet o parcaciklar
+        uzerinden. Dayanim kapaliysa bos dict.
+        """
+        if not self.mat.strength.enabled:
+            return {}
+        oran = self.akma_oran_max.numpy()
+        say = self.akma_asim_say.numpy()
+        m = self.m.numpy()
+        sec = np.ones(self.n, bool) if maske is None else np.asarray(maske, bool)
+        if not sec.any():
+            return {}
+        o, c, mm = oran[sec], say[sec], m[sec]
+        asan = c > 0
+        return {
+            "akma_kipi": self.akma_kipi,
+            "oran_max": float(o.max()),
+            "oran_p99": float(np.percentile(o, 99.0)),
+            "oran_medyan": float(np.median(o)),
+            "n_asan_parcacik": int(asan.sum()),
+            "asan_kutle_kesri": float(mm[asan].sum() / mm.sum()),
+            "asim_olay": int(c.sum()),
+            "plastic_cum_ara": (float(np.sum(m * self.plastic_cum_ara.numpy()))
+                                if self._akma_ara else 0.0),
+        }
 
     def state_numpy(self) -> dict:
         return {

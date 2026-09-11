@@ -72,3 +72,46 @@ def return_mapping_k(
         S[i] = f * si
         du = f * (F(1.0) - f) * (F(2.0) * j2) / (F(2.0) * sp.shear_G * rho[i])
     plastic_du[i] = du
+
+
+#: Kuvvet aninda "akma sinirini asti" sayilan oran esigi. Projeksiyon
+#: sonrasi oran yuvarlama icinde 1 olur; 1e-9 o gurultunun cok ustunde,
+#: olculen asimin (1 966 kat) cok altinda.
+AKMA_ASIM_TOLERANSI = 1.0e-9
+
+
+@wp.kernel
+def akma_orani_k(
+    S: wp.array(dtype=M3),
+    P: wp.array(dtype=F),
+    active: wp.array(dtype=wp.uint8),
+    Y0: wp.array(dtype=F),
+    sp: StrengthWp,
+    oran_max: wp.array(dtype=F),
+    asim_say: wp.array(dtype=wp.int32),
+):
+    """KUVVET ANINDA q / Y(P) -- rapor A72'nin olcusu.
+
+    Her parcacik YALNIZ KENDI yuvasina yazar: atomik yok, sira yok,
+    CPU ve GPU'da ayni sonuc. `oran_max` kosu boyunca parcacik basina
+    en buyuk oran; `asim_say` esigi kac degerlendirmede astigi.
+    """
+    i = wp.tid()
+    if active[i] == wp.uint8(0):
+        return
+    si = S[i]
+    j2 = F(0.5) * wp.ddot(si, si)
+    vm = wp.sqrt(F(3.0) * j2)
+    y = yield_stress(P[i], Y0[i], sp)
+    r = vm / wp.max(y, F(1.0e-300))
+    if r > oran_max[i]:
+        oran_max[i] = r
+    if r > F(1.0) + F(AKMA_ASIM_TOLERANSI):
+        asim_say[i] = asim_say[i] + 1
+
+
+@wp.kernel
+def birikim_k(cum: wp.array(dtype=F), du: wp.array(dtype=F)):
+    """Parcacik basina birikim -- her yuva kendi toplamini tutar."""
+    i = wp.tid()
+    cum[i] = cum[i] + du[i]
