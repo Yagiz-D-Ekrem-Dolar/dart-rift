@@ -73,6 +73,9 @@ def main() -> int:
                     help="Latin hiperkup nokta sayisi (kenarlar ayrica)")
     ap.add_argument("--kenarlar", action="store_true",
                     help="tam carpanli kenar noktalarini da ekle")
+    ap.add_argument("--tasarim-dosyasi", type=Path, default=None,
+                    help="JSON {'theta': [[a_b, Y0, f], ...]} -- LHS YERINE "
+                         "acik nokta listesi (Protokol L duyarlilik pilotu)")
     ap.add_argument("--t-end", type=float, default=0.2)
     ap.add_argument("--spacing", type=float, default=7.0)
     ap.add_argument("--device", default="cuda:0")
@@ -101,6 +104,20 @@ def main() -> int:
                     help="'son' eski davranis (kuvvet GERI DONDURULMEMIS "
                          "gerilmeyi gorur); 'ara' her kuvvet cagrisindan "
                          "once akma yuzeyine donus (A72)")
+    ap.add_argument("--blok-uretici", choices=("v1", "v2"), default="v1",
+                    help="'v1' eski (doyar, sessiz); 'v2' GERCEK hacim "
+                         "kesrine ulasir ya da hata verir (A74)")
+    ap.add_argument("--malzeme-kaynagi", choices=("kaba", "geometri"),
+                    default="kaba",
+                    help="ince parcacik malzemesi: 'kaba' ebeveynden kopya "
+                         "(eski) ya da 'geometri' surekli blok alanindan (A74)")
+    ap.add_argument("--komsu-arama", choices=("hash", "bvh"), default="hash",
+                    help="'hash' tek kuresel yaricap (eski); 'bvh' destek "
+                         "kutulu BVH + sirali CSR (A52)")
+    ap.add_argument("--blok-rmin", type=float, default=None,
+                    help="blok yaricapi alt siniri [m] (SAHNE: 14)")
+    ap.add_argument("--blok-rmax", type=float, default=None,
+                    help="blok yaricapi ust siniri [m] (SAHNE: 42)")
     ap.add_argument("--sok-kapisi-kapali", action="store_true",
                     help="TANI AMACLI: ADR-0049 kapisini kapat")
     ap.add_argument("--eski-uzay", action="store_true",
@@ -139,7 +156,19 @@ def main() -> int:
     if a.eski_uzay:
         print("  ! TERK EDILMIS UZAY (ADR-0044): sonuc S3 onseli SAYILMAZ",
               flush=True)
-    tasarim = lhs_design(UZAY, a.n_lhs, root_seed=kok)
+    if a.tasarim_dosyasi is not None:
+        # ACIK TASARIM (Protokol L): noktalar dosyadan, LHS kullanilmaz.
+        # Uzay sinirlari yine denetlenir -- onsel disi nokta sessizce
+        # kosulmasin.
+        tasarim = np.atleast_2d(np.asarray(
+            json.loads(a.tasarim_dosyasi.read_text(encoding="utf-8"))["theta"],
+            dtype=np.float64))
+        lo, hi = np.asarray(UZAY.lo, float), np.asarray(UZAY.hi, float)
+        if tasarim.shape[1] != 3 or np.any(tasarim < lo) or np.any(tasarim > hi):
+            raise SystemExit(f"tasarim dosyasi onsel sinirlarinin disinda: "
+                             f"{tasarim.tolist()} (lo={lo}, hi={hi})")
+    else:
+        tasarim = lhs_design(UZAY, a.n_lhs, root_seed=kok)
     if a.kenarlar:
         tasarim = np.vstack([factorial_design(UZAY, levels=2), tasarim])
 
@@ -176,6 +205,18 @@ def main() -> int:
     print(f"  t_end       : {a.t_end} s", flush=True)
     print(f"  cfl         : {a.cfl}  (uretim 0,25)", flush=True)
     print(f"  akma kipi   : {a.akma_kipi}", flush=True)
+    # A74: sahne tabani -- varsayilanlar verilmezse SAHNE AYNEN kalir
+    # (bit-ayni); verilen her alan `_fizik_ozeti`ne sahne_taban
+    # uzerinden girer.
+    sahne_ek = {}
+    if a.blok_uretici != "v1":
+        sahne_ek["blok_uretici"] = a.blok_uretici
+    if a.blok_rmin is not None:
+        sahne_ek["r_min"] = float(a.blok_rmin)
+    if a.blok_rmax is not None:
+        sahne_ek["r_max"] = float(a.blok_rmax)
+    print(f"  blok alani  : uretici={a.blok_uretici}  malzeme={a.malzeme_kaynagi}"
+          f"  {sahne_ek or '(SAHNE varsayilani)'}", flush=True)
     print(f"  sok kapisi  : {'KAPALI (TANI)' if a.sok_kapisi_kapali else 'ACIK'}",
           flush=True)
     print(f"  gozlenebilir: {GOZLENEBILIRLER}", flush=True)
@@ -201,12 +242,14 @@ def main() -> int:
             # `boulder_alpha0` SESSIZCE yoksayiliyordu. Uc cikarim
             # ekseninden IKISI sahneye hic ulasmiyordu. `SAHNE`'nin
             # kendisi `model_class = 'M1'` tasiyor; gonderilmiyordu.
-            sahne_taban={**SAHNE, "root_seed": sahne_kok},
+            sahne_taban={**SAHNE, "root_seed": sahne_kok, **sahne_ek},
             sok_yargisi=not a.sok_kapisi_kapali,
             durum_dizini=yol.with_suffix(".durumlar"),
             surum=surum, alpha_av=a.alpha_av, beta_av=a.beta_av,
             matris_cekme_yok=a.matris_cekme_yok,
-            cfl=a.cfl, akma_kipi=a.akma_kipi)[0]
+            cfl=a.cfl, akma_kipi=a.akma_kipi,
+            malzeme_kaynagi=a.malzeme_kaynagi,
+            komsu_arama=a.komsu_arama)[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
         return y
@@ -241,6 +284,9 @@ def main() -> int:
         "sahne_tohum": sahne_kok,
         "sok_kapisi": not a.sok_kapisi_kapali, "dilim": a.dilim,
         "cfl": a.cfl, "akma_kipi": a.akma_kipi,
+        "blok_uretici": a.blok_uretici, "malzeme_kaynagi": a.malzeme_kaynagi,
+        "komsu_arama": a.komsu_arama,
+        "sahne_ek": sahne_ek,
         "surum": surum,
         "n_tasarim_tam": int(tam_n),
         "gozlenebilirler": list(GOZLENEBILIRLER),

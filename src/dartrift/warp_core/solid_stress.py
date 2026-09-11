@@ -88,6 +88,60 @@ def velocity_gradient_3d(
 
 
 @wp.kernel
+def velocity_gradient_3d_csr(
+    bas: wp.array(dtype=wp.int32),
+    nbr: wp.array(dtype=wp.int32),
+    x: wp.array(dtype=V3),
+    v: wp.array(dtype=V3),
+    m: wp.array(dtype=F),
+    rho: wp.array(dtype=F),
+    cs: wp.array(dtype=F),
+    h: wp.array(dtype=F),
+    use_balsara: int,
+    L: wp.array(dtype=M3),
+    divv: wp.array(dtype=F),
+    fbal: wp.array(dtype=F),
+):
+    """`velocity_gradient_3d` ile GOVDE BIREBIR; yalniz komsu dongusu CSR (A52).
+
+    Liste destek disi komsu icerebilir: `grad_w3d` orada TAM sifir dondurur,
+    `x + 0 = x` kesin -- sonuc yalniz sifirdan farkli katkilarin SIRASINA
+    baglidir (kimlige gore sirali).
+    """
+    i = wp.tid()
+    xi = x[i]
+    hi = h[i]
+    vi = v[i]
+    zero = M3(F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0))
+    l_raw = zero
+    b_mat = zero
+    div_acc = F(0.0)
+    curl_acc = V3(F(0.0), F(0.0), F(0.0))
+    for k in range(bas[i], bas[i + 1]):
+        j = nbr[k]
+        hij = F(0.5) * (hi + h[j])
+        gw = grad_w3d(xi - x[j], hij)
+        vj_i = v[j] - vi
+        xj_i = x[j] - xi
+        vol_j = m[j] / rho[j]
+        l_raw += vol_j * wp.outer(vj_i, gw)
+        b_mat += vol_j * wp.outer(xj_i, gw)
+        div_acc += m[j] * wp.dot(vj_i, gw)
+        curl_acc += m[j] * wp.cross(vj_i, gw)
+    div = div_acc / rho[i]
+    curl_mag = wp.length(curl_acc) / rho[i]
+    divv[i] = div
+    if wp.abs(wp.determinant(b_mat)) > F(1.0e-6):
+        L[i] = l_raw * wp.inverse(b_mat)
+    else:
+        L[i] = l_raw
+    if use_balsara != 0:
+        fbal[i] = wp.abs(div) / (wp.abs(div) + curl_mag + BALSARA_EPS_C * cs[i] / hi)
+    else:
+        fbal[i] = F(1.0)
+
+
+@wp.kernel
 def stress_rate_3d(
     L: wp.array(dtype=M3),
     S: wp.array(dtype=M3),
@@ -173,6 +227,70 @@ def forces_solid_3d(
     q = wp.hash_grid_query(grid, x32[i], radius32)
     j = int(0)
     while wp.hash_grid_query_next(q, j):
+        rij = xi - x[j]
+        r = wp.length(rij)
+        hij = F(0.5) * (hi + h[j])
+        qq = r / hij
+        if qq < F(2.0) and r > F(1.0e-12):
+            gw = grad_w3d(rij, hij)
+            vij = vi - v[j]
+            vr = wp.dot(vij, rij)
+            c_bar = F(0.5) * (cs[i] + cs[j])
+            rho_bar = F(0.5) * (rho[i] + rho[j])
+            f_bar = F(0.5) * (fbal[i] + fbal[j])
+            pi_ij = artificial_visc(vr, r * r, hij, c_bar, rho_bar, f_bar,
+                                    alpha_av, beta_av)
+            t_j = (S[j] - P[j] * ident) / (rho[j] * rho[j])
+            tgw = (t_i + t_j) * gw
+            acc += m[j] * tgw - (m[j] * pi_ij) * gw
+            du += F(-0.5) * m[j] * wp.dot(vij, tgw) + F(0.5) * m[j] * pi_ij * wp.dot(vij, gw)
+            if ast_on != 0:
+                r_pair = (r_i + tensile_R(P[j], rho[j], ast_eps)) * wp.pow(
+                    w3d(qq, hij) / ast_w_dp, ast_n
+                )
+                acc += (-m[j] * r_pair) * gw
+                du += F(0.5) * m[j] * r_pair * wp.dot(vij, gw)
+    a[i] = acc + g_ext[i]
+    dudt[i] = du
+
+
+@wp.kernel
+def forces_solid_3d_csr(
+    bas: wp.array(dtype=wp.int32),
+    nbr: wp.array(dtype=wp.int32),
+    x: wp.array(dtype=V3),
+    v: wp.array(dtype=V3),
+    m: wp.array(dtype=F),
+    rho: wp.array(dtype=F),
+    P: wp.array(dtype=F),
+    S: wp.array(dtype=M3),
+    cs: wp.array(dtype=F),
+    fbal: wp.array(dtype=F),
+    g_ext: wp.array(dtype=V3),
+    h: wp.array(dtype=F),
+    alpha_av: F,
+    beta_av: F,
+    ast_on: int,
+    ast_eps: F,
+    ast_n: F,
+    ast_w_dp: F,
+    a: wp.array(dtype=V3),
+    dudt: wp.array(dtype=F),
+):
+    """`forces_solid_3d` ile GOVDE BIREBIR; yalniz komsu dongusu CSR (A52)."""
+    i = wp.tid()
+    xi = x[i]
+    hi = h[i]
+    vi = v[i]
+    ident = M3(F(1.0), F(0.0), F(0.0), F(0.0), F(1.0), F(0.0), F(0.0), F(0.0), F(1.0))
+    t_i = (S[i] - P[i] * ident) / (rho[i] * rho[i])
+    r_i = F(0.0)
+    if ast_on != 0:
+        r_i = tensile_R(P[i], rho[i], ast_eps)
+    acc = V3(F(0.0), F(0.0), F(0.0))
+    du = F(0.0)
+    for k in range(bas[i], bas[i + 1]):
+        j = nbr[k]
         rij = xi - x[j]
         r = wp.length(rij)
         hij = F(0.5) * (hi + h[j])

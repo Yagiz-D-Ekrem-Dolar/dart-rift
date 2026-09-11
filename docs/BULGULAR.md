@@ -1,10 +1,35 @@
 # DART-RIFT — bulgular ve durum
 
-**Son güncelleme:** 2026-09-06
+**Son güncelleme:** 2026-09-11
 
 Bu belge projenin **ne kanıtladığını** ve **neyi kanıtlamadığını** tek
 yerde toplar. Ayrıntılar `SONUC-*.md` belgelerinde; kusurların tam
-dökümü `FAZ4-SIKINTI-RAPORU.md`'de (**56 açık kayıt**).
+dökümü `FAZ4-SIKINTI-RAPORU.md`'de (**61 açık kayıt**).
+
+---
+
+## 0. Uzman yanıtından sonra (2026-09-11) — ne değişti
+
+Uzman üç kod kusuru buldu; üçü de bizim kodumuzda **ölçüldü**:
+
+| kusur | ölçüm | yapılan |
+|---|---|---|
+| **A72** kuvvet, akma sınırını aşan gerilmeyi görüyor | birim sınavda `q/Y = 1 966`; **üretim koşusunda** zayıf matriste hedef kütlesinin `%27–42`'si akmanın `10⁴–10⁵` katını görüyor, kuvvetin gördüğü gerilme `Y₀`'dan bağımsız `~5e8 Pa` | `akma_kipi = "ara"`; orta ölçekte (I2) her noktada `q/Y = 1` |
+| **A73** krater derinliği bir yüzey değil | dış kabuk sabitken `0,49 m`; 8× örnekleme `0,34 → 0,71 m` | `krater_yuzey`: aynı sınavlarda `8,9e-4 m` ve fark `0` |
+| **A74** blok kesri sahneye ulaşmıyor | G1/G2'de nominal `0,05–0,48` → gerçek **`0,10–0,37`**; üç tohumda `0,43` ve `0,55` aynı geometri | `place_boulders_v2` (gerçek hacim kesri) + geometriden malzeme |
+
+**A52** (çözünürlük kilidi): destek kutulu BVH + sıralı CSR yazıldı ve
+sınandı; yerel GPU'da `3,73×`. H100 ölçümü bekleniyor.
+
+**Protokol J koşuyor** (iş `1555356`, 84 görev): sabit `h`'de `Δt`
+yarılanınca `x₀` kayıyor mu, `ara` bunu kaldırıyor mu. Ön koşul `O4`
+**geçti**: yeni kodun varsayılan yolu G1'i 13/13 noktada **bit bit**
+tekrar ediyor.
+
+> J *"zaman adımı yolu gösterildi"* derse, G1'deki `Y₀ < 1e5` platosu
+> ve I'daki `x₀` kayması **fizik değil sayısal yapıt** olabilir — ve
+> ikisi de düzeltilebilir. J'nin yargısı gelmeden bu cümle bir
+> **hipotez**.
 
 ---
 
@@ -113,7 +138,11 @@ plato, üstünde dik düşüş. Sigmoid `R² = 0,941`.
 | Uzamsal yakınsama (üç nokta) | **hayır** | A52: `R3` için `224` saat |
 | `Y₀ = f(derinlik)` niceliksel eşlemesi | **hayır** | `%72` çözünürlük kayması (A69) |
 | Üretim modelinde kazı akışı | **hayır** | granüler çekme modeli yok |
-| `G2` (çekme kolu) ayırt ediyor mu | **bilinmiyor** | şok kapısı `39/48` reddetti (A68) |
+| `G2` (çekme kolu) ayırt ediyor mu | **evet** (`F = 25,4`, `ρ_Y₀ = −0,66`) | A70 ile okundu; `blok_kesri` `p = 0,084` (eşik altı) |
+| `x₀` çözünürlüğe dayanıklı | **hayır** (ZAYIF, `2,44σ`) | A71; iki aday neden A72/A73 |
+| Kuvvet akma sınırına uyuyor | **hayır** (üretimde `q/Y ~ 10²–10⁵`) | A72 — düzeltme yazıldı, J sınıyor |
+| Krater ölçüsü bir yüzey | **hayır** | A73 — yeni operatör yazıldı |
+| Blok kesri ekseni sahneye ulaşıyor | **kısmen** (`ρ(nominal, gerçek) = 0,97`, aralık sıkışık) | A74 — v2 yazıldı |
 
 ---
 
@@ -169,11 +198,14 @@ uretim modelinde akis    ❌  granuler cekme modeli
 
 ## 6. Bundan sonrası
 
-| iş | açtığı | maliyet |
+| iş | açtığı | durum |
 |---|---|---|
-| Şok kapısı → zirve (**A70, yapıldı**) | `G2` okunabilir olabilir | ✅ ama **doğrulanmadı** |
-| `x₀` dayanıklılığı (Protokol I, **koşuyor**) | aktarılabilir tek nicelik | `~2` saat |
-| A52 — parçacık başına arama yarıçapı | üç noktalı yakınsama | haftalık, riskli |
-| Granüler çekme modeli | üretimde kazı | haftalık, ADR gerekiyor |
-
-Son iki iş bu turda **yapılamaz** ve öyle bildiriliyor.
+| Şok kapısı → zirve (A70) | `G2` okunabilir | ✅ **doğrulandı** (`47/48`) |
+| `x₀` dayanıklılığı (Protokol I) | aktarılabilir nicelik | ❌ ZAYIF (A71) |
+| Protokol J (`Δt` + `ara`) + I2 | A72'nin nedenselliği; `ara` ile `x₀` | **koşuyor** (iş `1555356`) |
+| A52 — destek kutulu BVH | üç noktalı yakınsama | yazıldı, sınandı; H100 profili (iş K) |
+| Fiziksel yüzey operatörü (A73) | doğru gözlenebilir | yazıldı; G1/G2/I'ya uygulanıyor (iş K) |
+| Blok alanı v2 (A74) | çalışan `f` ekseni, fiziksel blok boyutu | yazıldı; kampanyada değil |
+| Mermi EOS (A75) | doğru çarpan | **yapılmadı** |
+| Granüler çekme modeli | üretimde kazı | `ara` + çekme sınırı ilk aday; ADR gerekiyor |
+| Üç eksenli duyarlılık pilotu (uzman S13) | Bitiş 3'ün kapısı | tasarlanacak |

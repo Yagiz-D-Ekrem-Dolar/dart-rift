@@ -232,8 +232,49 @@ def refine_scene(kaba, ince, r_ince: float) -> RefinedScene:
     )
 
 
+#: Ince parcacigin malzemesinin kaynagi (rapor A74).
+MALZEME_KAYNAKLARI = ("kaba", "geometri")
+
+
+def _ince_malzeme(kaba, x_c: np.ndarray, kaynak: str,
+                  hedef_x: np.ndarray | None = None,
+                  idx: np.ndarray | None = None):
+    """Yeni (ince) parcaciklarin `(alpha0, Y0, is_boulder)`'u.
+
+    "kaba"     -- en yakin KABA parcaciktan kopya (eski davranis). Uzman
+                  olctu: kaba kafesin ornekleyemedigi `1 m`'lik blokta
+                  5 272 ince noktanin HICBIRI blok etiketi almadi; buyuk
+                  bloklu sahnede de hacmin `%6,8`'inde etiket gercek
+                  geometriden farkliydi. Ince ag bu kaybi ONARAMAZ.
+    "geometri" -- SUREKLI blok alanindan (`kaba.blok_alani`) yeniden
+                  degerlendir: blok icindeyse blok malzemesi, degilse
+                  matris. Cozunurlukten bagimsiz ayni fiziksel sahne.
+    """
+    if kaynak == "kaba":
+        k_hedef = ~np.asarray(kaba.is_impactor, dtype=bool)
+        return (np.asarray(kaba.alpha0)[k_hedef][idx],
+                np.asarray(kaba.Y0)[k_hedef][idx],
+                np.asarray(kaba.is_boulder)[k_hedef][idx])
+    if kaynak == "geometri":
+        from .rubble_generator import kure_birlesimi_ici
+
+        mp = getattr(kaba, "malzeme_parametreleri", None) or {}
+        if not mp:
+            raise ValueError(
+                "malzeme_kaynagi='geometri' sahnenin `malzeme_parametreleri`"
+                "ni ister (build_scene A74'ten sonra dolduruyor)")
+        alan = getattr(kaba, "blok_alani", None)
+        is_b = (kure_birlesimi_ici(x_c, alan.centers, alan.radii)
+                if alan is not None and len(alan.radii)
+                else np.zeros(len(x_c), dtype=bool))
+        return (np.where(is_b, mp["boulder_alpha0"], mp["matrix_alpha0"]),
+                np.where(is_b, mp["boulder_Y0"], mp["matrix_Y0"]), is_b)
+    raise ValueError(f"malzeme_kaynagi {MALZEME_KAYNAKLARI} olmali, {kaynak!r}")
+
+
 def refine_scene_local(kaba, mesh, r_ince: float, lam: float,
-                       rho0_solid: float = 2700.0) -> RefinedScene:
+                       rho0_solid: float = 2700.0,
+                       malzeme_kaynagi: str = "kaba") -> RefinedScene:
     """A′ — ince bölgeyi **yerel** kur, tam ince sahne kurma.
 
     ## Neden gerekli: `refine_scene` yüksek `λ`'da **çalışamıyor**
@@ -330,14 +371,17 @@ def refine_scene_local(kaba, mesh, r_ince: float, lam: float,
     #     r_ince = 6 m  -> 12 210 x  9 544 x 3 x 8 B = 2,8  GB   (10,5 s)
     #     r_ince = 9 m  -> ~41 000 x 9 544 x 3 x 8 B = 9,4  GB   (patlar)
     # `r_ince`'i buyutmek ADR-0043 icin gerekli oldugundan bu bir engeldi.
-    hedef_x = kaba.x[k_hedef]
-    idx = np.empty(len(x_i), dtype=np.int64)
-    for b in range(0, len(x_i), 2048):
-        idx[b:b + 2048] = np.argmin(np.linalg.norm(
-            x_i[b:b + 2048, None, :] - hedef_x[None, :, :], axis=2), axis=1)
-    a0_i = kaba.alpha0[k_hedef][idx]
-    y0_i = kaba.Y0[k_hedef][idx]
-    blok_i = kaba.is_boulder[k_hedef][idx]
+    if malzeme_kaynagi not in MALZEME_KAYNAKLARI:
+        raise ValueError(f"malzeme_kaynagi {MALZEME_KAYNAKLARI} olmali, "
+                         f"{malzeme_kaynagi!r}")
+    idx = None
+    if malzeme_kaynagi == "kaba":
+        hedef_x = kaba.x[k_hedef]
+        idx = np.empty(len(x_i), dtype=np.int64)
+        for b in range(0, len(x_i), 2048):
+            idx[b:b + 2048] = np.argmin(np.linalg.norm(
+                x_i[b:b + 2048, None, :] - hedef_x[None, :, :], axis=2), axis=1)
+    a0_i, y0_i, blok_i = _ince_malzeme(kaba, x_i, malzeme_kaynagi, idx=idx)
 
     # 5) Kutle YEREL hucre hacminden (ADR-0030).
     # `alpha0` parcacik basina: m = rho_yigin * V_p = (rho0/alpha0) * V_p
@@ -399,7 +443,8 @@ def refine_scene_local(kaba, mesh, r_ince: float, lam: float,
 
 def refine_scene_ucseviye(kaba, mesh, r1: float, lam1: float,
                           r2: float, lam2: float,
-                          rho0_solid: float = 2700.0) -> RefinedScene:
+                          rho0_solid: float = 2700.0,
+                          malzeme_kaynagi: str = "kaba") -> RefinedScene:
     """**Üç seviyeli** sahne — ADR-0043 §4f'nin gerektirdiği kurulum.
 
     ## Neden iki seviye yetmiyor
@@ -444,7 +489,8 @@ def refine_scene_ucseviye(kaba, mesh, r1: float, lam1: float,
     # 1) TABAN: iki seviyeli sahne (lam2, r2). Bu, ASAMA-2 ile ayni
     #    cozunurlugu `r2` icinde zaten kuruyor.
     taban = refine_scene_local(kaba, mesh, r_ince=r2, lam=lam2,
-                               rho0_solid=rho0_solid)
+                               rho0_solid=rho0_solid,
+                               malzeme_kaynagi=malzeme_kaynagi)
     s1 = float(kaba.spacing) / float(lam1)
     mp = np.asarray(kaba.impact_point, dtype=np.float64)
 
@@ -469,14 +515,14 @@ def refine_scene_ucseviye(kaba, mesh, r1: float, lam1: float,
     # 3) alpha0/Y0 en yakin KABA parcaciktan (kaya bloku yapisi korunsun).
     #    PARCALI -- `N x M x 3` asla parcasiz kurulmaz.
     k_hedef = ~np.asarray(kaba.is_impactor, dtype=bool)
-    hedef_x = np.asarray(kaba.x)[k_hedef]
-    # IZGARA ile: eski `O(N.M)` argmin merdivende dakikalarca suruyordu.
-    # `_en_yakin_indeks` kaba kuvvetle BIREBIR ayni sonucu veriyor
-    # (test_kademeli_inceltme + elden dogrulama).
-    idx = _en_yakin_indeks(hedef_x, x_c, float(kaba.spacing))
-    a0_c = np.asarray(kaba.alpha0)[k_hedef][idx]
-    y0_c = np.asarray(kaba.Y0)[k_hedef][idx]
-    blok_c = np.asarray(kaba.is_boulder)[k_hedef][idx]
+    idx = None
+    if malzeme_kaynagi == "kaba":
+        hedef_x = np.asarray(kaba.x)[k_hedef]
+        # IZGARA ile: eski `O(N.M)` argmin merdivende dakikalarca suruyordu.
+        # `_en_yakin_indeks` kaba kuvvetle BIREBIR ayni sonucu veriyor
+        # (test_kademeli_inceltme + elden dogrulama).
+        idx = _en_yakin_indeks(hedef_x, x_c, float(kaba.spacing))
+    a0_c, y0_c, blok_c = _ince_malzeme(kaba, x_c, malzeme_kaynagi, idx=idx)
     m_c = (rho0_solid / a0_c) * particle_volume(s1, "fcc")
 
     n_c = len(x_c)
@@ -564,7 +610,8 @@ def _en_yakin_indeks(hedef_x: np.ndarray, sorgu: np.ndarray,
 
 
 def _cekirdek_degistir(taban: RefinedScene, kaba, mesh, r: float,
-                       s_yeni: float, rho0_solid: float) -> RefinedScene:
+                       s_yeni: float, rho0_solid: float,
+                       malzeme_kaynagi: str = "kaba") -> RefinedScene:
     """`r` içindeki **hedef** parçacıklarını `s_yeni` kafesiyle değiştir.
 
     :func:`refine_scene_ucseviye`'nin çekirdek adımı; merdiven
@@ -589,12 +636,12 @@ def _cekirdek_degistir(taban: RefinedScene, kaba, mesh, r: float,
     if len(x_c) == 0:
         raise ValueError(f"r={r} çekirdeği mesh'in tamamen dışında")
 
-    k_hedef = ~np.asarray(kaba.is_impactor, dtype=bool)
-    hedef_x = np.asarray(kaba.x)[k_hedef]
-    idx = _en_yakin_indeks(hedef_x, x_c, float(kaba.spacing))
-    a0_c = np.asarray(kaba.alpha0)[k_hedef][idx]
-    y0_c = np.asarray(kaba.Y0)[k_hedef][idx]
-    blok_c = np.asarray(kaba.is_boulder)[k_hedef][idx]
+    idx = None
+    if malzeme_kaynagi == "kaba":
+        k_hedef = ~np.asarray(kaba.is_impactor, dtype=bool)
+        hedef_x = np.asarray(kaba.x)[k_hedef]
+        idx = _en_yakin_indeks(hedef_x, x_c, float(kaba.spacing))
+    a0_c, y0_c, blok_c = _ince_malzeme(kaba, x_c, malzeme_kaynagi, idx=idx)
     m_c = (rho0_solid / a0_c) * particle_volume(s_yeni, "fcc")
     n_c = len(x_c)
 
@@ -624,7 +671,8 @@ def _cekirdek_degistir(taban: RefinedScene, kaba, mesh, r: float,
 
 
 def refine_scene_kademeli(kaba, mesh, kademeler,
-                          rho0_solid: float = 2700.0) -> RefinedScene:
+                          rho0_solid: float = 2700.0,
+                          malzeme_kaynagi: str = "kaba") -> RefinedScene:
     """**Kademeli** inceltme — arayüz kütle basamağını küçültmek için.
 
     ## Neden gerekli (rapor A25)
@@ -666,10 +714,12 @@ def refine_scene_kademeli(kaba, mesh, kademeler,
                          f"{lam_ler} geldi")
 
     s = refine_scene_local(kaba, mesh, r_ince=r_ler[0], lam=lam_ler[0],
-                           rho0_solid=rho0_solid)
+                           rho0_solid=rho0_solid,
+                           malzeme_kaynagi=malzeme_kaynagi)
     for r, lam in kademeler[1:]:
         s = _cekirdek_degistir(s, kaba, mesh, r,
-                               float(kaba.spacing) / lam, rho0_solid)
+                               float(kaba.spacing) / lam, rho0_solid,
+                               malzeme_kaynagi=malzeme_kaynagi)
 
     # MERMI en ince seviyeye baglanir: `A1` olcutu merminin yerel
     # aralikla oranidir ve mermi her zaman cekirdektedir.
@@ -679,6 +729,7 @@ def refine_scene_kademeli(kaba, mesh, kademeler,
     h[imp] = 2.0 * s_min
     s.h = h
     s.diagnostics["kademeli"] = True
+    s.diagnostics["malzeme_kaynagi"] = malzeme_kaynagi
     s.diagnostics["n_kademe"] = len(kademeler)
     s.diagnostics["h_min"] = float(h.min())
     s.diagnostics["h_max"] = float(h.max())

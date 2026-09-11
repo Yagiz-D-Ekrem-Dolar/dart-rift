@@ -39,6 +39,9 @@ __all__ = [
     "particle_volume",
     "sample_boulder_radii",
     "place_boulders",
+    "place_boulders_v2",
+    "kure_birlesimi_ici",
+    "blok_hacim_kesri",
     "assign_material",
     "build_rubble_pile",
 ]
@@ -282,6 +285,259 @@ def place_boulders(mesh: TriMesh, f_boulder: float, q: float,
 
 
 # ---------------------------------------------------------------------------
+# 2b) Blok alani v2 -- SUREKLI geometri, GERCEK hacim kesri (rapor A74)
+# ---------------------------------------------------------------------------
+class _NoktaIzgarasi:
+    """Sabit nokta kumesi icin duzgun hucre indeksi -- kure sorgusu yerel."""
+
+    def __init__(self, pts: np.ndarray, hucre: float):
+        self.pts = np.ascontiguousarray(pts, dtype=np.float64).reshape(-1, 3)
+        self.h = float(hucre)
+        if self.h <= 0.0:
+            raise ValueError(f"hucre pozitif olmali, {hucre} geldi")
+        if len(self.pts) == 0:
+            self.lo = np.zeros(3)
+            self.boyut = np.ones(3, dtype=np.int64)
+            self.anahtar = np.empty(0, dtype=np.int64)
+            self.bas = self.son = np.empty(0, dtype=np.int64)
+            self.sira = np.empty(0, dtype=np.int64)
+            return
+        self.lo = self.pts.min(axis=0) - 1.0e-9
+        ijk = np.floor((self.pts - self.lo) / self.h).astype(np.int64)
+        self.boyut = ijk.max(axis=0) + 1
+        k = (ijk[:, 0] * self.boyut[1] + ijk[:, 1]) * self.boyut[2] + ijk[:, 2]
+        self.sira = np.argsort(k, kind="stable")
+        self.anahtar, self.bas = np.unique(k[self.sira], return_index=True)
+        self.son = np.append(self.bas[1:], len(k))
+
+    def kure_ici(self, c: np.ndarray, r: float) -> np.ndarray:
+        """`|p - c| < r` olan noktalarin indeksleri (kesin, ayni olcut)."""
+        if len(self.anahtar) == 0:
+            return np.empty(0, dtype=np.int64)
+        lo = np.maximum(np.floor((c - r - self.lo) / self.h).astype(np.int64), 0)
+        hi = np.minimum(np.floor((c + r - self.lo) / self.h).astype(np.int64),
+                        self.boyut - 1)
+        if np.any(hi < lo):
+            return np.empty(0, dtype=np.int64)
+        ii, jj, kk = np.meshgrid(*(np.arange(lo[d], hi[d] + 1) for d in range(3)),
+                                 indexing="ij")
+        keys = ((ii * self.boyut[1] + jj) * self.boyut[2] + kk).ravel()
+        pos = np.searchsorted(self.anahtar, keys)
+        ok = pos < len(self.anahtar)
+        ok[ok] = self.anahtar[pos[ok]] == keys[ok]
+        parca = [self.sira[self.bas[p]:self.son[p]] for p in pos[ok]]
+        if not parca:
+            return np.empty(0, dtype=np.int64)
+        a = np.concatenate(parca)
+        d = self.pts[a] - c[None, :]
+        return a[np.einsum("ij,ij->i", d, d) < r * r]
+
+
+def kure_birlesimi_ici(pts: np.ndarray, centers: np.ndarray,
+                       radii: np.ndarray) -> np.ndarray:
+    """`pts`'nin hangileri kurelerin BIRLESIMI icinde -> (N,) bool.
+
+    `assign_material` ile AYNI olcut (`|x - c|^2 < r^2`), ama her kure
+    icin butun noktalari taramak yerine hucre indeksiyle: fiziksel blok
+    boyutlarinda (binlerce blok) `O(B N)` olmaktan cikar.
+    """
+    pts = np.asarray(pts, dtype=np.float64).reshape(-1, 3)
+    out = np.zeros(len(pts), dtype=bool)
+    radii = np.asarray(radii, dtype=np.float64).ravel()
+    if len(radii) == 0 or len(pts) == 0:
+        return out
+    izg = _NoktaIzgarasi(pts, hucre=float(np.max(radii)))
+    for c, r in zip(np.asarray(centers, dtype=np.float64).reshape(-1, 3), radii,
+                    strict=True):
+        out[izg.kure_ici(c, float(r))] = True
+    return out
+
+
+def blok_hacim_kesri(mesh: TriMesh, boulders: BoulderField | None, *,
+                     root_seed: int = 0, n_ornek: int = 200_000) -> dict:
+    """Blok birlesiminin cisim icindeki GERCEK HACIM kesri -- Monte Carlo.
+
+    Uzman (2026-09-11): "f hacim kesridir; cok cozunurluklu sahnede
+    parcacik sayisi kesri kullanmayin." Yuzeyi kesen bloklarda kure
+    hacmi toplami da yanlis (disarida kalan kisim sayilir).
+    """
+    rng = stream_generator(root_seed, "blok_mc")
+    lo, hi = mesh.bounds
+    P = lo + rng.random((int(n_ornek), 3)) * (hi - lo)
+    P = P[inside_points(mesh, P)]
+    if boulders is None or len(boulders.radii) == 0:
+        return {"f": 0.0, "se": 0.0, "n_ic": int(len(P))}
+    ic = kure_birlesimi_ici(P, boulders.centers, boulders.radii)
+    f = float(ic.mean())
+    return {"f": f, "se": float(np.sqrt(max(f * (1.0 - f), 0.0) / len(P))),
+            "n_ic": int(len(P))}
+
+
+#: v1'in "tamamen icinde" sinamasinin 14 yonu (6 eksen + 8 kosegen).
+_YONLER_14 = np.vstack([np.eye(3), -np.eye(3),
+                        np.array(np.meshgrid([-1, 1], [-1, 1], [-1, 1]))
+                        .T.reshape(-1, 3) / np.sqrt(3.0)])
+
+
+def place_boulders_v2(mesh: TriMesh, f_boulder: float, q: float,
+                      r_min: float, r_max: float, root_seed: int, *,
+                      yuzey_kesisimi: bool = True,
+                      sabit_bloklar=None,
+                      n_mc: int = 200_000,
+                      azami_deneme: int = 2_000_000,
+                      blok_basina_deneme: int = 4096,
+                      havuz_grubu: int = 65_536,
+                      grup_carpani: float = 1.3) -> tuple[BoulderField, dict]:
+    """GERCEK hacim kesrine ulasana kadar cakismasiz blok yerlestir.
+
+    ## Neden (uzman yaniti 2026-09-11, rapor A74)
+
+    v1 (`place_boulders`) sonlu deneme butcesinde DOYUYOR ve durdugunu
+    yalniz `saturated` bayragiyla bildiriyor. Uzman olctu (R = 82,
+    q = 3, r = 14-42 m, ayni tohum): `f = 0,4304` ve `0,55` istekleri
+    AYNI 23 bloku veriyor (merkez/yaricap SHA-256 ozdes), gerceklesen
+    `0,3707`. Yani kesir dugmesinin ust kismi SAHNEDE HICBIR SEY
+    degistirmiyordu. Ustelik 14 yonlu "tamamen icinde" sinamasi yuzeyde
+    blok birakmiyor (200 000 yuzey yonunde blok payi `%0,5`); gozlenen
+    Dimorphos yuzeyi bloklarla kapli.
+
+    ## Ne yapiyor
+
+    - Hedef, BLOK BIRLESIMININ CISIM ICINDEKI HACIM KESRI; sabit
+      Monte Carlo noktalariyla (`blok_mc` akisi) olculur ve her kabulde
+      guncellenir. Durdurma olcutu bu olcumdur, kure hacmi toplami degil.
+    - `yuzey_kesisimi = True` (varsayilan): yalniz MERKEZ cismin icinde
+      olmali; blok yuzeyden tasabilir (gomulu yuzey bloku).
+    - `sabit_bloklar`: `[(merkez, yaricap), ...]` -- carpma sahasinda
+      BILINEN yuzey bloklari once yerlestirilir (uzman: "bilinen yuzey
+      bloklarini kosullayin; bilinmeyen ic yapiyi rastgeleleştirin").
+    - Yaricaplar gruplar halinde cekilir ve her grup BUYUKTEN KUCUGE
+      yerlestirilir (v1'in olculmus dersi). Bir blok `blok_basina_deneme`
+      adayda yer bulamazsa ATLANIR (sayilir), sonraki daha kucuk dener.
+
+    Hedefe ulasilamazsa `doydu = True` ve gerceklesen kesir dondurulur;
+    karari cagiran verir (`build_rubble_pile` HATA verir).
+    """
+    if not (0.0 <= f_boulder < 1.0):
+        raise ValueError(f"f_boulder [0,1) araliginda olmali, {f_boulder} geldi")
+    if not (0.0 < r_min < r_max):
+        raise ValueError(f"0 < r_min < r_max gerekli: {r_min}, {r_max}")
+    rng = stream_generator(root_seed, "material")
+    rng_mc = stream_generator(root_seed, "blok_mc")
+    lo, hi = mesh.bounds
+    P = lo + rng_mc.random((int(n_mc), 3)) * (hi - lo)
+    P = P[inside_points(mesh, P)]
+    if len(P) == 0:
+        raise ValueError("Monte Carlo noktalarinin hicbiri cismin icinde degil")
+    kapsanan = np.zeros(len(P), dtype=bool)
+    n_kapsanan = 0
+    izg_mc = _NoktaIzgarasi(P, hucre=float(r_max))
+    V = float(mesh.volume)
+
+    merkez: list[np.ndarray] = []
+    yaricap: list[float] = []
+    kova: dict[tuple, list[int]] = {}
+    hb = 2.0 * float(r_max)
+
+    def _anahtar(c):
+        return tuple(np.floor(c / hb).astype(np.int64).tolist())
+
+    def _cakisir(c, r) -> bool:
+        k = _anahtar(c)
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for dz in (-1, 0, 1):
+                    for i in kova.get((k[0] + dx, k[1] + dy, k[2] + dz), ()):
+                        d = merkez[i] - c
+                        if d @ d < (yaricap[i] + r) ** 2:
+                            return True
+        return False
+
+    def _ekle(c, r) -> None:
+        nonlocal n_kapsanan
+        merkez.append(np.asarray(c, dtype=np.float64))
+        yaricap.append(float(r))
+        kova.setdefault(_anahtar(c), []).append(len(merkez) - 1)
+        yeni = izg_mc.kure_ici(np.asarray(c, dtype=np.float64), float(r))
+        n_kapsanan += int(np.count_nonzero(~kapsanan[yeni]))
+        kapsanan[yeni] = True
+
+    for c, r in (sabit_bloklar or ()):
+        c = np.asarray(c, dtype=np.float64).reshape(3)
+        if _cakisir(c, float(r)):
+            raise ValueError(f"sabit bloklar cakisiyor: merkez {c}, r {r}")
+        _ekle(c, float(r))
+    n_sabit = len(merkez)
+
+    # ADAY HAVUZU: merkezler cismin icinden, TOPLU ic-sinamasiyla.
+    # `inside_points` her cagrida ucgen kovalarini yeniden kuruyor; aday
+    # basina cagri binlerce blokta dakikalar surerdi.
+    havuz = np.empty((0, 3))
+    hp = 0
+
+    def _aday() -> np.ndarray:
+        nonlocal havuz, hp
+        if hp >= len(havuz):
+            c = lo + rng.random((int(havuz_grubu), 3)) * (hi - lo)
+            havuz = c[inside_points(mesh, c)]
+            hp = 0
+            if len(havuz) == 0:
+                raise ValueError("aday havuzu bos -- mesh hacmi sifir mi?")
+        c = havuz[hp]
+        hp += 1
+        return c
+
+    deneme = 0
+    atlanan = 0
+    n_p = len(P)
+    while n_kapsanan < f_boulder * n_p and deneme < azami_deneme:
+        kalan = (f_boulder - n_kapsanan / n_p) * V * grup_carpani
+        rr, top = [], 0.0
+        while top < kalan:
+            r = float(sample_boulder_radii(rng, 1, r_min, r_max, q)[0])
+            rr.append(r)
+            top += 4.0 / 3.0 * np.pi * r ** 3
+        ilerledi = False
+        for r in sorted(rr, reverse=True):
+            if n_kapsanan >= f_boulder * n_p or deneme >= azami_deneme:
+                break
+            yerlesti = False
+            for _ in range(blok_basina_deneme):
+                if deneme >= azami_deneme:
+                    break
+                deneme += 1
+                c = _aday()
+                if not yuzey_kesisimi:
+                    prob = c[None, :] + r * _YONLER_14
+                    if not np.all(inside_points(mesh, prob)):
+                        continue
+                if not _cakisir(c, r):
+                    _ekle(c, r)
+                    yerlesti = ilerledi = True
+                    break
+            if not yerlesti:
+                atlanan += 1
+        if not ilerledi:
+            break           # butun grup yer bulamadi -- doygunluk
+    C = np.asarray(merkez, dtype=np.float64).reshape(-1, 3)
+    Rr = np.asarray(yaricap, dtype=np.float64)
+    f_g = n_kapsanan / n_p
+    kesen = 0
+    if len(Rr):
+        prob = (C[:, None, :] + Rr[:, None, None] * _YONLER_14[None]).reshape(-1, 3)
+        kesen = int(np.count_nonzero(
+            ~inside_points(mesh, prob).reshape(len(Rr), -1).all(axis=1)))
+    tani = {"f_hedef": float(f_boulder), "f_gercek": float(f_g),
+            "f_se": float(np.sqrt(max(f_g * (1.0 - f_g), 0.0) / n_p)),
+            "n_mc_ic": int(n_p), "n_blok": int(len(Rr)), "n_sabit": int(n_sabit),
+            "n_atlanan": int(atlanan), "deneme": int(deneme),
+            "doydu": bool(f_g < f_boulder), "n_yuzeyi_kesen": kesen,
+            "kure_hacmi_kesri": float(np.sum(4.0 / 3.0 * np.pi * Rr ** 3) / V),
+            "yuzey_kesisimi": bool(yuzey_kesisimi)}
+    return BoulderField(C, Rr), tani
+
+
+# ---------------------------------------------------------------------------
 # 3) Malzeme alani
 # ---------------------------------------------------------------------------
 def assign_material(x: np.ndarray, boulders: BoulderField | None,
@@ -359,8 +615,18 @@ def build_rubble_pile(
     r_min: float | None = None,
     r_max: float | None = None,
     packing: str = "fcc",
+    blok_uretici: str = "v1",
+    sabit_bloklar=None,
+    n_mc: int = 200_000,
 ) -> RubblePile:
     """Mesh'ten tam bir moloz yigini uret (P3-FR-02/03/04).
+
+    `blok_uretici` (rapor A74):
+      "v1" -- eski yerlestirici, BIT-AYNI. Hedef kesre ulasamayinca
+              sessizce doyar; kesir PARCACIK SAYISINDAN.
+      "v2" -- `place_boulders_v2`: GERCEK HACIM kesrine (Monte Carlo)
+              ulasir ya da HATA verir; yuzeyi kesen bloklara izin
+              verir; matris distansiyonu HACIM kesrinden cozulur.
 
     KUTLE GOZENEKLILIKTEN TUREIR — bagimsiz verilmez (ADR-0030):
 
@@ -402,31 +668,64 @@ def build_rubble_pile(
     x = fill_particles(mesh, spacing, packing=packing)
     v_p = particle_volume(spacing, packing)
 
+    if blok_uretici not in ("v1", "v2"):
+        raise ValueError(f"blok_uretici 'v1' ya da 'v2' olmali, {blok_uretici!r}")
     boulders = None
+    btani: dict = {}
     if model_class == "M1":
         if f_boulder <= 0.0:
             raise ValueError("M1 sinifi f_boulder > 0 gerektirir")
         rmin = r_min if r_min is not None else 2.0 * spacing
         rmax = r_max if r_max is not None else 8.0 * spacing
-        boulders = place_boulders(mesh, f_boulder, q, rmin, rmax, root_seed)
+        if blok_uretici == "v1":
+            boulders = place_boulders(mesh, f_boulder, q, rmin, rmax, root_seed)
+        else:
+            boulders, btani = place_boulders_v2(
+                mesh, f_boulder, q, rmin, rmax, root_seed,
+                sabit_bloklar=sabit_bloklar, n_mc=n_mc)
+            # SESSIZ DOYMA YASAK (A74): istenen kesir sahnede yoksa
+            # sonuc o kesre ait sayilamaz.
+            tol = 3.0 * btani["f_se"]
+            if btani["f_gercek"] < f_boulder - tol:
+                raise ValueError(
+                    f"blok hacim kesri hedefi {f_boulder:.4f} ULASILAMADI: "
+                    f"gerceklesen {btani['f_gercek']:.4f} (+-{btani['f_se']:.4f}), "
+                    f"{btani['n_blok']} blok, {btani['n_atlanan']} atlandi, "
+                    f"r = {rmin}-{rmax} m. Onsel bu kesri icermemeli ya da "
+                    f"blok boyutlari kuculmeli.")
 
-    # Blok kesri ancak yerlestirmeden SONRA bilinir; matris distansiyonu da
-    # ona bagli oldugu icin cozum burada.
-    _, _, is_b_on = assign_material(x, boulders, 1.0, 0.0, 1.0, 0.0)
-    f_parcacik = float(np.count_nonzero(is_b_on) / max(len(x), 1))
+    if blok_uretici == "v1":
+        # Blok kesri ancak yerlestirmeden SONRA bilinir; matris distansiyonu
+        # da ona bagli oldugu icin cozum burada.
+        _, _, is_b_on = assign_material(x, boulders, 1.0, 0.0, 1.0, 0.0)
+        f_parcacik = float(np.count_nonzero(is_b_on) / max(len(x), 1))
+        f_cozum = f_parcacik
+    else:
+        # v2: kesir HACIMDIR (uzman, Soru 3/4) -- kafesin parcacik sayisi
+        # degil. Kaba kafes kucuk bloklari ORNEKLEYEMEZ; yogunluk tanimi
+        # kafese bagli olmamali.
+        is_b_on = (kure_birlesimi_ici(x, boulders.centers, boulders.radii)
+                   if boulders is not None else np.zeros(len(x), bool))
+        f_parcacik = float(np.count_nonzero(is_b_on) / max(len(x), 1))
+        f_cozum = float(btani.get("f_gercek", 0.0))
     alpha_m_cozulen = matrix_alpha0_for_bulk_density(
-        bulk_density, rho0_solid, boulder_alpha0, f_parcacik)
+        bulk_density, rho0_solid, boulder_alpha0, f_cozum)
     alpha_m = alpha_m_cozulen if matrix_alpha0 is None else float(matrix_alpha0)
     if alpha_m < 1.0:
         raise ValueError(f"matrix_alpha0 >= 1 olmali, {alpha_m} geldi")
 
-    alpha0, y0, is_b = assign_material(
-        x, boulders, alpha_m, matrix_Y0, boulder_alpha0, boulder_Y0)
+    if blok_uretici == "v1":
+        alpha0, y0, is_b = assign_material(
+            x, boulders, alpha_m, matrix_Y0, boulder_alpha0, boulder_Y0)
+    else:
+        is_b = is_b_on
+        alpha0 = np.where(is_b, boulder_alpha0, alpha_m)
+        y0 = np.where(is_b, boulder_Y0, matrix_Y0)
     # KUTLE GOZENEKLILIKTEN TUREIR — birim bolunmesi boylece tam saglanir.
     m = (rho0_solid / alpha0) * v_p
 
     rho_yigin = float(np.sum(m) / (len(x) * v_p))
-    if matrix_alpha0 is not None:
+    if matrix_alpha0 is not None and blok_uretici == "v1":
         sapma = abs(rho_yigin - bulk_density) / bulk_density
         if sapma > 1.0e-9:
             raise ValueError(
@@ -464,6 +763,15 @@ def build_rubble_pile(
     # Doyma SESSIZ kalmamali: hedefe ulasilamadiysa cagiran taraf gormeli.
     v_t = diag["boulder_volume_target"]
     diag["boulder_saturated"] = bool(v_t > 0.0 and diag["boulder_volume_placed"] < 0.9 * v_t)
+    diag["blok_uretici"] = blok_uretici
+    if blok_uretici == "v2":
+        # v2'de yigin yogunlugu HACIM kesrinden tanimli; kafesin ornekledigi
+        # kesir farkliysa kafes yogunlugu hedeften SAPAR ve bu RAPORLANIR.
+        diag.update({f"blok_{k}": v for k, v in btani.items()})
+        diag["boulder_saturated"] = bool(btani.get("doydu", False))
+        diag["blok_kesri_kafes"] = f_parcacik
+        diag["yogunluk_sapmasi_kafes"] = float(
+            (rho_yigin - bulk_density) / bulk_density)
     return RubblePile(x=x, m=m, alpha0=alpha0, Y0=y0, is_boulder=is_b,
                       spacing=spacing, mesh_volume=float(mesh.volume),
                       boulders=boulders, diagnostics=diag)

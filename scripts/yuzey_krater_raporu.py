@@ -63,7 +63,7 @@ def nokta_olc(yol: Path, *, eski: bool = True) -> dict:
     return k
 
 
-def kol_olc(desenler) -> list[dict]:
+def kol_olc(desenler, ad: str = "") -> list[dict]:
     import vekil_posterior as vp
 
     kayit = []
@@ -74,6 +74,13 @@ def kol_olc(desenler) -> list[dict]:
                 k = nokta_olc(yol)
                 k["tohum"] = tohum
                 kayit.append(k)
+                # ILERLEME HER NOKTADA (ilk surum yalniz kol sonunda yaziyordu;
+                # giris dugumunde surec olunce hicbir sey kalmadi).
+                print(f"  [{ad}] {len(kayit):3d} {yol.name[:26]}  "
+                      f"eski {k.get('derinlik_eski', float('nan')):.4f}  "
+                      f"YENI {k.get('derinlik', float('nan')):.4f}"
+                      + (f"  HATA {k['hata']}" if "hata" in k else ""),
+                      flush=True)
     return kayit
 
 
@@ -129,9 +136,12 @@ def main(argv=None) -> int:
 
     cikti = {}
     for ad, desen in a.kol:
-        kayit = kol_olc([desen])
+        kayit = kol_olc([desen], ad)
         oz = kol_ozeti(ad, kayit)
         cikti[ad] = {"ozet": oz, "noktalar": kayit}
+        if a.json:            # ARA KAYIT: her kol bitince
+            a.json.write_text(json.dumps(cikti, indent=1, default=float),
+                              encoding="utf-8")
         n_hata = sum("hata" in k for k in kayit)
         print("=" * 78)
         print(f"{ad}: {len(kayit)} durum, {n_hata} olculemedi")
@@ -139,7 +149,7 @@ def main(argv=None) -> int:
             print(f"  {oz.get('hata', 'ozet yok')}")
             continue
         print(f"  ortalama derinlik  eski {oz['eski_ortalama']:.4f}  "
-              f"YENI {oz['yeni_ortalama']:.4f} m")
+              f"YENI {oz['yeni_ortalama']:.4f} m", flush=True)
         for nic in ("eski", "yeni"):
             s = oz.get(f"sinyal_{nic}")
             if not s:

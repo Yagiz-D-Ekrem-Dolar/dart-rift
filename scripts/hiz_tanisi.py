@@ -231,7 +231,19 @@ def ezilme_mi_sok_mu(s: dict) -> dict:
     # sinavini gecer ve "sok var" der. Olculen: gozeneksiz kolda
     # `16 762` parcacik boyle yanlis sayildi. `%0,1` payi bunu keser.
     KATI_PAYI = 1.001
-    kati = rho > RHO0_KATI * KATI_PAYI   # gercek kati sikismasi
+    # A76 (uzman, 2026-09-11): KATI ISKELET yogunlugu `rho_s = alpha rho`
+    # -- GUNCEL distansiyonla. Ham `rho < 2700` "kati sikismadi" DEMEZ:
+    # gozenekler kismen acikken katinin kendisi sikismis olabilir.
+    # `alpha` alani olmayan (A50 oncesi) dosyada ham `rho`'ya donulur ve
+    # bu `kati_tanimi` alaninda ACIKCA yazilir.
+    if "alpha" in s:
+        alfa = np.asarray(s["alpha"], dtype=np.float64)[hedef]
+        rho_s = alfa * rho
+        kati_tanimi = "alpha*rho"
+    else:
+        rho_s = rho
+        kati_tanimi = "rho (alpha YOK -- A50 oncesi dosya)"
+    kati = rho_s > RHO0_KATI * KATI_PAYI   # gercek kati sikismasi
 
     i = int(np.argmax(sik))
     return {
@@ -245,6 +257,8 @@ def ezilme_mi_sok_mu(s: dict) -> dict:
         },
         "rho_max": float(rho.max()),
         "rho_max_bolu_kati": float(rho.max() / RHO0_KATI),
+        "rho_s_max_bolu_kati": float(rho_s.max() / RHO0_KATI),
+        "kati_tanimi": kati_tanimi,
         "kati_payi": KATI_PAYI,
         **_kumelenme(s, kati),
         "n_kati_sikisan": int(kati.sum()),
@@ -285,7 +299,7 @@ def ezilme_raporu(ad: str, e: dict) -> str:
         f"     salt gozenek kapanmasi tavani = {s['gozenek_tavani']:.2f}%"
         f"   -> olculen tavanin {tavan_yon}",
         f"  rho_max = {e['rho_max']:.1f}  ({e['rho_max_bolu_kati']:.4f} x rho0_kati)",
-        f"  kati sikisan (rho > 2700): {e['n_kati_sikisan']} parcacik, "
+        f"  kati sikisan ({e['kati_tanimi']} > 2700): {e['n_kati_sikisan']} parcacik, "
         f"{e['M_kati_sikisan']:.4g} kg  ({100 * e['kati_sikisan_pay']:.3f}%)",
         f"  ezilme durumu: bakir={e['n_bakir']}  kismen={e['n_kismen_ezilmis']}  "
         f"tam={e['n_tam_ezilmis']}",

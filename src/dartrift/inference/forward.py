@@ -60,7 +60,8 @@ GOZLENEBILIRLER = ("beta", "krater_derinlik", "ejekta_kutle_kesri")
 def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
                  alpha_av=1.0, beta_av=2.0,
                  matris_cekme_yok=False, cfl=0.25,
-                 akma_kipi="son") -> str:
+                 akma_kipi="son", malzeme_kaynagi="kaba",
+                 komsu_arama="hash") -> str:
     """Kosunun FIZIK yapilandirmasinin SHA-256 ozeti (16 hane).
 
     Iki cikti ayni `theta`yi tasiyip FARKLI fizikle uretilmis
@@ -90,6 +91,13 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
         parcalar.append(f"cfl={float(cfl):.17g}")
     if str(akma_kipi) != "son":
         parcalar.append(f"akma_kipi={akma_kipi}")
+    # A74: ince parcacik malzemesinin kaynagi sahneyi degistiriyor.
+    if str(malzeme_kaynagi) != "kaba":
+        parcalar.append(f"malzeme_kaynagi={malzeme_kaynagi}")
+    # A52: komsu arama toplama SIRASINI degistirir (yuvarlama duzeyinde);
+    # bit-duzeyinde kimlik icin ayri tutulur.
+    if str(komsu_arama) != "hash":
+        parcalar.append(f"komsu_arama={komsu_arama}")
     ham = "|".join(parcalar).encode("utf-8")
     return hashlib.sha256(ham).hexdigest()[:16]
 
@@ -487,7 +495,9 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         durum_dizini=None, surum: str | None = None,
                         alpha_av: float = 1.0, beta_av: float = 2.0,
                         matris_cekme_yok: bool = False,
-                        cfl: float = 0.25, akma_kipi: str = "son"
+                        cfl: float = 0.25, akma_kipi: str = "son",
+                        malzeme_kaynagi: str = "kaba",
+                        komsu_arama: str = "hash"
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
@@ -544,7 +554,10 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             kaba = build_scene(spacing=spacing, device="cpu", **kw)
             mesh = _build_mesh("icosphere",
                                radius=float(kaba.target_radius), subdiv=4)
-            rs = refine_scene_kademeli(kaba, mesh, kad)
+            # A74: "geometri" ince parcaciklarin malzemesini SUREKLI blok
+            # alanindan yeniden degerlendirir; "kaba" eski kopya (bit-ayni).
+            rs = refine_scene_kademeli(kaba, mesh, kad,
+                                       malzeme_kaynagi=malzeme_kaynagi)
             x0 = np.array(rs.x, dtype=np.float64, copy=True)
             sol = WarpSolid3D(
                 np.ascontiguousarray(rs.x), np.ascontiguousarray(rs.v),
@@ -569,7 +582,9 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 cekme_kirp_maske=(
                     (~np.asarray(rs.is_impactor, dtype=bool)
                      & ~np.asarray(rs.is_boulder, dtype=bool))
-                    if matris_cekme_yok else None))
+                    if matris_cekme_yok else None),
+                # A52: "bvh" destek kutulu BVH + sirali CSR; "hash" eski.
+                komsu_arama=komsu_arama)
             t = 0.0
             kontrol = max(1, azami_adim // 200)
             # A70: SOK KAPISI ARTIK ZIRVEDEN OKUNUYOR.
@@ -665,7 +680,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                                              kademeler, spacing, t_end,
                                              alpha_av, beta_av,
                                              matris_cekme_yok, cfl,
-                                             akma_kipi),
+                                             akma_kipi, malzeme_kaynagi,
+                                             komsu_arama),
                     # A72 / Protokol J: zaman adimi ve kuvvet aninda
                     # akma tanisi. JSON metni -- pickle gerektirmez.
                     cfl=float(cfl), akma_kipi=str(akma_kipi),

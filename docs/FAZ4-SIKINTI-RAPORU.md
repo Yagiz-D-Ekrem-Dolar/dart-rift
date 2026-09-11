@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-08-21 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 14 (bölüm 1) · **Açık:** 56 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A70 · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-11 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 61 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76 · A70 **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -4104,6 +4104,37 @@ kalkınca `−15 MPa` çekme onu geri çekiyor.
 ---
 ### A52 — **Komşu arama yarıçapı `2·h_max`: çözünürlük merdivenini kilitliyor** (2026-09-06)
 
+> ### Çare yazıldı ve ölçüldü (2026-09-11) — açık kalıyor
+>
+> Uzmanın önerdiği yol (Soru 6/20): **destek kutulu Warp BVH** + her
+> satırı kalıcı kimliğe göre **sıralı CSR**
+> (`warp_core/komsu_bvh.py`, `WarpSolid3D(komsu_arama="bvh")`).
+> Gather kalıyor, `h_ij` değişmiyor, atomik yok; ikinci
+> değerlendirmede liste yeniden kurulmuyor. `hash` varsayılan ve
+> **bit-aynı**.
+>
+> Sınavlar (`tests/test_komsu_bvh.py`, 12): liste eksiksiz ve
+> `1 + 1e-9` payından fazlası yok; satırlar sıralı; CUDA CSR'si CPU
+> CSR'siyle **birebir**; GPU tekrarı bit-eşit; `bvh` ↔ `hash` fiziği
+> `1e-10` içinde (yalnız toplama sırası).
+>
+> Çekirdek süreleri (RTX 3050, kaba merdiven, `N = 16 954`, ms/adım):
+>
+> | | hash | bvh (ekleme sıralama) | **bvh (bölütlü sıralama)** |
+> |---|---:|---:|---:|
+> | hız gradyanı | 431 | 45 | **45** |
+> | kuvvetler | 307 | 84 | **83** |
+> | liste doldur | — | **256** | 17 |
+> | sayım | — | 17 | 17 |
+> | **adım** | **742** | 405 | **199** |
+>
+> Yani `3,73×`. Satır başına ekleme sıralaması, fizik
+> çekirdeklerinin toplamından uzundu; bölütlü radix sıralamayla
+> (`wp.utils.segmented_sort_pairs`) kalktı. Kalan süre FP64 fizik
+> (dizüstü GPU'da FP64 = FP32/64). **H100 ölçümü (iş K) bekleniyor.**
+> Üçüncü çözünürlük seviyesi bu hızla koşulabilir mi — o ölçümle
+> belli olacak; A52 ancak o zaman kapanır.
+
 `solver_solid.py:84`:
 
 ```python
@@ -4885,7 +4916,7 @@ gösterimi**dir, fiziksel bir öngörü değil. Öyle bildirilecek.
 > `4` kat çözünürlük değişimine dayandı, ikincisi dayanmadı.
 
 ---
-### A70 — **Şok kapısı artık ZİRVEDEN okunuyor** (2026-09-06) — *A45/A68'in çaresi*
+### A70 — **Şok kapısı artık ZİRVEDEN okunuyor** (2026-09-06) — *A45/A68'in çaresi* → **KAPANDI** (2026-09-10)
 
 A45 ölçtü: şok mermiyi `6,0e-05 s`'te geçiyor (`≈ 11` adım), ama
 kapı **son durumda** değerlendiriliyordu.
@@ -4931,6 +4962,189 @@ ile yalnız `~185` adım demek.
 Bu değişiklik `G2`'yi okunabilir yapmayı **amaçlıyor** ama
 **doğrulanmadı**: `G2` yeniden koşulmadan `39/48` reddin kalkıp
 kalkmadığı bilinmiyor. Öyle bildiriliyor.
+
+> ### Doğrulandı (2026-09-10) → KAPANDI
+>
+> `G2` aynı tasarımla yeniden koşuldu; tek fark kapının zirveden
+> okunması. Son durum kapısı `9/48` geçiriyordu, zirve kapısı
+> **`47/48`** (düşen tek nokta kapıdan değil). Çare çalıştı.
+
+---
+### A71 — **Geçiş noktası `x₀` çözünürlüğe dayanıklı DEĞİL** (2026-09-10) — *Protokol I*
+
+Kilitli ölçüt (`scripts/gecis_raporu.py`, koşudan önce commit'lendi):
+
+| ölçek | `N` | `x₀` | `σ_x₀` | `Y₀(x₀)` | `w` | `R²` |
+|---|---:|---:|---:|---:|---:|---:|
+| kaba | 17 201 | 6,340 | 0,1179 | 2,19e6 Pa | 0,538 | 0,9411 |
+| orta | 69 886 | 5,950 | 0,1079 | 8,91e5 Pa | 0,383 | 0,9633 |
+
+`|Δx₀| = 0,3898`, birleşik `σ = 0,1599`, **`2,44σ` → ZAYIF**.
+
+*"Mutlak derinlik yakınsamıyor ama geçiş noktası aktarılabilir"*
+hipotezi (A69'dan sonra) **tutmadı**.
+
+Uzman (2026-09-11) eşleşmiş jackknife ile `1,86σ` buldu; ama açıkça
+*"ZAYIF kararını geri almak için kullanılmamalı"* dedi. Karar
+**ZAYIF** kalıyor. Asıl önemli ek: A72 ve A73 bu kaymanın **iki somut
+adayını** verdi (zaman adımı yolu, ölçüm operatörü) — Protokol J
+birincisini sınıyor.
+
+---
+### A72 — **Kuvvet anında akma sınırı AŞILIYOR** (2026-09-11) — *uzman bulgusu, ölçüldü*
+
+`step_kdk_solid` ve `WarpSolid3D.step` gerilmeyi yarım adım
+ilerletip kuvveti **geri döndürülmemiş** deneme gerilmesiyle
+hesaplıyor; akma yüzeyine dönüş ancak adım sonunda
+(`solver_solid.py`: yarım tekme → iki `_eval` → `return_mapping_k`).
+
+**Birim sınav** (125 parçacık saf kayma, `G = 2,27e10`, `γ̇ = 1/s`,
+`Δt = 1e-5`, `Y = 100 Pa`; `tests/test_akma_kuvvet_ani.py`):
+
+| ölçü | değer |
+|---|---:|
+| kuvvetin gördüğü `q / Y` | **1 966** (`(√3/2) G γ̇ Δt / Y`) |
+| `Δt/2`, `Δt/4` | `0,500`, `0,250` kat — **doğrusal** |
+| deviatorik hız tepkisi oranı `son/ara` | `1 966,1` |
+| aşan parçacık | 125 / 125 |
+
+**Üretim koşusunda** (`J1_son_c0250`, G1 koşulu, iş `1555356`,
+hedef parçacıkları, koşu boyunca):
+
+| `Y₀` (Pa) | `q/Y` en büyük | `q/Y` p99 | akmayı aşan hedef kütlesi |
+|---:|---:|---:|---:|
+| 1,28e3 | 457 600 | 121 600 | **%42,2** |
+| 5,56e3 | 92 230 | 28 380 | %37,6 |
+| 7,33e3 | 72 670 | 21 470 | %37,0 |
+| 1,21e4 | 44 460 | 13 050 | %31,1 |
+| 1,66e4 | 31 040 | 9 507 | %26,7 |
+| 4,25e4 | 13 300 | 3 701 | %14,3 |
+| 5,51e5 | 913 | 283 | %1,7 |
+| 7,59e5 | 585 | 202 | %0,7 |
+
+Kuvvetin gördüğü eşdeğer gerilme `Y₀`'dan **bağımsız** `~5e8 Pa`.
+Zayıf matrislerde hedef kütlesinin `%27–42`'si kuvvet anında akma
+sınırının **binlerce katını** görüyor. G1'deki *"`Y₀ < 1e5 Pa`'da
+plato"* bununla açıklanabilir; henüz **kanıtlanmadı**.
+
+#### Yapılan
+
+- `RefParams.akma_kipi`: `"son"` (varsayılan, **bit-aynı** — `O4`:
+  `J1_son_c0250` G1'i 13/13 noktada bit bit tekrar ediyor) ve `"ara"`
+  (her kuvvet çağrısından önce o anki `P` ile akma yüzeyine dönüş).
+- `akma_orani_k`: kuvvet anı `q/Y(P)` tanısı, parçacık başına.
+- `I2_ara_c0250` (orta, üretim ölçeği): her noktada `q/Y` en büyük
+  **tam `1`** — düzeltme üretimde çalışıyor.
+- **Protokol J** (koşudan önce kilitli): sabit `h`'de `Δt` yarılama ×
+  `{son, ara}`, G1 ve G2 koşulları, + `ara` kipinde orta çözünürlük.
+
+Açık kalıyor: J yargısı gelmeden ve `ara`'nın enerji / P-α / hasar
+tutarlılığı üretim ölçeğinde doğrulanmadan kapanmaz.
+
+---
+### A73 — **`krater_derinlik` bir yüzey değil** (2026-09-11) — *uzman bulgusu*
+
+`crater_profile(kutulama="eksen")` açısal halkalardaki **bütün**
+hacim parçacıklarının **sayı ağırlıklı** `p95`'ini alıyor. Uzmanın
+karşı örnekleri (G1/I/G2'den gerçek geometriler):
+
+| deney | G1 | I | G2 |
+|---|---:|---:|---:|
+| gerçek kaydın derinliği | 0,350 | 0,639 | 0,541 |
+| dış `1 m` kabuk SABİT, yalnız iç taşındı | **0,492** | **0,494** | **0,492** |
+| aynı koordinatlar 8 kat çoğaltıldı | 0,341 | 0,708 | 0,381 |
+
+`0,5 m` ayak izli `1 m` derin analitik çukurda `0,0012 m`.
+
+#### Yapılan — `krater_yuzey` (fiziksel yüzey operatörü)
+
+SPH doluluk `φ = Σ (m/ρ) W` eş-yüzeyi; çarpma eksenine paralel
+ışınlar **sabit fiziksel** yanal uzaklıklarda; ayrılan ejekta
+dışlanır; rijit kayma / küresel düşüş / sıkışma **ayrı**.
+`tests/test_krater_yuzey.py`, 13 sınav:
+
+| sınav | eski | **yeni** |
+|---|---:|---:|
+| dış 1 m kabuk sabit | 0,49 m | **8,9e-4 m** |
+| 8 kat yeniden örnekleme | 0,34 → 0,71 | **fark 0** |
+| geniş çukur `a = 5 m` | — | **0,9899 = ayrık gerçek** |
+| dar çukur `a = 0,5 m` | 0,0012 | **0,259** (destek 1,4 m) |
+
+**Benim hatam, ölçülüp düzeltildi:** ilk sürüm kütle merkezi
+kaymasını rijit hareket diye çıkarıyordu; iç kütle kayınca **sabit**
+yüzeyi `0,375 m` yukarı taşıyordu. Düzeltme artık varsayılan kapalı.
+
+Açık kalıyor: kilitli protokoller eski gözlenebilirle yazıldı; yeni
+operatör kampanya durumlarına **betimleyici** uygulanıyor
+(`scripts/yuzey_krater_raporu.py`). Yeni kampanyalar hangi
+gözlenebilirle kilitlenecek — ayrı karar.
+
+---
+### A74 — **Blok kesri düğmesinin üst kısmı ölü; ince parçacık bloğu göremiyor** (2026-09-11) — *uzman bulgusu, genişletildi*
+
+**(a) v1 yerleştirici doyuyor.** Aynı tohumla `f = 0,4304` ve `0,55`
+**aynı** geometriyi veriyor (merkez/yarıçap SHA-256 eşit). Ölçüldü,
+üç tohum:
+
+| tohum | doyduğu kesir | blok |
+|---|---:|---:|
+| 20260906 | 0,3707 | 23 |
+| 99991111 | 0,3489 | 26 |
+| 20260801 | 0,3628 | 23 |
+
+**G1/G2'nin 48 noktası için gerçekleşen kesir** (Monte Carlo,
+`scripts/gercek_blok_kesri.py`):
+
+| | nominal | **gerçek** |
+|---|---|---|
+| aralık | 0,051 – 0,484 | **0,102 – 0,371** |
+| `> 0,37` isteyen nokta | 14 / 48 | — |
+| doymuş | — | 11 / 48 |
+| `|f_gerçek − f_nominal| > 0,05` | — | 12 / 48 |
+| `ρ(f_nominal, f_gerçek)` | — | +0,973 |
+
+Alt uçta da sıkışma var: `0,05` isteyen nokta tek bir `42 m`'lik
+blokla (hacmin `%13`'ü) `~0,10` alıyor. Blok kesri ekseni sahnede
+**dar bir banda** sıkışmış ve analize **nominal** değerleriyle girdi.
+
+**(b) Yüzeyde blok yok.** 14 yönlü "tamamen içinde" sınaması.
+
+**(c) İnce parçacık malzemesi kabadan kopyalanıyor.** Kabanın
+örneklemediği `1 m`'lik blokta ince noktaların **hiçbiri** blok
+etiketi almıyor (uzman ölçtü; `tests/test_blok_alani.py` kilitledi).
+
+#### Yapılan
+
+- `place_boulders_v2`: **gerçek hacim kesrine** ulaşır ya da açıkça
+  doyduğunu bildirir; yüzeyi kesen blok serbest; bilinen yüzey
+  blokları (`sabit_bloklar`) önce yerleşir. 14–42 m ile `0,25 / 0,30 /
+  0,43` tuttu, `0,50 / 0,55` `~0,49–0,51`'de doydu. Fiziksel boyutta
+  (1,7–6,5 m) 2 576 blok, 1,8 s.
+- `build_rubble_pile(blok_uretici="v2")`: `α_m` **hacim** kesrinden;
+  ulaşılamayan kesirde HATA.
+- `malzeme_kaynagi="geometri"`: ince parçacık malzemesi sürekli blok
+  alanından.
+- Varsayılanlar (`v1`, `kaba`) **bit-aynı**; kampanyalarda henüz
+  kullanılmadı.
+
+---
+### A75 — **Mermi hedefin Tillotson parametrelerini kullanıyor** (2026-09-11) — *uzman bulgusu, açık*
+
+Çözücü tek bir `TillotsonWp` yapısını **bütün** parçacıklara uyguluyor.
+Mermiye ayrı yoğunluk / `α₀` / `Y₀` verilmesi ayrı bir alüminyum EOS
+demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
+uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
+da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
+verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A76 — **"Katı sıkışma" tanısı ham `ρ`'ya bakıyor** (2026-09-11) — *uzman bulgusu, açık*
+
+`hiz_tanisi.py` ve `faz48_iki_asama.py` izleri `ρ > 2700` ile katı
+sıkışmayı sayıyor. Katı iskelet yoğunluğu `ρ_s = α ρ`; ham `ρ < 2700`
+tek başına "katı sıkışmadı" demez. Uzmanın üç kayıttaki ölçümü:
+`max(α ρ / 2700) ≈ 1,00008 – 1,00033` — bu örneklerde katı sıkışması
+gerçekten çok küçük, yani **sonuç** değişmiyor; **tanım** yanlış.
 
 ---
 ### A18 — **`G4-C`'nin ensemble verisi depoda yok ve geri alınamıyor** (2026-08-21)

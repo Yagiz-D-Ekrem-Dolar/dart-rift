@@ -39,6 +39,11 @@ STREAMS: dict[str, int] = {
     # tasariminin (Latin hiperkup) kendi akisi olmali; `realization`i
     # paylasirsa tasarim degistiginde kosu tohumlari da kayardi.
     "inference_design": 4,
+    # SONA EKLEME (2026-09-11, blok alani v2, rapor A74). 0..4 DEGISMEDI.
+    # Gerceklesen blok HACIM kesrinin Monte Carlo orneklemesi kendi
+    # akisinda: yerlestiricinin cekimleriyle ic ice gecerse ornek noktalar
+    # yerlesim sirasina bagli olurdu.
+    "blok_mc": 5,
 }
 
 

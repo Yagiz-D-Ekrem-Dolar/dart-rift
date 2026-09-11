@@ -397,7 +397,11 @@ def _iz_ornegi(st, *, hedef, R, v_esc, ehat, p_imp, x0,
             # OTESI yalnizca katinin sikismasidir.
             _rho_h = np.asarray(st["rho"])[hedef]
             d["rho_max"] = float(_rho_h.max())
-            d["n_kati_sikisan"] = int((_rho_h > 2700.0 * 1.001).sum())
+            # A76: kati iskelet yogunlugu `alpha * rho` (GUNCEL alpha).
+            _alfa_h = (np.asarray(st["alpha"])[hedef] if "alpha" in st
+                       else np.ones_like(_rho_h))
+            d["rho_s_max"] = float((_alfa_h * _rho_h).max())
+            d["n_kati_sikisan"] = int((_alfa_h * _rho_h > 2700.0 * 1.001).sum())
             # CEKME TANISI (uzman incelemesi, rapor A51). Y0 YALNIZ
             # deviatorik gerilmeyi sinirliyor; Tillotson'un negatif
             # hidrostatik dalini SINIRLAMIYOR. Olculdu: u=0, a=1,7564,

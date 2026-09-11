@@ -50,6 +50,12 @@ class Scene:
     impact_direction: np.ndarray  # (3,) birim
     surface_normal: np.ndarray    # (3,) birim, disa
     diagnostics: dict = field(default_factory=dict)
+    # SUREKLI BLOK ALANI (rapor A74). Inceltme yeni parcaciklarin
+    # malzemesini kaba ebeveynden KOPYALAMAK yerine bu geometriden
+    # yeniden degerlendirebilsin diye sahneyle birlikte tasinir.
+    # `digest`e GIRMEZ: dizilerin kendisi zaten bu geometriden turer.
+    blok_alani: object = None
+    malzeme_parametreleri: dict = field(default_factory=dict)
 
     @property
     def n(self) -> int:
@@ -138,6 +144,8 @@ def build_scene(
     settle: dict | None = None,
     material=None,
     device: str = "cuda:0",
+    blok_uretici: str = "v1",
+    sabit_bloklar=None,
 ) -> Scene:
     """Config parametrelerinden tam sahneyi kur.
 
@@ -155,6 +163,7 @@ def build_scene(
         model_class=model_class, matrix_alpha0=matrix_alpha0, matrix_Y0=matrix_Y0,
         boulder_alpha0=boulder_alpha0, boulder_Y0=boulder_Y0,
         f_boulder=f_boulder, q=q, r_min=r_min, r_max=r_max,
+        blok_uretici=blok_uretici, sabit_bloklar=sabit_bloklar,
     )
 
     x_t = np.ascontiguousarray(pile.x, dtype=np.float64)
@@ -253,6 +262,14 @@ def build_scene(
                 imp.diagnostics["particles_across_diameter"]),
             "pile": pile.diagnostics,
             "settling": settle_diag,
+        },
+        blok_alani=pile.boulders,
+        malzeme_parametreleri={
+            "matrix_alpha0": float(pile.diagnostics["matrix_alpha0_used"]),
+            "matrix_Y0": float(matrix_Y0),
+            "boulder_alpha0": float(boulder_alpha0),
+            "boulder_Y0": float(boulder_Y0),
+            "rho0_solid": float(rho0_solid),
         },
     )
 

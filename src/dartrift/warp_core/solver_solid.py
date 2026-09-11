@@ -62,8 +62,16 @@ class WarpSolid3D:
         u_tabani: bool = False,
         rho_durum: np.ndarray | None = None,
         cekme_kirp_maske: np.ndarray | None = None,
+        komsu_arama: str = "hash",
     ):
         _init_warp()
+        # A52: "hash" -- tek kuresel yaricapli hash izgarasi (eski, BIT-AYNI);
+        # "bvh" -- destek kutulu BVH + kimlige gore sirali CSR.
+        if komsu_arama not in ("hash", "bvh"):
+            raise ValueError(f"komsu_arama 'hash' ya da 'bvh' olmali, "
+                             f"{komsu_arama!r} geldi")
+        self.komsu_arama = komsu_arama
+        self._bvh = komsu_arama == "bvh"
         self.mat = mat
         self.num = num or RefParams()
         self.device = device
@@ -205,6 +213,11 @@ class WarpSolid3D:
         self.dSdt = wp.zeros(n, dtype=M3, device=dev)
         self.gridman = GridManager(n, dev)
         self._radius32 = 0.0
+        self._komsu = None
+        if self._bvh:
+            from .komsu_bvh import BvhKomsu
+
+            self._komsu = BvhKomsu(n, dev)
         self._tp = make_tillotson_wp(mat.tillotson)
         self._sp = make_strength_wp(mat.strength)
         self._pp = make_porosity_wp(mat.porosity)
@@ -329,12 +342,21 @@ class WarpSolid3D:
         wp.launch(kernel, dim=self.n, inputs=inputs, device=self.device)
 
     def _eval(self) -> None:
-        self._radius32 = self.gridman.build(self.x, self.support)
-        gid = self.gridman.id
-        r32 = wp.float32(self._radius32)
         h = self.h_arr
+        if self._bvh:
+            # A52: konum surumu degismediyse (adimin ikinci degerlendirmesi)
+            # liste YENIDEN KURULMAZ -- konumlar yalniz step()'te degisir.
+            self._komsu.kur(self.x, h, self._x_version)
+            bas, nbr = self._komsu.bas, self._komsu.nbr
+        else:
+            self._radius32 = self.gridman.build(self.x, self.support)
+            gid = self.gridman.id
+            r32 = wp.float32(self._radius32)
         if not self._continuity:
-            self._launch(D.density_3d, [gid, self.gridman.x32, self.x, self.m, h, r32, self.rho])
+            if self._bvh:
+                self._launch(D.density_3d_csr, [bas, nbr, self.x, self.m, h, self.rho])
+            else:
+                self._launch(D.density_3d, [gid, self.gridman.x32, self.x, self.m, h, r32, self.rho])
         if self.mat.eos == "tillotson":
             self._launch(eos_solid, [self.rho, self.u, self.alpha, self._tp, self.P, self.cs])
         elif self.mat.eos == "ideal_gas":
@@ -372,11 +394,18 @@ class WarpSolid3D:
                 [self.S, self.P, self.active, self.Y0, self._sp,
                  self.akma_oran_max, self.akma_asim_say],
             )
-        self._launch(
-            SS.velocity_gradient_3d,
-            [gid, self.gridman.x32, self.x, self.v, self.m, self.rho, self.cs, h, r32,
-             1 if self.num.use_balsara else 0, self.L, self.divv, self.fbal],
-        )
+        if self._bvh:
+            self._launch(
+                SS.velocity_gradient_3d_csr,
+                [bas, nbr, self.x, self.v, self.m, self.rho, self.cs, h,
+                 1 if self.num.use_balsara else 0, self.L, self.divv, self.fbal],
+            )
+        else:
+            self._launch(
+                SS.velocity_gradient_3d,
+                [gid, self.gridman.x32, self.x, self.v, self.m, self.rho, self.cs, h, r32,
+                 1 if self.num.use_balsara else 0, self.L, self.divv, self.fbal],
+            )
         if self._continuity:
             self._launch(I.continuity_rate_3d, [self.rho, self.divv, self.drhodt])
         if self.mat.strength.enabled:
@@ -432,13 +461,28 @@ class WarpSolid3D:
         # kendisidir (ek dizi yok, ek maliyet yok).
         p_use = self.P_eff if self._damage else self.P
         s_use = self.S_eff if self._damage else self.S
-        self._launch(
-            SS.forces_solid_3d,
-            [gid, self.gridman.x32, self.x, self.v, self.m, self.rho, p_use, s_use,
-             self.cs, self.fbal, self.g, h, r32, F(self.num.alpha_av), F(self.num.beta_av),
-             1 if ast.enabled else 0, F(ast.eps), F(ast.n_exp), F(self._ast_w_dp),
-             self.a, self.dudt],
-        )
+        if self._bvh:
+            self._launch(
+                SS.forces_solid_3d_csr,
+                [bas, nbr, self.x, self.v, self.m, self.rho, p_use, s_use,
+                 self.cs, self.fbal, self.g, h, F(self.num.alpha_av), F(self.num.beta_av),
+                 1 if ast.enabled else 0, F(ast.eps), F(ast.n_exp), F(self._ast_w_dp),
+                 self.a, self.dudt],
+            )
+        else:
+            self._launch(
+                SS.forces_solid_3d,
+                [gid, self.gridman.x32, self.x, self.v, self.m, self.rho, p_use, s_use,
+                 self.cs, self.fbal, self.g, h, r32, F(self.num.alpha_av), F(self.num.beta_av),
+                 1 if ast.enabled else 0, F(ast.eps), F(ast.n_exp), F(self._ast_w_dp),
+                 self.a, self.dudt],
+            )
+
+    def komsu_tanisi(self) -> dict:
+        """A52 -- komsu arama kipi ve (bvh'de) kurulum/cift sayilari."""
+        if self._bvh:
+            return self._komsu.tani()
+        return {"komsu_arama": "hash", "sorgu_yaricapi": float(self._radius32)}
 
     # -- KDK + tam trapez (solid_ref.step_kdk_solid ile ayni sira) ----------
     def step(self, dt: float) -> None:

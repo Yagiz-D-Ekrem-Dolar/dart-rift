@@ -39,6 +39,30 @@ def density_3d(
 
 
 @wp.kernel
+def density_3d_csr(
+    bas: wp.array(dtype=wp.int32),
+    nbr: wp.array(dtype=wp.int32),
+    x: wp.array(dtype=V3),
+    m: wp.array(dtype=F),
+    h: wp.array(dtype=F),
+    rho: wp.array(dtype=F),
+):
+    """`density_3d` ile GOVDE BIREBIR; yalniz komsu dongusu CSR (A52)."""
+    i = wp.tid()
+    xi = x[i]
+    hi = h[i]
+    acc = F(0.0)
+    for k in range(bas[i], bas[i + 1]):
+        j = nbr[k]
+        hij = F(0.5) * (hi + h[j])
+        r = wp.length(xi - x[j])
+        qq = r / hij
+        if qq < F(2.0):
+            acc += m[j] * w3d(qq, hij)
+    rho[i] = acc
+
+
+@wp.kernel
 def continuity_rate_3d(
     grid: wp.uint64,
     x32: wp.array(dtype=wp.vec3),

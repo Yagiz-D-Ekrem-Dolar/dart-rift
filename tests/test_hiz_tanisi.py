@@ -148,6 +148,26 @@ def test_mermi_ezilmede_de_disarida():
     assert e["n_kati_sikisan"] == 0
 
 
+def test_A76_kati_iskelet_yogunlugu_GUNCEL_alpha_ile():
+    """Uzman: `ρ_s = α ρ`; ham `ρ < 2700` "katı sıkışmadı" demez.
+
+    `ρ = 2233`, güncel `α = 1,3` → `ρ_s = 2903 > 2700`: gözenekler
+    kısmen açıkken katı sıkışmış. Ham `ρ` ölçütü bunu KAÇIRIYORDU.
+    """
+    d = _durum([2233.0, 2233.0], [1.7564, 1.7564])
+    d["alpha"] = np.array([1.3, 1.0])
+    e = ht.ezilme_mi_sok_mu(d)
+    assert e["kati_tanimi"] == "alpha*rho"
+    assert e["n_kati_sikisan"] == 1
+    assert e["rho_s_max_bolu_kati"] == pytest.approx(2233.0 * 1.3 / 2700.0)
+
+
+def test_A76_alpha_yoksa_ham_rho_ve_ETIKETLI():
+    e = ht.ezilme_mi_sok_mu(_durum([2233.0], [1.7564]))
+    assert "alpha YOK" in e["kati_tanimi"]
+    assert e["n_kati_sikisan"] == 0
+
+
 def test_gozeneksiz_kolda_sayisal_artik_sok_sanilmaz():
     """`alpha0 = 1` iken baslangic yogunlugu ZATEN rho0_kati.
 
