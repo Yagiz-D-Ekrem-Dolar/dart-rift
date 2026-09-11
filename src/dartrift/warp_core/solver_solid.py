@@ -65,6 +65,7 @@ class WarpSolid3D:
         komsu_arama: str = "hash",
         mermi_tillotson=None,
         mermi_maske: np.ndarray | None = None,
+        cekme_siniri=None,
     ):
         _init_warp()
         # A52: "hash" -- tek kuresel yaricapli hash izgarasi (eski, BIT-AYNI);
@@ -129,6 +130,18 @@ class WarpSolid3D:
                     f"cekme_kirp_maske sekli {_mk.shape}, ({n},) olmali")
             self._cekme_kirp = wp.array(
                 _mk.astype(np.uint8), dtype=wp.uint8, device=dev)
+        # GRANULER CEKME SINIRI T_m (uzman Soru 1). `None` ya da her yerde
+        # 0 -> eski `cekme_kirp` (bit-ayni). Pozitifse `P_eff = max(P, -T)`.
+        self._cekme_T = None
+        if cekme_siniri is not None:
+            if self._cekme_kirp is None:
+                raise ValueError("cekme_siniri bir cekme_kirp_maske ister")
+            _T = np.broadcast_to(np.asarray(cekme_siniri, np.float64), (n,))
+            if np.any(_T < 0.0) or not np.all(np.isfinite(_T)):
+                raise ValueError("cekme_siniri >= 0 ve sonlu olmali")
+            if np.any(_T > 0.0):
+                self._cekme_T = wp.array(np.ascontiguousarray(_T), dtype=F,
+                                         device=dev)
         # Kohezyon PARCACIK BASINA: moloz yiginlarinda bloklar matristen daha
         # dayanikli (P3-FR-03/04). Homojen kosularda skaler deger dizi olarak
         # doldurulur — tek kod yolu, sonuc bit-ayni kalir.
@@ -397,9 +410,14 @@ class WarpSolid3D:
         # basinci gorur. Sonraki adimda hasar `P_eff`'i bunun
         # uzerine uygular; sira degismiyor.
         if self._cekme_kirp is not None:
-            from .cekme_kirpma import cekme_kirp as _kirp
+            if self._cekme_T is not None:
+                from .cekme_kirpma import cekme_sinirla as _sinirla
 
-            self._launch(_kirp, [self._cekme_kirp, self.P])
+                self._launch(_sinirla, [self._cekme_kirp, self._cekme_T, self.P])
+            else:
+                from .cekme_kirpma import cekme_kirp as _kirp
+
+                self._launch(_kirp, [self._cekme_kirp, self.P])
         if self.mat.strength.enabled:
             # A72: KUVVET ANINDA KURUCU SINIR. "ara" kipinde S burada,
             # gerilme hizi / hasar / kuvvet hesaplanmadan ONCE, o anki

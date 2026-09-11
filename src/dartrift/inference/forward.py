@@ -62,7 +62,7 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
                  matris_cekme_yok=False, cfl=0.25,
                  akma_kipi="son", malzeme_kaynagi="kaba",
                  komsu_arama="hash", mermi_eos="hedef",
-                 ilk_degerlendirme=False) -> str:
+                 ilk_degerlendirme=False, matris_cekme_siniri=None) -> str:
     """Kosunun FIZIK yapilandirmasinin SHA-256 ozeti (16 hane).
 
     Iki cikti ayni `theta`yi tasiyip FARKLI fizikle uretilmis
@@ -105,6 +105,9 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
     # A77: ilk dt'den once degerlendirme ilk adimi degistirir.
     if bool(ilk_degerlendirme):
         parcalar.append("ilk_degerlendirme=1")
+    # Granuler dal: matris cekme dayanimi.
+    if matris_cekme_siniri is not None:
+        parcalar.append(f"matris_cekme_siniri={float(matris_cekme_siniri):.17g}")
     ham = "|".join(parcalar).encode("utf-8")
     return hashlib.sha256(ham).hexdigest()[:16]
 
@@ -517,7 +520,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         malzeme_kaynagi: str = "kaba",
                         komsu_arama: str = "hash",
                         mermi_eos: str = "hedef",
-                        ilk_degerlendirme: bool = False
+                        ilk_degerlendirme: bool = False,
+                        matris_cekme_siniri: float | None = None
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
@@ -613,7 +617,11 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 cekme_kirp_maske=(
                     (~np.asarray(rs.is_impactor, dtype=bool)
                      & ~np.asarray(rs.is_boulder, dtype=bool))
-                    if matris_cekme_yok else None),
+                    if (matris_cekme_yok or matris_cekme_siniri is not None)
+                    else None),
+                # GRANULER DAL (uzman S1): matris cekme dayanimi T_m [Pa].
+                # `None` -> `matris_cekme_yok` davranisi (T = 0, bit-ayni).
+                cekme_siniri=matris_cekme_siniri,
                 # A52: "bvh" destek kutulu BVH + sirali CSR; "hash" eski.
                 komsu_arama=komsu_arama, **mermi_kw)
             t = 0.0
@@ -727,7 +735,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                                              matris_cekme_yok, cfl,
                                              akma_kipi, malzeme_kaynagi,
                                              komsu_arama, mermi_eos,
-                                             ilk_degerlendirme),
+                                             ilk_degerlendirme,
+                                             matris_cekme_siniri),
                     # A72 / Protokol J: zaman adimi ve kuvvet aninda
                     # akma tanisi. JSON metni -- pickle gerektirmez.
                     cfl=float(cfl), akma_kipi=str(akma_kipi),

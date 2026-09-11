@@ -58,3 +58,24 @@ def cekme_kirp(
     if maske[i] != wp.uint8(0):
         if P[i] < F(0.0):
             P[i] = F(0.0)
+
+
+@wp.kernel
+def cekme_sinirla(
+    maske: wp.array(dtype=wp.uint8),
+    T: wp.array(dtype=F),
+    P: wp.array(dtype=F),
+):
+    """Granüler matris dalı: `P_eff = max(P, −T_m)` (uzman Soru 1).
+
+    `T_m` parçacık başına ÇEKME DAYANIMI [Pa] (`≥ 0`). Uzman: *"Matrisin
+    çekme sınırı T_m ile blokların çekme/kırılma davranışı ayrı olmalı.
+    P_eff = max(P, −T_m) biçimindeki sınır, seçilen granüler kurucu
+    modelin parçası olabilir."* `T_m = 0` durumu için eski `cekme_kirp`
+    kullanılır (bit-aynı; işaretli sıfır farkı bile yok).
+    """
+    i = wp.tid()
+    if maske[i] != wp.uint8(0):
+        t = T[i]
+        if P[i] < -t:
+            P[i] = -t
