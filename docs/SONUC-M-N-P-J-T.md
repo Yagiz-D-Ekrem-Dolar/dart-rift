@@ -127,6 +127,34 @@ bölgede değil); `α_b` ve `f`'nin izi çözünürlükle işaret değiştiriyor
 Önceden yazılmış yorum tablosu: *"`Y₀` çözünürlüğe dayanıklı biçimde
 çıkarılabilir; `α_b`, `f` bu gözlemlerle çıkarılamaz."*
 
+## 2d. KİLİTLİ: P-v4 / P-v4b — kaba üretim fiziği (kesme + taban), 48 θ
+
+Havuz: Nk + N2k (kesmeli) + Nkd (patlayan 3 θ, kesme + taban dolgusu),
+tekrar (θ, tohum) elenmiş; 96 koşu, 48 θ. θ-gruplu 4 kat dış doğrulama,
+iç kovaryans 4-kat artıklarından (§4d).
+
+**N havuzu:** **İKİ EKSEN GÖRÜNÜR** (`Y₀`, `f`); `α_b` `dV_sıkışma`'da
+`p = 0,0026` — Bonferroni eşiğini (`0,00238`) yine kıl payı kaçırıyor.
+
+| yol | `α_b` (kapsama68 / genişlik) | `log Y₀` | `f` | genel |
+|---|---|---|---|---|
+| P-v4 kuadratik | 0,58 / 0,48 BİLGİ YOK | 0,68 / 0,36 BİLGİ YOK | 0,71 / 0,44 BİLGİ YOK | HİÇBİR EKSEN |
+| P-v4 GP | 0,60 / 0,42 BİLGİ YOK | 0,60 / 0,37 BİLGİ YOK | 0,61 / **0,31 ÇÖZÜLÜYOR** | TEK EKSEN |
+| **P-v4b kuadratik** (+ 8/16 ms) | 0,52 / 0,44 BİLGİ YOK | 0,57 / **0,33 ÇÖZÜLÜYOR** | 0,79 / **0,32 ÇÖZÜLÜYOR** | **İKİ EKSEN** |
+| P-v4b GP | **0,44 AŞIRI GÜVENLİ** | 0,50 / 0,27 | 0,56 / 0,15 | KALİBRASYON DÜŞTÜ |
+
+Kilitli yol seçimi: P-v4 → GP, TEK EKSEN; P-v4b → kuadratik, İKİ EKSEN.
+§4e: P-v4b kalibre ve daha çok ekseni çözüyor → yargıya girer.
+
+> **Kaba çözünürlükte, üretim fiziğiyle, zaman örnekleriyle genişletilmiş
+> gözlem vektörü: dış doğrulamada kalibre posterior `Y₀` ve `f`'yi
+> ÇÖZÜYOR, `α_b`'yi çözmüyor.** `%95` kapsama `0,82 / 0,96 / 0,96`.
+
+Sınırlar: (i) kaba çözünürlük — M2'ye göre `Y₀` kontrastı çözünürlüğe
+dayanıklı, **`f` değil**; orta çözünürlükte aynı kural koşuluyor (Pv4o).
+(ii) `Y₀` genişliği `0,334`, eşiğin (`0,34`) hemen altında. (iii) Sentetik
+kapalı sınama: gerçek DART verisi değil.
+
 ## 3. Bitiş 3 için anlamı
 
 1. **Mutlak** 24 ms gözlenebilirlerine dayanan bir posterior bu

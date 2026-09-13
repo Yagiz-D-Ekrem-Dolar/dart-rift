@@ -53,6 +53,13 @@ KEŞİF (yargı değil): `Y₀` kontrastı çözünürlükle `%11` değişirken 
 değer `%62` kayıyor → Protokol M2 yeni θ'larla sınıyor. A80 (buharlaşmış
 madde dayanım taşıyor → `nan`) bulundu, düzeltildi, doğrulanıyor.
 
+**Gece yarısı (2026-09-13) — kilitli:** M2 **`Y₀` kontrastı çözünürlüğe
+DAYANIKLI**, `α_b` / `f` değil · Z KISMİ (yakınsamama içsel) · A83
+yoğunluk tabanı NÖTR, üretimde · **P-v4b (kaba, kesme + taban, 48 θ,
+zaman örnekli): dış doğrulamada kalibre posterior `Y₀` ve `f`'yi
+ÇÖZÜYOR, `α_b`'yi çözmüyor** (ayrıntı: `SONUC-M-N-P-J-T.md` §2c–2d).
+Orta çözünürlükte aynı kural koşuyor.
+
 **Protokol J koşuyor** (iş `1555356`, 84 görev): sabit `h`'de `Δt`
 yarılanınca `x₀` kayıyor mu, `ara` bunu kaldırıyor mu. Ön koşul `O4`
 **geçti**: yeni kodun varsayılan yolu G1'i 13/13 noktada **bit bit**
