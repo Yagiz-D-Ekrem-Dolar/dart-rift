@@ -36,7 +36,7 @@ import numpy as np
 
 from .design import ParamSpace
 
-__all__ = ["Surrogate", "fit_surrogate", "design_matrix"]
+__all__ = ["Surrogate", "fit_surrogate", "design_matrix", "loo_artiklari"]
 
 
 def design_matrix(u: np.ndarray) -> np.ndarray:
@@ -144,3 +144,25 @@ def fit_surrogate(space: ParamSpace, x, y, ridge: float = 1.0e-10) -> Surrogate:
                      rmse_loo=float(np.sqrt(ss_loo / n)), n_egitim=n,
                      y_ortalama=float(np.mean(y)),
                      y_yayilim=float(np.std(y)))
+
+
+def loo_artiklari(space: ParamSpace, x, y, ridge: float = 1.0e-10) -> np.ndarray:
+    """Bırak-birini artıkları `e_loo_i = y_i − ŷ_{−i}(x_i)` — vektör olarak.
+
+    `fit_surrogate` yalnız özetini (`q2`, `rmse_loo`) döndürüyor. Çok
+    gözlenebilirli olabilirlikte gözlenebilirler arası **artık
+    kovaryansı** gerekiyor (Protokol P): krater derinliği ile hacmi aynı
+    gerçeklemede birlikte sapar; bağımsız saymak posterioru yapay
+    daraltır. Kapalı form `fit_surrogate` ile aynı (Allen 1974).
+    """
+    x = np.atleast_2d(np.asarray(x, dtype=np.float64))
+    y = np.asarray(y, dtype=np.float64).ravel()
+    A = design_matrix(space.to_unit(x))
+    n, p = A.shape
+    if n <= p:
+        raise ValueError(f"{n} nokta ile {p} katsayı öğrenilemez (n > p gerekir)")
+    G = A.T @ A + ridge * np.eye(p)
+    Ginv = np.linalg.inv(G)
+    artik = y - A @ (Ginv @ (A.T @ y))
+    hii = np.clip(np.einsum("ij,jk,ik->i", A, Ginv, A), 0.0, 1.0 - 1.0e-12)
+    return artik / (1.0 - hii)

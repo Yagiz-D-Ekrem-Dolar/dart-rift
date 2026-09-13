@@ -30,7 +30,7 @@ import numpy as np
 
 from .design import ParamSpace
 
-__all__ = ["GridPosterior", "grid_posterior"]
+__all__ = ["GridPosterior", "grid_posterior", "grid_posterior_kovaryans"]
 
 
 @dataclass(frozen=True)
@@ -188,6 +188,74 @@ def grid_posterior(space: ParamSpace, surrogates, data, sigma,
         hdi[j, 0] = float(np.interp(0.16, kum, eksen))
         hdi[j, 1] = float(np.interp(0.84, kum, eksen))
 
+    return GridPosterior(space=space, grid_u=tuple([eksen] * space.ndim),
+                         logp=logp.reshape(sekil), p=p, mean_u=ort,
+                         std_u=std, hdi_u=hdi)
+
+
+def grid_posterior_kovaryans(space: ParamSpace, tahmin, data, kov,
+                             n_grid: int) -> GridPosterior:
+    """Izgara posterior — gözlenebilirler arası **tam kovaryansla**.
+
+    `grid_posterior` gözlenebilirleri bağımsız sayıyor. Aynı çarpmadan
+    gelen krater derinliği, yarıçapı ve hacmi bağımsız DEĞİL: bir
+    gerçeklemede biri sapınca diğerleri de sapar. Bağımsız saymak aynı
+    bilgiyi birkaç kez sayar ve posterioru yapay daraltır (Protokol P).
+
+    Parameters
+    ----------
+    tahmin
+        `(n_grid**d, k)` — ızgaranın `indexing="ij"` düzleştirilmiş
+        düğümlerinde (birim küp, `np.linspace(0, 1, n_grid)`) vekil
+        tahminleri. Çağıran önceden hesaplar; 24 kapalı döngü vakasında
+        ızgara tasarım matrisi bir kez kurulur.
+    data
+        `(k,)` gözlem.
+    kov
+        `(k, k)` toplam kovaryans (gözlem + vekil + gerçekleme), simetrik
+        pozitif tanımlı.
+    """
+    tahmin = np.asarray(tahmin, dtype=np.float64)
+    data = np.asarray(data, dtype=np.float64).ravel()
+    kov = np.atleast_2d(np.asarray(kov, dtype=np.float64))
+    k = len(data)
+    if tahmin.shape != (n_grid ** space.ndim, k):
+        raise ValueError(f"tahmin {tahmin.shape}, "
+                         f"({n_grid ** space.ndim}, {k}) bekleniyordu")
+    if kov.shape != (k, k):
+        raise ValueError(f"kov {kov.shape}, ({k}, {k}) bekleniyordu")
+    if not (np.all(np.isfinite(tahmin)) and np.all(np.isfinite(data))
+            and np.all(np.isfinite(kov))):
+        raise ValueError("tahmin/veri/kovaryans içinde sonlu olmayan değer var")
+    # Cholesky POZITIF TANIMLILIGI da sinar: tekil kovaryans burada
+    # adiyla duser, sessizce `inf` ki-kare uretmez.
+    try:
+        L = np.linalg.cholesky(0.5 * (kov + kov.T))
+    except np.linalg.LinAlgError as e:
+        raise ValueError("kovaryans pozitif tanımlı değil") from e
+    r = tahmin - data[None, :]
+    z = np.linalg.solve(L, r.T)           # (k, N)
+    ki2 = np.sum(z * z, axis=0)
+
+    eksen = np.linspace(0.0, 1.0, n_grid)
+    logp = -0.5 * ki2
+    logp -= logp.max()
+    p = np.exp(logp)
+    p /= p.sum()
+    sekil = (n_grid,) * space.ndim
+    p = p.reshape(sekil)
+    ort = np.empty(space.ndim)
+    std = np.empty(space.ndim)
+    hdi = np.empty((space.ndim, 2))
+    for j in range(space.ndim):
+        diger = tuple(i for i in range(space.ndim) if i != j)
+        m = p.sum(axis=diger)
+        m = m / m.sum()
+        ort[j] = float(np.sum(m * eksen))
+        std[j] = float(np.sqrt(max(np.sum(m * (eksen - ort[j]) ** 2), 0.0)))
+        kum = np.cumsum(m)
+        hdi[j, 0] = float(np.interp(0.16, kum, eksen))
+        hdi[j, 1] = float(np.interp(0.84, kum, eksen))
     return GridPosterior(space=space, grid_u=tuple([eksen] * space.ndim),
                          logp=logp.reshape(sekil), p=p, mean_u=ort,
                          std_u=std, hdi_u=hdi)
