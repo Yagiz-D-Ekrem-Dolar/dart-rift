@@ -136,6 +136,16 @@ yargı cümlesine girer: kalibre (elenmemiş) ve P-v4'ten **daha çok ekseni**
 çözüyor — o zaman sonuç "zaman örnekleriyle genişletilmiş gözlem
 vektörüyle" diye, iki satır birlikte yazılır.
 
+### 4f. Büyütülmüş havuzlar (2026-09-14, veri gelmeden)
+
+§4d–4e kuralları **aynen** şu havuzlarda da koşulur (kesme + taban):
+**ince** (`Ni + N2i`, 48 θ), **kaba-72** (`Nk + N2k + Nkd + N3k`), **orta-72**
+(`Nok + N2ok + Nokd + N3ok`); N3 = `root_seed 20260921`. Patlayan nokta
+dolgusuz kalırsa havuz eksik noktalarla okunur ve sayısı raporda yazılır.
+Esas sonuç **en yüksek çözünürlüklü tam havuzun** kilitli yol seçimidir;
+çözünürlükler arasında çözülen eksen kümesi farklıysa ikisi birlikte
+yazılır ve M2'ye göre yorumlanır.
+
 ## 5. Yorum tablosu (veri gelmeden)
 
 | sonuç | anlamı | sıradaki adım |
