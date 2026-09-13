@@ -530,9 +530,13 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         mermi_eos: str = "hedef",
                         ilk_degerlendirme: bool = False,
                         matris_cekme_siniri: float | None = None,
-                        mermi_h_kipi: str = "merdiven"
+                        mermi_h_kipi: str = "merdiven",
+                        adim_gozlemcisi=None
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
+
+    `adim_gozlemcisi(adim, t, dt, sol)` (A80): her adımdan sonra çağrılır,
+    yalnız OKUR (ör. `patlama_tanisi.PatlamaGozlemcisi`). `None` → bit-aynı.
 
     ## `cfl` ve `akma_kipi` (rapor A72, Protokol J)
 
@@ -679,6 +683,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                     dt = t_end - t
                 sol.step(dt)
                 t += dt
+                if adim_gozlemcisi is not None:
+                    adim_gozlemcisi(adim, t, dt, sol)
                 while (_imp_k < len(_imp_t)
                        and t >= _imp_t[_imp_k] * (1.0 - 1e-12)):
                     # [t, hedef eksenel momentum / p_imp, beta_hedef, M_ejekta]

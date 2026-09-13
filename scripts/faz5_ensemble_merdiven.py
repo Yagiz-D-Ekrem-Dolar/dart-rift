@@ -164,6 +164,10 @@ def main() -> int:
                     help="'i/n' -- bu gorev tasarimin i. dilimini kossun "
                          "(A31; eszamanli gorevlerde ZORUNLU)")
     ap.add_argument("--out", required=True, help="JSONL yolu")
+    ap.add_argument("--patlama-tanisi", type=Path, default=None,
+                    help="A80: her 25 adimda sonluluk; ilk bozulmada tani "
+                         "(patlama_tani.json + npz) bu dizine yazilir. "
+                         "Fizige dokunmaz; yalniz tani kosulari icin.")
     a = ap.parse_args()
 
     kok = int(SAHNE["root_seed"]) if a.root_seed is None else a.root_seed
@@ -269,6 +273,11 @@ def main() -> int:
         yol = yol.with_suffix(f".dilim{a.dilim.replace('/', '_')}.jsonl")
 
     def _ileri(theta):
+        gozlemci = None
+        if a.patlama_tanisi is not None:
+            from dartrift.inference.patlama_tanisi import PatlamaGozlemcisi
+
+            gozlemci = PatlamaGozlemcisi(a.patlama_tanisi)
         y = ileri_kosu_merdiven(
             np.atleast_2d(theta), material=_mat(), device=a.device,
             t_end=a.t_end, kademeler=merdiven, spacing=a.spacing,
@@ -287,7 +296,7 @@ def main() -> int:
             komsu_arama=a.komsu_arama, mermi_eos=a.mermi_eos,
             ilk_degerlendirme=a.ilk_dt_duzelt,
             matris_cekme_siniri=a.matris_cekme_siniri,
-            mermi_h_kipi=a.mermi_h_kipi)[0]
+            mermi_h_kipi=a.mermi_h_kipi, adim_gozlemcisi=gozlemci)[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
         return y
