@@ -47,9 +47,11 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--kok", type=Path, required=True)
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--desen", default="T_*_sahne*.durumlar",
+                    help="ayni kilitli plato kurali baska kol icin (or. Tk_*)")
     a = ap.parse_args(argv)
     cikti = {}
-    for dz in sorted(glob.glob(str(a.kok / "T_*_sahne*.durumlar"))):
+    for dz in sorted(glob.glob(str(a.kok / a.desen))):
         ad = Path(dz).name.replace(".durumlar", "")
         for f in sorted(glob.glob(dz + "/nokta_*.npz")):
             z = np.load(f)
