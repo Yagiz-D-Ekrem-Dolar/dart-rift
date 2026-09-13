@@ -68,6 +68,7 @@ class WarpSolid3D:
         mermi_maske: np.ndarray | None = None,
         cekme_siniri=None,
         dayanim_kesme: dict | None = None,
+        yogunluk_tabani: float | None = None,
     ):
         _init_warp()
         # A52: "hash" -- tek kuresel yaricapli hash izgarasi (eski, BIT-AYNI);
@@ -364,6 +365,17 @@ class WarpSolid3D:
                          "u_kes": wp.array(uk, dtype=F, device=dev)}
             self.kesik = wp.zeros(n, dtype=wp.uint8, device=dev)
             self.kesik_olay = 0
+        # A83: SUREKLILIK YOGUNLUGU TABANI. `None` -> cekirdek yok (bit-ayni).
+        self._taban = None
+        if yogunluk_tabani is not None:
+            if not self._continuity or mat.eos != "tillotson":
+                raise ValueError("yogunluk_tabani sureklilik yontemi ve Tillotson ister")
+            eta = float(yogunluk_tabani)
+            if not (0.0 < eta < 1.0):
+                raise ValueError(f"yogunluk_tabani (0, 1) araliginda olmali, {eta}")
+            self._taban = {"eta": eta, "rho0": float(mat.tillotson.rho0)}
+            self.tabanda = wp.zeros(n, dtype=wp.uint8, device=dev)
+            self.taban_olay = 0
         self._gravity = GravitySolver(mat.gravity, dev) if mat.gravity.enabled else None
         # yapay gerilme normalizasyonu W(dp): CPU referansiyla ayni deger
         from ..cpu_reference.sph_ref import kernel_w as _kw
@@ -557,6 +569,23 @@ class WarpSolid3D:
                      [self.S, self.rho, self.u, self.alpha, self.active,
                       k["u_kes"], F(k["rho0"]), F(k["eta_kes"]), self.kesik])
 
+    def _yogunluk_tabanla(self) -> None:
+        from .yogunluk_tabani import yogunluk_tabani_k
+
+        k = self._taban
+        self._launch(yogunluk_tabani_k,
+                     [self.rho, self.alpha, self.active, F(k["rho0"]), F(k["eta"]),
+                      self.tabanda])
+
+    def taban_tanisi(self) -> dict:
+        """A83 -- son ADIMDA (iki yarim adimdan birinde) tabana dayanan parcaciklar."""
+        if self._taban is None:
+            return {}
+        tb = self.tabanda.numpy().astype(bool)
+        m = self.m.numpy()
+        return {"eta_taban": self._taban["eta"], "n_tabanda": int(tb.sum()),
+                "tabanda_kutle_kesri": float(m[tb].sum() / m.sum())}
+
     def kesme_tanisi(self) -> dict:
         """A80 -- o anda dayanimi kesik parcacik sayisi ve kutle kesri."""
         if self._kes is None:
@@ -592,6 +621,8 @@ class WarpSolid3D:
             self._eval()
             self._evaluated = True
         half = F(dt * 0.5)
+        if self._taban is not None:
+            self.tabanda.zero_()
         self._launch(I.kick_v_3d, [self.v, self.a, self.active, half])
         if self._u_tabani:
             self._launch(I.kick_u_3d_tabanli,
@@ -603,6 +634,8 @@ class WarpSolid3D:
         self._launch(SS.kick_S_3d, [self.S, self.dSdt, self.active, half])
         if self._continuity:
             self._launch(I.accumulate_scalar_3d, [self.rho, self.drhodt, self.active, half])
+            if self._taban is not None:
+                self._yogunluk_tabanla()
         self._launch(I.drift_3d, [self.x, self.v, self.active, F(dt)])
         self._x_version += 1          # konumlar degisti -> agac gecersiz
         if self._track_drift:
@@ -627,6 +660,8 @@ class WarpSolid3D:
         self._launch(SS.kick_S_3d, [self.S, self.dSdt, self.active, half])
         if self._continuity:
             self._launch(I.accumulate_scalar_3d, [self.rho, self.drhodt, self.active, half])
+            if self._taban is not None:
+                self._yogunluk_tabanla()
         if self.mat.strength.enabled:
             self._launch(
                 return_mapping_k,

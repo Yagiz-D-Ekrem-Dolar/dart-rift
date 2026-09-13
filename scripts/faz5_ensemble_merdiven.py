@@ -168,6 +168,9 @@ def main() -> int:
                     help="A80: u >= u_iv ya da rho*alpha/rho0 < 0,5 olan parcacikta "
                          "S = 0 (buharlasmis/dagilmis madde kayma gerilmesi "
                          "tasimaz). Varsayilan KAPALI (bit-ayni).")
+    ap.add_argument("--yogunluk-tabani", action="store_true",
+                    help="A83: sureklilik yogunlugu rho >= 0,01 rho0/alpha "
+                         "(bosluga dagilan madde). Varsayilan KAPALI.")
     ap.add_argument("--patlama-tanisi", type=Path, default=None,
                     help="A80: her 25 adimda sonluluk; ilk bozulmada tani "
                          "(patlama_tani.json + npz) bu dizine yazilir. "
@@ -301,7 +304,7 @@ def main() -> int:
             ilk_degerlendirme=a.ilk_dt_duzelt,
             matris_cekme_siniri=a.matris_cekme_siniri,
             mermi_h_kipi=a.mermi_h_kipi, adim_gozlemcisi=gozlemci,
-            dayanim_kesme=a.dayanim_kesme)[0]
+            dayanim_kesme=a.dayanim_kesme, yogunluk_tabani=a.yogunluk_tabani)[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
         return y
@@ -342,6 +345,7 @@ def main() -> int:
         "matris_cekme_siniri": a.matris_cekme_siniri,
         "mermi_h_kipi": a.mermi_h_kipi,
         "dayanim_kesme": bool(a.dayanim_kesme),
+        "yogunluk_tabani": bool(a.yogunluk_tabani),
         "sahne_ek": sahne_ek,
         "surum": surum,
         "n_tasarim_tam": int(tam_n),

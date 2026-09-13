@@ -63,7 +63,8 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
                  akma_kipi="son", malzeme_kaynagi="kaba",
                  komsu_arama="hash", mermi_eos="hedef",
                  ilk_degerlendirme=False, matris_cekme_siniri=None,
-                 mermi_h_kipi="merdiven", dayanim_kesme=False) -> str:
+                 mermi_h_kipi="merdiven", dayanim_kesme=False,
+                 yogunluk_tabani=False) -> str:
     """Kosunun FIZIK yapilandirmasinin SHA-256 ozeti (16 hane).
 
     Iki cikti ayni `theta`yi tasiyip FARKLI fizikle uretilmis
@@ -115,6 +116,9 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
     # A80: buharlasmis/dagilmis maddede dayanim kesmesi.
     if bool(dayanim_kesme):
         parcalar.append("dayanim_kesme=eta0.5_uiv")
+    # A83: sureklilik yogunlugu tabani.
+    if bool(yogunluk_tabani):
+        parcalar.append(f"yogunluk_tabani={YOGUNLUK_TABANI_ETA:.17g}")
     ham = "|".join(parcalar).encode("utf-8")
     return hashlib.sha256(ham).hexdigest()[:16]
 
@@ -122,6 +126,8 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
 #: A80: dayanim kesmesinin genlesme esigi (`rho*alpha/rho0`). Hacmi iki
 #: katina cikmis granuler madde kayma gerilmesi tasimaz.
 DAYANIM_KESME_ETA = 0.5
+#: A83: sureklilik yogunlugu tabani `rho >= eta * rho0 / alpha`.
+YOGUNLUK_TABANI_ETA = 0.01
 
 #: Enerji defterinde tutulan skaler alanlar (`WarpSolid3D.budgets`).
 _ENERJI_ALANLARI = ("e_kin", "e_int", "e_pot", "e_tot", "plastic_cum",
@@ -539,7 +545,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         matris_cekme_siniri: float | None = None,
                         mermi_h_kipi: str = "merdiven",
                         adim_gozlemcisi=None,
-                        dayanim_kesme: bool = False
+                        dayanim_kesme: bool = False,
+                        yogunluk_tabani: bool = False
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
@@ -649,6 +656,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 # A80: u >= u_iv ya da rho*alpha/rho0 < 0,5 -> S = 0.
                 dayanim_kesme=({"eta_kes": DAYANIM_KESME_ETA} if dayanim_kesme
                                else None),
+                # A83: rho >= 0,01 rho0/alpha (bosluga dagilan madde).
+                yogunluk_tabani=(YOGUNLUK_TABANI_ETA if yogunluk_tabani else None),
                 **mermi_kw)
             t = 0.0
             kontrol = max(1, azami_adim // 200)
@@ -812,7 +821,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                                              komsu_arama, mermi_eos,
                                              ilk_degerlendirme,
                                              matris_cekme_siniri,
-                                             mermi_h_kipi, dayanim_kesme),
+                                             mermi_h_kipi, dayanim_kesme,
+                                             yogunluk_tabani),
                     # A72 / Protokol J: zaman adimi ve kuvvet aninda
                     # akma tanisi. JSON metni -- pickle gerektirmez.
                     cfl=float(cfl), akma_kipi=str(akma_kipi),
@@ -821,7 +831,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                     enerji=json.dumps(enerji),
                     gecerlilik=json.dumps(gecerlilik),
                     fizik_tani=json.dumps(fizik_tani),
-                    kesme_tani=json.dumps(sol.kesme_tanisi()))
+                    kesme_tani=json.dumps(sol.kesme_tanisi()),
+                    taban_tani=json.dumps(sol.taban_tanisi()))
             Y[i] = gozlenebilirleri_cikar(
                 st, impactor_momentum=rs.impactor_momentum,
                 target_mass=rs.target_mass, target_radius=rs.target_radius,
