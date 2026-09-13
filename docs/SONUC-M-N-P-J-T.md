@@ -72,6 +72,34 @@ sonucuyla (yalnız `Y₀`) tutarlı. **Yeni θ'larla sınanıyor: Protokol M2**
 
 ---
 
+## 2b. KEŞİF: A82 tanısı, havuzlanmış N ve P-v4 (kesmesiz veri, yargı değil)
+
+**Dış örneklem neden düştü** (`scripts/p_tani_raporu.py`, yalnız N → N2):
+
+| ölçü | değer | kalibre bir modelde |
+|---|---|---|
+| sınama `z` sapması (6 gözlenebilir) | `1,04–1,55` | `≈ 1` (eğitim LOO'da `1,00`) |
+| `z` ortalaması | `−0,41 … +0,31` | `≈ 0` |
+| `χ²` ortalama / medyan | `10,2` / `4,9` | `6` / `5,3` |
+| en kötü noktalar | `α_b ≈ 1,0`, `Y₀ ≈ 9e6` köşesi | — |
+
+Korelasyon küçültmesi etkisiz (`λ = 0 / 0,3 / 1` → kapsama `0,43 / 0,46 /
+0,41`); kovaryans `×2` → kapsama `0,63` ama genişlik `0,39`. 4-kat
+artıklar tek başına (P-v3) yetmedi (`0,46` kuadratik, `0,33` GP).
+
+**Havuz (N + N2 = 47 θ):**
+
+- N raporu: **ÜÇ EKSEN GÖRÜNÜR** — `α_b` `dV_sıkışma`'da `ρ = −0,50`,
+  `p = 0,0004`; `f` `M_ejekta`'da `ρ = −0,63`, `p < 1e-4`. 24 θ'lık tarama
+  yetersiz güçteymiş.
+- P-v4 (4-kat dış doğrulama, kuadratik): **kalibre** (kapsama68
+  `0,63 / 0,63 / 0,71`, kapsama95 `0,86 / 0,96 / 0,91`), ama medyan
+  genişlik `0,47 / 0,38 / 0,47 ≥ 0,34` → HİÇBİR EKSEN ÇÖZÜLMÜYOR.
+  Posterior önseli `Y₀`'da `~%45`, `α_b` ve `f`'de `~%30` daraltıyor.
+
+Bu keşif üzerine, kesmeli üretim verisi (Nk) **gelmeden** P-v4 (§4d) ve
+zaman örnekli P-v4b (§4e) kilitlendi.
+
 ## 3. Bitiş 3 için anlamı
 
 1. **Mutlak** 24 ms gözlenebilirlerine dayanan bir posterior bu
