@@ -115,7 +115,9 @@ def kayitlari_oku(kok: Path, desen: str = "N_matris_sahne*.durumlar") -> list[di
     from gozlem_vektoru import gozlem_vektoru
 
     kayit = []
-    for dz in sorted(glob.glob(str(kok / desen))):
+    # Virgulle ayrilmis birden cok desen (P-v4 havuzu).
+    dizinler = sorted({d for ds in desen.split(",") for d in glob.glob(str(kok / ds.strip()))})
+    for dz in dizinler:
         t = vp._tohum_ayikla(dz)
         for f in sorted(glob.glob(dz + "/nokta_*.npz")):
             z = np.load(f)
@@ -353,6 +355,30 @@ def dis_ornek(Xe, Ye, Xt, Yt, *, n_grid: int = N_IZGARA,
     return [_vaka(post_fn, Yt[r], U[r], grup[r], carpanlar) for r in range(len(Xt))]
 
 
+def katli_dogrulama(X, Y, *, K: int = KAT_SAYISI, n_grid: int = N_IZGARA,
+                    carpanlar=GURULTU_CARPANLARI, vekil: str = "kuadratik",
+                    artik: str = "kfold4") -> list[dict]:
+    """P-v4: havuzlanmış tasarımda θ-gruplu K-kat dış doğrulama.
+
+    Her katta vekil ve gürültü kovaryansı YALNIZ öbür katlarla kurulur;
+    o kattaki θ'lar (iki tohumuyla) hiç görülmemiş gözlem sayılır. N→N2
+    dış örnekleminin geometrisini korur ama eğitim `23 → 36` θ olur
+    (A82: 24 θ'lık vekilin kendi sapması baskındı).
+    """
+    X = np.asarray(X, float)
+    Y = np.asarray(Y, float)
+    grup = _gruplar(X)
+    kat = kat_ata(grup, K)
+    U = DART_UZAYI_S3.to_unit(X)
+    vakalar = []
+    for f in range(K):
+        t = kat == f
+        post_fn = _posterior_islevi(X[~t], Y[~t], n_grid, vekil, artik=artik)
+        for r in np.flatnonzero(t):
+            vakalar.append(_vaka(post_fn, Y[r], U[r], grup[r], carpanlar))
+    return vakalar
+
+
 def eksen_yargisi(vakalar: list[dict], j: int, carpan: float = 1.0) -> dict:
     u = np.array([v["gercek_u"][j] for v in vakalar])
     h68 = np.array([v["carpan"][carpan]["hdi68"][j] for v in vakalar])
@@ -432,7 +458,7 @@ def _yargila(vakalar) -> dict:
 
 def rapor(kayitlar: list[dict], s_n: dict | None, *, n_grid: int = N_IZGARA,
           test_kayitlar: list[dict] | None = None, vekil: str = "kuadratik",
-          artik: str = "loo") -> dict:
+          artik: str = "loo", katli: bool = False) -> dict:
     secilen, tani = gozlem_sec(kayitlar, s_n, vekil)
     out = {"vekil": vekil, "artik": artik, "secim": tani, "secilen": secilen}
     if not secilen:
@@ -440,6 +466,13 @@ def rapor(kayitlar: list[dict], s_n: dict | None, *, n_grid: int = N_IZGARA,
         return out
     X, Y = _matrisler(kayitlar, secilen)
     out.update(n_kosu=int(len(X)), n_theta=int(len(np.unique(_gruplar(X)))))
+    if katli:
+        # P-v4: kapali dongu yerine K-kat dis dogrulama; yargi `katli` altinda.
+        d = _yargila(katli_dogrulama(X, Y, n_grid=n_grid, vekil=vekil, artik=artik))
+        d.update(n_kosu=int(len(X)), n_theta=out["n_theta"], K=KAT_SAYISI)
+        out["katli"] = d
+        out["genel"] = d["genel"]
+        return out
     out.update(_yargila(kapali_dongu(X, Y, n_grid=n_grid, vekil=vekil, artik=artik)))
     if test_kayitlar:
         Xt, Yt = _matrisler(test_kayitlar, secilen)
@@ -458,6 +491,8 @@ def main(argv=None) -> int:
                     help="dış örneklem (ör. N2_matris_sahne*.durumlar)")
     ap.add_argument("--s-n", type=Path, default=None)
     ap.add_argument("--vekil", choices=("kuadratik", "gp"), default="kuadratik")
+    ap.add_argument("--katli", action="store_true",
+                    help="P-v4: --desen havuzunda theta-gruplu 4-kat dis dogrulama")
     ap.add_argument("--artik", choices=ARTIK_KIPLERI, default="loo",
                     help="gurultu kovaryansi: 'loo' birak-bir-theta (P), "
                          "'kfold4' theta-gruplu 4 kat (P-v3, A82)")
@@ -467,7 +502,8 @@ def main(argv=None) -> int:
         if a.s_n and a.s_n.exists() else None
     kayit = kayitlari_oku(a.kok, a.desen)
     test = kayitlari_oku(a.kok, a.test_desen) if a.test_desen else None
-    out = rapor(kayit, s_n, test_kayitlar=test, vekil=a.vekil, artik=a.artik)
+    out = rapor(kayit, s_n, test_kayitlar=test, vekil=a.vekil, artik=a.artik,
+                katli=a.katli)
     print("=" * 78)
     print(f"PROTOKOL P -- kapali dongu kalibrasyonu ({len(kayit)} kosu, "
           f"N yargisi {'VAR' if s_n else 'YOK'}, vekil {a.vekil})")
@@ -480,6 +516,15 @@ def main(argv=None) -> int:
               f"cakili {e['cakili']}/{e['n']}  -> {e['karar']}")
     if "gurultu_tepkisi" in out:
         print(f"  gurultu tepkisi: {out['gurultu_tepkisi']}")
+    if "katli" in out:
+        d = out["katli"]
+        print(f"\nP-v4 KATLI DIS DOGRULAMA ({d['n_kosu']} kosu, {d['n_theta']} theta, "
+              f"K={d['K']}, artik {out['artik']})")
+        for ad, e in d["eksen"].items():
+            print(f"  {ad:>12}: kapsama68 {e['kapsama68']:.2f}  kapsama95 "
+                  f"{e['kapsama95']:.2f}  medyan genislik {e['medyan_genislik']:.3f}  "
+                  f"-> {e['karar']}")
+        print(f"  gurultu tepkisi: {d['gurultu_tepkisi']}")
     print(f"\nGENEL: {out['genel']}")
     if "dis_ornek" in out:
         d = out["dis_ornek"]

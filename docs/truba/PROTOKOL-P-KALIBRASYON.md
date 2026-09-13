@@ -94,6 +94,30 @@ Seçim dış örneklemde yapıldığı için "iki modeli dene, iyi olanı al"
 iyimserliği aralık kalibrasyonuyla sınırlanıyor: elenmeyen bir yol
 tanım gereği N2'de dürüst aralık vermiş olur.
 
+### 4d. P-v4 — havuzlanmış K-kat dış doğrulama (2026-09-13, kesmeli veri gelmeden)
+
+**Neden (A82).** Kesmesiz N→N2 dış örnekleminde iki vekil de KALİBRASYON
+DÜŞTÜ. Keşif tanısı (yargı değil): dış örneklem `z` sapması `~1,4`
+(bırak-bir-θ'da `1,0`), gözlenebilirlerde aynı yönlü `±0,3–0,4σ` ortalama
+kayması, en kötü noktalar önsel köşesinde. Korelasyon küçültmesi (`λ`)
+etkisiz; yalnız 4-kat artıklar (P-v3) da yetmedi (`Y₀` kapsama `0,46` /
+`0,33`). Yorum: 23 θ'lık eğitimde vekilin kendi sapması baskın.
+
+**Kural (kilitli).** Kesmeli üretim verisinde (`Nk` + `N2k` kaba;
+`Nok` + `N2ok` orta) **ayrı ayrı**:
+
+1. Havuz = iki tasarım, 48 θ × 2 tohum.
+2. Gözlenebilir seçimi §3 ile aynı; `S_N` havuzun N raporundan.
+3. θ-gruplu 4 kat (grup kimliği `% 4`). Her katta vekil ve gürültü
+   kovaryansı **yalnız öbür üç katla** kurulur; kovaryans iç 4-kat
+   artıklarından (`--artik kfold4`); o kat hiç görülmemiş gözlem.
+4. 96 vakada §4 eksen yargısı ve genel yargı — eşikler **aynı**.
+5. Kuadratik ve GP; yol seçimi §4c (bu kez katlı yargılar üzerinde).
+
+Kesmesiz N/N2 sonuçları (P, P2, P-v3 keşfi) yalnız betimleyicidir.
+P-v4'ün kesmesiz havuzda bir kez koşulması **keşiftir** ve kuralı
+değiştirmez.
+
 ## 5. Yorum tablosu (veri gelmeden)
 
 | sonuç | anlamı | sıradaki adım |

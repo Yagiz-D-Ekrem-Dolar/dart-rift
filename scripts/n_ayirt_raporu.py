@@ -99,7 +99,9 @@ def topla(kok: Path, desen: str = "N_matris_sahne*.durumlar") -> dict:
     from gozlem_vektoru import gozlem_vektoru
 
     kollar: dict[str, list[dict]] = {}
-    for dz in sorted(glob.glob(str(kok / desen))):
+    # Virgulle ayrilmis birden cok desen (P-v4 havuzu: N ve N2 birlikte).
+    dizinler = sorted({d for ds in desen.split(",") for d in glob.glob(str(kok / ds.strip()))})
+    for dz in dizinler:
         t = vp._tohum_ayikla(dz)
         for f in sorted(glob.glob(dz + "/nokta_*.npz")):
             z = np.load(f)

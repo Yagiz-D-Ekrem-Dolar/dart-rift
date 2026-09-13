@@ -229,6 +229,55 @@ def test_P_v3_kfold_artigi_LOO_dan_kucuk_degil_ve_rapor_calisiyor():
     assert out["artik"] == "kfold4" and "genel" in out
 
 
+def _havuz(f, gurultu, ortak=False):
+    """N (20260906) + N2 (20260914) tasarımları, iki tohum."""
+    rng = np.random.default_rng(11)
+    kayit = []
+    for kok in (20260906, 20260914):
+        th = lhs_design(DART_UZAYI_S3, 24, root_seed=kok)
+        for s in ("a", "b"):
+            for t in th:
+                u = DART_UZAYI_S3.to_unit(t[None, :])[0]
+                k = {g: float("nan") for g in pr.DONUSUMLER}
+                o = rng.normal(0, gurultu)
+                for g, fn in f.items():
+                    k[g] = float(fn(u) + (o if ortak else rng.normal(0, gurultu)))
+                k["theta"], k["tohum"] = t, s
+                kayit.append(k)
+    return kayit
+
+
+def test_P_v4_katli_dogrulama_dogru_modelde_UC_EKSEN_ve_kosu_sayisi():
+    f = {"d_merkez": lambda u: u[0], "R_krater": lambda u: u[1] + 0.2 * u[0],
+         "dV_sikisma": lambda u: u[2] - 0.3 * u[1] ** 2}
+    out = pr.rapor(_havuz(f, 0.03), None, n_grid=20, artik="kfold4", katli=True)
+    d = out["katli"]
+    assert d["n_theta"] == 48 and d["n_kosu"] == 96 and d["K"] == 4
+    assert d["genel"] == "UC EKSEN COZULUYOR", d["eksen"]
+    assert out["genel"] == d["genel"]
+
+
+def test_P_v4_havuz_boyu_iliskili_gurultude_SAHTE_ALARM_VERMIYOR():
+    """Gerçek gürültü gözlenebilirler arasında tam ilişkili ama TÜM havuzda
+    öyle — kovaryans onu öğrenir; bu yüzden kalibre kalmalı (sahte alarm yok)."""
+    f = {"d_merkez": lambda u: u[0], "R_krater": lambda u: u[1] + 0.2 * u[0],
+         "dV_sikisma": lambda u: u[2] - 0.3 * u[1] ** 2}
+    out = pr.rapor(_havuz(f, 0.03, ortak=True), None, n_grid=20, artik="kfold4", katli=True)
+    assert "KALIBRASYON" not in out["katli"]["genel"]
+
+
+def test_virgullu_desen_iki_kampanyayi_birlestiriyor(tmp_path):
+    for ad in ("Nk_matris_sahne1.durumlar", "N2k_matris_sahne1.durumlar",
+               "Nok_matris_sahne1.durumlar"):
+        (tmp_path / ad).mkdir()
+    import glob as _g
+
+    desen = "Nk_matris_sahne*.durumlar, N2k_matris_sahne*.durumlar"
+    diz = sorted({d for ds in desen.split(",") for d in _g.glob(str(tmp_path / ds.strip()))})
+    assert [p.split("\\")[-1].split("/")[-1] for p in diz] == [
+        "N2k_matris_sahne1.durumlar", "Nk_matris_sahne1.durumlar"]
+
+
 def test_N_AYIRT_ETMIYOR_dediyse_gozlenebilir_SECILMEZ():
     kayit = _kayitlar({"d_merkez": lambda u: u[1], "R_krater": lambda u: u[0]}, 0.03)
     s_n = {"gozlem": {"d_merkez": {"karar": "AYIRT EDIYOR"},
