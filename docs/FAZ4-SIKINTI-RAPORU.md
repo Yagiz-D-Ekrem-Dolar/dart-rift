@@ -4131,9 +4131,21 @@ kalkınca `−15 MPa` çekme onu geri çekiyor.
 > Yani `3,73×`. Satır başına ekleme sıralaması, fizik
 > çekirdeklerinin toplamından uzundu; bölütlü radix sıralamayla
 > (`wp.utils.segmented_sort_pairs`) kalktı. Kalan süre FP64 fizik
-> (dizüstü GPU'da FP64 = FP32/64). **H100 ölçümü (iş K) bekleniyor.**
-> Üçüncü çözünürlük seviyesi bu hızla koşulabilir mi — o ölçümle
-> belli olacak; A52 ancak o zaman kapanır.
+> (dizüstü GPU'da FP64 = FP32/64).
+>
+> **TRUBA ölçümü (iş K `1559065`, NVIDIA H200, 2026-09-13, 40 adım):**
+>
+> | merdiven | N | hash ms/adım | bvh ms/adım | hızlanma |
+> |---|---:|---:|---:|---:|
+> | kaba | 16 954 | 32,5 | 22,8 | 1,43× |
+> | **orta** | **69 379** | **336** | **41,4** | **8,13×** |
+>
+> Hash yolunda `4×` parçacık `10,3×` süre (A52'nin kendisi); bvh'de
+> `4×` parçacık `1,8×` süre. Durum farkı yalnız toplama sırası
+> (`≤ 3,3e-11`). Orta nokta `~28 dk → ~3,5 dk`. İnce merdiven
+> (`N = 487 358`) doğrusal ölçeklenirse `~0,3 s/adım`, nokta başına
+> `~1 saat`: üçüncü seviye artık koşulabilir. A52 **üç seviyeli
+> kampanya bu yolla koşulup yakınsama raporu okununca** kapanır.
 
 `solver_solid.py:84`:
 
