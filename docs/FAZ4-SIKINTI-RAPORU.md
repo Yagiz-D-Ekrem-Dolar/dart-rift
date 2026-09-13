@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-13 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 67 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82 · A70 **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-13 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 68 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83 · A70 **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5150,6 +5150,37 @@ da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
 
 ---
+### A83 — **Dayanım kesmesi açıkken bile boşluğa dağılan gözenekli matrisin süreklilik yoğunluğu `0`'a iniyor → `dt → 0`** (2026-09-13) — *açık (düzeltme doğrulandı, Tkt bekleniyor)*
+
+Belirti: `--dayanim-kesme` açık Nk kaba koşularında 48 noktanın 5'i ve T
+matris `99991111` (adım 38 000) patladı. Patlayanlar hep **yüksek `f`
+(`0,45–0,48`), neredeyse katı blok (`α_b 1,02–1,08`)** köşesinde; aynı θ
+iki tohumda da patlıyor (deterministik). O köşede yığın yoğunluğunu
+korumak için matris `α ≈ 2,2` türetiliyor.
+
+Tanı (`PatlamaGozlemcisi`, N2 θ#6, adım 8 425): kesilmiş (`S = 0`),
+kırpılmış (`P = 0`) bir matris parçacığı `230 m/s` ile ayrılıyor;
+süreklilik yoğunluğu `0`; `divv ∝ 1/ρ_i` → yapay viskozite `dt`'yi
+sıfıra indiriyor; `t = 12,915 ms`'de donuyor. A80'den **farklı**
+mekanizma: dayanım yok, yoğunluk sıfır.
+
+Düzeltme `--yogunluk-tabani` (varsayılan KAPALI): her süreklilik yarım
+adımından sonra `ρ ≥ 0,01 ρ₀/α`. İlk sürümde tanı sayacı her yarım adımda
+sıfırlanıyordu ve ikinci yarım adım ilk kırpmayı siliyordu — sınav
+yakaladı, sayaç adım başında sıfırlanıyor.
+
+Kilitli doğrulama ([PROTOKOL-A83-TABAN](truba/PROTOKOL-A83-TABAN.md)):
+V1 (a) K83 **12/12**, (b) patlayan θ dolgusu Nkd **6/6** geçerli (enerji
+`−%0,35…−%0,39`, tabana dayanan parçacık `1–5`, kütle kesri `~1e-8`),
+(c) Tkt bekleniyor. **V2 NÖTR** (`60/60` karşılaştırma 2σ içinde; en
+büyük fark `1,09σ`). Karar: üretim = kesme + taban; kesmeli kampanyalar
+geçerli; patlayanlar Nkd ile doldurulur.
+
+Ek hata (kendim): dolgu tek tohumda patlayan θ#18'i iki tohumla koştu;
+havuzda aynı (θ, tohum) iki kez sayılacaktı. Rapor işi durduruldu,
+okuyuculara tekrar eleme eklendi, iş yeniden gönderildi.
+
+---
 ### A82 — **Posterior dış örneklemde AŞIRI GÜVENLİ: kalibrasyon düştü** (2026-09-13) — *açık*
 
 Protokol P (kilitli). N (24 θ × 2 tohum, kaba) ile kurulan vekil + tam
@@ -5221,6 +5252,12 @@ yok. Birim sınav (P kırpılı, `ρ = 1e-3`): `dt 1,6e-8 → 1,8e-5 s`, ivme
 θ'nın öbür tohumu (kesmesiz) `0,6787`. Kesik parçacık `1 075`, kütle
 kesri `5,2e-6`. Kilitli doğrulama: [PROTOKOL-A80-KESME](truba/PROTOKOL-A80-KESME.md)
 (K80 `1559571`, Tk `1559572`, rapor `1559573`).
+
+**Kilitli doğrulama sonucu (aynı gece):** V1 **KARARLI** (K80 12/12);
+**V2 FİZİĞİ DEĞİŞTİRİYOR** (`2σ` içinde `%52,7`; `β−1` medyan `+4,8σ` ≈
+`+0,012`, `%1,7`). Karar tablosu: üretim `--dayanim-kesme`; kesmesiz
+kampanyalar (M, N, N2, L2, L2o, Z) betimleyici. Kesme her patlamayı
+önlemedi → A83.
 
 Kalıp: **seyrek sonluluk denetimi** — patlama bir koşu sonunda "nan" diye
 görünür, sebep kaybolur. Tanı aracı artık kalıcı.

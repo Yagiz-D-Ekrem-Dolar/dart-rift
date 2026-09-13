@@ -100,6 +100,33 @@ artıklar tek başına (P-v3) yetmedi (`0,46` kuadratik, `0,33` GP).
 Bu keşif üzerine, kesmeli üretim verisi (Nk) **gelmeden** P-v4 (§4d) ve
 zaman örnekli P-v4b (§4e) kilitlendi.
 
+## 2c. Kilitli: M2 (kontrast), Z (bölge), A80, A83 — aynı gece
+
+| protokol | yargı |
+|---|---|
+| **M2** (yeni θ, 3 merdiven, kesmeli) | **H_Y DAYANIKLI** · H_a DAYANIKSIZ · H_f DAYANIKSIZ |
+| **Z** (ince bölge yarıçapı 2×) | **KISMİ** — kabada `β−1` `+%12–13`, ortada `−%0,3…+%3,9`; M'nin orta → ince farkını açıklamıyor |
+| **A80** (dayanım kesmesi) | V1 KARARLI · V2 FİZİĞİ DEĞİŞTİRİYOR (`β−1` `+%1,7`) → üretimde |
+| **A83** (yoğunluk tabanı) | V1 12/12 + 6/6 (Tkt bekleniyor) · **V2 NÖTR** (60/60) → üretimde |
+
+M2 kontrastları:
+
+| kontrast | kaba | orta | ince | yargı |
+|---|---:|---:|---:|---|
+| `β−1`: `Y₀ 1e6` − `3e4` | −0,071 | −0,105 | −0,101 | KARARLI |
+| `ln M_ej`: aynı | −0,021 | −0,278 | −0,244 | KARARLI |
+| `β−1`: `α_b 1,25` − `1,10` | +0,013 | −0,017 | +0,027 | KARARSIZ |
+| `β−1`: `f 0,40` − `0,20` | −0,078 | +0,055 | −0,043 | KARARSIZ |
+
+`V_krater` ve `d_merkez` OKUNMAZ: taban θ'nın ince `99991111` koşusunda
+krater operatörü `nan` döndü (A84 adayı, incelenmedi). Kabada `Y₀ = 1e6`
+noktasında `d_merkez` negatif (`−0,09 / −0,21 m`) — A81 ile tutarlı.
+
+**Okuma:** `Y₀`'ın izi orta ve ince çözünürlükte aynı (kaba asimptotik
+bölgede değil); `α_b` ve `f`'nin izi çözünürlükle işaret değiştiriyor.
+Önceden yazılmış yorum tablosu: *"`Y₀` çözünürlüğe dayanıklı biçimde
+çıkarılabilir; `α_b`, `f` bu gözlemlerle çıkarılamaz."*
+
 ## 3. Bitiş 3 için anlamı
 
 1. **Mutlak** 24 ms gözlenebilirlerine dayanan bir posterior bu
