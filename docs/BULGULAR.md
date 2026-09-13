@@ -21,6 +21,12 @@ Uzman üç kod kusuru buldu; üçü de bizim kodumuzda **ölçüldü**:
 **A52** (çözünürlük kilidi): destek kutulu BVH + sıralı CSR yazıldı ve
 sınandı; yerel GPU'da `3,73×`. H100 ölçümü bekleniyor.
 
+**Protokol L sonucu (2026-09-13, [`SONUC-L-DUYARLILIK.md`](SONUC-L-DUYARLILIK.md)):**
+düzeltilmiş fizikte kilitli yargı **HİÇBİR YÖN**; sebebi ölçüldü —
+`β`'yı çarpma noktası altındaki **blok** belirliyor (bloğa çarpma
+`β−1 ≈ 0,03`, matrise çarpma `≈ 0,5`; en yakın blok `≤ 0,35 m` ↔
+`≥ 2,2 m`, kusursuz ayrım). Sonraki adım: çarpma sahası koşullanmış L2.
+
 **Protokol J koşuyor** (iş `1555356`, 84 görev): sabit `h`'de `Δt`
 yarılanınca `x₀` kayıyor mu, `ara` bunu kaldırıyor mu. Ön koşul `O4`
 **geçti**: yeni kodun varsayılan yolu G1'i 13/13 noktada **bit bit**
