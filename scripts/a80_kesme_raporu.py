@@ -103,12 +103,16 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--kok", type=Path, required=True)
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--eski-onek", default="M",
+                    help="A83 dogrulamasinda K80 (kesmeli) karsilastirma tabani")
+    ap.add_argument("--yeni-onek", default="K80",
+                    help="A83 dogrulamasinda K83 (kesme + yogunluk tabani)")
     a = ap.parse_args(argv)
     sigma = sigma_oku(json.loads((a.kok / "S_L2.json").read_text(encoding="utf-8")))
-    eski, yeni = topla(a.kok, "M"), topla(a.kok, "K80")
+    eski, yeni = topla(a.kok, a.eski_onek), topla(a.kok, a.yeni_onek)
     y = yargi(eski, yeni, sigma)
     print("=" * 72)
-    print("A80 DOGRULAMA -- dayanim kesmesi")
+    print(f"DOGRULAMA -- {a.yeni_onek} (yeni) / {a.eski_onek} (eski)")
     print("=" * 72)
     print(f"  sigma (L2 matris merkez): {sigma}")
     print(f"  V1: {y['V1']}  (kesmeli tamam {y['n_yeni']}/{N_NOKTA}; eksik {y['eksik_yeni']})")
