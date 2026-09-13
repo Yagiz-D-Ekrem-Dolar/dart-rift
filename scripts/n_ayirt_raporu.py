@@ -99,6 +99,7 @@ def topla(kok: Path, desen: str = "N_matris_sahne*.durumlar") -> dict:
     from gozlem_vektoru import gozlem_vektoru
 
     kollar: dict[str, list[dict]] = {}
+    gorulen: set = set()
     # Virgulle ayrilmis birden cok desen (P-v4 havuzu: N ve N2 birlikte).
     dizinler = sorted({d for ds in desen.split(",") for d in glob.glob(str(kok / ds.strip()))})
     for dz in dizinler:
@@ -108,6 +109,10 @@ def topla(kok: Path, desen: str = "N_matris_sahne*.durumlar") -> dict:
             gv = gozlem_vektoru(z)
             gv["beta_eksi_1"] = gv["beta_hedef"] - 1.0
             gv["theta"] = np.asarray(z["theta"], float).ravel()
+            anah = (tuple(np.round(gv["theta"], 12)), t)
+            if anah in gorulen:            # A83 dolgusu: ayni (theta, tohum) bir kez
+                continue
+            gorulen.add(anah)
             kollar.setdefault(t, []).append(gv)
     return _ar().esle(list(kollar.values()))
 

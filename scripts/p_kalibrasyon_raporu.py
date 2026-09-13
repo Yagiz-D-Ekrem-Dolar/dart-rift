@@ -129,6 +129,7 @@ def kayitlari_oku(kok: Path, desen: str = "N_matris_sahne*.durumlar") -> list[di
     from gozlem_vektoru import gozlem_vektoru
 
     kayit = []
+    gorulen: set = set()
     # Virgulle ayrilmis birden cok desen (P-v4 havuzu).
     dizinler = sorted({d for ds in desen.split(",") for d in glob.glob(str(kok / ds.strip()))})
     for dz in dizinler:
@@ -141,6 +142,14 @@ def kayitlari_oku(kok: Path, desen: str = "N_matris_sahne*.durumlar") -> list[di
             k.update(zaman_ornekleri(z))
             k["theta"] = np.asarray(z["theta"], float).ravel()
             k["tohum"] = t
+            anah = (tuple(np.round(k["theta"], 12)), t)
+            # A83 dolgusu: yalniz BIR tohumda patlayan theta icin dolgu kampanyasi
+            # iki tohumu da kosuyor; ayni (theta, tohum) ikinci kez SAYILMAZ
+            # (gurultu kestirimini sahte daraltirdi). Siralama deterministik:
+            # ilk gelen (asil kampanya) tutulur.
+            if anah in gorulen:
+                continue
+            gorulen.add(anah)
             kayit.append(k)
     return kayit
 
