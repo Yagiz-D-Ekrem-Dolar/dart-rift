@@ -117,7 +117,14 @@ def yargi(J: np.ndarray, tekrar) -> dict:
              0: "HICBIR YON"}[n_ayirt]
     gurultulu = [EKSENLER[j] for j, r in enumerate(tekrar)
                  if np.isfinite(r) and r > TUREV_TEKRAR_ESIGI]
-    return {"karar": karar, "tekil": s.tolist(), "etiket": etiket,
+    # A79 (2026-09-13): belge "turev gurultude ise tekil deger yargisi o
+    # eksen icin OKUNMAZ" diyor ama `karar` bunu uygulamiyordu -- L2_blok
+    # iki eksen gurultudeyken "UC EKSEN AYRISIYOR" yazdi. `karar` alani
+    # geriye uyumluluk icin AYNEN duruyor; okunacak alan `karar_okunur`.
+    karar_okunur = (karar if not gurultulu else
+                    f"{karar} -- OKUNMAZ EKSEN: {', '.join(gurultulu)}")
+    return {"karar": karar, "karar_okunur": karar_okunur,
+            "tekil": s.tolist(), "etiket": etiket,
             "zayif_yon": Vt[-1].tolist(), "guclu_yon": Vt[0].tolist(),
             "turev_gurultude": gurultulu,
             "kosul_sayisi": float(s[0] / s[-1]) if s[-1] > 0 else float("inf")}
@@ -200,6 +207,7 @@ def main(argv=None) -> int:
         print(f"  turev tekrari: {np.round(r['turev_tekrari'], 3)}"
               f"  gurultude: {r['turev_gurultude']}")
         print(f"  YARGI: {r['karar']}")
+        print(f"  OKUNUR YARGI (A79): {r['karar_okunur']}")
     if a.json:
         a.json.write_text(json.dumps(cikti, indent=1, default=float),
                           encoding="utf-8")

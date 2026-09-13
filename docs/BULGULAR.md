@@ -27,6 +27,16 @@ düzeltilmiş fizikte kilitli yargı **HİÇBİR YÖN**; sebebi ölçüldü —
 `β−1 ≈ 0,03`, matrise çarpma `≈ 0,5`; en yakın blok `≤ 0,35 m` ↔
 `≥ 2,2 m`, kusursuz ayrım). Sonraki adım: çarpma sahası koşullanmış L2.
 
+**Protokol L2 sonucu (2026-09-13, [`SONUC-L2-SAHA.md`](SONUC-L2-SAHA.md)):**
+aynı fizik ve eşikler, çarpma sahası koşullanınca **matris sahasında
+kilitli yargı ÜÇ EKSEN AYRIŞIYOR** (`s = 15,8 · 4,7 · 3,6`; kopya
+gözlenebilirler çıkınca `s₃ = 3,3`; türev tekrarı üç eksende `< 0,5`;
+18/18 geçerli, `q/Y ≤ 1 + 7e-16`). Rejim sınavı **REPLİKE** (`β − 1`
+matris `0,740` / blok `0,053`, oran `13,9`). En zayıf yön `Y₀` ve onu
+`β` taşıyor (`β` çıkınca `s₃ = 1,76`). Blok kolunda `Y₀`, `f` OKUNMAZ
+(A79). **Kaba merdiven, 24 ms, yerel türev**: küresel harita (N),
+kalibrasyon (P, N2), yakınsama (M) ve zaman (T) sırada.
+
 **Protokol J koşuyor** (iş `1555356`, 84 görev): sabit `h`'de `Δt`
 yarılanınca `x₀` kayıyor mu, `ara` bunu kaldırıyor mu. Ön koşul `O4`
 **geçti**: yeni kodun varsayılan yolu G1'i 13/13 noktada **bit bit**

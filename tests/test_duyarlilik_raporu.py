@@ -108,6 +108,17 @@ def test_turev_tohumlar_arasi_TUTARSIZSA_isaretleniyor():
     assert "log10_Y0" not in y["turev_gurultude"]
 
 
+def test_A79_turev_gurultudeyse_OKUNUR_yargi_ekseni_OKUNMAZ_diyor():
+    """Belge: türev gürültüdeyse tekil değer yargısı o eksen için OKUNMAZ.
+    L2_blok'ta `karar` bunu uygulamadan "UC EKSEN AYRISIYOR" yazdı."""
+    y = dr.yargi(np.diag([70.0, 13.0, 3.8]), [0.45, 1.743, 0.679])
+    assert y["karar"] == "UC EKSEN AYRISIYOR"          # eski alan aynen
+    assert y["karar_okunur"] == ("UC EKSEN AYRISIYOR -- OKUNMAZ EKSEN: "
+                                 "log10_Y0, f_boulder")
+    temiz = dr.yargi(np.diag([15.8, 4.7, 3.6]), [0.094, 0.2, 0.306])
+    assert temiz["karar_okunur"] == temiz["karar"] == "UC EKSEN AYRISIYOR"
+
+
 def test_az_gerceklemede_OKUNMAZ():
     A = np.diag([4.0, 3.0, 2.5])
     r = dr.rapor(_sentetik(A, 1.0, n_merkez=3), ["a", "b", "c"])

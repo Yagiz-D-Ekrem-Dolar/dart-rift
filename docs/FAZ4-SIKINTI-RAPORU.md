@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-12 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 63 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78 · A70 **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-13 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 64 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79 · A70 **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5148,6 +5148,34 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A79 — **Duyarlılık raporu "türev gürültüde → OKUNMAZ" kuralını uygulamıyordu** (2026-09-13) — *açık*
+
+`PROTOKOL-L-DUYARLILIK.md` ve betiğin kendi başlığı: türev tekrarı
+`> 0,5` olan eksen için tekil değer yargısı **OKUNMAZ**. `yargi()` ise
+`karar`'ı yalnız tekil değerlerden kuruyor, `turev_gurultude` listesini
+ayrı bir alana yazıp karara **katmıyordu**.
+
+Nasıl bulundu: Protokol L2 raporu blok kolunda `turev_gurultude:
+['log10_Y0', 'f_boulder']` ile birlikte `YARGI: UC EKSEN AYRISIYOR`
+yazdı. Protokol L'de (`L_ara_kirpik`) aynı durum vardı ama karar zaten
+HİÇBİR YÖN olduğu için çelişki görünmedi.
+
+Yapılan: `karar` alanı **aynen** duruyor (geriye uyum, eski JSON'lar);
+yanına `karar_okunur` eklendi — gürültüdeki eksenleri adıyla OKUNMAZ
+yazıyor. Sınav: `test_A79_turev_gurultudeyse_OKUNUR_yargi_ekseni_OKUNMAZ_diyor`.
+L2 sonucu belgedeki kurala göre okundu ([SONUC-L2-SAHA](SONUC-L2-SAHA.md)):
+matris kolu üç eksende de tekrarlı → ÜÇ EKSEN; blok kolunda `Y₀`, `f`
+OKUNMAZ.
+
+Açık kalma sebebi: kural "eksen okunmaz" diyor ama tekil değerler eksen
+başına değil — `s₃`'ün hangi eksene ait olduğu dönüşümlü. Okunmaz eksen
+varken kaç yönün sayılacağı belgede tanımlı değil; bir sonraki protokolde
+(koşudan önce) tanımlanmalı.
+
+Kalıp: **belge ile kod ayrıştı** — eşikleri belgeyle karşılaştıran sınav
+vardı, *kuralın uygulanışını* karşılaştıran yoktu.
 
 ---
 ### A78 — **Mermi `h/s ≈ 10` ile ÇOK YUMUŞATILMIŞ; `β` ve şok bundan etkileniyor** (2026-09-12) — *uzman Soru 5*
