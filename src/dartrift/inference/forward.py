@@ -665,6 +665,12 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             _ehat = np.asarray(rs.impactor_momentum, dtype=np.float64) / _p_imp
             _m_h = np.ascontiguousarray(rs.m)[_h_maske]
             _imp_t = np.linspace(0.0, t_end, IMPULS_ORNEK + 1)[1:]
+            from ..observables.momentum_defteri import momentum_defteri
+            from ..observables.momentum_transfer import escape_speed
+            _m_tum = np.ascontiguousarray(rs.m, dtype=np.float64)
+            _fk_tum = np.asarray(rs.is_impactor, dtype=bool).astype(np.float64)
+            _R_h = float(rs.target_radius)
+            _vesc_h = float(escape_speed(float(rs.target_mass), _R_h))
             _imp_k = 0
             impuls = []
             for adim in range(1, azami_adim + 1):
@@ -675,8 +681,17 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 t += dt
                 while (_imp_k < len(_imp_t)
                        and t >= _imp_t[_imp_k] * (1.0 - 1e-12)):
-                    _v = np.asarray(sol.v.numpy(), dtype=np.float64)[_h_maske]
-                    impuls.append([float(t), float(_m_h @ (_v @ _ehat)) / _p_imp])
+                    # [t, hedef eksenel momentum / p_imp, beta_hedef, M_ejekta]
+                    # beta(t) ZAMANDA PLATO tanisi icin (Protokol T).
+                    _vt = np.asarray(sol.v.numpy(), dtype=np.float64)
+                    _xt = np.asarray(sol.x.numpy(), dtype=np.float64)
+                    _dt_ = momentum_defteri(
+                        _xt, _vt, _m_tum, mermi_kesri=_fk_tum, R=_R_h,
+                        v_esc=_vesc_h, ehat=_ehat, p_imp=_p_imp)
+                    impuls.append([float(t),
+                                   float(_m_h @ (_vt[_h_maske] @ _ehat)) / _p_imp,
+                                   float(_dt_["beta_hedef"]),
+                                   float(_dt_["M_ejekta"])])
                     _imp_k += 1
                 if t <= SOK_PENCERESI or adim % kontrol == 0:
                     _r = np.asarray(sol.rho.numpy())[_h_maske]
