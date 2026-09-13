@@ -5169,10 +5169,26 @@ temiz bir çarpan yakınsaması değildir."*
 - Şok kapısı: `KISMI` → **`SOK_VAR`** (sıkışma Hugoniot bandına girdi).
 - Yeni yüzey operatörünün kraterı ise `2,05 → 2,06`: **değişmiyor**.
 
+#### İkinci `θ` — aynı yön (2026-09-13)
+
+`θ₂` = G1 tasarımının 2. noktası: `α_b = 1,146`, **`Y₀ = 3,75 MPa`**
+(`θ₁`'in `225` katı), `f = 0,457`. Yine `Δt`'si eşleştirilmiş kontrolle:
+
+| kol | `h` kipi | `cfl` | adım | `β_defter` | şok kapısı | krater (yeni) |
+|---|---|---:|---:|---:|---|---:|
+| **B2** | merdiven | 0,05 | 10 479 | 1,00000 | KISMI | 1,988 |
+| **C2** | **kendi** | 0,25 | 16 905 | **1,02746** | **SOK_VAR** | 1,861 |
+
+İki çok farklı dayanım rejiminde de: `β − 1` sıfırdan `~0,03`'e,
+şok kapısı `KISMI → SOK_VAR`. Krater `%0,2` ve `−%6` değişiyor.
+
 > Yorum (hipotez): aşırı yumuşatılmış mermi momentumunu daha geniş bir
 > hacme yayıyor; şok zayıflıyor ve kaçan madde oluşmuyor. `β`'nın bütün
 > ölçeklerde "ayrıklaştırma tabanında" kalması (S9, A17) bununla
-> ilgili olabilir. **Tek `θ`, tek tohum** — ikinci `θ` koşuyor.
+> ilgili olabilir. **İki `θ`, tek tohum, kaba merdiven, 24 ms.**
+> Dikkat: `β − 1` iki `θ`'da benzer (`0,031` / `0,027`) ama `Y₀` `225`
+> kat farklı — bu erken ejekta dayanımla değil çarpma bölgesi
+> hidrodinamiğiyle belirleniyor olabilir; ayrıca sınanmalı.
 
 Düzeltme yazıldı: `--mermi-h-kipi kendi` (varsayılan **değişmedi**).
 Üretime alınması ayrı bir karar: `h_mermi` küçülünce `dt` de `~5` kat
