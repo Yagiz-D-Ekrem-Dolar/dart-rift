@@ -200,6 +200,35 @@ def test_ESIK_bicimli_veride_GP_polinomun_goremedigi_ekseni_cozuyor():
     assert "KALIBRASYON" not in kuad["genel"] and "KALIBRASYON" not in gp["genel"]
 
 
+def test_P_v3_kfold_artiklari_ELLE_ile_ayni_ve_ikiz_tohum_ayni_katta():
+    th = _tasarim(24)
+    X = np.vstack([th, th])
+    grup = pr._gruplar(X)
+    kat = pr.kat_ata(grup)
+    assert np.array_equal(kat[:24], kat[24:])          # ikiz tohum ayrilmiyor
+    assert sorted(np.bincount(kat).tolist()) == [12, 12, 12, 12]
+    rng = np.random.default_rng(2)
+    y = DART_UZAYI_S3.to_unit(X)[:, 1] ** 2 + rng.normal(0, 0.05, 48)
+    e = pr.kfold_artiklari(X, y, grup)
+    t = kat == 1
+    v = fit_surrogate(DART_UZAYI_S3, X[~t], y[~t])
+    np.testing.assert_allclose(e[t], y[t] - v.predict(X[t]), rtol=1e-10, atol=1e-12)
+
+
+def test_P_v3_kfold_artigi_LOO_dan_kucuk_degil_ve_rapor_calisiyor():
+    kayit = _kayitlar({"d_merkez": lambda u: u[0] + 0.5 * np.sin(6 * u[1]),
+                       "R_krater": lambda u: u[1] + 0.2 * u[0] ** 3,
+                       "dV_sikisma": lambda u: u[2] - 0.3 * u[1] ** 2}, gurultu=0.03)
+    sec = ["d_merkez", "R_krater", "dV_sikisma"]
+    X, Y = pr._matrisler(kayit, sec)
+    grup = pr._gruplar(X)
+    e_loo = loo_artiklari(DART_UZAYI_S3, X, Y[:, 0], gruplar=grup)
+    e_kf = pr.kfold_artiklari(X, Y[:, 0], grup)
+    assert np.std(e_kf) >= 0.95 * np.std(e_loo)
+    out = pr.rapor(kayit, None, n_grid=20, artik="kfold4")
+    assert out["artik"] == "kfold4" and "genel" in out
+
+
 def test_N_AYIRT_ETMIYOR_dediyse_gozlenebilir_SECILMEZ():
     kayit = _kayitlar({"d_merkez": lambda u: u[1], "R_krater": lambda u: u[0]}, 0.03)
     s_n = {"gozlem": {"d_merkez": {"karar": "AYIRT EDIYOR"},
