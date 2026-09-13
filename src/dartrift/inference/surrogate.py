@@ -146,7 +146,8 @@ def fit_surrogate(space: ParamSpace, x, y, ridge: float = 1.0e-10) -> Surrogate:
                      y_yayilim=float(np.std(y)))
 
 
-def loo_artiklari(space: ParamSpace, x, y, ridge: float = 1.0e-10) -> np.ndarray:
+def loo_artiklari(space: ParamSpace, x, y, ridge: float = 1.0e-10,
+                  gruplar=None) -> np.ndarray:
     """Bırak-birini artıkları `e_loo_i = y_i − ŷ_{−i}(x_i)` — vektör olarak.
 
     `fit_surrogate` yalnız özetini (`q2`, `rmse_loo`) döndürüyor. Çok
@@ -154,7 +155,15 @@ def loo_artiklari(space: ParamSpace, x, y, ridge: float = 1.0e-10) -> np.ndarray
     kovaryansı** gerekiyor (Protokol P): krater derinliği ile hacmi aynı
     gerçeklemede birlikte sapar; bağımsız saymak posterioru yapay
     daraltır. Kapalı form `fit_surrogate` ile aynı (Allen 1974).
+
+    `gruplar` verilirse **bırak-bir-grup**: aynı `θ`'nın bütün tohumları
+    birlikte dışarıda kalır, `e_G = (I − H_GG)⁻¹ e_G`. Gerekçe: tek koşu
+    bırakılınca ikiz tohum aynı `x`'te eğitimde kalır ve tahmini kendine
+    çeker — artık gerçekleme farkının yarısına iner, vekil hatası
+    görünmez olur. Gerçek Dimorphos'un `θ`'sı eğitimde HİÇ yok.
     """
+    if gruplar is not None:
+        return _grup_loo_artiklari(space, x, y, ridge, gruplar)
     x = np.atleast_2d(np.asarray(x, dtype=np.float64))
     y = np.asarray(y, dtype=np.float64).ravel()
     A = design_matrix(space.to_unit(x))
@@ -166,3 +175,25 @@ def loo_artiklari(space: ParamSpace, x, y, ridge: float = 1.0e-10) -> np.ndarray
     artik = y - A @ (Ginv @ (A.T @ y))
     hii = np.clip(np.einsum("ij,jk,ik->i", A, Ginv, A), 0.0, 1.0 - 1.0e-12)
     return artik / (1.0 - hii)
+
+
+def _grup_loo_artiklari(space: ParamSpace, x, y, ridge: float, gruplar) -> np.ndarray:
+    x = np.atleast_2d(np.asarray(x, dtype=np.float64))
+    y = np.asarray(y, dtype=np.float64).ravel()
+    gruplar = np.asarray(gruplar).ravel()
+    if len(gruplar) != len(y):
+        raise ValueError(f"gruplar ({len(gruplar)}) ve y ({len(y)}) aynı uzunlukta olmalı")
+    A = design_matrix(space.to_unit(x))
+    n, p = A.shape
+    kalan_en_az = n - max(int(np.count_nonzero(gruplar == g)) for g in np.unique(gruplar))
+    if kalan_en_az <= p:
+        raise ValueError(f"bir grup dışarıda kalınca {kalan_en_az} nokta, "
+                         f"{p} katsayı öğrenilemez")
+    Ginv = np.linalg.inv(A.T @ A + ridge * np.eye(p))
+    H = A @ Ginv @ A.T
+    artik = y - H @ y
+    out = np.empty(n)
+    for g in np.unique(gruplar):
+        k = np.flatnonzero(gruplar == g)
+        out[k] = np.linalg.solve(np.eye(len(k)) - H[np.ix_(k, k)], artik[k])
+    return out

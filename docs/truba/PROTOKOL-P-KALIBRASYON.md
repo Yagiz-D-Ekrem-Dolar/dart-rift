@@ -30,7 +30,9 @@ Protokol N'in 24 θ × 2 tohum koşusu (kaba, matris sahası, en iyi fizik,
 - **Dönüşüm:** `V_krater`, `M_ejekta`, `β − 1` için `log10` (tabanlar
   `1e-6`, `1e-3`, `1e-4`); diğerleri olduğu gibi.
 - **Bırak-bir-θ:** her θ için kalan 23 θ'nın 46 koşusuyla vekil.
-- **Kovaryans:** eğitim kümesinin bırak-birini artıklarının
+- **Kovaryans:** eğitim kümesinin **bırak-bir-θ** artıklarının (aynı
+  θ'nın iki tohumu birlikte dışarıda; tek koşu bırakılınca ikiz tohum
+  tahmini kendine çeker ve vekil hatası görünmez olur — sınanıyor)
   gözlenebilirler arası kovaryansı, köşegene küçültülmüş
   (`λ = 0,3`). Artık = gerçekleme gürültüsü + vekil hatası. Krater
   derinliği, yarıçapı ve hacmi aynı gerçeklemede birlikte sapar;
@@ -59,6 +61,15 @@ Aksi halde çözülen eksen sayısı: ÜÇ / İKİ / TEK / HİÇBİRİ.
 eksenin medyan genişliği büyümüyorsa (adım başına `%2` tolerans, toplamda
 `> %2` büyüme) yargıya **GÜRÜLTÜ TEPKİSİZ, GEÇERSİZ** eklenir.
 
+### 4b. Dış örneklem (N2)
+
+Kapalı döngüde gözlenebilir seçimi ile sınama aynı 48 koşudan geliyor.
+Bunu kapatmak için **N2** koşuluyor: aynı fizik ve saha, aynı iki tohum,
+ama **başka bir LHS** (`root_seed = 20260914`). Vekil ve kovaryans N'nin
+bütün 48 koşusuyla kurulur; N2'nin 48 koşusu yalnız sınamada kullanılır.
+Eşikler ve yargı kuralı §4 ile **aynı**. Kapalı döngü ile dış örneklem
+farklı yargı verirse **dış örneklem esastır** ve fark raporlanır.
+
 ## 5. Yorum tablosu (veri gelmeden)
 
 | sonuç | anlamı | sıradaki adım |
@@ -71,7 +82,7 @@ eksenin medyan genişliği büyümüyorsa (adım başına `%2` tolerans, toplamd
 ## 6. Bilinen sınırlar
 
 - Seçim ve kapalı döngü aynı 48 koşuyu kullanıyor; seçim hafif iyimserlik
-  katar (7 adaydan eleme).
+  katar (7 adaydan eleme). Dış örneklem (§4b) bunu kapatıyor.
 - Kaba çözünürlük hatası (M) ve gözlem hatası kovaryansta **yok**;
   gerçek veriye uygulamada eklenmeleri zorunlu.
 - İkinci derece vekil keskin rejim geçişlerini (L: blok altında/matriste)

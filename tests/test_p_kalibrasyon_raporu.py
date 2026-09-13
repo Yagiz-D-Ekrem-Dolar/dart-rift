@@ -52,6 +52,32 @@ def test_loo_artiklari_elle_LOO_ile_ayni():
         assert e[i] == pytest.approx(y[i] - v.predict(X[i:i + 1])[0], rel=1e-8, abs=1e-10)
 
 
+def test_grup_loo_artiklari_elle_BIRAK_BIR_GRUP_ile_ayni():
+    rng = np.random.default_rng(5)
+    th = _tasarim(15)
+    X = np.vstack([th, th])
+    grup = np.concatenate([np.arange(15), np.arange(15)])
+    y = DART_UZAYI_S3.to_unit(X)[:, 0] ** 2 + rng.normal(0, 0.1, 30)
+    e = loo_artiklari(DART_UZAYI_S3, X, y, gruplar=grup)
+    for g in (0, 9):
+        k = grup != g
+        v = fit_surrogate(DART_UZAYI_S3, X[k], y[k])
+        for i in np.flatnonzero(~k):
+            assert e[i] == pytest.approx(y[i] - v.predict(X[i:i + 1])[0], rel=1e-7, abs=1e-9)
+
+
+def test_ikiz_tohum_egitimde_kalinca_tek_LOO_artigi_KUCUK_kaliyor():
+    """Neden bırak-bir-grup: gerçekleme gürültüsü baskınken tek LOO yarıya iner."""
+    rng = np.random.default_rng(8)
+    th = _tasarim(24)
+    X = np.vstack([th, th])
+    grup = np.concatenate([np.arange(24), np.arange(24)])
+    y = DART_UZAYI_S3.to_unit(X)[:, 1] + rng.normal(0, 0.1, 48)
+    tek = loo_artiklari(DART_UZAYI_S3, X, y)
+    grp = loo_artiklari(DART_UZAYI_S3, X, y, gruplar=grup)
+    assert np.std(grp) > 1.15 * np.std(tek)
+
+
 def test_kovaryansli_posterior_KOSEGENDE_bagimsiz_posteriora_esit():
     X = _tasarim(30)
     U = DART_UZAYI_S3.to_unit(X)
@@ -121,6 +147,44 @@ def test_yalniz_Y0a_bagli_veri_TEK_EKSEN_ve_digerleri_BILGI_YOK():
     assert e["blok_alpha0"]["karar"] == "BILGI YOK"
     assert e["blok_kesri"]["karar"] == "BILGI YOK"
     assert out["genel"] == "TEK EKSEN COZULUYOR"
+
+
+def test_DIS_ORNEKLEM_ikinci_tasarimda_ayni_yargiyi_veriyor():
+    f = {"d_merkez": lambda u: u[0], "R_krater": lambda u: u[1] + 0.2 * u[0],
+         "dV_sikisma": lambda u: u[2] - 0.3 * u[1] ** 2}
+    egit = _kayitlar(f, 0.03, tohum=1)
+    test = _kayitlar(f, 0.03, tohum=2)
+    th2 = lhs_design(DART_UZAYI_S3, 24, root_seed=20260914)
+    rng = np.random.default_rng(100)
+    for i, k in enumerate(test):
+        k["theta"] = th2[i % 24]
+        u = DART_UZAYI_S3.to_unit(th2[i % 24][None, :])[0]
+        for g, fn in f.items():
+            k[g] = float(fn(u) + rng.normal(0, 0.03))
+    out = pr.rapor(egit, None, n_grid=24, test_kayitlar=test)
+    d = out["dis_ornek"]
+    assert d["n_theta"] == 24 and d["n_kosu"] == 48
+    assert d["genel"] == "UC EKSEN COZULUYOR", d["eksen"]
+
+
+def test_DIS_ORNEKLEM_gurultu_modeli_uyusmazligini_YAKALIYOR():
+    """Sınama gürültüsü gözlenebilirler arasında TAM ilişkili, eğitimde
+    bağımsız: kovaryans modeli yanlış → aralıklar yalan → KALIBRASYON DUSTU.
+    (Bu sınav ilk yazımda kazara bulundu: sınav verisinin gürültüsü hatalı
+    üretilmişti ve yöntem bunu yakaladı.)"""
+    f = {"d_merkez": lambda u: u[0], "R_krater": lambda u: u[1] + 0.2 * u[0],
+         "dV_sikisma": lambda u: u[2] - 0.3 * u[1] ** 2}
+    egit = _kayitlar(f, 0.03, tohum=1)
+    test = _kayitlar(f, 0.0, tohum=2)
+    th2 = lhs_design(DART_UZAYI_S3, 24, root_seed=20260914)
+    for i, k in enumerate(test):
+        k["theta"] = th2[i % 24]
+        u = DART_UZAYI_S3.to_unit(th2[i % 24][None, :])[0]
+        ortak = np.random.default_rng(100 + i).normal(0, 0.03)
+        for g, fn in f.items():
+            k[g] = float(fn(u) + ortak)
+    out = pr.rapor(egit, None, n_grid=24, test_kayitlar=test)
+    assert out["dis_ornek"]["genel"] == "KALIBRASYON DUSTU"
 
 
 def test_N_AYIRT_ETMIYOR_dediyse_gozlenebilir_SECILMEZ():
