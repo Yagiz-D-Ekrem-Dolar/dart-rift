@@ -146,6 +146,9 @@ def build_scene(
     device: str = "cuda:0",
     blok_uretici: str = "v1",
     sabit_bloklar=None,
+    carpma_sahasi: str = "rastgele",
+    saha_yaricapi: float = 3.0,
+    saha_blok_yaricapi: float = 4.0,
 ) -> Scene:
     """Config parametrelerinden tam sahneyi kur.
 
@@ -157,13 +160,39 @@ def build_scene(
     mesh = _build_mesh(shape, radius=radius, semi_axes=semi_axes,
                        subdiv=subdiv, obj_path=obj_path, obj_units=obj_units)
 
+    # CARPMA SAHASI (Protokol L sonucu, 2026-09-13): 24 ms'deki `beta`yi
+    # istatistiksel ic yapi degil, carpma noktasi altindaki BLOK belirliyor
+    # (bloga carpma beta-1 ~ 0,03, matrise ~ 0,5; kusursuz ayrim). Uzman:
+    # "Carpma noktasinda bilinen yuzey bloklarini kosullayin; bilinmeyen ic
+    # yapiyi rastgelelestirin." Geometri yalniz mesh + nisandan turer, bu
+    # yuzden yigindan ONCE hesaplanabilir.
+    geom = impact_geometry(mesh, np.asarray(aim, dtype=np.float64),
+                           angle_deg=angle_deg, azimuth_deg=azimuth_deg)
+    if carpma_sahasi not in ("rastgele", "matris", "blok"):
+        raise ValueError(f"carpma_sahasi 'rastgele', 'matris' ya da 'blok', "
+                         f"{carpma_sahasi!r} geldi")
+    yasak, sabit = None, list(sabit_bloklar or ())
+    if carpma_sahasi != "rastgele":
+        if blok_uretici != "v2":
+            raise ValueError("carpma_sahasi kosullamasi blok_uretici='v2' ister")
+        if carpma_sahasi == "matris":
+            # hicbir rastgele blok carpma noktasinin `saha_yaricapi` kuresine girmez
+            yasak = [(np.asarray(geom.point), float(saha_yaricapi))]
+        else:
+            # GOMULU YUZEY BLOGU: merkez yuzeyin 0,5 r altinda -> carpma
+            # noktasi blogun ICINDE, blok yuzeyden tasiyor (tasan kisimda
+            # parcacik yok; yigin yalniz mesh icini doldurur).
+            rb = float(saha_blok_yaricapi)
+            sabit = [(np.asarray(geom.point) - np.asarray(geom.normal) * 0.5 * rb,
+                      rb)] + sabit
     pile = build_rubble_pile(
         mesh, spacing=spacing, bulk_density=bulk_density, root_seed=root_seed,
         rho0_solid=rho0_solid,
         model_class=model_class, matrix_alpha0=matrix_alpha0, matrix_Y0=matrix_Y0,
         boulder_alpha0=boulder_alpha0, boulder_Y0=boulder_Y0,
         f_boulder=f_boulder, q=q, r_min=r_min, r_max=r_max,
-        blok_uretici=blok_uretici, sabit_bloklar=sabit_bloklar,
+        blok_uretici=blok_uretici, sabit_bloklar=sabit or None,
+        yasak_bolgeler=yasak,
     )
 
     x_t = np.ascontiguousarray(pile.x, dtype=np.float64)
@@ -189,8 +218,6 @@ def build_scene(
         }
 
     # carpma geometrisi ve mermi
-    geom = impact_geometry(mesh, np.asarray(aim, dtype=np.float64),
-                           angle_deg=angle_deg, azimuth_deg=azimuth_deg)
     imp = place_impactor(
         build_impactor(n_impactor, mass=impactor_mass, speed=impactor_speed,
                        density=impactor_density),
@@ -261,6 +288,7 @@ def build_scene(
             "particles_across_impactor": float(
                 imp.diagnostics["particles_across_diameter"]),
             "pile": pile.diagnostics,
+            "carpma_sahasi": carpma_sahasi,
             "settling": settle_diag,
         },
         blok_alani=pile.boulders,

@@ -138,6 +138,13 @@ def main() -> int:
     ap.add_argument("--ilk-dt-duzelt", action="store_true",
                     help="ilk dt'den ONCE degerlendir (A77): ilk dt aksi "
                          "halde temas oncesi alanlarla ~2 kat buyuk secilir")
+    ap.add_argument("--carpma-sahasi", choices=("rastgele", "matris", "blok"),
+                    default="rastgele",
+                    help="Protokol L sonucu: 'matris' carpma noktasinin "
+                         "--saha-yaricapi kuresinde blok YOK; 'blok' carpma "
+                         "noktasi gomulu bir blogun icinde (v2 ister)")
+    ap.add_argument("--saha-yaricapi", type=float, default=3.0)
+    ap.add_argument("--saha-blok-yaricapi", type=float, default=4.0)
     ap.add_argument("--blok-rmin", type=float, default=None,
                     help="blok yaricapi alt siniri [m] (SAHNE: 14)")
     ap.add_argument("--blok-rmax", type=float, default=None,
@@ -235,6 +242,10 @@ def main() -> int:
     sahne_ek = {}
     if a.blok_uretici != "v1":
         sahne_ek["blok_uretici"] = a.blok_uretici
+    if a.carpma_sahasi != "rastgele":
+        sahne_ek["carpma_sahasi"] = a.carpma_sahasi
+        sahne_ek["saha_yaricapi"] = float(a.saha_yaricapi)
+        sahne_ek["saha_blok_yaricapi"] = float(a.saha_blok_yaricapi)
     if a.blok_rmin is not None:
         sahne_ek["r_min"] = float(a.blok_rmin)
     if a.blok_rmax is not None:

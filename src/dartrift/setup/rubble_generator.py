@@ -383,6 +383,7 @@ def place_boulders_v2(mesh: TriMesh, f_boulder: float, q: float,
                       r_min: float, r_max: float, root_seed: int, *,
                       yuzey_kesisimi: bool = True,
                       sabit_bloklar=None,
+                      yasak_bolgeler=(),
                       n_mc: int = 200_000,
                       azami_deneme: int = 2_000_000,
                       blok_basina_deneme: int = 4096,
@@ -408,6 +409,10 @@ def place_boulders_v2(mesh: TriMesh, f_boulder: float, q: float,
       guncellenir. Durdurma olcutu bu olcumdur, kure hacmi toplami degil.
     - `yuzey_kesisimi = True` (varsayilan): yalniz MERKEZ cismin icinde
       olmali; blok yuzeyden tasabilir (gomulu yuzey bloku).
+    - `yasak_bolgeler`: `[(merkez, yaricap), ...]` -- RASTGELE bloklar bu
+      kurelerle KESISEMEZ (`|c - m| >= r + r_yasak`). Protokol L olctu:
+      `beta`yi carpma noktasi altindaki blok belirliyor; carpma sahasini
+      "matris" diye kosullamak icin (sabit bloklar etkilenmez).
     - `sabit_bloklar`: `[(merkez, yaricap), ...]` -- carpma sahasinda
       BILINEN yuzey bloklari once yerlestirilir (uzman: "bilinen yuzey
       bloklarini kosullayin; bilinmeyen ic yapiyi rastgeleleştirin").
@@ -462,6 +467,12 @@ def place_boulders_v2(mesh: TriMesh, f_boulder: float, q: float,
         n_kapsanan += int(np.count_nonzero(~kapsanan[yeni]))
         kapsanan[yeni] = True
 
+    _yasak = [(np.asarray(m, dtype=np.float64).reshape(3), float(ry))
+              for m, ry in (yasak_bolgeler or ())]
+
+    def _yasakta(c, r) -> bool:
+        return any(float(np.linalg.norm(c - m)) < r + ry for m, ry in _yasak)
+
     for c, r in (sabit_bloklar or ()):
         c = np.asarray(c, dtype=np.float64).reshape(3)
         if _cakisir(c, float(r)):
@@ -511,6 +522,8 @@ def place_boulders_v2(mesh: TriMesh, f_boulder: float, q: float,
                     prob = c[None, :] + r * _YONLER_14
                     if not np.all(inside_points(mesh, prob)):
                         continue
+                if _yasakta(c, r):
+                    continue
                 if not _cakisir(c, r):
                     _ekle(c, r)
                     yerlesti = ilerledi = True
@@ -533,7 +546,8 @@ def place_boulders_v2(mesh: TriMesh, f_boulder: float, q: float,
             "n_atlanan": int(atlanan), "deneme": int(deneme),
             "doydu": bool(f_g < f_boulder), "n_yuzeyi_kesen": kesen,
             "kure_hacmi_kesri": float(np.sum(4.0 / 3.0 * np.pi * Rr ** 3) / V),
-            "yuzey_kesisimi": bool(yuzey_kesisimi)}
+            "yuzey_kesisimi": bool(yuzey_kesisimi),
+            "n_yasak_bolge": int(len(_yasak))}
     return BoulderField(C, Rr), tani
 
 
@@ -618,6 +632,7 @@ def build_rubble_pile(
     blok_uretici: str = "v1",
     sabit_bloklar=None,
     n_mc: int = 200_000,
+    yasak_bolgeler=None,
 ) -> RubblePile:
     """Mesh'ten tam bir moloz yigini uret (P3-FR-02/03/04).
 
@@ -682,7 +697,8 @@ def build_rubble_pile(
         else:
             boulders, btani = place_boulders_v2(
                 mesh, f_boulder, q, rmin, rmax, root_seed,
-                sabit_bloklar=sabit_bloklar, n_mc=n_mc)
+                sabit_bloklar=sabit_bloklar, n_mc=n_mc,
+                yasak_bolgeler=yasak_bolgeler or ())
             # SESSIZ DOYMA YASAK (A74): istenen kesir sahnede yoksa
             # sonuc o kesre ait sayilamaz.
             tol = 3.0 * btani["f_se"]
