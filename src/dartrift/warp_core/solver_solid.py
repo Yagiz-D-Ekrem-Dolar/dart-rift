@@ -28,6 +28,7 @@ from .solver import _budget_row, _check_finite
 from .strength_lundborg import (
     akma_orani_k,
     birikim_k,
+    dayanim_kes_k,
     make_strength_wp,
     return_mapping_k,
 )
@@ -66,6 +67,7 @@ class WarpSolid3D:
         mermi_tillotson=None,
         mermi_maske: np.ndarray | None = None,
         cekme_siniri=None,
+        dayanim_kesme: dict | None = None,
     ):
         _init_warp()
         # A52: "hash" -- tek kuresel yaricapli hash izgarasi (eski, BIT-AYNI);
@@ -337,6 +339,31 @@ class WarpSolid3D:
                 if np.any(np.isfinite(e_min)) else float("nan"),
                 "particles_without_flaw": int(np.count_nonzero(~np.isfinite(e_min))),
             }
+        # A80: DAYANIM KESMESI. `None` -> cekirdek hic baslatilmaz (bit-ayni).
+        # Anahtarlar: `eta_kes` (rho*alpha/rho0 esigi), `u_kes` (skaler ya da
+        # parcacik basina; verilmezse hedef Tillotson `u_iv`, mermide mermi
+        # Tillotson `u_iv`).
+        self._kes = None
+        if dayanim_kesme is not None:
+            if not mat.strength.enabled or mat.eos != "tillotson":
+                raise ValueError("dayanim_kesme dayanim ve Tillotson EOS ister")
+            eta_kes = float(dayanim_kesme.get("eta_kes", 0.5))
+            if not (0.0 <= eta_kes < 1.0):
+                raise ValueError(f"eta_kes [0, 1) araliginda olmali, {eta_kes}")
+            if "u_kes" in dayanim_kesme:
+                uk = np.broadcast_to(np.asarray(dayanim_kesme["u_kes"], np.float64),
+                                     (n,)).copy()
+            else:
+                uk = np.full(n, float(mat.tillotson.u_iv))
+                if mermi_tillotson is not None:
+                    uk[np.asarray(mermi_maske, bool)] = float(mermi_tillotson.u_iv)
+            if np.any(uk <= 0.0) or not np.all(np.isfinite(uk)):
+                raise ValueError("u_kes pozitif ve sonlu olmali")
+            self._kes = {"eta_kes": eta_kes,
+                         "rho0": float(mat.tillotson.rho0),
+                         "u_kes": wp.array(uk, dtype=F, device=dev)}
+            self.kesik = wp.zeros(n, dtype=wp.uint8, device=dev)
+            self.kesik_olay = 0
         self._gravity = GravitySolver(mat.gravity, dev) if mat.gravity.enabled else None
         # yapay gerilme normalizasyonu W(dp): CPU referansiyla ayni deger
         from ..cpu_reference.sph_ref import kernel_w as _kw
@@ -418,6 +445,9 @@ class WarpSolid3D:
                 from .cekme_kirpma import cekme_kirp as _kirp
 
                 self._launch(_kirp, [self._cekme_kirp, self.P])
+        if self._kes is not None:
+            # A80: kuvvet, gerilme hizi ve akma tanisi KESILMIS S'yi gorsun.
+            self._dayanim_kes()
         if self.mat.strength.enabled:
             # A72: KUVVET ANINDA KURUCU SINIR. "ara" kipinde S burada,
             # gerilme hizi / hasar / kuvvet hesaplanmadan ONCE, o anki
@@ -521,6 +551,21 @@ class WarpSolid3D:
                  self.a, self.dudt],
             )
 
+    def _dayanim_kes(self) -> None:
+        k = self._kes
+        self._launch(dayanim_kes_k,
+                     [self.S, self.rho, self.u, self.alpha, self.active,
+                      k["u_kes"], F(k["rho0"]), F(k["eta_kes"]), self.kesik])
+
+    def kesme_tanisi(self) -> dict:
+        """A80 -- o anda dayanimi kesik parcacik sayisi ve kutle kesri."""
+        if self._kes is None:
+            return {}
+        ks = self.kesik.numpy().astype(bool)
+        m = self.m.numpy()
+        return {"eta_kes": self._kes["eta_kes"], "n_kesik": int(ks.sum()),
+                "kesik_kutle_kesri": float(m[ks].sum() / m.sum())}
+
     def komsu_tanisi(self) -> dict:
         """A52 -- komsu arama kipi ve (bvh'de) kurulum/cift sayilari."""
         if self._bvh:
@@ -591,6 +636,9 @@ class WarpSolid3D:
             self.plastic_u_total += float(
                 np.sum(self.m.numpy() * self.plastic_du.numpy())
             )
+        if self._kes is not None:
+            # A80: saklanan S de kesik parcacikta sifir kalsin.
+            self._dayanim_kes()
         if self.mat.porosity.enabled:
             # ORTUK cozum (ADR-0023): alpha, P'den ACIK okunamaz — cekirdek
             # rho ve u alir ve alpha = crush(P_kati(alpha*rho,u)/alpha)
@@ -613,7 +661,12 @@ class WarpSolid3D:
         """CFL (boyuna elastik hiz) + ivme + gerinim (solid_ref ile ayni)."""
         cs = self.cs.numpy()
         rho = self.rho.numpy()
-        if self.mat.strength.enabled:
+        if self.mat.strength.enabled and self._kes is not None:
+            # A80: kesik parcacik kayma dalgasi TASIMAZ; G/rho terimi yok.
+            # (Kesmesiz yol asagida AYNEN: bit-ayni.)
+            g_eff = self.mat.strength.shear_G * (1.0 - self.kesik.numpy())
+            c_long = np.sqrt(cs**2 + (4.0 / 3.0) * g_eff / rho)
+        elif self.mat.strength.enabled:
             c_long = np.sqrt(cs**2 + (4.0 / 3.0) * self.mat.strength.shear_G / rho)
         else:
             c_long = cs

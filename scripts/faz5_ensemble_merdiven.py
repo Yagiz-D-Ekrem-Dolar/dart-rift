@@ -164,6 +164,10 @@ def main() -> int:
                     help="'i/n' -- bu gorev tasarimin i. dilimini kossun "
                          "(A31; eszamanli gorevlerde ZORUNLU)")
     ap.add_argument("--out", required=True, help="JSONL yolu")
+    ap.add_argument("--dayanim-kesme", action="store_true",
+                    help="A80: u >= u_iv ya da rho*alpha/rho0 < 0,5 olan parcacikta "
+                         "S = 0 (buharlasmis/dagilmis madde kayma gerilmesi "
+                         "tasimaz). Varsayilan KAPALI (bit-ayni).")
     ap.add_argument("--patlama-tanisi", type=Path, default=None,
                     help="A80: her 25 adimda sonluluk; ilk bozulmada tani "
                          "(patlama_tani.json + npz) bu dizine yazilir. "
@@ -296,7 +300,8 @@ def main() -> int:
             komsu_arama=a.komsu_arama, mermi_eos=a.mermi_eos,
             ilk_degerlendirme=a.ilk_dt_duzelt,
             matris_cekme_siniri=a.matris_cekme_siniri,
-            mermi_h_kipi=a.mermi_h_kipi, adim_gozlemcisi=gozlemci)[0]
+            mermi_h_kipi=a.mermi_h_kipi, adim_gozlemcisi=gozlemci,
+            dayanim_kesme=a.dayanim_kesme)[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
         return y
@@ -336,6 +341,7 @@ def main() -> int:
         "ilk_dt_duzelt": a.ilk_dt_duzelt,
         "matris_cekme_siniri": a.matris_cekme_siniri,
         "mermi_h_kipi": a.mermi_h_kipi,
+        "dayanim_kesme": bool(a.dayanim_kesme),
         "sahne_ek": sahne_ek,
         "surum": surum,
         "n_tasarim_tam": int(tam_n),

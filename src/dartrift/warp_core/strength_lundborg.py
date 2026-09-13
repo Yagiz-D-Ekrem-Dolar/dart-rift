@@ -111,6 +111,42 @@ def akma_orani_k(
 
 
 @wp.kernel
+def dayanim_kes_k(
+    S: wp.array(dtype=M3),
+    rho: wp.array(dtype=F),
+    u: wp.array(dtype=F),
+    alpha: wp.array(dtype=F),
+    active: wp.array(dtype=wp.uint8),
+    u_kes: wp.array(dtype=F),
+    rho0: F,
+    eta_kes: F,
+    kesik: wp.array(dtype=wp.uint8),
+):
+    """A80: buharlasmis ya da dagilmis maddede dayanim YOK.
+
+    Olculdu (M kaba t5): u = 6e6 J/kg (u_iv = 4,7e6) ve rho 77 -> 0,001
+    kg/m3'e genlesen bir parcacik |S| = sqrt(2/3) Y0'da KALDI. rho -> 0
+    iken sqrt(4G/3rho) ve S/rho ivmesi sonsuza gidiyor, dt sifira iniyor,
+    kosu nan. Fiziksel olarak da: u >= u_iv (Tillotson'un buharlasma
+    esigi) ya da hacmi iki katina cikmis (rho*alpha/rho0 < eta_kes)
+    granuler madde kayma gerilmesi TASIMAZ.
+
+    Parcacik yalniz KENDI yuvasina yazar (atomik yok, sira yok).
+    Durumsuz: madde yeniden sikisip soguyunca dayanim geri gelir
+    (S sifirdan elastik olarak yeniden kurulur).
+    """
+    i = wp.tid()
+    kesik[i] = wp.uint8(0)
+    if active[i] == wp.uint8(0):
+        return
+    eta = rho[i] * alpha[i] / rho0
+    if u[i] >= u_kes[i] or eta < eta_kes:
+        kesik[i] = wp.uint8(1)
+        S[i] = M3(F(0.0), F(0.0), F(0.0), F(0.0), F(0.0), F(0.0),
+                  F(0.0), F(0.0), F(0.0))
+
+
+@wp.kernel
 def birikim_k(cum: wp.array(dtype=F), du: wp.array(dtype=F)):
     """Parcacik basina birikim -- her yuva kendi toplamini tutar."""
     i = wp.tid()

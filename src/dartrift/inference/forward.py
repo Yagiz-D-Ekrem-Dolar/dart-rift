@@ -63,7 +63,7 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
                  akma_kipi="son", malzeme_kaynagi="kaba",
                  komsu_arama="hash", mermi_eos="hedef",
                  ilk_degerlendirme=False, matris_cekme_siniri=None,
-                 mermi_h_kipi="merdiven") -> str:
+                 mermi_h_kipi="merdiven", dayanim_kesme=False) -> str:
     """Kosunun FIZIK yapilandirmasinin SHA-256 ozeti (16 hane).
 
     Iki cikti ayni `theta`yi tasiyip FARKLI fizikle uretilmis
@@ -112,9 +112,16 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
     # Mermi h kipi (uzman S5).
     if str(mermi_h_kipi) != "merdiven":
         parcalar.append(f"mermi_h_kipi={mermi_h_kipi}")
+    # A80: buharlasmis/dagilmis maddede dayanim kesmesi.
+    if bool(dayanim_kesme):
+        parcalar.append("dayanim_kesme=eta0.5_uiv")
     ham = "|".join(parcalar).encode("utf-8")
     return hashlib.sha256(ham).hexdigest()[:16]
 
+
+#: A80: dayanim kesmesinin genlesme esigi (`rho*alpha/rho0`). Hacmi iki
+#: katina cikmis granuler madde kayma gerilmesi tasimaz.
+DAYANIM_KESME_ETA = 0.5
 
 #: Enerji defterinde tutulan skaler alanlar (`WarpSolid3D.budgets`).
 _ENERJI_ALANLARI = ("e_kin", "e_int", "e_pot", "e_tot", "plastic_cum",
@@ -531,7 +538,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         ilk_degerlendirme: bool = False,
                         matris_cekme_siniri: float | None = None,
                         mermi_h_kipi: str = "merdiven",
-                        adim_gozlemcisi=None
+                        adim_gozlemcisi=None,
+                        dayanim_kesme: bool = False
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
@@ -637,7 +645,11 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 # `None` -> `matris_cekme_yok` davranisi (T = 0, bit-ayni).
                 cekme_siniri=matris_cekme_siniri,
                 # A52: "bvh" destek kutulu BVH + sirali CSR; "hash" eski.
-                komsu_arama=komsu_arama, **mermi_kw)
+                komsu_arama=komsu_arama,
+                # A80: u >= u_iv ya da rho*alpha/rho0 < 0,5 -> S = 0.
+                dayanim_kesme=({"eta_kes": DAYANIM_KESME_ETA} if dayanim_kesme
+                               else None),
+                **mermi_kw)
             t = 0.0
             kontrol = max(1, azami_adim // 200)
             # A70: SOK KAPISI ARTIK ZIRVEDEN OKUNUYOR.
@@ -800,7 +812,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                                              komsu_arama, mermi_eos,
                                              ilk_degerlendirme,
                                              matris_cekme_siniri,
-                                             mermi_h_kipi),
+                                             mermi_h_kipi, dayanim_kesme),
                     # A72 / Protokol J: zaman adimi ve kuvvet aninda
                     # akma tanisi. JSON metni -- pickle gerektirmez.
                     cfl=float(cfl), akma_kipi=str(akma_kipi),
@@ -808,7 +820,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                     akma_tani=json.dumps(akma_tani),
                     enerji=json.dumps(enerji),
                     gecerlilik=json.dumps(gecerlilik),
-                    fizik_tani=json.dumps(fizik_tani))
+                    fizik_tani=json.dumps(fizik_tani),
+                    kesme_tani=json.dumps(sol.kesme_tanisi()))
             Y[i] = gozlenebilirleri_cikar(
                 st, impactor_momentum=rs.impactor_momentum,
                 target_mass=rs.target_mass, target_radius=rs.target_radius,
