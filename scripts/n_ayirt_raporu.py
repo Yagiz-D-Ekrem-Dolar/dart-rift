@@ -113,9 +113,11 @@ def topla(kok: Path, desen: str = "N_matris_sahne*.durumlar") -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--kok", type=Path, required=True)
+    ap.add_argument("--desen", default="N_matris_sahne*.durumlar",
+                    help="aynı kilitli kuralla başka merdiven (ör. No_matris_sahne*)")
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args(argv)
-    tablo = topla(a.kok)
+    tablo = topla(a.kok, a.desen)
     print("=" * 78)
     print(f"PROTOKOL N -- kuresel ayirt edilebilirlik ({len(tablo)} theta)")
     print("=" * 78)
