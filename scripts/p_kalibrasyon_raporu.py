@@ -79,6 +79,20 @@ DONUSUMLER = {
     "M_ejekta": ("log10", 1e-3),
     "mu_ejekta": ("kimlik", None),
 }
+#: P-v4b (2026-09-13, kesmeli veri gelmeden): ZAMAN ORNEKLERI. Her npz'nin
+#: `fizik_tani.impuls_egrisi` satirlari `[t, P_hedef/p_imp, beta_hedef,
+#: M_ejekta]`. Krater buyurken beta ve kacan kutlenin ZAMAN SEYRI dayanima
+#: ve blok alanina tek anlik goruntuden fazla bilgi tasiyabilir.
+DONUSUMLER_ZAMAN = {
+    "beta_eksi_1_t08": ("log10", 1e-4),
+    "beta_eksi_1_t16": ("log10", 1e-4),
+    "M_ejekta_t08": ("log10", 1e-3),
+    "M_ejekta_t16": ("log10", 1e-3),
+}
+ZAMAN_ORNEGI = {"beta_eksi_1_t08": (2, 0.008), "beta_eksi_1_t16": (2, 0.016),
+                "M_ejekta_t08": (3, 0.008), "M_ejekta_t16": (3, 0.016)}
+#: Zaman ornegi hedef ana bu bagil pay icinde degilse `nan`.
+ZAMAN_PAYI = 0.10
 #: Gözlenebilir yalnız koşuların en az bu kesrinde sonluysa kullanılır.
 SONLU_EN_AZ = 0.90
 #: Tam veride vekil `q2` eşiği — `Surrogate.guvenilir` ile aynı.
@@ -101,7 +115,7 @@ GENEL_ADLAR = {3: "UC EKSEN COZULUYOR", 2: "IKI EKSEN COZULUYOR",
 
 
 def donustur(gozlem: str, deger: float) -> float:
-    kip, taban = DONUSUMLER[gozlem]
+    kip, taban = {**DONUSUMLER, **DONUSUMLER_ZAMAN}[gozlem]
     if not np.isfinite(deger):
         return float("nan")
     if kip == "log10":
@@ -124,10 +138,28 @@ def kayitlari_oku(kok: Path, desen: str = "N_matris_sahne*.durumlar") -> list[di
             gv = gozlem_vektoru(z)
             gv["beta_eksi_1"] = gv["beta_hedef"] - 1.0
             k = {g: donustur(g, gv.get(g, float("nan"))) for g in DONUSUMLER}
+            k.update(zaman_ornekleri(z))
             k["theta"] = np.asarray(z["theta"], float).ravel()
             k["tohum"] = t
             kayit.append(k)
     return kayit
+
+
+def zaman_ornekleri(z) -> dict:
+    """P-v4b: impuls egrisinden 8 ve 16 ms ornekleri (donusumlu)."""
+    out = {g: float("nan") for g in DONUSUMLER_ZAMAN}
+    try:
+        egri = np.asarray(json.loads(str(z["fizik_tani"])).get("impuls_egrisi", []), float)
+    except (KeyError, ValueError, TypeError):
+        return out
+    if egri.ndim != 2 or len(egri) == 0:
+        return out
+    for g, (sutun, t_hedef) in ZAMAN_ORNEGI.items():
+        i = int(np.argmin(np.abs(egri[:, 0] - t_hedef)))
+        if abs(egri[i, 0] - t_hedef) <= ZAMAN_PAYI * t_hedef:
+            deger = egri[i, sutun] - (1.0 if sutun == 2 else 0.0)
+            out[g] = donustur(g, float(deger))
+    return out
 
 
 def _gp_q2(X, y) -> float:
@@ -139,7 +171,7 @@ def _gp_q2(X, y) -> float:
 
 
 def gozlem_sec(kayitlar: list[dict], s_n: dict | None,
-               vekil: str = "kuadratik") -> tuple[list[str], dict]:
+               vekil: str = "kuadratik", genis: bool = False) -> tuple[list[str], dict]:
     """Kilitli seçim: sonlu kesir, N yargısı (varsa), tam veride `q2`.
 
     `q2` seçilen vekilin kendisinden: kuadratikte tek-koşu LOO
@@ -150,15 +182,17 @@ def gozlem_sec(kayitlar: list[dict], s_n: dict | None,
     tani = {}
     secilen = []
     X = np.array([k["theta"] for k in kayitlar], float)
-    for g in DONUSUMLER:
-        y = np.array([k[g] for k in kayitlar], float)
+    adaylar = list(DONUSUMLER) + (list(DONUSUMLER_ZAMAN) if genis else [])
+    for g in adaylar:
+        y = np.array([k.get(g, float("nan")) for k in kayitlar], float)
         sonlu = np.isfinite(y)
         t = {"sonlu_kesir": float(sonlu.mean()) if len(y) else 0.0}
-        if s_n is not None:
+        # P-v4b: zaman ornekleri N raporunda YOK; yalniz sonluluk + q2 kapisi.
+        if s_n is not None and g in DONUSUMLER:
             t["N_karar"] = s_n.get("gozlem", {}).get(g, {}).get("karar", "YOK")
         if t["sonlu_kesir"] < SONLU_EN_AZ:
             t["neden"] = "SONLU DEGIL"
-        elif s_n is not None and t["N_karar"] != "AYIRT EDIYOR":
+        elif s_n is not None and g in DONUSUMLER and t["N_karar"] != "AYIRT EDIYOR":
             t["neden"] = "N AYIRT ETMIYOR"
         elif vekil == "gp":
             q2 = _gp_q2(X[sonlu], y[sonlu])
@@ -458,9 +492,10 @@ def _yargila(vakalar) -> dict:
 
 def rapor(kayitlar: list[dict], s_n: dict | None, *, n_grid: int = N_IZGARA,
           test_kayitlar: list[dict] | None = None, vekil: str = "kuadratik",
-          artik: str = "loo", katli: bool = False) -> dict:
-    secilen, tani = gozlem_sec(kayitlar, s_n, vekil)
-    out = {"vekil": vekil, "artik": artik, "secim": tani, "secilen": secilen}
+          artik: str = "loo", katli: bool = False, genis: bool = False) -> dict:
+    secilen, tani = gozlem_sec(kayitlar, s_n, vekil, genis)
+    out = {"vekil": vekil, "artik": artik, "genis": genis, "secim": tani,
+           "secilen": secilen}
     if not secilen:
         out["genel"] = "GOZLENEBILIR YOK"
         return out
@@ -491,6 +526,8 @@ def main(argv=None) -> int:
                     help="dış örneklem (ör. N2_matris_sahne*.durumlar)")
     ap.add_argument("--s-n", type=Path, default=None)
     ap.add_argument("--vekil", choices=("kuadratik", "gp"), default="kuadratik")
+    ap.add_argument("--genis-gozlem", action="store_true",
+                    help="P-v4b: 8 ve 16 ms beta-1 ve M_ejekta zaman ornekleri de aday")
     ap.add_argument("--katli", action="store_true",
                     help="P-v4: --desen havuzunda theta-gruplu 4-kat dis dogrulama")
     ap.add_argument("--artik", choices=ARTIK_KIPLERI, default="loo",
@@ -503,7 +540,7 @@ def main(argv=None) -> int:
     kayit = kayitlari_oku(a.kok, a.desen)
     test = kayitlari_oku(a.kok, a.test_desen) if a.test_desen else None
     out = rapor(kayit, s_n, test_kayitlar=test, vekil=a.vekil, artik=a.artik,
-                katli=a.katli)
+                katli=a.katli, genis=a.genis_gozlem)
     print("=" * 78)
     print(f"PROTOKOL P -- kapali dongu kalibrasyonu ({len(kayit)} kosu, "
           f"N yargisi {'VAR' if s_n else 'YOK'}, vekil {a.vekil})")

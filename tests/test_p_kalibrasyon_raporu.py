@@ -278,6 +278,36 @@ def test_virgullu_desen_iki_kampanyayi_birlestiriyor(tmp_path):
         "N2k_matris_sahne1.durumlar", "Nk_matris_sahne1.durumlar"]
 
 
+def test_P_v4b_zaman_ornekleri_impuls_egrisinden():
+    import json as _j
+
+    egri = [[0.0048, 0.9, 1.02, 10.0], [0.0080, 0.9, 1.30, 250.0],
+            [0.0161, 0.9, 1.55, 900.0], [0.024, 0.9, 1.70, 1200.0]]
+    z = {"fizik_tani": _j.dumps({"impuls_egrisi": egri})}
+    o = pr.zaman_ornekleri(z)
+    assert o["beta_eksi_1_t08"] == pytest.approx(np.log10(0.30))
+    assert o["beta_eksi_1_t16"] == pytest.approx(np.log10(0.55))
+    assert o["M_ejekta_t08"] == pytest.approx(np.log10(250.0))
+    assert o["M_ejekta_t16"] == pytest.approx(np.log10(900.0))
+    # hedef ana %10'dan uzak ornek -> nan
+    uzak = [[0.004, 0.9, 1.1, 5.0], [0.024, 0.9, 1.7, 9.0]]
+    z2 = {"fizik_tani": _j.dumps({"impuls_egrisi": uzak})}
+    assert np.isnan(pr.zaman_ornekleri(z2)["beta_eksi_1_t08"])
+    assert all(np.isnan(v) for v in pr.zaman_ornekleri({}).values())
+
+
+def test_P_v4b_zaman_gozlemi_N_kapisina_TAKILMIYOR_temel_gozlem_takiliyor():
+    kayit = _kayitlar({"d_merkez": lambda u: u[1], "R_krater": lambda u: u[0]}, 0.03)
+    for k in kayit:
+        u = DART_UZAYI_S3.to_unit(k["theta"][None, :])[0]
+        k["beta_eksi_1_t08"] = float(u[2] + 0.01 * np.sin(k["theta"][1]))
+    s_n = {"gozlem": {"d_merkez": {"karar": "AYIRT EDIYOR"},
+                      "R_krater": {"karar": "AYIRT ETMIYOR"}}}
+    sec, tani = pr.gozlem_sec(kayit, s_n, genis=True)
+    assert "beta_eksi_1_t08" in sec and "d_merkez" in sec and "R_krater" not in sec
+    assert "beta_eksi_1_t08" not in pr.gozlem_sec(kayit, s_n)[0]      # genis kapali
+
+
 def test_N_AYIRT_ETMIYOR_dediyse_gozlenebilir_SECILMEZ():
     kayit = _kayitlar({"d_merkez": lambda u: u[1], "R_krater": lambda u: u[0]}, 0.03)
     s_n = {"gozlem": {"d_merkez": {"karar": "AYIRT EDIYOR"},

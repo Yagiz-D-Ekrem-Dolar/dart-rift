@@ -118,6 +118,24 @@ Kesmesiz N/N2 sonuçları (P, P2, P-v3 keşfi) yalnız betimleyicidir.
 P-v4'ün kesmesiz havuzda bir kez koşulması **keşiftir** ve kuralı
 değiştirmez.
 
+### 4e. P-v4b — zaman örnekleriyle genişletilmiş gözlem vektörü (ikincil, kesmeli veri gelmeden)
+
+Keşif (kesmesiz havuz, yargı değil): P-v4 kuadratik **kalibre** oldu
+(kapsama68 `0,63 / 0,63 / 0,71`) ama aralıklar geniş (`0,38–0,47 ≥ 0,34`)
+→ HİÇBİR EKSEN. Bilgi var, eşiği geçmiyor. Aynı kesmesiz havuzda N,
+47 θ ile **ÜÇ EKSEN GÖRÜNÜR** dedi (24 θ'da TEK).
+
+**Ek adaylar:** `impuls_egrisi`'nden `β−1` ve `M_ejekta` 8 ms ve 16 ms
+(`log10`, tabanlar §3 ile aynı; hedef ana `%10` içinde örnek yoksa `nan`).
+Seçim: sonlu kesir `%90` ve `q2 > 0,5` (N raporu bunları değerlendirmediği
+için N kapısı yok; temel gözlenebilirler N kapısından geçmeye devam eder).
+Kural §4d ile **aynı** (`--katli --artik kfold4 --genis-gozlem`).
+
+**Hangisi esas:** §4d (P-v4) **birincil**dir. P-v4b yalnız şu durumda
+yargı cümlesine girer: kalibre (elenmemiş) ve P-v4'ten **daha çok ekseni**
+çözüyor — o zaman sonuç "zaman örnekleriyle genişletilmiş gözlem
+vektörüyle" diye, iki satır birlikte yazılır.
+
 ## 5. Yorum tablosu (veri gelmeden)
 
 | sonuç | anlamı | sıradaki adım |
