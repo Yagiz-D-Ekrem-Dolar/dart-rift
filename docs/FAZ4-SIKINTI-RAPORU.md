@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-13 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 64 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79 · A70 **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-13 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 67 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82 · A70 **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5148,6 +5148,64 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A82 — **Posterior dış örneklemde AŞIRI GÜVENLİ: kalibrasyon düştü** (2026-09-13) — *açık*
+
+Protokol P (kilitli). N (24 θ × 2 tohum, kaba) ile kurulan vekil + tam
+kovaryanslı posterior:
+
+| yol | kapalı döngü (N içinde) | **dış örneklem (N2)** |
+|---|---|---|
+| kuadratik | TEK EKSEN (`Y₀` kapsama68 `0,57`) | **KALİBRASYON DÜŞTÜ** (`Y₀` `0,48 < 0,50`) |
+| GP | ÜÇ EKSEN (kapsama68 `0,54/0,52/0,59`, kapsama95 `0,74`) | **KALİBRASYON DÜŞTÜ** (`Y₀` `0,26`, genişlik `0,117`) |
+
+Kilitli yol seçimi (§4c): iki yol da elendi → **KALİBRASYON DÜŞTÜ**.
+Kapalı döngüde bile `%95` kapsama `0,74` (GP): kuyruklar hafife alınıyor.
+Aday sebepler (sınanmadı): gözlenebilirler arası korelasyonun birim
+köşegene küçültülmesi (`λ = 0,3`) ortak `Y₀` bilgisini tekrar sayıyor;
+rejim sıçramaları (ağır kuyruk); GP hiperparametrelerinin tam veride
+bir kez seçilmesi. Tanı koşusu sonraki adım.
+
+---
+### A81 — **Orta merdivende iki θ'da krater derinliği yarıya düşüyor** (2026-09-13) — *açık, incelenmedi*
+
+Protokol M: `d_merkez` t1 (`Y₀ = 1e3`) kaba `2,66` / **orta `1,37`** /
+ince `3,98` m; t3 (`α_b = 1,05`, `f = 0,10`) `2,53` / **`1,19`** / `3,86`.
+Diğer dört θ'da orta, kaba ile ince arasında. Aynı noktalarda `V_krater`
+ve `β` düzgün. Yüzey operatörünün (A73) bu iki orta durumda merkez ışında
+bir ayrılmış katmanı yüzey sanması olası; `d_merkez` N'de de "AYIRT
+ETMİYOR" çıktı. İncelenmedi.
+
+---
+### A80 — **Buharlaşmış / genleşmiş madde tam dayanım taşıyor → `dt → 0`, koşu `nan`** (2026-09-13) — *açık (düzeltme yazıldı, doğrulama koşuyor)*
+
+Belirti: M kaba t5 (`α_b 1,15`, `Y₀ 1e4`, `f 0,45`, sahne `20260906`)
+*"kosu PATLADI adim 16000"*; T matris iki tohum (`adım 70 000 / 76 000`);
+N'nin bir noktası. Kontrol `2000` adımda bir yapıldığı için yer ve an
+kayıptı.
+
+Tanı: `inference/patlama_tanisi.PatlamaGozlemcisi` (25 adımda bir, halka
+tampon). Aynı nokta TRUBA'da **deterministik** yeniden üretildi (adım
+`14 775`). İlk bozulan parçacık `1339`: çarpma yüzeyinde `v = 1722 m/s`,
+`u = 6,0e6 J/kg` (`u_iv = 4,72e6`), `ρ 77 → 0,001 kg/m³` 175 adımda,
+`P = 0` (kırpılı), `c_s` tabanda, **`|S| = 8164,97 = √(2/3)·Y₀` sabit**.
+`√(4G/3ρ)` ve `S/ρ` ivmesi tekilleşiyor; `dt` `2e-6 → ~0`. Ayrıca
+`u_min = −2,9e8 J/kg` (aynı mekanizmanın enerji yüzü olabilir).
+
+Düzeltme (`--dayanim-kesme`, varsayılan KAPALI, bit-aynı): `u ≥ u_iv`
+(mermide alüminyum `u_iv`) ya da `ρα/ρ₀ < 0,5` → `S = 0`, `dt`'de `G/ρ`
+yok. Birim sınav (P kırpılı, `ρ = 1e-3`): `dt 1,6e-8 → 1,8e-5 s`, ivme
+`3,8e12 → 0,89 m/s²`. 8 yeni + 202 gerileme sınavı geçti.
+
+İlk doğrulama (V1, tek nokta): aynı nokta kesmeyle **tamamlandı**
+(450 s, 9 993 adım, geçerli, enerji `−%0,35`); `β − 1 = 0,6791`, aynı
+θ'nın öbür tohumu (kesmesiz) `0,6787`. Kesik parçacık `1 075`, kütle
+kesri `5,2e-6`. Kilitli doğrulama: [PROTOKOL-A80-KESME](truba/PROTOKOL-A80-KESME.md)
+(K80 `1559571`, Tk `1559572`, rapor `1559573`).
+
+Kalıp: **seyrek sonluluk denetimi** — patlama bir koşu sonunda "nan" diye
+görünür, sebep kaybolur. Tanı aracı artık kalıcı.
 
 ---
 ### A79 — **Duyarlılık raporu "türev gürültüde → OKUNMAZ" kuralını uygulamıyordu** (2026-09-13) — *açık*

@@ -37,6 +37,22 @@ matris `0,740` / blok `0,053`, oran `13,9`). En zayıf yön `Y₀` ve onu
 (A79). **Kaba merdiven, 24 ms, yerel türev**: küresel harita (N),
 kalibrasyon (P, N2), yakınsama (M) ve zaman (T) sırada.
 
+**M, N, P, J, T, L2o sonuçları (2026-09-13, [`SONUC-M-N-P-J-T.md`](SONUC-M-N-P-J-T.md)) — kilitli:**
+
+| | yargı |
+|---|---|
+| **M** (3 çözünürlük) | **YAKINSAMIYOR** — 5/5 gözlenebilir; farklar inceldikçe büyüyor (`β−1` `0,74 → 0,64 → 0,46`) |
+| **N** (küresel, kaba) | **TEK EKSEN: `Y₀`** (`α_b`, `f` Bonferroni'yi kıl payı kaçırıyor) |
+| **P** kapalı döngü | kuadratik TEK EKSEN · GP ÜÇ EKSEN |
+| **P2** dış örneklem | **KALİBRASYON DÜŞTÜ** (iki vekil de aşırı güvenli, A82) |
+| **J1** | `son` kipi `Δt`'ye bağlı; **`ara` kaldırıyor** (A72 düzeltmesi doğrulandı) |
+| **T** | blok sahasında `β` plato GEÇTİ; matris sahası patladı (A80) |
+| **L2o** (orta) | ÜÇ EKSEN, `α_b` OKUNMAZ |
+
+KEŞİF (yargı değil): `Y₀` kontrastı çözünürlükle `%11` değişirken mutlak
+değer `%62` kayıyor → Protokol M2 yeni θ'larla sınıyor. A80 (buharlaşmış
+madde dayanım taşıyor → `nan`) bulundu, düzeltildi, doğrulanıyor.
+
 **Protokol J koşuyor** (iş `1555356`, 84 görev): sabit `h`'de `Δt`
 yarılanınca `x₀` kayıyor mu, `ara` bunu kaldırıyor mu. Ön koşul `O4`
 **geçti**: yeni kodun varsayılan yolu G1'i 13/13 noktada **bit bit**
