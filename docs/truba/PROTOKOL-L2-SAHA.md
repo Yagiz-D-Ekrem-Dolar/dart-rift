@@ -79,3 +79,27 @@ değilse BELİRSİZ.
 
 H200 + bvh, kaba: `~22 ms/adım`, `~16 bin adım` → nokta başına `~6 dk`.
 Kol başına `2 × 7 + 4 × 1 = 18` nokta, iki kol `~4` GPU-saat.
+
+## 8. Ek — matris kolu orta merdivende (kaba sonuç GELDİKTEN sonra, orta koşudan ÖNCE yazıldı, 2026-09-13)
+
+Kaba sonuç ([SONUC-L2-SAHA](../SONUC-L2-SAHA.md)): matris kolu ÜÇ EKSEN
+AYRIŞIYOR. §5 yorum tablosu *"orta çözünürlükte tekrar"* diyor; bu ek o
+tekrarı tanımlıyor. **Hiçbir eşik değişmiyor.**
+
+- Kol `L2o_matris`: `L2_matris` ile aynı tasarım, aynı 6 tohum, aynı fizik
+  ve saha; yalnız `--kademeler orta`. İş: `truba/is_L2o_orta.slurm`.
+- Rapor: `duyarlilik_raporu.py --kol L2o_matris`; okunacak alan
+  `karar_okunur` (A79).
+- Yargı:
+
+| orta `karar_okunur` | anlamı |
+|---|---|
+| ÜÇ EKSEN AYRIŞIYOR (okunmaz eksen yok) | kaba sonuç orta çözünürlükte **ayakta** |
+| İKİ / TEK YÖN ya da okunmaz eksen var | kaba sonuç çözünürlükle **zayıflıyor**; hangi eksen düştüyse o yazılır, M'nin yakınsama yargısıyla birlikte okunur |
+| HİÇBİR YÖN | kaba "üç eksen" bir **çözünürlük yapıtı** olabilir; Bitiş 3 bu çözünürlükte açılmaz |
+
+- Ek betimleyici (yargıyı değiştirmez): kopya gözlenebilirler (`d_max`,
+  `P_ejekta`) çıkarılmış `s₃` ve kaba ile orta arasında merkez `β − 1`
+  medyanı yazılır.
+
+Maliyet: orta nokta `~550 s` (M ölçümü), 18 nokta `~2,8` GPU-saat.
