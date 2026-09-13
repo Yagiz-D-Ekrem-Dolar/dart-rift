@@ -30,7 +30,8 @@ import numpy as np
 
 from .design import ParamSpace
 
-__all__ = ["GridPosterior", "grid_posterior", "grid_posterior_kovaryans"]
+__all__ = ["GridPosterior", "grid_posterior", "grid_posterior_kovaryans",
+           "grid_posterior_hetero"]
 
 
 @dataclass(frozen=True)
@@ -236,9 +237,46 @@ def grid_posterior_kovaryans(space: ParamSpace, tahmin, data, kov,
     r = tahmin - data[None, :]
     z = np.linalg.solve(L, r.T)           # (k, N)
     ki2 = np.sum(z * z, axis=0)
+    return _izgara_ozeti(space, -0.5 * ki2, n_grid)
 
+
+def grid_posterior_hetero(space: ParamSpace, ortalama, varyans, data, R,
+                          n_grid: int) -> GridPosterior:
+    """Izgara posterior — **θ'ya bağlı** varyans + sabit korelasyon.
+
+    GP vekili her düğümde kendi öngörü varyansını verir (veriden uzak
+    köşelerde büyük). Kovaryans `S(θ) = D(θ)^½ R D(θ)^½`. Varyans θ ile
+    değiştiği için `log det S(θ) = Σ_k log D_k(θ) + log det R` terimi
+    **atılamaz**: atılırsa posterior belirsiz bölgeleri (büyük varyans →
+    küçük ki-kare) yapay olarak ödüllendirir.
+    """
+    ortalama = np.asarray(ortalama, dtype=np.float64)
+    varyans = np.asarray(varyans, dtype=np.float64)
+    data = np.asarray(data, dtype=np.float64).ravel()
+    R = np.atleast_2d(np.asarray(R, dtype=np.float64))
+    k = len(data)
+    if ortalama.shape != (n_grid ** space.ndim, k) or varyans.shape != ortalama.shape:
+        raise ValueError(f"ortalama {ortalama.shape} / varyans {varyans.shape}, "
+                         f"({n_grid ** space.ndim}, {k}) bekleniyordu")
+    if R.shape != (k, k):
+        raise ValueError(f"R {R.shape}, ({k}, {k}) bekleniyordu")
+    if np.any(~np.isfinite(varyans)) or np.any(varyans <= 0.0):
+        raise ValueError("varyans pozitif ve sonlu olmalı")
+    if not (np.all(np.isfinite(ortalama)) and np.all(np.isfinite(data))):
+        raise ValueError("ortalama/veri içinde sonlu olmayan değer var")
+    try:
+        L = np.linalg.cholesky(0.5 * (R + R.T))
+    except np.linalg.LinAlgError as e:
+        raise ValueError("korelasyon matrisi pozitif tanımlı değil") from e
+    z = np.linalg.solve(L, ((ortalama - data[None, :]) / np.sqrt(varyans)).T)
+    logp = -0.5 * (np.sum(z * z, axis=0) + np.sum(np.log(varyans), axis=1))
+    return _izgara_ozeti(space, logp, n_grid)
+
+
+def _izgara_ozeti(space: ParamSpace, logp, n_grid: int) -> GridPosterior:
+    """Düzleştirilmiş log-posterior → normalize `GridPosterior` + kenar özetleri."""
     eksen = np.linspace(0.0, 1.0, n_grid)
-    logp = -0.5 * ki2
+    logp = np.asarray(logp, dtype=np.float64).copy()
     logp -= logp.max()
     p = np.exp(logp)
     p /= p.sum()

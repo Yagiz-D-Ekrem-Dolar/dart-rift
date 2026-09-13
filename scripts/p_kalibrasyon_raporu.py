@@ -56,7 +56,11 @@ sys.path.insert(0, str(_BURASI))
 sys.path.insert(0, str(_BURASI.parent / "src"))
 
 from dartrift.inference.design import DART_UZAYI_S3  # noqa: E402
-from dartrift.inference.posterior import grid_posterior_kovaryans  # noqa: E402
+from dartrift.inference.gp_vekil import gp_grup_loo, gp_uydur  # noqa: E402
+from dartrift.inference.posterior import (  # noqa: E402
+    grid_posterior_hetero,
+    grid_posterior_kovaryans,
+)
 from dartrift.inference.recovery import C2_DARALMA  # noqa: E402
 from dartrift.inference.surrogate import (  # noqa: E402
     design_matrix,
@@ -121,8 +125,23 @@ def kayitlari_oku(kok: Path, desen: str = "N_matris_sahne*.durumlar") -> list[di
     return kayit
 
 
-def gozlem_sec(kayitlar: list[dict], s_n: dict | None) -> tuple[list[str], dict]:
-    """Kilitli seçim: sonlu kesir, N yargısı (varsa), tam veride `q2`."""
+def _gp_q2(X, y) -> float:
+    """GP'nin bırak-bir-θ `q2`'si (tam veride hiperparametrelerle)."""
+    v = gp_uydur(DART_UZAYI_S3, X, y)
+    e, _ = gp_grup_loo(v, y, _gruplar(X))
+    ss = float(np.sum((y - y.mean()) ** 2))
+    return float(1.0 - np.sum(e ** 2) / ss) if ss > 0 else float("nan")
+
+
+def gozlem_sec(kayitlar: list[dict], s_n: dict | None,
+               vekil: str = "kuadratik") -> tuple[list[str], dict]:
+    """Kilitli seçim: sonlu kesir, N yargısı (varsa), tam veride `q2`.
+
+    `q2` seçilen vekilin kendisinden: kuadratikte tek-koşu LOO
+    (`fit_surrogate`), GP'de bırak-bir-θ. Polinomun eşik biçimini
+    göremediği bir gözlenebiliri GP yolunda polinom yargısıyla elemek,
+    GP'ye geçmenin gerekçesini boşa çıkarırdı.
+    """
     tani = {}
     secilen = []
     X = np.array([k["theta"] for k in kayitlar], float)
@@ -136,6 +155,11 @@ def gozlem_sec(kayitlar: list[dict], s_n: dict | None) -> tuple[list[str], dict]
             t["neden"] = "SONLU DEGIL"
         elif s_n is not None and t["N_karar"] != "AYIRT EDIYOR":
             t["neden"] = "N AYIRT ETMIYOR"
+        elif vekil == "gp":
+            q2 = _gp_q2(X[sonlu], y[sonlu])
+            t["q2"] = q2
+            t["neden"] = "SECILDI" if (np.isfinite(q2) and q2 > Q2_ESIGI) \
+                else "VEKIL YETERSIZ"
         else:
             try:
                 v = fit_surrogate(DART_UZAYI_S3, X[sonlu], y[sonlu])
@@ -172,10 +196,46 @@ def _aralik(post, j: int, a: float, b: float) -> tuple[float, float]:
     return float(np.interp(a, kum, eksen)), float(np.interp(b, kum, eksen))
 
 
-def _izgara_tasarimi(n_grid: int) -> np.ndarray:
+def kuculmus_kor(Z: np.ndarray, lam: float = KUCULTME) -> np.ndarray:
+    """Standartlaştırılmış artıklardan birim köşegene küçültülmüş korelasyon."""
+    Z = np.atleast_2d(np.asarray(Z, float))
+    k = Z.shape[1]
+    C = np.corrcoef(Z, rowvar=False).reshape(k, k) if k > 1 else np.ones((1, 1))
+    return (1.0 - lam) * C + lam * np.eye(k)
+
+
+def _izgara_u(n_grid: int) -> np.ndarray:
     eksen = np.linspace(0.0, 1.0, n_grid)
     izg = np.meshgrid(*([eksen] * DART_UZAYI_S3.ndim), indexing="ij")
-    return design_matrix(np.column_stack([a.ravel() for a in izg]))
+    return np.column_stack([a.ravel() for a in izg])
+
+
+def _izgara_tasarimi(n_grid: int) -> np.ndarray:
+    return design_matrix(_izgara_u(n_grid))
+
+
+def _posterior_islevi(X, Y, n_grid, vekil="kuadratik", baslangic=None):
+    """Eğitim → `(y, gürültü çarpanı) → GridPosterior`."""
+    space = DART_UZAYI_S3
+    if vekil == "kuadratik":
+        C, S = _egit(X, Y)
+        tahmin = _izgara_tasarimi(n_grid) @ C
+        return lambda y, c: grid_posterior_kovaryans(space, tahmin, y, c * S, n_grid)
+    if vekil != "gp":
+        raise ValueError(f"bilinmeyen vekil: {vekil}")
+    grup = _gruplar(X)
+    Ug = _izgara_u(n_grid)
+    mu = np.empty((len(Ug), Y.shape[1]))
+    var = np.empty_like(mu)
+    Z = np.empty_like(Y)
+    for i in range(Y.shape[1]):
+        v = gp_uydur(space, X, Y[:, i],
+                     baslangic=None if baslangic is None else baslangic[i])
+        e, s2 = gp_grup_loo(v, Y[:, i], grup)
+        Z[:, i] = e / np.sqrt(s2)
+        mu[:, i], var[:, i] = v.predict_u(Ug)
+    R = kuculmus_kor(Z)
+    return lambda y, c: grid_posterior_hetero(space, mu, c * var, y, R, n_grid)
 
 
 def _egit(X, Y):
@@ -190,11 +250,11 @@ def _egit(X, Y):
     return C, kuculmus_kov(E)
 
 
-def _vaka(tahmin, S, y, u, grup, n_grid, carpanlar) -> dict:
+def _vaka(post_fn, y, u, grup, carpanlar) -> dict:
     space = DART_UZAYI_S3
     vaka = {"grup": int(grup), "gercek_u": np.asarray(u).tolist(), "carpan": {}}
     for c in carpanlar:
-        post = grid_posterior_kovaryans(space, tahmin, y, c * S, n_grid)
+        post = post_fn(y, c)
         vaka["carpan"][float(c)] = {
             "hdi68": post.hdi_u.tolist(),
             "hdi95": [_aralik(post, j, 0.025, 0.975) for j in range(space.ndim)],
@@ -206,25 +266,29 @@ def _vaka(tahmin, S, y, u, grup, n_grid, carpanlar) -> dict:
 
 
 def kapali_dongu(X, Y, *, n_grid: int = N_IZGARA,
-                 carpanlar=GURULTU_CARPANLARI) -> list[dict]:
-    """θ-grubu başına bırak-bir-θ kapalı döngü vakaları."""
+                 carpanlar=GURULTU_CARPANLARI, vekil: str = "kuadratik") -> list[dict]:
+    """θ-grubu başına bırak-bir-θ kapalı döngü vakaları.
+
+    GP'de hiperparametreler önce tam veride çok-başlangıçla bulunur; her
+    katta oradan yerel arama yapılır (katlar arası ucuz, sonuç deterministik).
+    """
     X = np.asarray(X, float)
     Y = np.asarray(Y, float)
     grup = _gruplar(X)
-    A_izg = _izgara_tasarimi(n_grid)
     U = DART_UZAYI_S3.to_unit(X)
+    baslangic = ([gp_uydur(DART_UZAYI_S3, X, Y[:, i]).logp for i in range(Y.shape[1])]
+                 if vekil == "gp" else None)
     vakalar = []
     for g in np.unique(grup):
         egit = grup != g
-        C, S = _egit(X[egit], Y[egit])
-        tahmin = A_izg @ C
+        post_fn = _posterior_islevi(X[egit], Y[egit], n_grid, vekil, baslangic)
         for r in np.flatnonzero(~egit):
-            vakalar.append(_vaka(tahmin, S, Y[r], U[r], g, n_grid, carpanlar))
+            vakalar.append(_vaka(post_fn, Y[r], U[r], g, carpanlar))
     return vakalar
 
 
 def dis_ornek(Xe, Ye, Xt, Yt, *, n_grid: int = N_IZGARA,
-              carpanlar=GURULTU_CARPANLARI) -> list[dict]:
+              carpanlar=GURULTU_CARPANLARI, vekil: str = "kuadratik") -> list[dict]:
     """Bütün eğitim kümesiyle vekil; HİÇ görülmemiş ikinci tasarımda sına.
 
     Kapalı döngüden farkı: gözlenebilir seçimi ve vekil aynı veriden
@@ -232,12 +296,10 @@ def dis_ornek(Xe, Ye, Xt, Yt, *, n_grid: int = N_IZGARA,
     """
     Xe, Ye = np.asarray(Xe, float), np.asarray(Ye, float)
     Xt, Yt = np.asarray(Xt, float), np.asarray(Yt, float)
-    C, S = _egit(Xe, Ye)
-    tahmin = _izgara_tasarimi(n_grid) @ C
+    post_fn = _posterior_islevi(Xe, Ye, n_grid, vekil)
     U = DART_UZAYI_S3.to_unit(Xt)
     grup = _gruplar(Xt)
-    return [_vaka(tahmin, S, Yt[r], U[r], grup[r], n_grid, carpanlar)
-            for r in range(len(Xt))]
+    return [_vaka(post_fn, Yt[r], U[r], grup[r], carpanlar) for r in range(len(Xt))]
 
 
 def eksen_yargisi(vakalar: list[dict], j: int, carpan: float = 1.0) -> dict:
@@ -284,6 +346,25 @@ def genel_yargi(eksenler: dict, tepki: dict) -> str:
     return ad
 
 
+def yol_sec(kuadratik: dict, gp: dict) -> dict:
+    """§4c: iki yolun DIŞ ÖRNEKLEM yargılarından esas olanı seç (kilitli)."""
+    def elendi(d):
+        return d["genel"].startswith("KALIBRASYON") or "GECERSIZ" in d["genel"]
+
+    def n_cozulen(d):
+        return sum(e["karar"].startswith("COZULUYOR") for e in d["eksen"].values())
+
+    aday = {ad: d for ad, d in (("kuadratik", kuadratik), ("gp", gp)) if not elendi(d)}
+    if not aday:
+        return {"esas": None, "genel": "KALIBRASYON DUSTU"}
+    if len(aday) == 1:
+        esas = next(iter(aday))
+    else:
+        esas = "gp" if n_cozulen(gp) > n_cozulen(kuadratik) else "kuadratik"
+    return {"esas": esas, "genel": aday[esas]["genel"],
+            "cozulen": {ad: n_cozulen(d) for ad, d in aday.items()}}
+
+
 def _matrisler(kayitlar, secilen):
     X = np.array([k["theta"] for k in kayitlar], float).reshape(-1, DART_UZAYI_S3.ndim)
     Y = np.array([[k[g] for g in secilen] for k in kayitlar], float).reshape(-1, len(secilen))
@@ -299,19 +380,19 @@ def _yargila(vakalar) -> dict:
 
 
 def rapor(kayitlar: list[dict], s_n: dict | None, *, n_grid: int = N_IZGARA,
-          test_kayitlar: list[dict] | None = None) -> dict:
-    secilen, tani = gozlem_sec(kayitlar, s_n)
-    out = {"secim": tani, "secilen": secilen}
+          test_kayitlar: list[dict] | None = None, vekil: str = "kuadratik") -> dict:
+    secilen, tani = gozlem_sec(kayitlar, s_n, vekil)
+    out = {"vekil": vekil, "secim": tani, "secilen": secilen}
     if not secilen:
         out["genel"] = "GOZLENEBILIR YOK"
         return out
     X, Y = _matrisler(kayitlar, secilen)
     out.update(n_kosu=int(len(X)), n_theta=int(len(np.unique(_gruplar(X)))))
-    out.update(_yargila(kapali_dongu(X, Y, n_grid=n_grid)))
+    out.update(_yargila(kapali_dongu(X, Y, n_grid=n_grid, vekil=vekil)))
     if test_kayitlar:
         Xt, Yt = _matrisler(test_kayitlar, secilen)
         if len(Xt):
-            d = _yargila(dis_ornek(X, Y, Xt, Yt, n_grid=n_grid))
+            d = _yargila(dis_ornek(X, Y, Xt, Yt, n_grid=n_grid, vekil=vekil))
             d.update(n_kosu=int(len(Xt)), n_theta=int(len(np.unique(_gruplar(Xt)))))
             out["dis_ornek"] = d
     return out
@@ -324,16 +405,17 @@ def main(argv=None) -> int:
     ap.add_argument("--test-desen", default=None,
                     help="dış örneklem (ör. N2_matris_sahne*.durumlar)")
     ap.add_argument("--s-n", type=Path, default=None)
+    ap.add_argument("--vekil", choices=("kuadratik", "gp"), default="kuadratik")
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args(argv)
     s_n = json.loads(a.s_n.read_text(encoding="utf-8")) \
         if a.s_n and a.s_n.exists() else None
     kayit = kayitlari_oku(a.kok, a.desen)
     test = kayitlari_oku(a.kok, a.test_desen) if a.test_desen else None
-    out = rapor(kayit, s_n, test_kayitlar=test)
+    out = rapor(kayit, s_n, test_kayitlar=test, vekil=a.vekil)
     print("=" * 78)
     print(f"PROTOKOL P -- kapali dongu kalibrasyonu ({len(kayit)} kosu, "
-          f"N yargisi {'VAR' if s_n else 'YOK'})")
+          f"N yargisi {'VAR' if s_n else 'YOK'}, vekil {a.vekil})")
     print("=" * 78)
     for g, t in out["secim"].items():
         print(f"  {g:>12}: {t}")

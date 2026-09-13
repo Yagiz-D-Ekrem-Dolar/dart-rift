@@ -70,6 +70,30 @@ bütün 48 koşusuyla kurulur; N2'nin 48 koşusu yalnız sınamada kullanılır.
 Eşikler ve yargı kuralı §4 ile **aynı**. Kapalı döngü ile dış örneklem
 farklı yargı verirse **dış örneklem esastır** ve fark raporlanır.
 
+### 4c. İkinci vekil: Gauss süreci (veri gelmeden eklendi, 2026-09-13)
+
+G1 ölçtü: `Y₀` → krater derinliği bir **eşik** (plato + dik düşüş),
+ikinci derece polinom onu iyi taşımıyor. Sentetik eşik verisinde ölçüldü
+(`test_ESIK_bicimli_veride_GP_polinomun_goremedigi_ekseni_cozuyor`):
+polinom `log10_Y0`'ı çözemiyor, GP çözüyor, ikisi de kalibre.
+
+**GP yolu** (`--vekil gp`, `inference/gp_vekil.py`): ARD kare-üstel
+çekirdek, deterministik hiperparametre araması, θ'ya bağlı öngörü
+varyansı + bırak-bir-θ standart artıklarından korelasyon (`λ = 0,3`
+birim köşegene), log-det terimli ızgara posterior. Seçimde `q2`
+GP'nin kendi bırak-bir-θ `q2`'sidir. Eşikler §4 ile **aynı**.
+
+**Hangi yol esas (kilitli):** iki yol da N2 dış örnekleminde koşulur.
+
+1. Bir yol KALİBRASYON DÜŞTÜ ya da GÜRÜLTÜ TEPKİSİZ ise o yol elenir.
+2. Kalan yollardan **dış örneklemde daha çok ekseni çözen** esastır.
+3. Eşitlikte kuadratik esastır (daha basit model).
+4. İki yol da elendiyse yargı **KALİBRASYON DÜŞTÜ**'dür.
+
+Seçim dış örneklemde yapıldığı için "iki modeli dene, iyi olanı al"
+iyimserliği aralık kalibrasyonuyla sınırlanıyor: elenmeyen bir yol
+tanım gereği N2'de dürüst aralık vermiş olur.
+
 ## 5. Yorum tablosu (veri gelmeden)
 
 | sonuç | anlamı | sıradaki adım |

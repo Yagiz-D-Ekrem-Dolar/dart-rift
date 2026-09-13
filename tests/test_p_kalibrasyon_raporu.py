@@ -187,6 +187,19 @@ def test_DIS_ORNEKLEM_gurultu_modeli_uyusmazligini_YAKALIYOR():
     assert out["dis_ornek"]["genel"] == "KALIBRASYON DUSTU"
 
 
+def test_ESIK_bicimli_veride_GP_polinomun_goremedigi_ekseni_cozuyor():
+    """G1'in ölçtüğü biçim: `Y₀`'da plato + dik düşüş. Polinom `log10_Y0`'ı
+    çözemiyor; GP çözüyor — ve ikisi de kalibre (aşırı güvenli değil)."""
+    f = {"d_merkez": lambda u: 0.35 / (1 + np.exp((u[1] - 0.6) / 0.06)) + 0.2 * u[0],
+         "R_krater": lambda u: u[2] + 0.1 * u[0]}
+    kayit = _kayitlar(f, 0.02)
+    kuad = pr.rapor(kayit, None, n_grid=24)
+    gp = pr.rapor(kayit, None, n_grid=24, vekil="gp")
+    assert kuad["eksen"]["log10_Y0"]["karar"] == "BILGI YOK"
+    assert gp["eksen"]["log10_Y0"]["karar"].startswith("COZULUYOR")
+    assert "KALIBRASYON" not in kuad["genel"] and "KALIBRASYON" not in gp["genel"]
+
+
 def test_N_AYIRT_ETMIYOR_dediyse_gozlenebilir_SECILMEZ():
     kayit = _kayitlar({"d_merkez": lambda u: u[1], "R_krater": lambda u: u[0]}, 0.03)
     s_n = {"gozlem": {"d_merkez": {"karar": "AYIRT EDIYOR"},
@@ -227,3 +240,23 @@ def test_esikler_belgede_ayni():
     for parca in ("`0,50`", "`0,87`", "`0,34`", "`λ = 0,3`", "`q2 > 0,5`",
                   "`%90`", "`1×, 2×, 4×`"):
         assert parca in m, parca
+
+
+def test_yol_secim_kurali_belgede_ve_koda_bagli():
+    """§4c'nin kuralı `yol_sec`'te; belge ile kod ayrışamaz."""
+    m = (_KOK / "docs" / "truba" / "PROTOKOL-P-KALIBRASYON.md").read_text(encoding="utf-8")
+    assert "dış örneklemde daha çok ekseni çözen" in m
+    assert "Eşitlikte kuadratik esastır" in m
+    ok = {"genel": "TEK EKSEN COZULUYOR",
+          "eksen": {"a": {"karar": "COZULUYOR"}, "b": {"karar": "BILGI YOK"}}}
+    iki = {"genel": "IKI EKSEN COZULUYOR",
+           "eksen": {"a": {"karar": "COZULUYOR"}, "b": {"karar": "COZULUYOR (TEMKINLI)"}}}
+    dus = {"genel": "KALIBRASYON DUSTU", "eksen": {"a": {"karar": "ASIRI GUVENLI"}}}
+    tepkisiz = {"genel": "IKI EKSEN COZULUYOR -- GURULTU TEPKISIZ, GECERSIZ",
+                "eksen": {"a": {"karar": "COZULUYOR"}, "b": {"karar": "COZULUYOR"}}}
+    assert pr.yol_sec(ok, iki)["esas"] == "gp"
+    assert pr.yol_sec(iki, ok)["esas"] == "kuadratik"
+    assert pr.yol_sec(ok, ok)["esas"] == "kuadratik"
+    assert pr.yol_sec(dus, ok)["esas"] == "gp"
+    assert pr.yol_sec(ok, tepkisiz)["esas"] == "kuadratik"
+    assert pr.yol_sec(dus, dus)["genel"] == "KALIBRASYON DUSTU"
