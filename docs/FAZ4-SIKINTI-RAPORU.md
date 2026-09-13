@@ -5177,6 +5177,24 @@ ve `β` düzgün. Yüzey operatörünün (A73) bu iki orta durumda merkez ışı
 bir ayrılmış katmanı yüzey sanması olası; `d_merkez` N'de de "AYIRT
 ETMİYOR" çıktı. İncelenmedi.
 
+**Tanı (2026-09-13, aynı gece).** Yüzey profili (`s = 0…2,2 m`, azimut
+ortalaması ve sapması) sahne `20260906`:
+
+| merdiven | t1 profil (ilk 6 halka) | azimut sapması |
+|---|---|---|
+| kaba | 2,63 2,60 2,52 2,41 2,29 1,99 | 0,03–0,63 |
+| **orta** | **1,37 1,54 1,93 2,37 2,61 2,24** | **0,54–0,85** |
+| ince | 3,95 3,96 3,83 3,56 3,39 3,23 | 0,03–0,14 |
+
+Orta merdivende profil **düzensiz ve azimutta çok gürültülü** (t0'da da:
+`2,96 1,76 1,48 2,55 2,65`, sapma `0,6–0,9 m`); ince düzgün. `d_merkez`
+TEK ışın (`s = 0`) okuduğu için bu pürüzlülüğe en açık ölçü; `d_max` ve
+`V_krater` halka/hacim üzerinden ortalandığı için daha az etkileniyor.
+Açıklama (hipotez): orta çözünürlükte krater tabanında yüzeyle henüz
+`2h`'den fazla ayrılmamış topaklar φ = 0,5 eş-yüzeyine giriyor.
+**Sonuç:** `d_merkez` tek başına gözlenebilir olarak kullanılmamalı (P
+zaten N kararıyla dışarıda bırakıyor). Operatör değiştirilmedi.
+
 ---
 ### A80 — **Buharlaşmış / genleşmiş madde tam dayanım taşıyor → `dt → 0`, koşu `nan`** (2026-09-13) — *açık (düzeltme yazıldı, doğrulama koşuyor)*
 
