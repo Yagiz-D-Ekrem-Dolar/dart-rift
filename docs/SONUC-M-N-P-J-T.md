@@ -109,6 +109,9 @@ zaman örnekli P-v4b (§4e) kilitlendi.
    posterior dış örneklemde **kalibre değil** (P2, A82).
 3. Yerel duyarlılık (L2, L2o) üç ekseni gösteriyor ama küresel harita (N)
    göstermiyor: `α_b` ve `f`'nin izi yerel ve önsel boyunca tutarsız.
+   **→ Aynı gece düzeltme (§2b, keşif):** 47 θ'lık havuzda N ÜÇ EKSEN
+   GÖRÜNÜR dedi; bu madde 24 θ'nın güç yetersizliğini "tutarsızlık" diye
+   okumuştu. Kilitli doğrulama kesmeli havuzda (Nk, S_Nkh).
 4. En umut veren yol: **kontrast + θ'dan bağımsız çözünürlük kayması**
    modeliyle `Y₀` çıkarımı (M2 doğrularsa).
 5. Sayısal kararsızlık A80 düzeltildi; doğrulama (K80, Tk) koşuyor.
