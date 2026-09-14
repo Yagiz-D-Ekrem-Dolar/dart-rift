@@ -182,6 +182,12 @@ def main() -> int:
                     help="U: P-alpha tam ezilme Ps [Pa] (uretim 1e8)")
     ap.add_argument("--yigin-yogunlugu", type=float, default=None,
                     help="U: hedef yigin yogunlugu [kg/m3] (SAHNE 1800)")
+    ap.add_argument("--yercekimi", action="store_true",
+                    help="V adayi: oz-yercekimi ACIK (uretim KAPALI; ADR-0028 maliyet, "
+                         "~15,7x yavas). Malzeme repr'i fizik_ozeti'ne girer.")
+    ap.add_argument("--hasar", action="store_true",
+                    help="V adayi: Grady-Kipp hasar ACIK (uretim KAPALI; "
+                         "configs/p3_dimorphos.yaml acik diyor, ADR-0027)")
     ap.add_argument("--onsel-disi-izin", action="store_true",
                     help="U: tasarim dosyasi onsel sinirlarinin disinda olabilir "
                          "(ozet.json'a onsel_disi=true yazilir; CIKARIM VERISI DEGIL)")
@@ -289,8 +295,14 @@ def main() -> int:
             raise SystemExit(f"0 < Pe < Ps olmali: Pe={_pe}, Ps={_ps}")
         MALZEME = _dc.replace(MALZEME, porosity=_dc.replace(MALZEME.porosity, Pe=_pe, Ps=_ps))
         malzeme_ek.update(Pe=_pe, Ps=_ps)
+    if a.yercekimi:
+        MALZEME = _dc.replace(MALZEME, gravity=_dc.replace(MALZEME.gravity, enabled=True))
+        malzeme_ek["yercekimi"] = True
+    if a.hasar:
+        MALZEME = _dc.replace(MALZEME, damage=_dc.replace(MALZEME.damage, enabled=True))
+        malzeme_ek["hasar"] = True
     if malzeme_ek:
-        print(f"  malzeme ek  : {malzeme_ek}  (Protokol U)", flush=True)
+        print(f"  malzeme ek  : {malzeme_ek}  (Protokol U/V)", flush=True)
     if a.blok_uretici != "v1":
         sahne_ek["blok_uretici"] = a.blok_uretici
     if a.carpma_sahasi != "rastgele":
