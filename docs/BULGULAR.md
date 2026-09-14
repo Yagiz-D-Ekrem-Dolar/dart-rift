@@ -60,6 +60,13 @@ zaman örnekli): dış doğrulamada kalibre posterior `Y₀` ve `f`'yi
 ÇÖZÜYOR, `α_b`'yi çözmüyor** (ayrıntı: `SONUC-M-N-P-J-T.md` §2c–2d).
 Orta çözünürlükte aynı kural koşuyor.
 
+**2026-09-14 — kilitli:** **orta çözünürlükte de (96 koşu) `Y₀` ve `f`
+ÇÖZÜLÜYOR, `α_b` çözülmüyor** (P-v4 GP ve P-v4b kuadratik, dış doğrulama,
+kalibre). T: `β` platosu orta ve kabada GEÇTİ; 24 ms değeri platonun
+`%80`'i → **Protokol Q** (plato anında yakınsama ve çıkarım) koşuyor.
+İnce kampanyada sıfır patlama. A84: dört rapor sessizce tek kampanyayla
+koştu, yeniden gönderildi.
+
 **Protokol J koşuyor** (iş `1555356`, 84 görev): sabit `h`'de `Δt`
 yarılanınca `x₀` kayıyor mu, `ara` bunu kaldırıyor mu. Ön koşul `O4`
 **geçti**: yeni kodun varsayılan yolu G1'i 13/13 noktada **bit bit**

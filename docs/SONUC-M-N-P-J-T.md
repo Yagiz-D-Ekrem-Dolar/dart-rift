@@ -155,6 +155,41 @@ dayanıklı, **`f` değil**; orta çözünürlükte aynı kural koşuluyor (Pv4o
 (ii) `Y₀` genişliği `0,334`, eşiğin (`0,34`) hemen altında. (iii) Sentetik
 kapalı sınama: gerçek DART verisi değil.
 
+## 2e. KİLİTLİ (2026-09-14): orta P-v4 / P-v4b, T platosu, A83 V1c
+
+**Orta, kesme + taban, 48 θ (Nok + N2ok + Nokd dolgusu), 96 koşu:**
+
+| yol | `α_b` | `log Y₀` | `f` | genel |
+|---|---|---|---|---|
+| P-v4 kuadratik | 0,61 / 0,55 BİLGİ YOK | 0,61 / 0,34 BİLGİ YOK | 0,67 / **0,34 ÇÖZÜLÜYOR** | TEK |
+| **P-v4 GP** | 0,58 / 0,39 BİLGİ YOK | 0,55 / **0,18 ÇÖZÜLÜYOR** | 0,62 / **0,24 ÇÖZÜLÜYOR** | **İKİ** |
+| **P-v4b kuadratik** | 0,61 / 0,54 BİLGİ YOK | 0,62 / **0,33 ÇÖZÜLÜYOR** | 0,67 / **0,31 ÇÖZÜLÜYOR** | **İKİ** |
+| P-v4b GP | **0,34 AŞIRI GÜVENLİ** | 0,40 | 0,45 | KALİBRASYON DÜŞTÜ |
+
+N havuzu (orta): İKİ EKSEN (`Y₀`, `f`). Kilitli yol seçimi: P-v4 → GP İKİ
+EKSEN; P-v4b → kuadratik İKİ EKSEN. **Orta çözünürlükte de sonuç kaba
+ile aynı: `Y₀` ve `f` çözülüyor, `α_b` çözülmüyor** (kapsama68 değerleri
+çözülen eksenlerde `0,55–0,67`). P-v4 GP'de `Y₀` genişliği `0,18`:
+önselin `%74`'ü eleniyor.
+
+**T platosu (kesme + taban):**
+
+| koşu | `β−1` @ 24 ms | @ 0,1 s | @ 0,2 s | `β` plato | `M_ej` plato |
+|---|---:|---:|---:|---|---|
+| Tot orta `20260906` | 0,651 | 0,817 | 0,820 | GEÇTİ | DÜŞTÜ |
+| Tot orta `99991111` | 0,652 | 0,824 | 0,834 | GEÇTİ | DÜŞTÜ |
+| Tkt kaba `99991111` | 0,753 | 0,974 | 0,923 | GEÇTİ | GEÇTİ |
+
+24 ms değeri plato değerinin `%78–80`'i. Kaba ile orta platoları `%12`
+farklı → Protokol Q (plato anında yakınsama) gönderildi.
+
+**A83 V1 (c)** Tkt tamamlandı → A83 V1 tam: KARARLI. **İnce (Ni + N2i,
+48 θ × 2) ve N3 kaba/orta: 66/66 görev, sıfır patlama.**
+
+**GEÇERSİZ (A84):** 2026-09-14 gecesi ince-48, kaba-72, orta-72 ve kaba-48
+figür raporları yalnız ilk kampanyayı okudu (`sbatch --export` virgül
+bölmesi). Sonuçları kullanılmaz; düzeltilmiş işler `1561187–1561190`.
+
 ## 3. Bitiş 3 için anlamı
 
 1. **Mutlak** 24 ms gözlenebilirlerine dayanan bir posterior bu
