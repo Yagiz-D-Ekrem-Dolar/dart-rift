@@ -5173,6 +5173,12 @@ kilitli protokolü değiştireceği için yapılmadı; bir sonraki protokol
 sürümünde orta nokta birikimine geçilir ve eski yargılar yeniden hesaplanıp
 **yan yana** yazılır.
 
+**Ek (aynı gün):** yalnız orta nokta birikimi de yetmiyor — ızgara `[0, 1]`'in
+iki ucunu içerdiği için uç düğümler yarım hücre. Düz dağılımda `%16` sınırı
+`0,1515` çıktı (sınav: `test_orta_nokta_araligi_duz_dagilimda_simetrik`).
+Yeni kodda (`dart_gozlem_posterior._orta_nokta_aralik`, `p_sekil_verisi.pit`)
+yamuk ağırlık kullanılıyor; kilitli P yargıları eski hesapla kaldı.
+
 ---
 ### A84 — **`sbatch --export=ALL,D="a,b,c"` virgülü değişken ayırıcı sayıyor: rapor işi sessizce tek kampanyayla koştu** (2026-09-14) — **KAPANDI** (düzeltme + denetim)
 

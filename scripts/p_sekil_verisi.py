@@ -41,8 +41,12 @@ def pit(marjinal: np.ndarray, eksen: np.ndarray, u: float) -> float:
     tamamını sayınca CDF yarım bölme yukarı kayıyor ve dar posteriorda PIT
     `0,5` yerine `0,7` ortalamaya çıkıyordu (sentetik doğru modelde yakalandı).
     """
-    m = np.asarray(marjinal, float)
-    kum = (np.cumsum(m) - 0.5 * m) / m.sum()
+    w = np.asarray(marjinal, float).copy()
+    # Uc dugumler YARIM hucre (A85, ikinci adim): yamuk agirlik. Duz
+    # dagilimda PIT(u) = u tam olarak; yalniz orta nokta 0,16 -> 0,1515 veriyordu.
+    w[0] *= 0.5
+    w[-1] *= 0.5
+    kum = (np.cumsum(w) - 0.5 * w) / w.sum()
     return float(np.interp(u, eksen, kum, left=0.0, right=1.0))
 
 
