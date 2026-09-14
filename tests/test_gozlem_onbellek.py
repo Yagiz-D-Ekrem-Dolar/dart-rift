@@ -89,6 +89,18 @@ def test_kod_ozeti_kaynaklara_bagli(tmp_path):
     assert all(p.exists() for p in gob.KAYNAKLAR)
 
 
+def test_isit_havuz_boyunca_dolduruyor_ve_hatayi_SAYIYOR(tmp_path):
+    for dz in ("A_matris_sahne1.durumlar", "B_matris_sahne2.durumlar"):
+        (tmp_path / dz).mkdir()
+        _npz(tmp_path / dz / "nokta_0000.npz")
+    (tmp_path / "B_matris_sahne2.durumlar" / "nokta_0001.npz").write_bytes(b"bozuk npz")
+    h = _Sayac()
+    out = gob.isit(tmp_path, "A_matris_sahne*.durumlar+B_matris_sahne*.durumlar", h)
+    assert out["n"] == 3 and out["n_hata"] == 1 and h.n == 2
+    assert "nokta_0001.npz" in out["hatalar"][0]
+    assert (tmp_path / "A_matris_sahne1.durumlar" / "nokta_0000.gozlem.json").exists()
+
+
 def test_havuz_globu_onbellek_dosyalarini_TOPLAMIYOR(tmp_path):
     f = _npz(tmp_path / "nokta_0000.npz")
     gob.gozlem(f, _Sayac(), kod="k1")

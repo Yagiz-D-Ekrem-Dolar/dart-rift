@@ -88,3 +88,46 @@ def gozlem(f, hesap=None, *, kod: str | None = None) -> dict:
         if gecici.exists():
             gecici.unlink(missing_ok=True)
     return dict(gv)
+
+
+def isit(kok, desen: str, hesap=None) -> dict:
+    """Havuz boyunca önbelleği önceden doldur (`+` ya da `,` ayrılmış desen).
+
+    Hesap hatası (ör. A86 krater `nan`'ı değil, npz okunamaması) npz'yi atlar
+    ve sayar; sessizce yutmaz.
+    """
+    import glob
+
+    kok = Path(kok)
+    n = n_hata = 0
+    hatalar = []
+    for ds in desen.replace("+", ",").split(","):
+        for f in sorted(glob.glob(str(kok / ds.strip() / "nokta_*.npz"))):
+            n += 1
+            try:
+                gozlem(f, hesap)
+            except Exception as e:  # noqa: BLE001 -- sayilir ve raporlanir
+                n_hata += 1
+                hatalar.append(f"{Path(f).parent.name}/{Path(f).name}: {type(e).__name__}: {e}")
+    return {"n": n, "n_hata": n_hata, "hatalar": hatalar[:20]}
+
+
+def main(argv=None) -> int:
+    import argparse
+    import sys
+
+    sys.path.insert(0, str(_KOK / "scripts"))
+    sys.path.insert(0, str(_KOK / "src"))
+    ap = argparse.ArgumentParser(description="Gozlenebilir onbellegini onceden doldur")
+    ap.add_argument("--kok", type=Path, required=True)
+    ap.add_argument("--desen", required=True, help="'+' ile ayrilmis (A84)")
+    a = ap.parse_args(argv)
+    out = isit(a.kok, a.desen)
+    print(f"ONBELLEK ISITMA: {out['n']} npz, hata {out['n_hata']}  (kod ozeti {_ozet()})")
+    for h in out["hatalar"]:
+        print("  -", h)
+    return 0 if out["n_hata"] == 0 else 7
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
