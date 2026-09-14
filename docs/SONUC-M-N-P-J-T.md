@@ -119,7 +119,7 @@ M2 kontrastları:
 | `β−1`: `f 0,40` − `0,20` | −0,078 | +0,055 | −0,043 | KARARSIZ |
 
 `V_krater` ve `d_merkez` OKUNMAZ: taban θ'nın ince `99991111` koşusunda
-krater operatörü `nan` döndü (A84 adayı, incelenmedi). Kabada `Y₀ = 1e6`
+krater operatörü `nan` döndü (A84 adayı, incelenmedi → kayıt numarası **A86** oldu; A84 başka kusura verildi). Kabada `Y₀ = 1e6`
 noktasında `d_merkez` negatif (`−0,09 / −0,21 m`) — A81 ile tutarlı.
 
 **Okuma:** `Y₀`'ın izi orta ve ince çözünürlükte aynı (kaba asimptotik
