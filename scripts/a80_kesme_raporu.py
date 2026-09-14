@@ -45,14 +45,16 @@ def sigma_oku(s_l2: dict, kol: str = "L2_matris") -> dict:
 
 def topla(kok: Path, onek: str) -> dict:
     """`{(k, tohum): {gözlenebilir: değer, "kesme": {...}}}` — yalnız tamamlananlar."""
-    from gozlem_vektoru import gozlem_vektoru
+    # Onbellek (scripts/gozlem_onbellek.py): anahtar kod ozeti + npz boyut/mtime;
+    # degerler bit-ayni, ayni npz her raporda yeniden hesaplanmaz.
+    from gozlem_onbellek import gozlem
 
     out = {}
     for dz in sorted(glob.glob(str(kok / f"{onek}_kaba_t*_sahne*.durumlar"))):
         m = re.search(r"_t(\d+)_sahne(\d+)", dz)
         for f in sorted(glob.glob(dz + "/nokta_*.npz")):
             z = np.load(f)
-            gv = gozlem_vektoru(z)
+            gv = dict(gozlem(f))
             gv["beta_eksi_1"] = gv["beta_hedef"] - 1.0
             kayit = {g: float(gv[g]) for g in GOZLEMLER_K}
             if "kesme_tani" in z.files:

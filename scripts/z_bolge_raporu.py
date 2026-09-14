@@ -68,12 +68,14 @@ def yargi(farklar: dict) -> dict:
 
 
 def topla(kok: Path) -> dict:
-    from gozlem_vektoru import gozlem_vektoru
+    # Onbellek (scripts/gozlem_onbellek.py): anahtar kod ozeti + npz boyut/mtime;
+    # degerler bit-ayni, ayni npz her raporda yeniden hesaplanmaz.
+    from gozlem_onbellek import gozlem
 
     def oku(desen):
         out = {g: [] for g in GOZLEMLER_Z}
         for f in sorted(glob.glob(str(kok / desen / "nokta_*.npz"))):
-            gv = gozlem_vektoru(np.load(f))
+            gv = dict(gozlem(f))
             gv["beta_eksi_1"] = gv["beta_hedef"] - 1.0
             for g in GOZLEMLER_Z:
                 out[g].append(float(gv[g]))

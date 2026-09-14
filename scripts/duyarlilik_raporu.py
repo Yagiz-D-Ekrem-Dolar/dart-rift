@@ -133,7 +133,11 @@ def yargi(J: np.ndarray, tekrar) -> dict:
 def gozlem_topla(kok: Path, kol: str) -> tuple[dict, list]:
     """`{kol}_*.durumlar` → `{(nokta_adi, tohum): y}` ve gözlem adları."""
     import vekil_posterior as vp
-    from gozlem_vektoru import GOZLEMLER, gozlem_vektoru
+
+    # Onbellek (scripts/gozlem_onbellek.py): anahtar kod ozeti + npz boyut/mtime;
+    # degerler bit-ayni, ayni npz her raporda yeniden hesaplanmaz.
+    from gozlem_onbellek import gozlem
+    from gozlem_vektoru import GOZLEMLER
 
     adlar = {_anahtar(th): ad for ad, th in tasarim().items()}
     out = {}
@@ -144,7 +148,7 @@ def gozlem_topla(kok: Path, kol: str) -> tuple[dict, list]:
             ad = adlar.get(_anahtar(z["theta"]))
             if ad is None:
                 continue
-            g = gozlem_vektoru(z)
+            g = dict(gozlem(yol))
             out[(ad, t)] = np.array([g[k] for k in GOZLEMLER])
     return out, list(GOZLEMLER)
 

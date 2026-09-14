@@ -39,7 +39,10 @@ SABIT_KAYMA_ESIGI = 0.5
 def topla(kok: Path, onek: str) -> dict:
     """`{(k, merdiven): {gözlem: [tohum değerleri (dönüşümlü)]}}`."""
     import p_kalibrasyon_raporu as pr
-    from gozlem_vektoru import gozlem_vektoru
+
+    # Onbellek (scripts/gozlem_onbellek.py): anahtar kod ozeti + npz boyut/mtime;
+    # degerler bit-ayni, ayni npz her raporda yeniden hesaplanmaz.
+    from gozlem_onbellek import gozlem
 
     veri = {}
     for k in range(N_TETA):
@@ -47,7 +50,7 @@ def topla(kok: Path, onek: str) -> dict:
             d = {g: [] for g in GOZLEMLER_C}
             for f in sorted(glob.glob(str(kok / f"{onek}_{m}_t{k}_sahne*.durumlar"
                                           / "nokta_*.npz"))):
-                gv = gozlem_vektoru(np.load(f))
+                gv = dict(gozlem(f))
                 gv["beta_eksi_1"] = gv["beta_hedef"] - 1.0
                 for g in GOZLEMLER_C:
                     d[g].append(pr.donustur(g, float(gv[g])))
