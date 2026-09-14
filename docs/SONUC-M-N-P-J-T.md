@@ -201,10 +201,17 @@ değil → keşif): sahne hedef kütlesi `4,164e9 kg`, `p_imp 3,56e6`.
 | model `β` aralığı (144 koşu, önsel boyunca vekil) | **`1,25 – 1,85`** (en büyük: `α_b 1,02`, `Y₀ 2e4`, `f 0,05`) |
 | `σ` (log): gözlem / vekil / toplam | `0,070 / 0,031 / 0,077` |
 | önsel kapsama | **ÖNSEL DIŞI (YUKARI), +5,2σ** |
+| **orta-72** (144 koşu) model `β` / kapsama | `1,27 – 1,72` (en büyük `α_b 1,17`, `Y₀ 1,7e4`, `f 0,34`) · **ÖNSEL DIŞI (YUKARI), +6,2σ** |
 
 Plato anında `β` 24 ms'dekinin `~1,25` katı (T, Tkt) — o çarpanla bile
 `~2,3`'e çıkar, band alt ucunun (`2,78`) altında. Kilitli D yargısı Q2/Q3
 (0,1 s) ile gelecek; hangi model bileşeninin farkı kapattığı **Protokol U**.
+
+> **Düzeltme (aynı gün):** yukarıdaki paragrafta iki hata var, satırlar
+> silinmedi. (i) Plato çarpanı `β − 1`'e uygulanır (`0,65 → 0,82`, `×1,26`):
+> en büyük model değeri `β − 1 ≈ 0,85 × 1,26 ≈ 1,07`, yani `β ≈ 2,1` —
+> `~2,3` değil. (ii) Gözlem bandının `2σ` alt ucu `3,12 − 2·0,34 = 2,44`;
+> yazılan `2,78` `1σ` ucudur. Sonuç (ÖNSEL DIŞI) değişmiyor.
 
 ## 3. Bitiş 3 için anlamı
 

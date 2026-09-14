@@ -1,0 +1,37 @@
+{
+ "gozlem": {
+  "beta": 3.1204258976657724,
+  "beta_eksi_1": 2.1204258976657724,
+  "sigma_beta": 0.3410166353753948,
+  "sigma_dT": 0.09455836053532618,
+  "sigma_sistematik": 0.32764471925490607,
+  "y_log": 0.3264230998104988,
+  "sigma_log": 0.06984523398991772,
+  "hedef_kutlesi": 4164275216.4266634,
+  "p_imp": 3560355.0599999586
+ },
+ "sigma_vekil_log": 0.03126839573991634,
+ "sigma_coz_log": 0.0,
+ "sigma_toplam_log": 0.07652495856421208,
+ "q2_vekil": 0.9094950479494518,
+ "n_kosu": 144,
+ "kapsama": {
+  "karar": "ONSEL DISI (YUKARI)",
+  "tahmin_min": -0.6091384781769625,
+  "tahmin_max": -0.06890730587714892,
+  "fark_ust_sigma": 5.16603227371794,
+  "fark_alt_sigma": -12.22557444709273,
+  "theta_max_dogal": [1.0153846153846153, 21544.346900318822, 0.05],
+  "theta_min_dogal": [1.0, 10000000.0, 0.5],
+  "beta_max_model": 1.8532822158163722
+ },
+ "sahne": {
+  "hedef_kutlesi": 4164275216.4266634,
+  "p_imp": 3560355.0599999586,
+  "hedef_kutlesi_yayilim": 37090213.91519976,
+  "n_npz": 145
+ },
+ "desen": "Nk_matris_sahne*.durumlar+N2k_matris_sahne*.durumlar+Nkd_matris_*.durumlar+N3k_matris_sahne*.durumlar",
+ "cozunurluk_notu": "COZUNURLUK TERIMI YOK",
+ "kaynak": "TRUBA egitimg16u4 kampanya/S_DART_kesif_k72.json, 2026-09-14 18:42, kod bafdf18 (KESIF: 24 ms, plato degil)"
+}
