@@ -110,7 +110,7 @@ def hipotez(yargilar: dict, eksen: str = "Y") -> str:
     return {3: "DAYANIKLI", 2: "DAYANIKLI", 1: "KISMI", 0: "DAYANIKSIZ"}[n]
 
 
-def topla(kok: Path) -> dict:
+def topla(kok: Path, onek: str = "M2") -> dict:
     """`{(ad, merdiven): {gozlem: [tohum değerleri]}}`."""
     from gozlem_vektoru import gozlem_vektoru
 
@@ -118,7 +118,7 @@ def topla(kok: Path) -> dict:
     for ad in TETALAR:
         for m in MERDIVENLER:
             d = {g: [] for g in GOZLEMLER_M2}
-            for f in sorted(glob.glob(str(kok / f"M2_{m}_{ad}_sahne*.durumlar"
+            for f in sorted(glob.glob(str(kok / f"{onek}_{m}_{ad}_sahne*.durumlar"
                                           / "nokta_*.npz"))):
                 gv = gozlem_vektoru(np.load(f))
                 gv["beta_eksi_1"] = gv["beta_hedef"] - 1.0
@@ -145,12 +145,14 @@ def main(argv=None) -> int:
     ap.add_argument("--kok", type=Path, required=True)
     ap.add_argument("--tasarim-yaz", action="store_true")
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--onek", default="M2",
+                    help="ayni kilitli kural baska kampanya (Protokol Q6: M2t, plato ani)")
     a = ap.parse_args(argv)
     if a.tasarim_yaz:
         for p in tasarim_yaz(a.kok):
             print("yazildi:", p)
         return 0
-    out = rapor(topla(a.kok))
+    out = rapor(topla(a.kok, a.onek))
     print("=" * 78)
     print("PROTOKOL M2 -- theta kontrastlarinin cozunurluk kararliligi")
     print("=" * 78)

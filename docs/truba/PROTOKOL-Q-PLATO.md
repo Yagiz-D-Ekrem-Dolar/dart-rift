@@ -47,3 +47,34 @@ yakınsamaması **erken anın** özelliği olabilir: krater hâlâ büyürken
   hâlâ büyüyen bir niceliktir.
 - 0,1 s tek bir an; `β` platosunun `%2–4` salınımı gürültüye eklenir.
 - İnce merdivende 0,1 s nokta başına `~3–4 saat` (tahmin).
+
+## 6. Ek kampanyalar (2026-09-14, koşulardan ÖNCE)
+
+| kod | tasarım | merdiven | `t_end` | koşu | soru |
+|---|---|---|---|---:|---|
+| **Q5 `Nbtk`** | N + N2 × 2 tohum, **blok sahası** (`4 m` gömülü blok) | kaba | 0,1 s | 96 | Matris sahasında çözülen eksenler blok sahasında da çözülüyor mu? |
+| **Q6 `M2t`** | M2'nin 4 θ × 2 tohum | kaba/orta/ince | 0,1 s | 24 | `Y₀` kontrastı plato anında da çözünürlüğe dayanıklı mı? |
+
+- **Q5 yargısı:** PROTOKOL-P §4d/§4e aynen. **Esas sonuç değildir**; Q §4'e
+  göre seçilen esas sonucun **saha duyarlılığı** satırıdır. Aynı eksenler
+  çözülüyorsa sonuç çarpma sahası türüne dayanıklı; çözülmüyorsa Bitiş 3
+  sonucu "matris sahası koşullu" diye yazılır.
+- **Q6 yargısı:** `m2_kontrast_raporu.py --onek M2t`, PROTOKOL-M2 kuralları
+  aynen. Q §4 madde 2 (Q1 YAKINSAMIYOR) durumunda yorum Q6'ya dayanır.
+
+## 7. Rapor denetimi (A84'ten sonra, zorunlu)
+
+Her havuz raporu `BEKLENEN_DESEN` (desen sayısı) ve `BEKLENEN_KOSU_EN_AZ`
+(npz alt sınırı) ile gönderilir. Rapor başında npz sayılır; P-v4 sonrası
+okunan koşu sayısı `≥ alt sınır − 8` denetlenir. Tutmazsa iş hata koduyla
+durur (`exit 4/5/6`). Değerler:
+
+| rapor | desen | npz (ölçülen / beklenen) | alt sınır |
+|---|---:|---|---:|
+| ince-48 | 2 | 96 | 90 |
+| kaba-72 | 4 | 145 | 136 |
+| orta-72 | 4 | 144 | 136 |
+| kaba-48 figür | 3 | 97 | 90 |
+| orta-48 figür | 3 | 96 | 90 |
+| ince-72 | 3 | 96 + 48 | 130 |
+| Q2 / Q3 / Q5 | 2 | 96 | 86 |

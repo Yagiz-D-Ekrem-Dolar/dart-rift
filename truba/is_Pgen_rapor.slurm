@@ -29,6 +29,29 @@ if [ -n "${BEKLENEN_DESEN:-}" ] && [ "$N_DESEN" != "$BEKLENEN_DESEN" ]; then
   echo "HATA: $BEKLENEN_DESEN desen bekleniyordu, $N_DESEN geldi"; exit 4
 fi
 K="$KOK/kampanya"
+# A84 DENETIMI (2): desen basina npz sayisi. BEKLENEN_KOSU_EN_AZ verilmisse
+# toplam bundan azsa is DURUR (exit 5); raporda okunan kosu sayisi da
+# denetlenir (exit 6). Bir rapor sessizce eksik havuzla kosmaz.
+IFS=',' read -r -a DESENLER <<< "$D"
+N_NPZ=0
+for d in "${DESENLER[@]}"; do
+  n=$(ls "$K"/$d/nokta_*.npz 2>/dev/null | wc -l)
+  echo "  desen $d: $n npz"
+  N_NPZ=$((N_NPZ + n))
+done
+echo "toplam npz: $N_NPZ  (en az beklenen: ${BEKLENEN_KOSU_EN_AZ:-verilmedi})"
+if [ -n "${BEKLENEN_KOSU_EN_AZ:-}" ] && [ "$N_NPZ" -lt "$BEKLENEN_KOSU_EN_AZ" ]; then
+  echo "HATA (A84 denetimi): $N_NPZ npz < $BEKLENEN_KOSU_EN_AZ"; exit 5
+fi
+kosu_denetle () {  # $1: json; katli.n_kosu >= BEKLENEN_KOSU_EN_AZ - 8
+python - "$1" "${BEKLENEN_KOSU_EN_AZ:-0}" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+n = d.get("katli", {}).get("n_kosu", d.get("n_kosu", 0)); esik = int(sys.argv[2]) - 8
+print(f"DENETIM {sys.argv[1]}: okunan kosu {n}, esik {esik} ->", "GECTI" if n >= esik else "DUSTU")
+sys.exit(0 if n >= esik else 6)
+PY
+}
 yol () {
 python -u - "$1" <<'PY'
 import json, os, sys
@@ -49,6 +72,7 @@ python -u scripts/n_ayirt_raporu.py --kok "$K" --desen "$D" --json "$K/S_$SN.jso
 for V in kuadratik gp; do
   echo "=== P-v4 $O $V ==="
   python -u scripts/p_kalibrasyon_raporu.py --kok "$K" --desen "$D" --s-n "$K/S_$SN.json" --vekil $V --artik kfold4 --katli --json "$K/S_${O}_$V.json"
+  kosu_denetle "$K/S_${O}_$V.json" || exit 6
 done
 yol $O
 for V in kuadratik gp; do
