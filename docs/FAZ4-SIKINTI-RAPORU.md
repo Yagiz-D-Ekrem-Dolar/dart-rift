@@ -5158,6 +5158,18 @@ sonlu. Aynı θ'nın öbür tohumu `3,69 m / 51,8 m³`. M2'nin `V_krater` ve
 istisnası `gozlem_vektoru` içinde yutuluyor (`KeyError, ValueError` →
 `nan`); sebep kayıtlı değil.
 
+**Tanı (2026-09-14):** aynı dosyada `krater_yuzey_durumdan` doğrudan
+çağrıldı: `ValueError: eksen isininda yuzey bulunamadi (pencere:
+79,516..90,960 m)`. Öbür tohum (`20260906`) aynı ince merdivende sorunsuz
+(`d_merkez 3,69 m`, `V 51,8 m³`, `R 2,8 m`). Yani merkez ışın boyunca
+doluluk `φ` pencerenin tamamında eşiği (`0,5`) **kesmiyor**: ışın altında
+eşik altı doluluk (boşluk ya da ayrılmış seyrek katman) pencerenin alt
+ucuna kadar sürüyor. Pencere (`~11,4 m`) krater derinliğinin (`~3,7 m`)
+üç katı; pencereyi büyütmek muhtemelen çözmez, φ profilinin kendisi
+incelenmeli. İstisnanın `gozlem_vektoru` içinde **sebepsiz** `nan`'a
+çevrilmesi ayrı bir kusur: sebep çıktıya yazılmalı. Kilitli operatöre
+dokunulmadı.
+
 ---
 ### A85 — **Izgara posteriorunun `%68` / `%95` aralıkları yarım bölme kayık** (2026-09-14) — *açık, kilitli sonuçlara dokunulmadı*
 

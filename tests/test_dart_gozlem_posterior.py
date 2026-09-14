@@ -130,6 +130,17 @@ def test_bitis3_Q_kurali_ve_P_v4b_kurali(tmp_path):
     assert b3.esas_sonuc(tmp_path)["esas"]["havuz"].startswith("ince-72")
     metin = b3.taslak(tmp_path)
     assert "BEKLENIYOR" in metin and "Q1 plato anında yakınsama" in metin
+    assert "## 5. Model yeterliliği (Protokol U)" in metin
+    assert "## 6. Hera ön kayıtları (Protokol HT)" in metin
+    yaz("S_U.json", {"genel": "HICBIR VARYANT ULASMIYOR (en yakin U8:kaba, z = +3.1)",
+                     "satirlar": {"U8:kaba": {"beta_eksi_1_sim": 1.1, "beta_eksi_1_gozlem": 2.1,
+                                              "z": 3.1, "karar": "ALTINDA"}}})
+    yaz("ONKAYIT_HERA_Qo.json", {"tahmin": {"R_krater": {"kantiller": {
+        "q16": 2.1, "q50": 2.5, "q84": 2.9}}}, "meta": {"kosul": "KOSULSUZ (x)", "t_end_s": 0.1},
+        "sha256": "ab" * 32})
+    metin = b3.taslak(tmp_path)
+    assert "HICBIR VARYANT ULASMIYOR" in metin and "U8:kaba" in metin
+    assert "R_krater q16/q50/q84 = 2.10 / 2.50 / 2.90 m" in metin
 
 
 def test_protokol_D_esikleri_belgede():

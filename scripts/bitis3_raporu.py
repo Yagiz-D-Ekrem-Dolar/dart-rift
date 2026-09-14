@@ -122,6 +122,26 @@ def taslak(kok: Path) -> str:
             sat += " — " + ", ".join(f"{ax}: {p[ax]['karar']}" for ax in
                                      ("blok_alpha0", "log10_Y0", "blok_kesri"))
         satir.append(sat)
+    u = _oku(kok, "S_U.json")
+    satir += ["", "## 5. Model yeterliliği (Protokol U)", "",
+              f"- Genel: **{(u or {}).get('genel', 'BEKLENIYOR')}**"]
+    for anah, r in sorted(((u or {}).get("satirlar") or {}).items()):
+        if r.get("karar") == "OKUNMAZ":
+            satir.append(f"  - {anah}: OKUNMAZ")
+            continue
+        satir.append(f"  - {anah}: β−1 sim {r['beta_eksi_1_sim']:.3f} / gözlem "
+                     f"{r['beta_eksi_1_gozlem']:.3f} (z {r['z']:+.1f}) → {r['karar']}")
+    satir += ["", "## 6. Hera ön kayıtları (Protokol HT)", ""]
+    for etiket in ("Qo", "i72"):
+        k = _oku(kok, f"ONKAYIT_HERA_{etiket}.json")
+        if not k:
+            satir.append(f"- {etiket}: BEKLENIYOR")
+            continue
+        r = (k.get("tahmin") or {}).get("R_krater", {}).get("kantiller", {})
+        satir.append(f"- {etiket}: {k['meta'].get('kosul')}; R_krater q16/q50/q84 = "
+                     f"{r.get('q16', float('nan')):.2f} / {r.get('q50', float('nan')):.2f} / "
+                     f"{r.get('q84', float('nan')):.2f} m; sha256 {k.get('sha256', '')[:12]}…; "
+                     f"t_end {k['meta'].get('t_end_s')} s")
     return "\n".join(satir) + "\n"
 
 
