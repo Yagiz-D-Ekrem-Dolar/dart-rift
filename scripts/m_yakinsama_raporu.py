@@ -110,7 +110,7 @@ def gozlem_yargisi(sonuclar: list[dict]) -> dict:
     return {"karar": karar, "n_yakinsamis": n_yak, "sayac": sayac}
 
 
-def topla(kok: Path) -> dict:
+def topla(kok: Path, onek: str = "M") -> dict:
     """`{gozlem: {k: {merdiven: [tohum degerleri]}}}`."""
     from gozlem_vektoru import gozlem_vektoru
 
@@ -118,7 +118,7 @@ def topla(kok: Path) -> dict:
             for g in GOZLEMLER_M}
     for lad in MERDIVENLER:
         for k in range(len(TETALAR)):
-            for f in sorted(glob.glob(str(kok / f"M_{lad}_t{k}_sahne*.durumlar"
+            for f in sorted(glob.glob(str(kok / f"{onek}_{lad}_t{k}_sahne*.durumlar"
                                           / "nokta_*.npz"))):
                 gv = gozlem_vektoru(np.load(f))
                 gv["beta_eksi_1"] = gv["beta_hedef"] - 1.0
@@ -132,12 +132,14 @@ def main(argv=None) -> int:
     ap.add_argument("--kok", type=Path, required=True)
     ap.add_argument("--tasarim-yaz", action="store_true")
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--onek", default="M",
+                    help="ayni kilitli kural baska kampanya (Protokol Q: Mt, plato ani)")
     a = ap.parse_args(argv)
     if a.tasarim_yaz:
         for p in tasarim_yaz(a.kok):
             print("yazildi:", p)
         return 0
-    veri = topla(a.kok)
+    veri = topla(a.kok, a.onek)
     cikti = {}
     print("=" * 78)
     print("PROTOKOL M -- uc cozunurlukte yakinsama")

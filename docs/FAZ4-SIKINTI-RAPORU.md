@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-13 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 68 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83 · A70 **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-13 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 70 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86 · A70 ve A84 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5148,6 +5148,47 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A86 — **M2'de taban θ'nın ince `99991111` koşusunda krater operatörü `nan`** (2026-09-14) — *açık, incelenmedi*
+
+`M2_ince_b_sahne99991111`: `d_merkez = V_krater = nan`, `β−1 = 0,490`
+sonlu. Aynı θ'nın öbür tohumu `3,69 m / 51,8 m³`. M2'nin `V_krater` ve
+`d_merkez` kontrastları bu yüzden OKUNMAZ. `krater_yuzey_durumdan`
+istisnası `gozlem_vektoru` içinde yutuluyor (`KeyError, ValueError` →
+`nan`); sebep kayıtlı değil.
+
+---
+### A85 — **Izgara posteriorunun `%68` / `%95` aralıkları yarım bölme kayık** (2026-09-14) — *açık, kilitli sonuçlara dokunulmadı*
+
+`grid_posterior` / `grid_posterior_kovaryans` / `_aralik`: `kum =
+cumsum(m)` ve `np.interp(q, kum, eksen)`. Düğüm kendi kütlesinin tamamını
+sayınca birikimli dağılım yarım bölme (`40` düğümde `0,0128 u`) **sağa**
+kayar; her iki aralık ucu da sola (küçük `u`'ya) çekilir, genişlik
+değişmez. Figür betiğinde (`p_sekil_verisi.pit`) aynı hata PIT ortalamasını
+dar posteriorda `0,5 → 0,7` yaptı ve sentetik sınamada yakalandı.
+Kilitli kapsama yargıları bu kaymayla hesaplandı; etki: gerçeği aralık
+ucuna `< 0,013 u` yakın vakalarda içeriyor/içermiyor kararı. Düzeltme
+kilitli protokolü değiştireceği için yapılmadı; bir sonraki protokol
+sürümünde orta nokta birikimine geçilir ve eski yargılar yeniden hesaplanıp
+**yan yana** yazılır.
+
+---
+### A84 — **`sbatch --export=ALL,D="a,b,c"` virgülü değişken ayırıcı sayıyor: rapor işi sessizce tek kampanyayla koştu** (2026-09-14) — **KAPANDI** (düzeltme + denetim)
+
+Genel P rapor işine (`is_Pgen_rapor.slurm`) havuz deseni virgülle
+geçirildi. SLURM `--export` listesini virgülden böler: `D` yalnız ilk
+desen oldu, kalanlar anlamsız değişken adları. Dört rapor (ince-48,
+kaba-72, orta-72, kaba-48 figür) **hata vermeden** koştu ve yalnız ilk
+kampanyayı okudu (`46 koşu, 23 θ` / `48 koşu, 24 θ` / `47 koşu, 24 θ`).
+Aynı gece elle gönderilen `is_Pv4o_rapor` (desen betiğin içinde) doğruydu
+(`96 koşu, 48 θ`) — farkı yakalayan buydu.
+
+Düzeltme: desenler `+` ile ayrılıyor ve betikte virgüle çevriliyor;
+`BEKLENEN_DESEN` verilirse sayı denetleniyor, tutmazsa iş `exit 4`.
+Etkilenen dört rapor yeniden gönderildi. `is_N_genel.slurm`'e uyarı
+eklendi. Kalıp: **"iş bitti" ≠ "doğru veriyi okudu"** — rapor çıktısındaki
+koşu sayısı beklenenle karşılaştırılmalı.
 
 ---
 ### A83 — **Dayanım kesmesi açıkken bile boşluğa dağılan gözenekli matrisin süreklilik yoğunluğu `0`'a iniyor → `dt → 0`** (2026-09-13) — *açık (düzeltme doğrulandı, Tkt bekleniyor)*
