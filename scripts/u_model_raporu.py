@@ -51,11 +51,14 @@ Z_ESIGI = 2.0
 TOHUM_TABANI = 0.005
 
 
-def topla(kok: Path) -> dict:
-    """`{(varyant, merdiven): [{bm1, M, p_imp}, ...]}`."""
+def topla(kok: Path, onek: str = "U") -> dict:
+    """`{(varyant, merdiven): [{bm1, M, p_imp}, ...]}`.
+
+    `onek` Protokol V için (`V_V1_kaba_sahne...`): kilitli kural aynen.
+    """
     out = {}
-    for dz in sorted(glob.glob(str(kok / "U_*_*_sahne*.durumlar"))):
-        m = re.search(r"U_(U\d+)_(kaba|orta|ince)_sahne(\d+)", dz)
+    for dz in sorted(glob.glob(str(kok / f"{onek}_*_*_sahne*.durumlar"))):
+        m = re.search(rf"{onek}_({onek}\d+)_(kaba|orta|ince)_sahne(\d+)", dz)
         if not m:
             continue
         for f in sorted(glob.glob(dz + "/nokta_*.npz")):
@@ -115,8 +118,9 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--kok", type=Path, required=True)
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--onek", default="U", help="U ya da V (PROTOKOL-V-MODEL2, ayni kural)")
     a = ap.parse_args(argv)
-    v = topla(a.kok)
+    v = topla(a.kok, a.onek)
     out = yargi(v)
     print("=" * 78)
     print(f"PROTOKOL U -- model yeterliligi ({sum(len(x) for x in v.values())} kosu)")
