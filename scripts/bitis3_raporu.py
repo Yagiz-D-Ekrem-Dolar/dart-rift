@@ -131,6 +131,18 @@ def taslak(kok: Path) -> str:
             continue
         satir.append(f"  - {anah}: β−1 sim {r['beta_eksi_1_sim']:.3f} / gözlem "
                      f"{r['beta_eksi_1_gozlem']:.3f} (z {r['z']:+.1f}) → {r['karar']}")
+    v = _oku(kok, "S_V.json")
+    u_genel = (u or {}).get("genel", "")
+    if v:
+        v_durum = f"koşuldu — **{v.get('genel', 'OKUNMAZ')}**"
+    elif u_genel.startswith("HICBIR VARYANT ULASMIYOR"):
+        v_durum = "**GÖNDERİLMELİ** (U hiçbir varyantla ulaşmadı; `scripts/v_gonderim_karari.py`)"
+    elif u_genel.startswith("MODEL GOZLEME ULASABILIYOR"):
+        v_durum = "gönderilmez (U'da ulaşan varyant var)"
+    else:
+        v_durum = "BEKLENIYOR (U sonucu yok)"
+    satir += ["", "## 5b. Protokol V (koşullu: yerçekimi / hasar / 0,2 s)", "",
+              f"- Durum: {v_durum}"]
     satir += ["", "## 6. Hera ön kayıtları (Protokol HT)", ""]
     for etiket in ("Qo", "i72"):
         k = _oku(kok, f"ONKAYIT_HERA_{etiket}.json")

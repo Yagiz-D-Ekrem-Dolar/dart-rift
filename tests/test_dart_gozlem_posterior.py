@@ -140,6 +140,9 @@ def test_bitis3_Q_kurali_ve_P_v4b_kurali(tmp_path):
         "sha256": "ab" * 32})
     metin = b3.taslak(tmp_path)
     assert "HICBIR VARYANT ULASMIYOR" in metin and "U8:kaba" in metin
+    assert "**GÖNDERİLMELİ**" in metin
+    yaz("S_V.json", {"genel": "MODEL GOZLEME ULASABILIYOR: V1:kaba"})
+    assert "koşuldu — **MODEL GOZLEME ULASABILIYOR: V1:kaba**" in b3.taslak(tmp_path)
     assert "R_krater q16/q50/q84 = 2.10 / 2.50 / 2.90 m" in metin
 
 
