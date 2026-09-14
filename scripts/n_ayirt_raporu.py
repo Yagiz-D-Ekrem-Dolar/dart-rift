@@ -96,7 +96,10 @@ def eksen_sayimi(yargilar: dict) -> dict:
 def topla(kok: Path, desen: str = "N_matris_sahne*.durumlar") -> dict:
     """Tohum başına kayıtlar → `ayirt_raporu.esle` tablosu."""
     import vekil_posterior as vp
-    from gozlem_vektoru import gozlem_vektoru
+
+    # Onbellek: ayni npz her raporda yeniden hesaplanmaz; anahtar kod ozeti
+    # + npz boyut/mtime (scripts/gozlem_onbellek.py).
+    from gozlem_onbellek import gozlem
 
     kollar: dict[str, list[dict]] = {}
     gorulen: set = set()
@@ -106,7 +109,7 @@ def topla(kok: Path, desen: str = "N_matris_sahne*.durumlar") -> dict:
         t = vp._tohum_ayikla(dz)
         for f in sorted(glob.glob(dz + "/nokta_*.npz")):
             z = np.load(f)
-            gv = gozlem_vektoru(z)
+            gv = dict(gozlem(f))
             gv["beta_eksi_1"] = gv["beta_hedef"] - 1.0
             gv["theta"] = np.asarray(z["theta"], float).ravel()
             anah = (tuple(np.round(gv["theta"], 12)), t)

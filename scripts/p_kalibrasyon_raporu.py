@@ -126,7 +126,10 @@ def donustur(gozlem: str, deger: float) -> float:
 def kayitlari_oku(kok: Path, desen: str = "N_matris_sahne*.durumlar") -> list[dict]:
     """Her durum dosyası → `{"theta", "tohum", gözlenebilirler}` (dönüşümlü)."""
     import vekil_posterior as vp
-    from gozlem_vektoru import gozlem_vektoru
+
+    # Onbellek: ayni npz her raporda yeniden hesaplanmaz; anahtar kod ozeti
+    # + npz boyut/mtime (scripts/gozlem_onbellek.py).
+    from gozlem_onbellek import gozlem
 
     kayit = []
     gorulen: set = set()
@@ -136,7 +139,7 @@ def kayitlari_oku(kok: Path, desen: str = "N_matris_sahne*.durumlar") -> list[di
         t = vp._tohum_ayikla(dz)
         for f in sorted(glob.glob(dz + "/nokta_*.npz")):
             z = np.load(f)
-            gv = gozlem_vektoru(z)
+            gv = dict(gozlem(f))
             gv["beta_eksi_1"] = gv["beta_hedef"] - 1.0
             k = {g: donustur(g, gv.get(g, float("nan"))) for g in DONUSUMLER}
             k.update(zaman_ornekleri(z))
