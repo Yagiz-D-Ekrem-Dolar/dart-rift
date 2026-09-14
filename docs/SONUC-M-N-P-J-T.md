@@ -190,6 +190,22 @@ farklı → Protokol Q (plato anında yakınsama) gönderildi.
 figür raporları yalnız ilk kampanyayı okudu (`sbatch --export` virgül
 bölmesi). Sonuçları kullanılmaz; düzeltilmiş işler `1561187–1561190`.
 
+## 2e. KEŞİF: gerçek DART gözlemi, 24 ms kaba-72 havuzu (2026-09-14, yargı değil)
+
+`scripts/dart_gozlem_posterior.py` (Protokol D kuralları, ama 24 ms plato
+değil → keşif): sahne hedef kütlesi `4,164e9 kg`, `p_imp 3,56e6`.
+
+| | değer |
+|---|---|
+| gözlenen `β` (depo arayüzü, sahne kütlesiyle) | **`3,12 ± 0,34`** |
+| model `β` aralığı (144 koşu, önsel boyunca vekil) | **`1,25 – 1,85`** (en büyük: `α_b 1,02`, `Y₀ 2e4`, `f 0,05`) |
+| `σ` (log): gözlem / vekil / toplam | `0,070 / 0,031 / 0,077` |
+| önsel kapsama | **ÖNSEL DIŞI (YUKARI), +5,2σ** |
+
+Plato anında `β` 24 ms'dekinin `~1,25` katı (T, Tkt) — o çarpanla bile
+`~2,3`'e çıkar, band alt ucunun (`2,78`) altında. Kilitli D yargısı Q2/Q3
+(0,1 s) ile gelecek; hangi model bileşeninin farkı kapattığı **Protokol U**.
+
 ## 3. Bitiş 3 için anlamı
 
 1. **Mutlak** 24 ms gözlenebilirlerine dayanan bir posterior bu

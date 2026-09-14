@@ -171,6 +171,20 @@ def main() -> int:
     ap.add_argument("--yogunluk-tabani", action="store_true",
                     help="A83: sureklilik yogunlugu rho >= 0,01 rho0/alpha "
                          "(bosluga dagilan madde). Varsayilan KAPALI.")
+    # PROTOKOL U -- model yeterliligi taramasi (kesif). Varsayilanlar
+    # verilmezse malzeme ve sahne AYNEN (bit-ayni); verilenler ozet.json'a
+    # ve fizik_ozeti'ne (repr(material), sahne_taban) girer.
+    ap.add_argument("--mu-f", type=float, default=None,
+                    help="U: Lundborg ic surtunme katsayisi (uretim 0,6)")
+    ap.add_argument("--porozite-pe", type=float, default=None,
+                    help="U: P-alpha elastik esik Pe [Pa] (uretim 1e6)")
+    ap.add_argument("--porozite-ps", type=float, default=None,
+                    help="U: P-alpha tam ezilme Ps [Pa] (uretim 1e8)")
+    ap.add_argument("--yigin-yogunlugu", type=float, default=None,
+                    help="U: hedef yigin yogunlugu [kg/m3] (SAHNE 1800)")
+    ap.add_argument("--onsel-disi-izin", action="store_true",
+                    help="U: tasarim dosyasi onsel sinirlarinin disinda olabilir "
+                         "(ozet.json'a onsel_disi=true yazilir; CIKARIM VERISI DEGIL)")
     ap.add_argument("--patlama-tanisi", type=Path, default=None,
                     help="A80: her 25 adimda sonluluk; ilk bozulmada tani "
                          "(patlama_tani.json + npz) bu dizine yazilir. "
@@ -195,6 +209,7 @@ def main() -> int:
     # gozenekligi %17,6-52,7, hicbiri %67 esigini asmiyor) -- yani sonuc
     # cop degil, ama kullanilan ONSEL kabul edilmis onsel DEGIL.
     UZAY = DART_UZAYI if a.eski_uzay else DART_UZAYI_S3
+    onsel_disi = False
     if a.eski_uzay:
         print("  ! TERK EDILMIS UZAY (ADR-0044): sonuc S3 onseli SAYILMAZ",
               flush=True)
@@ -206,9 +221,15 @@ def main() -> int:
             json.loads(a.tasarim_dosyasi.read_text(encoding="utf-8"))["theta"],
             dtype=np.float64))
         lo, hi = np.asarray(UZAY.lo, float), np.asarray(UZAY.hi, float)
-        if tasarim.shape[1] != 3 or np.any(tasarim < lo) or np.any(tasarim > hi):
+        if tasarim.shape[1] != 3:
+            raise SystemExit(f"tasarim dosyasi 3 sutun olmali: {tasarim.shape}")
+        onsel_disi = bool(np.any(tasarim < lo) or np.any(tasarim > hi))
+        if onsel_disi and not a.onsel_disi_izin:
             raise SystemExit(f"tasarim dosyasi onsel sinirlarinin disinda: "
                              f"{tasarim.tolist()} (lo={lo}, hi={hi})")
+        if onsel_disi:
+            print("  ! ONSEL DISI TASARIM (Protokol U, kesif): cikarim verisi DEGIL",
+                  flush=True)
     else:
         tasarim = lhs_design(UZAY, a.n_lhs, root_seed=kok)
     if a.kenarlar:
@@ -251,6 +272,25 @@ def main() -> int:
     # (bit-ayni); verilen her alan `_fizik_ozeti`ne sahne_taban
     # uzerinden girer.
     sahne_ek = {}
+    if a.yigin_yogunlugu is not None:
+        sahne_ek["bulk_density"] = float(a.yigin_yogunlugu)
+    # PROTOKOL U: malzeme bir kez kurulur; degisiklik yoksa _mat() AYNEN.
+    import dataclasses as _dc
+
+    MALZEME = _mat()
+    malzeme_ek = {}
+    if a.mu_f is not None:
+        MALZEME = _dc.replace(MALZEME, strength=_dc.replace(MALZEME.strength, mu_f=float(a.mu_f)))
+        malzeme_ek["mu_f"] = float(a.mu_f)
+    if a.porozite_pe is not None or a.porozite_ps is not None:
+        _pe = MALZEME.porosity.Pe if a.porozite_pe is None else float(a.porozite_pe)
+        _ps = MALZEME.porosity.Ps if a.porozite_ps is None else float(a.porozite_ps)
+        if not (0 < _pe < _ps):
+            raise SystemExit(f"0 < Pe < Ps olmali: Pe={_pe}, Ps={_ps}")
+        MALZEME = _dc.replace(MALZEME, porosity=_dc.replace(MALZEME.porosity, Pe=_pe, Ps=_ps))
+        malzeme_ek.update(Pe=_pe, Ps=_ps)
+    if malzeme_ek:
+        print(f"  malzeme ek  : {malzeme_ek}  (Protokol U)", flush=True)
     if a.blok_uretici != "v1":
         sahne_ek["blok_uretici"] = a.blok_uretici
     if a.carpma_sahasi != "rastgele":
@@ -286,7 +326,7 @@ def main() -> int:
 
             gozlemci = PatlamaGozlemcisi(a.patlama_tanisi)
         y = ileri_kosu_merdiven(
-            np.atleast_2d(theta), material=_mat(), device=a.device,
+            np.atleast_2d(theta), material=MALZEME, device=a.device,
             t_end=a.t_end, kademeler=merdiven, spacing=a.spacing,
             # A46: `None` gecince `build_scene` VARSAYILANI `M0` oluyor ve
             # `M0` dalinda `boulders = None` -- yani `f_boulder` ve
@@ -347,6 +387,8 @@ def main() -> int:
         "dayanim_kesme": bool(a.dayanim_kesme),
         "yogunluk_tabani": bool(a.yogunluk_tabani),
         "sahne_ek": sahne_ek,
+        "malzeme_ek": malzeme_ek,
+        "onsel_disi": bool(a.tasarim_dosyasi is not None and onsel_disi),
         "surum": surum,
         "n_tasarim_tam": int(tam_n),
         "gozlenebilirler": list(GOZLENEBILIRLER),
