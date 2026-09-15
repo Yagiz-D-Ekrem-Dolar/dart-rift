@@ -27,6 +27,13 @@ farkı (`%10,5`), sistematik olarak.
 - `σ_vekil` = θ-gruplu 4-kat artık sapması (P §4d ile aynı katlar).
 - Aralıklar yamuk ağırlıklı orta nokta birikimiyle (A85; düz dağılımda
   `%16` sınırı tam `0,16`).
+  *Not (2026-09-15, kilitli koşudan ÖNCE):* bu hesap uç düğümleri ikinci kez
+  yarılıyordu (A87; iç kantiller tam, `%2,5` sınırı kayık). Uygulama hücre
+  integrallerine düzeltildi (`F_0 = 0`, `F_N = 1`); kural aynı, yalnız hesap
+  hatası giderildi. Kilitli D koşusu henüz yapılmadı.
+  *Not (2026-09-15):* `σ_çöz` JSON'u artık `tam`/`eksik` alanı taşıyor; Mt
+  havuzu eksikse kural değişmez (sonlu `σ_çöz` kullanılır) ama rapora ve HT ön
+  kaydına **EKSİK HAVUZ** notu yazılır (kısmi Mt sessiz geçmesin).
 - `σ_çöz` = `RMS_θ(ȳ_üretim − ȳ_ince)`, Mt (0,1 s) kampanyasından
   (`cozunurluk_hatasi.py`). İnce merdiven de yakınsamamışsa **alt sınır**dır
   ve öyle yazılır. `kayma_oranı = std/|ort| < 0,5` → "SABİT KAYMA".

@@ -185,13 +185,15 @@ def main(argv=None) -> int:
     gozlem = gozlenen_beta(sahne["hedef_kutlesi"], sahne["p_imp"])
     kayit = pr.kayitlari_oku(a.kok, a.desen.replace("+", ","))
     X, Y = pr._matrisler(kayit, [GOZLEM])
-    sigma_coz, coz_notu = 0.0, "COZUNURLUK TERIMI YOK"
-    if a.cozunurluk and a.cozunurluk.exists():
-        c = json.loads(a.cozunurluk.read_text(encoding="utf-8"))["gozlem"][GOZLEM]
-        if np.isfinite(c.get("sigma_coz", float("nan"))):
-            sigma_coz, coz_notu = float(c["sigma_coz"]), f"cozunurluk: {a.cozunurluk.name}"
+    # Ortak okuyucu (cozunurluk_hatasi.oku): kural ayni (sonlu sigma kullanilir),
+    # ama kismi Mt havuzu artik "EKSIK HAVUZ" diye rapora yaziliyor (2026-09-15).
+    import cozunurluk_hatasi as ch
+
+    coz = ch.oku(a.cozunurluk, [GOZLEM])
+    sigma_coz, coz_notu = float(coz["sigma"].get(GOZLEM, 0.0)), coz["not"]
     out = uygula(X, Y[:, 0], pr._gruplar(X), gozlem, sigma_coz=sigma_coz)
-    out.update(sahne=sahne, desen=a.desen, cozunurluk_notu=coz_notu)
+    out.update(sahne=sahne, desen=a.desen, cozunurluk_notu=coz_notu,
+               cozunurluk_tam=coz["tam"])
     k = out["kapsama"]
     print("=" * 78)
     print(f"PROTOKOL D -- DART gozlemi ({out['n_kosu']} kosu, {coz_notu})")

@@ -13,6 +13,12 @@ Karşılık gelen yığın yoğunluğu (hacim sabit): `ρ* = ρ₀ · M* / M₀`
 `M* ≥ M₀` → gözlem zaten bandın içinde (kütle azaltmaya gerek yok).
 `1 − 2 σ_rel ≤ 0` → band sıfıra iner; eşik tanımsız.
 
+**Varsayım (öz denetim, 2026-09-15):** `β_max` (modelin önsel boyunca en
+büyük `β`'sı) kütleden bağımsız tutulur. Gerçekte hedef yoğunluğu değişince
+sahne ve modelin `β`'sı da değişir; bu betik yalnız **gözlenen** `β`'nın
+kütleye duyarlılığını verir, modelin tepkisini değil (o Protokol U'nun
+yoğunluk varyantıyla ölçülür).
+
 Kullanim:
     python scripts/d_kutle_duyarliligi.py --json docs/olcumler/D_kesif/S_DART_*.json --rho0 1800
 """

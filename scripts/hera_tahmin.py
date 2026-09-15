@@ -152,11 +152,11 @@ def main(argv=None) -> int:
     adlar = ["beta_eksi_1", *GOZLEMLER_H]
     X, Y = pr._matrisler(kayit, adlar)
     grup = pr._gruplar(X)
-    coz = {}
-    if a.cozunurluk and a.cozunurluk.exists():
-        cj = json.loads(a.cozunurluk.read_text(encoding="utf-8"))["gozlem"]
-        coz = {g: float(cj[g]["sigma_coz"]) for g in adlar
-               if g in cj and np.isfinite(cj[g].get("sigma_coz", float("nan")))}
+    # Ortak okuyucu: kural ayni; kismi Mt havuzu on kayda "EKSIK HAVUZ" diye girer.
+    import cozunurluk_hatasi as ch
+
+    cz = ch.oku(a.cozunurluk, adlar)
+    coz = cz["sigma"]
     w, kosul, d = agirliklar(X, Y[:, 0], grup, gozlem, sigma_coz=coz.get("beta_eksi_1", 0.0))
     tahmin = ongoru(X, Y[:, 1:], grup, w, list(GOZLEMLER_H), sigma_coz=coz)
     t_end = None
@@ -167,7 +167,8 @@ def main(argv=None) -> int:
             break
     meta = {"etiket": a.etiket, "kosul": kosul, "onsel_kapsama": d["kapsama"]["karar"],
             "gozlem": gozlem, "desen": a.desen, "n_kosu": int(len(X)), "t_end_s": t_end,
-            "cozunurluk_terimleri": coz, "kod_commit": _commit(),
+            "cozunurluk_terimleri": coz, "cozunurluk_notu": cz["not"],
+            "cozunurluk_tam": cz["tam"], "kod_commit": _commit(),
             "zaman_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
             "uyari": UYARI, "protokol": "docs/truba/PROTOKOL-HT-HERA-TAHMIN.md"}
     k = kayit_olustur(tahmin, meta)

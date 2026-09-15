@@ -80,7 +80,50 @@ def hata_modeli(veri: dict, uretim: str = "orta", referans: str = "ince") -> dic
                   "kayma_orani": float(oran),
                   "karar": "SABIT KAYMA" if oran < SABIT_KAYMA_ESIGI else "THETA'YA BAGLI KAYMA"}
     return {"uretim": uretim, "referans": referans, "gozlem": out,
+            **kapsam_denetle(veri, uretim, referans),
             "not": "sigma_coz ince merdivene gore; ince de yakinsamamissa ALT SINIR"}
+
+
+def kapsam_denetle(veri: dict, uretim: str = "orta", referans: str = "ince",
+                   n_tohum: int = 2) -> dict:
+    """Beklenen `N_TETA θ × n_tohum × {üretim, referans}` durum dosyası var mı.
+
+    2026-09-15 öz denetim: Mt kampanyası kısmen koşunca (14 Eylül iptali)
+    `σ_çöz` eksik θ/tohumdan hesaplanıyor ve D/HT bunu tam havuz gibi
+    kaydediyordu (A84 türü sessiz eksik). Hesap değişmez; eksik YAZILIR.
+    """
+    eksik = []
+    for k in range(N_TETA):
+        for m in (uretim, referans):
+            n = len(veri.get((k, m), {}).get("beta_eksi_1", []))
+            if n < n_tohum:
+                eksik.append(f"t{k}:{m}:{n}/{n_tohum}")
+    return {"tam": not eksik, "eksik": eksik}
+
+
+def oku(yol, gozlemler) -> dict:
+    """Çözünürlük JSON'u → `{"sigma": {gözlem: σ_çöz}, "tam", "not"}` (D ve HT ortak).
+
+    Kilitli kural değişmez: sonlu `σ_çöz` kullanılır, yoksa terim `0` ve
+    "COZUNURLUK TERIMI YOK". Havuz eksikse not "EKSIK HAVUZ" der; kapsam
+    alanı olmayan eski JSON'da `tam = None` ve not bunu söyler.
+    """
+    yol = Path(yol) if yol else None
+    if yol is None or not yol.exists():
+        return {"sigma": {}, "tam": None, "not": "COZUNURLUK TERIMI YOK"}
+    j = json.loads(yol.read_text(encoding="utf-8"))
+    cj = j.get("gozlem", {})
+    sig = {g: float(cj[g]["sigma_coz"]) for g in gozlemler
+           if g in cj and np.isfinite(cj[g].get("sigma_coz", float("nan")))}
+    if not sig:
+        return {"sigma": {}, "tam": j.get("tam"), "not": "COZUNURLUK TERIMI YOK (OKUNMAZ)"}
+    notu = f"cozunurluk: {yol.name}"
+    if j.get("tam") is False:
+        ek = j.get("eksik", [])
+        notu += f" -- EKSIK HAVUZ ({len(ek)} eksik: {', '.join(ek[:6])})"
+    elif "tam" not in j:
+        notu += " -- kapsam denetimi yok (eski JSON)"
+    return {"sigma": sig, "tam": j.get("tam"), "not": notu}
 
 
 def main(argv=None) -> int:
@@ -95,6 +138,8 @@ def main(argv=None) -> int:
     print("=" * 72)
     print(f"COZUNURLUK HATASI -- {a.onek}: {a.uretim} - ince (donusumlu birim)")
     print("=" * 72)
+    print("  havuz: TAM" if out["tam"] else
+          f"  havuz: EKSIK ({len(out['eksik'])}): {', '.join(out['eksik'])}")
     for g, d in out["gozlem"].items():
         if d["karar"] == "OKUNMAZ":
             print(f"  {g:>12}: OKUNMAZ (n={d['n_theta']})")

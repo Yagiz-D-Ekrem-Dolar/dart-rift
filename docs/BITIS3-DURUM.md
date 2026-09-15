@@ -73,6 +73,15 @@ yığın yoğunluğunun sahnedekinden `%24–29` düşük olması gerekir. Bu,
 Protokol U'nun yoğunluk varyantının neden kritik olduğunu gösterir;
 kilitli yargı değildir (24 ms, plato çarpanı uygulanmadı).
 
+**Düzeltme notu (2026-09-15, öz denetim):** Bu hesap modelin `β_max`'ını
+yoğunluktan **bağımsız** sayıyor; öyle değil. Hedef yoğunluğu düşerse
+sahne de değişir (gözeneklilik, dayanım, ejekta) ve modelin `β`'sı da
+değişir — muhtemelen artar ve farkı yoğunluk tek başına daha az düşüşle
+kapatabilir, ama yönü de büyüklüğü de ölçülmedi. Yani `ρ* ≈ 1270–1370`
+bir **üst sınır tahmini** değil, yalnız "gözlenen `β`'nın kütleye
+duyarlılığı"dır. Gerçek cevap Protokol U'nun `ρ = 1500` varyantından
+(U5, U8) gelecek.
+
 ## 4. Bitiş 3'e kalan
 
 1. D kilitli yargısı (plato anı). Önsel içindeyse → gerçek gözlemle
