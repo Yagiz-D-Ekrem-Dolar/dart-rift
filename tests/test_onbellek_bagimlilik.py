@@ -76,8 +76,11 @@ def test_KAYNAKLAR_ic_import_kapanisini_KAPSIYOR():
 
 
 def test_gozlem_vektoru_yalniz_bu_uc_giris_modulunu_kullaniyor():
-    m = (_KOK / "scripts" / "gozlem_vektoru.py").read_text(encoding="utf-8")
     kullanilan = {ad for ad in _importlar(_KOK / "scripts" / "gozlem_vektoru.py", "scripts.x")
                   if ad.count(".") == 2}
     assert kullanilan == set(GIRIS), kullanilan
-    assert "import" in m
+    # Ilk surumde burada `assert "import" in m` vardi: her Python dosyasinda
+    # dogru, hicbir seyi sinamayan bos iddia (oz denetim). Yerine: kapanis
+    # hesabi gercekten bir import eklenince buyuyor mu.
+    genis = kapanis((*GIRIS, "dartrift.inference.posterior"))
+    assert len(genis) > len(kapanis()) and any(p.name == "posterior.py" for p in genis)
