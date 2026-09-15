@@ -5150,6 +5150,32 @@ da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
 
 ---
+### A88 — **Kısmi kampanya raporlara ve kararlara SESSİZCE giriyordu (Mt çözünürlük terimi, U kapsamı, V θ'sı)** (2026-09-15) — **KAPANDI** (öz denetim; hiçbiri henüz koşmamıştı)
+
+14 Eylül iptalinden sonra (Mt 8–35, U'nun tamamı koşmadı) raporların eksik
+girdiyle ne yaptığını denetledim. A84 kalıbı üç yerde daha vardı:
+
+1. `cozunurluk_hatasi` beklenen `6 θ × 2 tohum × {üretim, ince}` sayısını
+   denetlemiyordu; kısmi Mt'den `σ_çöz` hesaplanıp D ve HT'ye **tam havuz
+   gibi** giriyordu. → `kapsam_denetle` + ortak `oku()`; not "EKSİK HAVUZ".
+2. `u_model_raporu` yalnız bulduğu dizinleri okuyordu: düşen varyant (ör.
+   U6, `ρ = 1500`) tabloda hiç görünmeden "HİÇBİR VARYANT ULAŞMIYOR"
+   denebilir, `v_gonderim_karari` da V'yi gönderttirirdi. → `BEKLENEN`
+   tasarım (U 20, V 10 görev; iş betikleriyle sınanıyor), `tam/eksik`; V
+   kararı eksik U ile gönderim önermiyor, Bitiş 3 taslağı "BEKLENİYOR" diyor.
+3. `is_V_model.slurm`: `${V4_U:-U0}` ve `[ -f ] &&` — `V4_U` verilmezse ya da
+   U tasarım dosyası yoksa V4 **sessizce** merkez θ ile koşacaktı (U2'nin
+   bayraklarıyla U0'ın θ'sı). → `V4_U` zorunlu (exit 2), dosya yok/okunamaz
+   exit 3.
+
+Kilitli kurallar değişmedi: hesaplar aynı, eksik **yazılıyor**. Sınavlar:
+`tests/test_cozunurluk_kapsam.py`, `tests/test_u_kapsam.py`.
+
+Kalıp (A84'ün genellemesi): **bir rapor "bulduğunu" değil "beklediğini"
+sayar.** Her toplayıcı beklenen tasarımı bilmeli ve eksik olanı çıktıya
+yazmalı.
+
+---
 ### A87 — **A85'in yamuk düzeltmesi uç düğümleri ikinci kez yarılıyordu: uç kantiller kayık** (2026-09-15) — **KAPANDI** (düzeltme + sınav, kilitli sonuç etkilenmedi)
 
 A85 eki "yamuk ağırlık" diye `w[0], w[-1] ×= 0,5` sonra `kum = (cumsum(w) −
