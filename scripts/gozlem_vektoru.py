@@ -64,8 +64,13 @@ def ejekta_egimi(x, v, m, x0, *, v_esc: float, center=None) -> float:
     return float(-np.polyfit(lv, lm, 1)[0] / 3.0)
 
 
-def gozlem_vektoru(d) -> dict:
-    """`ileri_kosu_merdiven` durum dosyası → gözlemler (sözlük)."""
+def gozlem_vektoru(d, sebepler: dict | None = None) -> dict:
+    """`ileri_kosu_merdiven` durum dosyası → gözlemler (sözlük).
+
+    `sebepler` verilirse krater operatörünün sonucu yazılır: `"TAMAM"` ya da
+    yakalanan istisna `"ValueError: ..."` (A86: eskiden `nan` sebepsizdi).
+    Gözlem değerleri `sebepler` verilse de verilmese de aynıdır (sınanıyor).
+    """
     from dartrift.observables.crater_shape import krater_yuzey_durumdan
     from dartrift.observables.momentum_defteri import momentum_defteri
     from dartrift.observables.momentum_transfer import escape_speed
@@ -80,8 +85,12 @@ def gozlem_vektoru(d) -> dict:
         out.update(d_merkez=ky.derinlik_merkez, d_max=ky.derinlik,
                    V_krater=ky.hacim, R_krater=ky.yaricap,
                    dV_sikisma=ky.hacim_degisimi)
-    except (KeyError, ValueError):
-        pass
+        if sebepler is not None:
+            sebepler["krater"] = "TAMAM"
+    except (KeyError, ValueError) as e:
+        # gozlemler nan kalir (kilitli davranis); A86: sebep istenirse yazilir
+        if sebepler is not None:
+            sebepler["krater"] = f"{type(e).__name__}: {e}"
     md = momentum_defteri(
         d["x"], d["v"], m, mermi_kesri=np.asarray(d["mermi_kesri"], float),
         R=R, v_esc=v_esc, ehat=np.asarray(d["ehat"], float),

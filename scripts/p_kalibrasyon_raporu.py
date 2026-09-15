@@ -247,6 +247,22 @@ def _aralik(post, j: int, a: float, b: float) -> tuple[float, float]:
     return float(np.interp(a, kum, eksen)), float(np.interp(b, kum, eksen))
 
 
+def _aralik_yamuk(post, j: int, a: float, b: float) -> tuple[float, float]:
+    """A85 düzeltmesi, kilitli `_aralik`'ın **yanında** (yerine değil).
+
+    Yamuk ağırlıklı orta nokta birikimi: uç düğümler yarım hücre, her düğüm
+    kütlesinin yarısını kendinden önce sayar. `dart_gozlem_posterior.
+    _orta_nokta_aralik` ile aynı hesap (sınanıyor). Kilitli P yargıları eski
+    `hdi68`/`hdi95` ile kalır; bu değerler `*_yamuk` alanlarına yazılır.
+    A87: hücre integralleriyle `F_0 = 0`, `F_N = 1` (uçlar ikinci kez yarılanmaz).
+    """
+    p = np.asarray(post.marginal(j), float)
+    kum = np.cumsum(p) - 0.5 * p[0] - 0.5 * p
+    kum = kum / kum[-1]
+    eksen = post.grid_u[j]
+    return float(np.interp(a, kum, eksen)), float(np.interp(b, kum, eksen))
+
+
 def kuculmus_kor(Z: np.ndarray, lam: float = KUCULTME) -> np.ndarray:
     """Standartlaştırılmış artıklardan birim köşegene küçültülmüş korelasyon."""
     Z = np.atleast_2d(np.asarray(Z, float))
@@ -355,6 +371,9 @@ def _vaka(post_fn, y, u, grup, carpanlar) -> dict:
         vaka["carpan"][float(c)] = {
             "hdi68": post.hdi_u.tolist(),
             "hdi95": [_aralik(post, j, 0.025, 0.975) for j in range(space.ndim)],
+            # A85: yamuk aralıklar kilitlilerin YANINDA; yargı eski alanlarla kalır
+            "hdi68_yamuk": [_aralik_yamuk(post, j, 0.16, 0.84) for j in range(space.ndim)],
+            "hdi95_yamuk": [_aralik_yamuk(post, j, 0.025, 0.975) for j in range(space.ndim)],
             "genislik": post.width_u.tolist(),
             "cakili": [post.pinned(j) for j in range(space.ndim)],
             "ortalama_u": post.mean_u.tolist(),
@@ -433,17 +452,29 @@ def eksen_yargisi(vakalar: list[dict], j: int, carpan: float = 1.0) -> dict:
     kap68 = float(np.mean((h68[:, 0] <= u) & (u <= h68[:, 1])))
     kap95 = float(np.mean((h95[:, 0] <= u) & (u <= h95[:, 1])))
     med = float(np.median(gen))
+    out = {"kapsama68": kap68, "kapsama95": kap95, "medyan_genislik": med,
+           "cakili": int(sum(v["carpan"][carpan]["cakili"][j] for v in vakalar)),
+           "n": len(vakalar), "karar": _eksen_karari(kap68, med)}
+    # A85: yamuk aralıklar varsa aynı kuralla YANINDA yargı (kilitli karar değişmez)
+    if all("hdi68_yamuk" in v["carpan"][carpan] for v in vakalar):
+        y68 = np.array([v["carpan"][carpan]["hdi68_yamuk"][j] for v in vakalar])
+        y95 = np.array([v["carpan"][carpan]["hdi95_yamuk"][j] for v in vakalar])
+        k68y = float(np.mean((y68[:, 0] <= u) & (u <= y68[:, 1])))
+        k95y = float(np.mean((y95[:, 0] <= u) & (u <= y95[:, 1])))
+        medy = float(np.median(y68[:, 1] - y68[:, 0]))
+        out.update(kapsama68_yamuk=k68y, kapsama95_yamuk=k95y, medyan_genislik_yamuk=medy,
+                   karar_yamuk=_eksen_karari(k68y, medy))
+    return out
+
+
+def _eksen_karari(kap68: float, med: float) -> str:
     if kap68 < KAPSAMA_ALT:
-        karar = "ASIRI GUVENLI"
-    elif med >= GENISLIK_ESIGI:
-        karar = "BILGI YOK"
-    elif kap68 > KAPSAMA_UST:
-        karar = "COZULUYOR (TEMKINLI)"
-    else:
-        karar = "COZULUYOR"
-    return {"kapsama68": kap68, "kapsama95": kap95, "medyan_genislik": med,
-            "cakili": int(sum(v["carpan"][carpan]["cakili"][j] for v in vakalar)),
-            "n": len(vakalar), "karar": karar}
+        return "ASIRI GUVENLI"
+    if med >= GENISLIK_ESIGI:
+        return "BILGI YOK"
+    if kap68 > KAPSAMA_UST:
+        return "COZULUYOR (TEMKINLI)"
+    return "COZULUYOR"
 
 
 def gurultu_tepkisi(vakalar: list[dict]) -> dict:

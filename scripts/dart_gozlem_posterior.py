@@ -97,11 +97,16 @@ def _orta_nokta_aralik(m: np.ndarray, eksen: np.ndarray, a: float, b: float):
     Izgara `[0, 1]`'in iki ucunu da içeriyor: uç düğümler YARIM hücre temsil
     eder. İlk sürüm (yalnız orta nokta) düz dağılımda `%16` sınırını `0,1515`
     veriyordu — sınav yakaladı; yamuk ağırlıkla tam `0,16`.
+
+    A87 (2026-09-15): o yamuk sürümü `(cumsum(w) − w/2)` uç düğümleri İKİNCİ
+    kez yarılıyordu: `F(0) = p₀/4`, `F(1) = 1 − p_N/4`. İç kantiller tamdı
+    (sınav yalnız `0,16/0,84`'e bakıyordu); düz dağılımda 21 düğümde `%2,5`
+    sınırı `0,025` yerine `0,0167` çıktı. Doğrusu hücre integralleri:
+    `F_k = Σ_{i<k} (p_i + p_{i+1})/2`, `F_0 = 0`, `F_N = 1`.
     """
-    w = np.asarray(m, float).copy()
-    w[0] *= 0.5
-    w[-1] *= 0.5
-    kum = (np.cumsum(w) - 0.5 * w) / w.sum()
+    p = np.asarray(m, float)
+    kum = np.cumsum(p) - 0.5 * p[0] - 0.5 * p
+    kum = kum / kum[-1]
     return float(np.interp(a, kum, eksen)), float(np.interp(b, kum, eksen))
 
 

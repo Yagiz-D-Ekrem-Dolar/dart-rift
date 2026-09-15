@@ -5150,6 +5150,27 @@ da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
 
 ---
+### A87 — **A85'in yamuk düzeltmesi uç düğümleri ikinci kez yarılıyordu: uç kantiller kayık** (2026-09-15) — **KAPANDI** (düzeltme + sınav, kilitli sonuç etkilenmedi)
+
+A85 eki "yamuk ağırlık" diye `w[0], w[-1] ×= 0,5` sonra `kum = (cumsum(w) −
+w/2) / Σw` yazdı. İç düğümlerde bu tam hücre integraline eşit; **uçlarda
+değil**: `F(0) = p₀/4` (0 olmalı), `F(1) = 1 − p_N/4` (1 olmalı). Düz
+dağılımda 41 düğümde `%16` sınırı tam çıktığı için sınav geçti — sınav
+yalnız iç kantile bakıyordu. P raporuna aynı hesabı yan yana eklerken
+yazdığım yeni sınav (21 düğüm, `%2,5`) `0,0167` buldu.
+
+Etkilenen kod: `dart_gozlem_posterior._orta_nokta_aralik` (D: kilitli
+koşusu hiç yapılmadı; keşif koşularında ÖNSEL DIŞI olduğu için posterior
+aralığı hesaplanmadı), `p_sekil_verisi.pit` (yalnız figür), yeni
+`p_kalibrasyon_raporu._aralik_yamuk`. **Kilitli bir yargı bu hesapla
+verilmedi.** Düzeltme: `kum = cumsum(p) − p₀/2 − p/2`, `kum /= kum[-1]`.
+Sınav: `tests/test_a85_a86_yan_yana.py` — düz dağılımda 5/21/41 düğümde
+bütün kantiller, doğrusal yoğunlukta düğüm birikimi `u²` tam.
+
+Kalıp: **düzeltmenin kendisini yalnız hatayı yakalayan noktada sınamak**
+(A85'te `0,16`). Uç ve iç durumlar ayrı sınanmalı.
+
+---
 ### A86 — **M2'de taban θ'nın ince `99991111` koşusunda krater operatörü `nan`** (2026-09-14) — *açık, incelenmedi*
 
 `M2_ince_b_sahne99991111`: `d_merkez = V_krater = nan`, `β−1 = 0,490`
@@ -5169,6 +5190,14 @@ ucuna kadar sürüyor. Pencere (`~11,4 m`) krater derinliğinin (`~3,7 m`)
 incelenmeli. İstisnanın `gozlem_vektoru` içinde **sebepsiz** `nan`'a
 çevrilmesi ayrı bir kusur: sebep çıktıya yazılmalı. Kilitli operatöre
 dokunulmadı.
+
+**Ek (2026-09-15) — sebepsiz `nan` kısmı düzeltildi, operatör açık:**
+`gozlem_vektoru(d, sebepler=None)`; sözlük verilirse `sebepler["krater"]`
+`"TAMAM"` ya da `"ValueError: ..."` olur. Gözlem değerleri iki çağrıda
+bit-aynı (`tests/test_a85_a86_yan_yana.py`). Yan etki: `gozlem_onbellek`
+kod özeti bu dosyayı içerdiği için TRUBA'daki `.gozlem.json` önbellekleri
+geçersizlenir ve ilk raporda yeniden hesaplanır (değerler aynı, yalnız
+süre). Kök sebep (merkez ışında `φ` profili) hâlâ **açık**.
 
 ---
 ### A85 — **Izgara posteriorunun `%68` / `%95` aralıkları yarım bölme kayık** (2026-09-14) — *açık, kilitli sonuçlara dokunulmadı*
@@ -5190,6 +5219,15 @@ iki ucunu içerdiği için uç düğümler yarım hücre. Düz dağılımda `%16
 `0,1515` çıktı (sınav: `test_orta_nokta_araligi_duz_dagilimda_simetrik`).
 Yeni kodda (`dart_gozlem_posterior._orta_nokta_aralik`, `p_sekil_verisi.pit`)
 yamuk ağırlık kullanılıyor; kilitli P yargıları eski hesapla kaldı.
+
+**Ek (2026-09-15) — P raporunda yan yana:** `p_kalibrasyon_raporu._vaka`
+artık `hdi68_yamuk`/`hdi95_yamuk` da yazıyor; `eksen_yargisi` bunlar
+varsa `kapsama68_yamuk`, `kapsama95_yamuk`, `medyan_genislik_yamuk`,
+`karar_yamuk` ekliyor. **Kilitli `karar` eski `hdi68` ile hesaplanmaya
+devam ediyor** (sınanıyor); eski JSON vakaları (yamuk alansız) aynen
+okunuyor. Yeni P raporları iki yargıyı yan yana verecek; farklı çıkan
+eksen olursa burada ayrıca yazılır. Izgara posteriorunun kendi `hdi_u`'su
+(`posterior.py`) değişmedi.
 
 ---
 ### A84 — **`sbatch --export=ALL,D="a,b,c"` virgülü değişken ayırıcı sayıyor: rapor işi sessizce tek kampanyayla koştu** (2026-09-14) — **KAPANDI** (düzeltme + denetim)
