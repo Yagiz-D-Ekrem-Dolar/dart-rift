@@ -29,6 +29,9 @@ cd "$KOK/dart-rift"
 #   (A84: V4_EK icinde VIRGUL KULLANMA)
 # ============================================================
 if [ -z "${V4_EK+x}" ]; then echo "HATA: V4_EK verilmedi (U'nun en yakin varyanti)"; exit 2; fi
+# 2026-09-15 oz denetim (gonderimden ONCE): V4_U eskiden ${V4_U:-U0} ile sessizce U0
+# sayiliyordu ve U_tasarim dosyasi yoksa V4 sessizce merkez theta ile kosuyordu.
+if [ -z "${V4_U:-}" ]; then echo "HATA: V4_U verilmedi (or. U2)"; exit 2; fi
 TOHUMLAR=(20260906 99991111)
 AD=(V0 V1 V2 V3 V4)
 EK=("" "--yercekimi" "--hasar" "--yercekimi --hasar" "$V4_EK --yercekimi --hasar")
@@ -39,8 +42,10 @@ TH="1.15 1.0e5 0.275"
 if [ "$A" = V4 ]; then
   # U'nun en yakin varyantinin theta'si (V4_U, or. U2) U_tasarim'dan alinir;
   # onsel disi Y0 ise V4_EK '--onsel-disi-izin' icermelidir.
-  TAS_U="$KOK/kampanya/U_tasarim_${V4_U:-U0}.json"
-  [ -f "$TAS_U" ] && TH=$(python -c "import json;t=json.load(open('$TAS_U'))['theta'][0];print(*t)")
+  TAS_U="$KOK/kampanya/U_tasarim_${V4_U}.json"
+  if [ ! -f "$TAS_U" ]; then echo "HATA: $TAS_U yok -- V4 theta'si U'dan alinamadi"; exit 3; fi
+  TH=$(python -c "import json;t=json.load(open('$TAS_U'))['theta'][0];print(*t)") \
+    || { echo "HATA: $TAS_U okunamadi"; exit 3; }
 fi
 TAS="$KOK/kampanya/V_tasarim_${A}.json"
 read -r TA TY TF <<< "$TH"

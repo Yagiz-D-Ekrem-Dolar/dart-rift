@@ -121,10 +121,17 @@ def taslak(kok: Path) -> str:
             p = d["posterior"]
             sat += " — " + ", ".join(f"{ax}: {p[ax]['karar']}" for ax in
                                      ("blok_alpha0", "log10_Y0", "blok_kesri"))
+        if d.get("cozunurluk_notu"):
+            sat += f" _(σ_çöz: {d['cozunurluk_notu']})_"
         satir.append(sat)
     u = _oku(kok, "S_U.json")
     satir += ["", "## 5. Model yeterliliği (Protokol U)", "",
               f"- Genel: **{(u or {}).get('genel', 'BEKLENIYOR')}**"]
+    if (u or {}).get("tam") is True:
+        satir.append("- Kapsam: TAM (beklenen bütün varyant × merdiven × tohum)")
+    elif (u or {}).get("tam") is False:
+        satir.append(f"- Kapsam: **EKSİK** ({', '.join(u.get('eksik', []))}) — "
+                     "genel yargı eksik tasarımla verildi")
     for anah, r in sorted(((u or {}).get("satirlar") or {}).items()):
         if r.get("karar") == "OKUNMAZ":
             satir.append(f"  - {anah}: OKUNMAZ")
@@ -135,6 +142,8 @@ def taslak(kok: Path) -> str:
     u_genel = (u or {}).get("genel", "")
     if v:
         v_durum = f"koşuldu — **{v.get('genel', 'OKUNMAZ')}**"
+    elif u_genel.startswith("HICBIR VARYANT ULASMIYOR") and (u or {}).get("tam") is False:
+        v_durum = "BEKLENIYOR — U **EKSİK**; eksik görevler tamamlanmadan V kararı verilmez"
     elif u_genel.startswith("HICBIR VARYANT ULASMIYOR"):
         v_durum = "**GÖNDERİLMELİ** (U hiçbir varyantla ulaşmadı; `scripts/v_gonderim_karari.py`)"
     elif u_genel.startswith("MODEL GOZLEME ULASABILIYOR"):

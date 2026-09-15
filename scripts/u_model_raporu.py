@@ -49,6 +49,33 @@ VARYANTLAR = {
 }
 Z_ESIGI = 2.0
 TOHUM_TABANI = 0.005
+TOHUM_SAYISI = 2
+#: Kilitli tasarımda beklenen `(varyant, merdiven) → tohum sayısı`:
+#: `is_U_model.slurm` (0–15 kaba 8 varyant × 2, 16–19 orta U0/U8 × 2) ve
+#: PROTOKOL-V §2 (V0–V4 kaba × 2, `is_V_model.slurm` 0–9).
+BEKLENEN = {
+    "U": {**{(v, "kaba"): TOHUM_SAYISI for v in VARYANTLAR},
+          ("U0", "orta"): TOHUM_SAYISI, ("U8", "orta"): TOHUM_SAYISI},
+    "V": {(f"V{i}", "kaba"): TOHUM_SAYISI for i in range(5)},
+}
+
+
+def kapsam(veri: dict, onek: str = "U") -> dict:
+    """Beklenen varyant × merdiven × tohum koşuları var mı (2026-09-15 öz denetim).
+
+    Rapor yalnız bulduğu dizinleri okuyor: düşen bir görevin varyantı tabloda
+    hiç görünmez ve genel yargı ("HICBIR VARYANT ULASMIYOR") onsuz verilir;
+    V gönderim kararı da ona dayanırdı. Yargı kuralı değişmez; eksik YAZILIR.
+    """
+    bek = BEKLENEN.get(onek)
+    if bek is None:
+        return {"tam": None, "eksik": [], "kapsam_notu": f"{onek}: beklenen tasarim tanimsiz"}
+    eksik = []
+    for (ad, lad), n in sorted(bek.items()):
+        tohumlar = {k["tohum"] for k in veri.get((ad, lad), []) if np.isfinite(k["bm1"])}
+        if len(tohumlar) < n:
+            eksik.append(f"{ad}:{lad}:{len(tohumlar)}/{n}")
+    return {"tam": not eksik, "eksik": eksik}
 
 
 def topla(kok: Path, onek: str = "U") -> dict:
@@ -122,6 +149,7 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     v = topla(a.kok, a.onek)
     out = yargi(v)
+    out.update(kapsam(v, a.onek))
     print("=" * 78)
     print(f"PROTOKOL U -- model yeterliligi ({sum(len(x) for x in v.values())} kosu)")
     print("=" * 78)
@@ -134,6 +162,11 @@ def main(argv=None) -> int:
               f"gozlem {s['beta_eksi_1_gozlem']:.3f}+-{s['sigma_beta']:.3f}  z {s['z']:+.1f} "
               f"-> {s['karar']}  (U0'dan {s.get('fark_tabandan', float('nan')):+.3f})")
     print(f"\nGENEL: {out['genel']}")
+    if out["tam"] is False:
+        print(f"KAPSAM: EKSIK ({len(out['eksik'])}): {', '.join(out['eksik'])} "
+              "-- genel yargi eksik tasarimla; V karari verilmez")
+    elif out["tam"]:
+        print("KAPSAM: TAM")
     if a.json:
         a.json.write_text(json.dumps(out, indent=1, default=float), encoding="utf-8")
     return 0

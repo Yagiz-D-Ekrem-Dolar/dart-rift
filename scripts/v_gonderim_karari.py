@@ -36,6 +36,11 @@ def karar(s_u: dict) -> dict:
         return {"gonder": False, "sebep": f"U: {genel}", "komut": None}
     if not genel.startswith("HICBIR VARYANT ULASMIYOR"):
         return {"gonder": False, "sebep": f"U okunamadi: {genel or 'genel yok'}", "komut": None}
+    if s_u.get("tam") is False:
+        # 2026-09-15 oz denetim: eksik U ile "hicbiri ulasmiyor" V'yi gondertmez
+        ek_l = s_u.get("eksik", [])
+        return {"gonder": False, "komut": None,
+                "sebep": f"U EKSIK ({len(ek_l)}): {', '.join(ek_l[:8])} -- once tamamlanmali"}
     okunur = {k: r for k, r in (s_u.get("satirlar") or {}).items()
               if r.get("karar") not in (None, "OKUNMAZ") and "z" in r}
     if not okunur:
@@ -46,8 +51,12 @@ def karar(s_u: dict) -> dict:
     if "," in ek:
         raise ValueError("A84: V4_EK icinde virgul olamaz")
     komut = (f'sbatch --export=ALL,V4_EK="{ek}",V4_U={varyant} is/is_V_model.slurm')
+    # Yeni TRUBA MCP'si --export gecemiyor: sirali_gonderici plan adimi
+    # (`betikler` export'lari betige yazar). V4_U da ZORUNLU (is_V_model).
+    plan_adimi = {"ad": "V", "betik": "truba/is_V_model.slurm", "gorevler": list(range(10)),
+                  "gpu": 1, "export": {"V4_EK": ek, "V4_U": varyant}}
     return {"gonder": True, "sebep": f"U: {genel}", "en_yakin": en, "V4_U": varyant,
-            "V4_EK": ek, "komut": komut}
+            "V4_EK": ek, "komut": komut, "plan_adimi": plan_adimi}
 
 
 def main(argv=None) -> int:
