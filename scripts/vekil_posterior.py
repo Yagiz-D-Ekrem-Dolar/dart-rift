@@ -70,7 +70,9 @@ def uydur(x, d, *, tohum: int = 0) -> dict:
     """Sigmoid uydurma — scipy'siz, Levenberg-Marquardt yerine ızgara + inis."""
     x = np.asarray(x, float)
     d = np.asarray(d, float)
-    rng = np.random.default_rng(tohum)
+    # `tohum` yalniz API uyumu icin: hesap DETERMINISTIK (izgara + inis). Eskiden
+    # burada kullanilmayan bir `rng` kuruluyordu (ruff F841, 2026-09-15 oz denetim):
+    # tohumun sonucu degistirdigi izlenimi veriyordu, degistirmiyordu.
 
     # A67: `d_alt` KRATER DERINLIGI ve NEGATIF OLAMAZ.
     #
@@ -266,7 +268,7 @@ def main(argv=None) -> int:
     print(f"  gerceklem gurultusu (medyan) : {np.median(gur):.5f} m")
 
     v = uydur(x, d)
-    print(f"\n  d(x) = d_alt + (d_ust - d_alt) / (1 + exp((x - x0)/w))")
+    print("\n  d(x) = d_alt + (d_ust - d_alt) / (1 + exp((x - x0)/w))")
     print(f"    d_alt = {v['d_alt']:.4f} m    (yuksek Y0 siniri)")
     print(f"    d_ust = {v['d_ust']:.4f} m    (dusuk Y0 PLATOSU)")
     print(f"    x0    = {v['x0']:.3f}         (gecis: Y0 = {10**v['x0']:.3g} Pa)")

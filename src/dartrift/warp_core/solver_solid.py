@@ -428,7 +428,8 @@ class WarpSolid3D:
             if self._bvh:
                 self._launch(D.density_3d_csr, [bas, nbr, self.x, self.m, h, self.rho])
             else:
-                self._launch(D.density_3d, [gid, self.gridman.x32, self.x, self.m, h, r32, self.rho])
+                self._launch(D.density_3d,
+                             [gid, self.gridman.x32, self.x, self.m, h, r32, self.rho])
         if self.mat.eos == "tillotson":
             if self._mermi is not None:
                 self._launch(eos_solid_iki,

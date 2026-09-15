@@ -58,6 +58,7 @@ def rejim_yargisi(dbeta_matris, dbeta_blok) -> dict:
 
 def _merkez_dbeta(kok: Path, kol: str) -> list[float]:
     import duyarlilik_raporu as dr
+
     from dartrift.observables.momentum_defteri import momentum_defteri
     from dartrift.observables.momentum_transfer import escape_speed
 

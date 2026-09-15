@@ -45,9 +45,10 @@ def test_farkli_theta_farkli_sahne_uretir():
     import sys
 
     sys.path.insert(0, str(REPO / "scripts"))
+    from faz44_dart_yakinsama import SAHNE
+
     from dartrift.inference.forward import sahne_parametreleri
     from dartrift.setup.scene import build_scene
-    from faz44_dart_yakinsama import SAHNE
 
     assert SAHNE.get("model_class") == "M1", "SAHNE M1 olmali"
 

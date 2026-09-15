@@ -10,7 +10,6 @@ import importlib.util
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 _kok = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location(

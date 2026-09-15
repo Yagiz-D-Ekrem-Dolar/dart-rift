@@ -87,7 +87,9 @@ def kacis_siniflari(x, v, m, *, R: float, G: float = G_SI, x0=None,
     bagli = np.ones(n, dtype=bool)
     yakinsadi = False
     gecmis = []
-    for tur in range(1, azami_tur + 1):
+    # `tur` dongu SONRASI ciktiya yaziliyor; ruff B007 bunu gormuyor. 2026-09-15'te
+    # `_tur` yapildi ve NameError verdi (test_kacis yakaladi) -- ad BILEREK boyle.
+    for tur in range(1, azami_tur + 1):  # noqa: B007
         M = float(m[bagli].sum())
         if M <= 0.0:
             raise ValueError("bagli kume bosaldi -- sinif tanimsiz")

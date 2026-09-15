@@ -64,8 +64,9 @@ def main(argv=None) -> int:
                 continue
             for tt, db, M in oz["anlar"]:
                 print(f"   t = {tt:.4f} s   beta-1 = {db:+.5f}   M_ejekta = {M:.4g} kg")
-            print(f"   beta plato: {'GECTI' if oz['beta_plato']['gecti'] else 'DUSTU'}"
-                  f"  (sapma {oz['beta_plato']['sapma']:.3g}, tol {oz['beta_plato']['tolerans']:.3g})")
+            bp = oz["beta_plato"]
+            print(f"   beta plato: {'GECTI' if bp['gecti'] else 'DUSTU'}"
+                  f"  (sapma {bp['sapma']:.3g}, tol {bp['tolerans']:.3g})")
             print(f"   M_ej plato: {'GECTI' if oz['M_plato']['gecti'] else 'DUSTU'}")
     if a.json:
         a.json.write_text(json.dumps(cikti, indent=1, default=float), encoding="utf-8")

@@ -33,6 +33,12 @@ KAYNAKLAR = (
     _KOK / "src" / "dartrift" / "observables" / "crater_shape.py",
     _KOK / "src" / "dartrift" / "observables" / "momentum_defteri.py",
     _KOK / "src" / "dartrift" / "observables" / "momentum_transfer.py",
+    # 2026-09-15 oz denetim: crater_shape `cpu_reference.sph_ref.kernel_w`'yu,
+    # o da `adaptive_h`'yi iceri aliyor; ikisi anahtarda YOKTU -> cekirdek
+    # degisirse krater gozlemleri onbellekten SESSIZCE eski okunurdu.
+    # tests/test_onbellek_bagimlilik.py ic import kapanisini denetler.
+    _KOK / "src" / "dartrift" / "cpu_reference" / "sph_ref.py",
+    _KOK / "src" / "dartrift" / "cpu_reference" / "adaptive_h.py",
 )
 SURUM = 1
 _KOD_OZETI: str | None = None

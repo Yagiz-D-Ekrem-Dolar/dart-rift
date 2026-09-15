@@ -67,7 +67,7 @@ def test_ustel_yasa_egimi_geri_gelir():
     kum = 1.0e6 * v ** -1.5            # istenen kumulatif
     kutle = np.diff(np.append(kum, 0.0)) * -1.0
     hizlar, agirlik = [], []
-    for vi, mi in zip(v, kutle):
+    for vi, mi in zip(v, kutle, strict=True):
         hizlar.append(vi * 1.0001)     # esigin hemen ustunde
         agirlik.append(mi)
     s = _sahne(hizlar)

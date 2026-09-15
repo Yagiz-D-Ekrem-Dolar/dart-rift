@@ -83,7 +83,7 @@ def hiz_yapisi(s: dict, *, yalniz_hedef: bool = True) -> dict:
         # parcacik kutlesi -> inceltme seviyesi
         birim, sayim = np.unique(np.round(m[kacan], 6), return_counts=True)
         kacan_seviye = [
-            {"m_p": float(b), "n": int(c)} for b, c in zip(birim, sayim)
+            {"m_p": float(b), "n": int(c)} for b, c in zip(birim, sayim, strict=True)
         ]
     else:
         kacan_hiz, kacan_seviye = None, []
@@ -310,14 +310,15 @@ def ezilme_raporu(ad: str, e: dict) -> str:
 
 
 def rapor(ad: str, h: dict) -> str:
-    L = [f"\n{'=' * 66}", f"{ad}   t={h['t']:.4g} s   R={h['R']:.4g} m   v_esc={h['v_esc']:.4g} m/s"]
+    L = [f"\n{'=' * 66}",
+         f"{ad}   t={h['t']:.4g} s   R={h['R']:.4g} m   v_esc={h['v_esc']:.4g} m/s"]
     L.append(
         f"hedef N={h['N_hedef']}  M={h['M_hedef']:.4g} kg  "
         f"m_p: {h['m_p_min']:.4g} .. {h['m_p_max']:.4g} kg"
     )
     L.append("\n  M(>v)  DISARIDA (r > R)          |  ICERDE (r <= R)")
     L.append("  v_esik      n         M kg   p_r      |      n         M kg")
-    for d, i in zip(h["dis_dagilim"], h["ic_dagilim"]):
+    for d, i in zip(h["dis_dagilim"], h["ic_dagilim"], strict=True):  # ikisi de ESIKLER'den
         L.append(
             f"  {d['v_esik']:8.3f} {d['n']:7d} {d['M']:12.4g} {d['p_r']:9.3g}  "
             f"|  {i['n']:7d} {i['M']:12.4g}"

@@ -83,7 +83,7 @@ def monoton_azalan(degerler) -> dict:
     if len(v) < 2 or not all(np.isfinite(v)):
         return {"monoton": False, "sebep": "yetersiz/gecersiz nokta"}
     adimlar = []
-    for a, b in zip(v, v[1:]):
+    for a, b in zip(v, v[1:], strict=False):  # ardisik ciftler: uzunluk farki BILINCLI
         buyuk = max(abs(a), abs(b), 1e-300)
         adimlar.append((a - b) / buyuk)
     if all(x > MONOTON_ESIGI for x in adimlar):
