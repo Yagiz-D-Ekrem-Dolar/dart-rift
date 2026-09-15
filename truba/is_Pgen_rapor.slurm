@@ -17,6 +17,7 @@ export OMP_NUM_THREADS=16
 source "$KOK/ortak_bas.sh"
 cd "$KOK/dart-rift"
 # Genel P raporu (PROTOKOL-P §4d-4f). --export: D, O, SN
+# ZORUNLU_EXPORT: D O SN BEKLENEN_DESEN BEKLENEN_KOSU_EN_AZ
 #
 # A84: `sbatch --export=ALL,D="a,b,c"` virgulu DEGISKEN AYIRICISI sayar;
 # D yalniz ilk desene iner ve rapor sessizce tek kampanyayla kosar
@@ -25,13 +26,17 @@ cd "$KOK/dart-rift"
 D="${D//+/,}"
 N_DESEN=$(echo "$D" | tr ',' '\n' | grep -c .)
 echo "desen sayisi: $N_DESEN  ->  $D"
-if [ -n "${BEKLENEN_DESEN:-}" ] && [ "$N_DESEN" != "$BEKLENEN_DESEN" ]; then
+# 2026-09-15 oz denetim: iki beklenti eskiden `[ -n ... ] &&` ile SECIMLIYDI;
+# verilmezse A84 denetimleri sessizce atlaniyor, kosu_denetle esigi 0-8 oluyordu.
+# Artik ZORUNLU (ZORUNLU_EXPORT).
+if [ -z "${BEKLENEN_DESEN:-}" ]; then echo "HATA: BEKLENEN_DESEN verilmedi"; exit 4; fi
+if [ "$N_DESEN" != "$BEKLENEN_DESEN" ]; then
   echo "HATA: $BEKLENEN_DESEN desen bekleniyordu, $N_DESEN geldi"; exit 4
 fi
 K="$KOK/kampanya"
-# A84 DENETIMI (2): desen basina npz sayisi. BEKLENEN_KOSU_EN_AZ verilmisse
-# toplam bundan azsa is DURUR (exit 5); raporda okunan kosu sayisi da
-# denetlenir (exit 6). Bir rapor sessizce eksik havuzla kosmaz.
+# A84 DENETIMI (2): desen basina npz sayisi. Toplam BEKLENEN_KOSU_EN_AZ'dan
+# azsa is DURUR (exit 5); raporda okunan kosu sayisi da denetlenir (exit 6).
+# Bir rapor sessizce eksik havuzla kosmaz.
 IFS=',' read -r -a DESENLER <<< "$D"
 N_NPZ=0
 for d in "${DESENLER[@]}"; do
@@ -40,7 +45,8 @@ for d in "${DESENLER[@]}"; do
   N_NPZ=$((N_NPZ + n))
 done
 echo "toplam npz: $N_NPZ  (en az beklenen: ${BEKLENEN_KOSU_EN_AZ:-verilmedi})"
-if [ -n "${BEKLENEN_KOSU_EN_AZ:-}" ] && [ "$N_NPZ" -lt "$BEKLENEN_KOSU_EN_AZ" ]; then
+if [ -z "${BEKLENEN_KOSU_EN_AZ:-}" ]; then echo "HATA: BEKLENEN_KOSU_EN_AZ verilmedi"; exit 5; fi
+if [ "$N_NPZ" -lt "$BEKLENEN_KOSU_EN_AZ" ]; then
   echo "HATA (A84 denetimi): $N_NPZ npz < $BEKLENEN_KOSU_EN_AZ"; exit 5
 fi
 kosu_denetle () {  # $1: json; katli.n_kosu >= BEKLENEN_KOSU_EN_AZ - 8

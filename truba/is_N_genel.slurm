@@ -18,11 +18,16 @@ export WARP_CACHE_PATH="$KOK/.warp_cache_ng${SLURM_JOB_ID}_$SLURM_ARRAY_TASK_ID"
 source "$KOK/ortak_bas.sh"
 cd "$KOK/dart-rift"
 # Genel N kampanyasi (P §4f), uretim fizigi kesme + taban.
-# --export: LAD, TASARIMLAR="t1 t2", ONEKLER="o1 o2", NDILIM, [T_END=0.024]
+# --export: LAD, TASARIMLAR="t1 t2", ONEKLER="o1 o2", NDILIM, T_END, SAHA
+# ZORUNLU_EXPORT: LAD TASARIMLAR ONEKLER NDILIM T_END SAHA
 # UYARI (A84): --export degerlerinde VIRGUL KULLANMA; SLURM ayirici sayar.
-T_END=${T_END:-0.024}
-# SAHA (Q5): matris (varsayilan) ya da blok
-SAHA=${SAHA:-matris}
+# 2026-09-15 oz denetim: T_END ve SAHA eskiden sessiz varsayilan aliyordu
+# (0.024 ve matris): export'u unutulan plato (0,1 s) ya da blok (Q5) isi hata
+# vermeden 24 ms / matris kosardi. Artik hepsi ZORUNLU.
+for v in LAD TASARIMLAR ONEKLER NDILIM T_END SAHA; do
+  if [ -z "${!v:-}" ]; then echo "HATA: $v verilmedi (ZORUNLU_EXPORT)"; exit 2; fi
+done
+# SAHA (Q5): matris ya da blok
 if [ "$SAHA" = blok ]; then SB="--carpma-sahasi blok --saha-blok-yaricapi 4.0"
 elif [ "$SAHA" = matris ]; then SB="--carpma-sahasi matris --saha-yaricapi 3.0"
 else echo "HATA: bilinmeyen SAHA=$SAHA"; exit 2; fi

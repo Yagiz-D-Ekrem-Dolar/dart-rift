@@ -230,6 +230,13 @@ def adim_at(plan: dict, durum_yolu: Path, *, kuru: bool, calistir=_calistir,
 
 _DIZI = re.compile(r"^#SBATCH\s+(?:--array[= ]|-a\s+)\S+\s*$")
 _AD = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_ZORUNLU = re.compile(r"^#\s*ZORUNLU_EXPORT:\s*(.*)$", re.M)
+
+
+def zorunlu_export(metin: str) -> list[str]:
+    """Betiğin `# ZORUNLU_EXPORT: A B C` satırındaki değişkenler (satır yoksa boş)."""
+    m = _ZORUNLU.search(metin)
+    return m.group(1).split() if m else []
 
 
 def gorev_betigi(metin: str, gorev, export: dict | None = None) -> str:
@@ -240,7 +247,13 @@ def gorev_betigi(metin: str, gorev, export: dict | None = None) -> str:
     tek indeksiyle değiştirilir ve `export` değerleri **son `#SBATCH`
     satırından sonra** yazılır (sbatch ilk komut satırından sonraki
     yönergeleri yok sayar; önüne yazılsaydı yönergeler sessizce düşerdi).
+
+    Betik `# ZORUNLU_EXPORT:` bildiriyorsa eksik değişkenle betik ÜRETİLMEZ
+    (unutulan `T_END` işi sessizce 24 ms koşturuyordu).
     """
+    eksik = [v for v in zorunlu_export(metin) if v not in (export or {})]
+    if eksik:
+        raise ValueError(f"zorunlu export eksik: {', '.join(eksik)}")
     satirlar = metin.splitlines()
     dizi = [i for i, s in enumerate(satirlar) if _DIZI.match(s)]
     if gorev is None:

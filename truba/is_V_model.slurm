@@ -32,6 +32,7 @@ if [ -z "${V4_EK+x}" ]; then echo "HATA: V4_EK verilmedi (U'nun en yakin varyant
 # 2026-09-15 oz denetim (gonderimden ONCE): V4_U eskiden ${V4_U:-U0} ile sessizce U0
 # sayiliyordu ve U_tasarim dosyasi yoksa V4 sessizce merkez theta ile kosuyordu.
 if [ -z "${V4_U:-}" ]; then echo "HATA: V4_U verilmedi (or. U2)"; exit 2; fi
+# ZORUNLU_EXPORT: V4_EK V4_U
 TOHUMLAR=(20260906 99991111)
 AD=(V0 V1 V2 V3 V4)
 EK=("" "--yercekimi" "--hasar" "--yercekimi --hasar" "$V4_EK --yercekimi --hasar")
