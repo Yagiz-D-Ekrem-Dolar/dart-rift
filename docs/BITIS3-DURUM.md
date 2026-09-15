@@ -51,6 +51,28 @@ model–gözlem köprüsü eksik.
 | **D** | plato anında kilitli gözlem kapsaması + posterior | `1561432` |
 | **HT** | kilitli Hera krater ön kaydı | `1561443` |
 
+**Not (2026-09-15):** Pgen `1561231` (ince-48), `1561232`, `1561233`
+(orta-72) TAMAMLANDI. Tablodaki diğer işler 2026-09-14 19:20'de İPTAL
+edildi (Mt `8–35`, Q2/Q3/Q5/Q6, U, N3i `6–13`, bağımlı D/HT). Hesap ortak:
+yeniden gönderim **aynı anda en fazla 8 GPU** ve **sıralı** yapılacak
+(`scripts/sirali_gonderici.py`); tablo satırları silinmedi, kimlikler
+tarihsel.
+
+### 3b. Kütle duyarlılığı (keşif, `scripts/d_kutle_duyarliligi.py`)
+
+Gözlenen `β` hedef kütlesiyle orantılı; bandın `2σ` alt ucunu model
+üst sınırına indiren kütle (hacim sabit):
+
+| havuz | `β_max` model | `M*/M₀` | `ρ*` (ρ₀ = 1800) |
+|---|---|---|---|
+| kaba-72 | 1,85 | 0,760 | ~1370 kg/m³ |
+| orta-72 | 1,72 | 0,707 | ~1270 kg/m³ |
+
+Okuma: gözlem–model farkı yalnız kütle belirsizliğiyle kapanacaksa hedef
+yığın yoğunluğunun sahnedekinden `%24–29` düşük olması gerekir. Bu,
+Protokol U'nun yoğunluk varyantının neden kritik olduğunu gösterir;
+kilitli yargı değildir (24 ms, plato çarpanı uygulanmadı).
+
 ## 4. Bitiş 3'e kalan
 
 1. D kilitli yargısı (plato anı). Önsel içindeyse → gerçek gözlemle

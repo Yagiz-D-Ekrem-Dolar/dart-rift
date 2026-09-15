@@ -9,8 +9,7 @@ doğrulanır. Büyük dosyalar (`> AZAMI_BAYT`) içerik olmadan, yalnız özetle
 Kullanim (TRUBA):
     python scripts/sonuc_paketi.py topla --kok kampanya --cikti kampanya/PAKET_20260915.json
 Kullanim (yerel):
-    python scripts/sonuc_paketi.py ac --paket PAKET_20260915.json \
-        --hedef docs/olcumler/PAKET_20260915
+    python scripts/sonuc_paketi.py ac --paket PAKET.json --hedef docs/olcumler/PAKET
 """
 from __future__ import annotations
 
