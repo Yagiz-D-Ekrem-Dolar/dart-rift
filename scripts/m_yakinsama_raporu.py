@@ -95,19 +95,31 @@ def teta_yargisi(kaba, orta, ince, tolerans_bagil: float) -> dict:
     return y
 
 
+def _m_karari(n_yak: int) -> str:
+    if n_yak >= YAKINSIYOR_EN_AZ:
+        return "YAKINSIYOR"
+    if n_yak <= YAKINSAMIYOR_EN_COK:
+        return "YAKINSAMIYOR"
+    return "KISMI"
+
+
 def gozlem_yargisi(sonuclar: list[dict]) -> dict:
+    """Kilitli kural: YAKINSAMIS θ sayısı. `kesin`: OKUNMAZ θ'lar ne çıksa karar aynı mı.
+
+    2026-09-15 öz denetim (A88 kalıbı): OKUNMAZ θ YAKINSAMIS sayılmadığı için
+    eksik kampanyada (14 Eylül Mt iptali) karar sessizce "YAKINSAMIYOR"a kayar ve
+    Bitiş 3 esas-sonuç kuralı (Q §4) buna göre havuz seçerdi. Karar DEĞİŞMEDİ;
+    `n_okunmaz` ve `kesin` yanına yazılıyor.
+    """
     n_yak = sum(s["karar"] == "YAKINSAMIS" for s in sonuclar)
+    n_ok = sum(s["karar"] == "OKUNMAZ" for s in sonuclar)
     sayac = {}
     for s in sonuclar:
         anah = s["karar"] if s["karar"] != "OKUNMAZ" else f"OKUNMAZ:{s.get('sebep', '?')}"
         sayac[anah] = sayac.get(anah, 0) + 1
-    if n_yak >= YAKINSIYOR_EN_AZ:
-        karar = "YAKINSIYOR"
-    elif n_yak <= YAKINSAMIYOR_EN_COK:
-        karar = "YAKINSAMIYOR"
-    else:
-        karar = "KISMI"
-    return {"karar": karar, "n_yakinsamis": n_yak, "sayac": sayac}
+    karar = _m_karari(n_yak)
+    return {"karar": karar, "n_yakinsamis": n_yak, "sayac": sayac, "n_okunmaz": n_ok,
+            "kesin": karar == _m_karari(n_yak + n_ok)}
 
 
 def topla(kok: Path, onek: str = "M") -> dict:
@@ -157,7 +169,9 @@ def main(argv=None) -> int:
                                          for m, o in zip(MERDIVENLER, oz, strict=True))
                   + f"   -> {y['karar']} ({y.get('durum', y.get('sebep', ''))})")
         gy = gozlem_yargisi(sonuclar)
-        print(f"   YARGI {g}: {gy['karar']}  (YAKINSAMIS {gy['n_yakinsamis']}/6; {gy['sayac']})")
+        print(f"   YARGI {g}: {gy['karar']}  (YAKINSAMIS {gy['n_yakinsamis']}/6; {gy['sayac']})"
+              + ("" if gy["kesin"] else
+                 f"  ** KESIN DEGIL: {gy['n_okunmaz']} OKUNMAZ theta karari degistirebilir **"))
         cikti[g] = {"teta": sonuclar, "yargi": gy}
     if a.json:
         a.json.write_text(json.dumps(cikti, indent=1, default=float), encoding="utf-8")

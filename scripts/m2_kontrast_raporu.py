@@ -139,7 +139,25 @@ def rapor(veri: dict) -> dict:
             yargilar[(eksen, g)] = kontrast_yargisi(c)
     return {"yargilar": {f"{e}:{g}": v for (e, g), v in yargilar.items()},
             "H_Y": hipotez(yargilar, "Y"), "H_a": hipotez(yargilar, "a"),
-            "H_f": hipotez(yargilar, "f")}
+            "H_f": hipotez(yargilar, "f"),
+            "kesinlik": {e: hipotez_kesinligi(yargilar, e) for e in ("Y", "a", "f")}}
+
+
+def hipotez_kesinligi(yargilar: dict, eksen: str = "Y") -> dict:
+    """OKUNMAZ kontrastlar ne çıksa hipotez yargısı aynı mı (2026-09-15, A88 kalıbı).
+
+    Kilitli `hipotez` OKUNMAZ'ı KARARLI saymaz; eksik kampanyada (ör. M2 ince
+    `99991111` krater nan, A86) yargı sessizce DAYANIKSIZ/KISMI'ya kayabilir.
+    Yargı değişmez; `kesin` yanına yazılır.
+    """
+    n = sum(yargilar[(eksen, g)]["karar"] == "KARARLI" for g in HIPOTEZ_KUMESI)
+    n_ok = sum(yargilar[(eksen, g)]["karar"] == "OKUNMAZ" for g in HIPOTEZ_KUMESI)
+
+    def h(k):
+        return hipotez({(eksen, g): {"karar": "KARARLI" if i < k else "KARARSIZ"}
+                        for i, g in enumerate(HIPOTEZ_KUMESI)}, eksen)
+
+    return {"n_kararli": n, "n_okunmaz": n_ok, "kesin": h(n) == h(n + n_ok)}
 
 
 def main(argv=None) -> int:
@@ -162,6 +180,10 @@ def main(argv=None) -> int:
         c = np.round(v.get("c", []), 4).tolist()
         print(f"  {k:>16}: kaba/orta/ince {c}  -> {v['karar']}")
     print(f"\nH_Y (Y0 kontrasti): {out['H_Y']}   H_a: {out['H_a']}   H_f: {out['H_f']}")
+    for e, k in out["kesinlik"].items():
+        if not k["kesin"]:
+            print(f"  ** H_{e} KESIN DEGIL: {k['n_okunmaz']} OKUNMAZ kontrast "
+                  "yargiyi degistirebilir")
     if a.json:
         a.json.write_text(json.dumps(out, indent=1, default=float), encoding="utf-8")
     return 0

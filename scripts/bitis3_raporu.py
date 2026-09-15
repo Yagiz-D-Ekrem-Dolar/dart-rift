@@ -26,17 +26,44 @@ def _oku(kok: Path, ad: str):
         return None
 
 
-def yakinsama_yargisi(s_m: dict | None) -> str:
-    """PROTOKOL-Q §4: gözlenebilir yargılarından genel yakınsama sınıfı."""
-    if not s_m:
-        return "BEKLENIYOR"
-    n = sum(1 for g in YAKINSAMA_GOZLEMLERI
-            if (s_m.get(g) or {}).get("yargi", {}).get("karar") == "YAKINSIYOR")
+def _m_karari(n_yak: int) -> str:
+    """`m_yakinsama_raporu._m_karari` ile AYNI eşikler (sınanıyor)."""
+    return "YAKINSIYOR" if n_yak >= 4 else ("YAKINSAMIYOR" if n_yak <= 1 else "KISMI")
+
+
+def _q1_birlestir(kararlar) -> str:
+    n = sum(1 for k in kararlar if k == "YAKINSIYOR")
     if n >= 4:
         return "YAKINSIYOR"
-    n_kismi = sum(1 for g in YAKINSAMA_GOZLEMLERI
-                  if (s_m.get(g) or {}).get("yargi", {}).get("karar") == "KISMI")
+    n_kismi = sum(1 for k in kararlar if k == "KISMI")
     return "KISMI" if (n + n_kismi) >= 2 else "YAKINSAMIYOR"
+
+
+def yakinsama_yargisi(s_m: dict | None) -> str:
+    """PROTOKOL-Q §4: gözlenebilir yargılarından genel yakınsama sınıfı.
+
+    2026-09-15 öz denetim (A88): gözlenebilir yargısı `kesin: False` ise
+    (OKUNMAZ θ'lar) o gözlenebilirin alabileceği bütün kararlar denenir; Q1
+    hepsinde aynı değilse "EKSIK" döner ve esas havuz SEÇİLMEZ — eksik Mt
+    sessizce ince-72'yi seçtirmesin. `kesin` alanı yoksa eski davranış.
+    """
+    from itertools import product
+
+    if not s_m:
+        return "BEKLENIYOR"
+    secenek, belirsiz = [], []
+    for g in YAKINSAMA_GOZLEMLERI:
+        y = (s_m.get(g) or {}).get("yargi", {})
+        if y.get("kesin") is False:
+            n0, n_ok = int(y.get("n_yakinsamis", 0)), int(y.get("n_okunmaz", 0))
+            secenek.append(sorted({_m_karari(k) for k in range(n0, n0 + n_ok + 1)}))
+            belirsiz.append(g)
+        else:
+            secenek.append([y.get("karar")])
+    sonuc = {_q1_birlestir(c) for c in product(*secenek)}
+    if len(sonuc) == 1:
+        return sonuc.pop()
+    return f"EKSIK (kesin olmayan: {', '.join(belirsiz)})"
 
 
 def _elendi(yol: dict | None) -> bool:
@@ -104,7 +131,10 @@ def taslak(kok: Path) -> str:
     satir += ["", "## 3. Kontrast dayanıklılığı", "",
               f"- M2 (24 ms): H_Y **{(_oku(kok, 'S_M2.json') or {}).get('H_Y', 'BEKLENIYOR')}**",
               f"- M2t (0,1 s): H_Y **{(m2t or {}).get('H_Y', 'BEKLENIYOR')}**, "
-              f"H_a {(m2t or {}).get('H_a', '-')}, H_f {(m2t or {}).get('H_f', '-')}", "",
+              f"H_a {(m2t or {}).get('H_a', '-')}, H_f {(m2t or {}).get('H_f', '-')}"
+              + "".join(f" — **H_{e} KESİN DEĞİL** ({k.get('n_okunmaz')} OKUNMAZ)"
+                        for e, k in ((m2t or {}).get("kesinlik") or {}).items()
+                        if k.get("kesin") is False), "",
               "## 4. Gerçek DART gözlemi (Protokol D)", ""]
     for ad, o in (("orta 0,1 s", "S_DART_Qo.json"), ("kaba 0,1 s", "S_DART_Qk.json"),
                   ("ince 24 ms (betimleyici)", "S_DART_i72.json")):
