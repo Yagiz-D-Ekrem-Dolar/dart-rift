@@ -277,6 +277,28 @@ def gorev_betigi(metin: str, gorev, export: dict | None = None) -> str:
     return "\n".join(satirlar) + "\n"
 
 
+_KOK_KALIBI = re.compile(r"/arf/scratch/egitimg16u\d+/driftclaude")
+_KOK_GECERLI = re.compile(r"^/[A-Za-z0-9_./-]+$")
+
+
+def kok_uygula(metin: str, kok: str | None) -> str:
+    """İş betiğindeki sabit çalışma alanını (`/arf/scratch/egitimg16uN/driftclaude`) değiştir.
+
+    Betikler `egitimg16u1` yazıyor; başka hesapta `#SBATCH -o` yolu izin hatasıyla
+    işi ilk saniyede düşürür, `KOK` başka kampanyaya bakar. `kok=None` → metin
+    aynen. Kalıp yoksa ya da yol geçersizse HATA (sessiz yarım değişiklik yok).
+    """
+    if kok is None:
+        return metin
+    kok = str(kok).rstrip("/")
+    if not _KOK_GECERLI.match(kok) or "/../" in kok + "/":
+        raise ValueError(f"gecersiz calisma alani: {kok!r} (mutlak, bosluksuz olmali)")
+    yeni, n = _KOK_KALIBI.subn(kok, metin)
+    if n == 0:
+        raise ValueError("betikte /arf/scratch/egitimg16uN/driftclaude kalibi yok")
+    return yeni
+
+
 def gorev_dosya_adi(adim: dict, gorev) -> str:
     return f"sira_{adim['ad']}.slurm" if gorev is None else f"sira_{adim['ad']}_{int(gorev)}.slurm"
 
@@ -350,7 +372,8 @@ def _betikler(ns) -> int:
     s = secim(plan, durum, kul)
     ns.cikti_dizini.mkdir(parents=True, exist_ok=True)
     for a, g in s["secilen"]:
-        metin = Path(a["betik"]).read_text(encoding="utf-8")
+        # plan "kok": yeni hesabin calisma alani (betikler u1 yolunu sabit yaziyor)
+        metin = kok_uygula(Path(a["betik"]).read_text(encoding="utf-8"), plan.get("kok"))
         p = ns.cikti_dizini / gorev_dosya_adi(a, g)
         p.write_text(gorev_betigi(metin, g, a.get("export")), encoding="utf-8", newline="\n")
         durum[_anahtar(a, g)] = {"is": None, "durum": "HAZIRLANDI", "betik": p.name}
