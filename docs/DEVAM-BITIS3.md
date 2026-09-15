@@ -194,4 +194,92 @@ hesapları (`108`, `78` GPU-saat); grup CPU-dakika kotası 7,2M → 37,2M (büt�
 `790fdcd` sıralı gönderici · `7316250` A85/A86/A87 · `a2fe96b` U planı + bütçe ·
 `d476961` Mt kapsam (EKSİK HAVUZ) · `ca4f038` tek-görev betiği · `72cd933` U/V
 kapsam + V betiği · `eb78768` A88 · `d7f7d0e` Mt/M2 `kesin` · `cb6c175` zorunlu
-export · `a17c072` `kok` · `df5c75a` önbellek bağımlılığı + lint · `4fef505` boş iddia.
+export · `a17c072` `kok` · `df5c75a` önbellek bağımlılığı + lint · `4fef505` boş iddia ·
+`634c840` bu devir notu + `CLAUDE.md` + `gpu_saat.py`.
+
+## 12. Kullanıcıyla son yazışmalar ve kararlar (2026-09-14/15)
+
+Yeni oturum bunları **kullanıcıya yeniden sormadan** bilmeli.
+
+### 12.1 TRUBA etiği — kullanıcının açık talimatları
+
+- 14 Eylül: kuyrukta 32 GPU'ya çıkıldı; kullanıcı çok kızdı ("hesap ortak,
+  etik değil"). Önce 10'a, sonra **en fazla 8 GPU** sınırı kondu.
+- **Kuyruğa 90 iş yığılmaz**: `%N` kısıtlı dizi bile olmaz; biri bitince diğeri.
+- `ardababatrubamcpi` kullanılmaz. Toplu scancel önerimi kullanıcı bir kez
+  **reddetti** → yıkıcı işlemden önce mutlaka sor.
+- Kullanıcı ikinci MCP'yi bağladı ("ayı gibi kullanma"); `egitimg16u5` çıktı,
+  proje alanına erişemedi → hiçbir şey gönderilmedi. Kullanıcı **başka hesap
+  verecek**; Claude aboneliği de bitmek üzere → başka Claude hesabına geçecek
+  (bu belge o yüzden yazıldı).
+
+### 12.2 Kullanıcıya anlatılanlar (tutarlı kalsın)
+
+- **U** = mevcut fiziğin ayarlarını çevirerek β'nın DART bandına çıkıp
+  çıkmadığı; **V** = kapalı fiziği (yerçekimi, hasar, 0,2 s) açma, yalnız U
+  başarısızsa. Harfler kısaltma değil, protokol sırası.
+- Üç sonuç: (1) U/V ulaşır → model kilitlenir, havuzlar yeniden, gerçek veri
+  posterioru + Hera ön kaydı; (2) ulaşır ama β tek başına kısıtlamaz → Hera
+  gerekir; (3) hiçbiri → "model DART β'sını üretemiyor" teşhisi. Üçü de
+  bilimsel çıktı, güçleri farklı.
+- **Beklenti dürüstçe söylendi:** gerçek veride tek gözlem (β) var; en iyi
+  senaryo **Y₀ kısıtı + mühürlü Hera öngörüsü**; α_b çözülmez, f zayıf.
+- **Takvim** (hesap açıldıktan sonra, süre sınırı üst tahmini): kurulum ½ gün;
+  U kararı ~1,5–2 gün; A yolu ilk gerçek posterior (kaba) ~3–4 gün; kesin
+  Bitiş 3 ~6–8 gün; B yolu V kararı ~4 gün.
+- **Tamamlanma:** zorluk ağırlıklı **~%70** (kaba tahmin); kalan kısmın en
+  belirsiz adımı U.
+- **Riskler:** §7 (en olası: çözünürlük artınca β düşmesi).
+
+### 12.3 İSEF değerlendirmesi (kullanıcı sordu)
+
+- Garanti verilmedi. En büyük risk bilimsel değil: **kodun büyük kısmı Claude
+  ile yazıldı** → yapay zekâ kullanım beyanı ve kullanıcının her şeyi kendi
+  anlatabilmesi (savunma notu) şart; kurallar güncel kural kitabından doğrulanmalı.
+- Kullanıcının varsayımı ("jüri Claude'a izin verdi, sunum mükemmel") altında:
+  proje kendi başına **yarışabilir**; derece gücü sonuca bağlı — Y₀ kısıtı +
+  literatürle uyum + Hera öngörüsü → güçlü (kategori derecesi/özel ödül
+  gerçekçi); β kısıtlamazsa orta-iyi; negatif sonuç orta.
+- Projenin kendi zayıf yanları: çözünürlük yakınsaması yok, tek gözlem,
+  literatür karşılaştırması eksik.
+- **Düzeltilen yorum:** önce "yalnız Y₀ = 1 Pa ulaşırsa zor savunulur" dendi;
+  sonra literatürde çok düşük yüzey dayanımı bulgusu (hatırlanan: Raducan ve
+  diğ. 2024, **teyit edilmedi**) olabileceği için bunun **destek** olabileceği
+  söylendi. Kaynak doğrulanmadan kullanılmamalı.
+- Şansı artıracak işler (TRUBA'sız): literatür tablosu, çözünürlük savunma
+  şekli, sahne–Dimorphos eşleme belgesi, tek sayfa Hera öngörüsü özeti.
+
+### 12.4 Diğer kararlar ve cevaplar
+
+- **Commit sayısı:** kullanıcı "commit sayım çok gözüksün" dedi. **Yapay/boş
+  commit atılmayacağı** söylendi (geçmiş herkese açık, güvenilirliğe zarar).
+  O an: 647 commit, son 7 günde 74; GitHub güncel. Öneri: sürüm etiketleri
+  (`git tag`) + README'de faz zaman çizelgesi — **kullanıcı henüz cevaplamadı.**
+- **GPU-saat:** geçmiş toplam bilinmiyor (kayıt yok; grup kotası bizim payımız
+  değil) → `scripts/gpu_saat.py` ile `sacct`'tan ölçülecek. Gelecek üst sınır §5.
+- **Belge envanteri:** defter 55 kayıt (27 Tem – 29 Ağu), ADR 49, protokol 24 +
+  ölçüt 12, kanıt 16, anlık 3, kök belge 28.
+- **Defter boşluğu:** 30 Ağustos – 15 Eylül için **defter kaydı yok** (M, N, P,
+  Q, D, U, A80–A88 dönemi). KAYIT-056+ yazmayı önerdim — **onay bekliyor.**
+  Yazılırsa yalnız mevcut raporlardan, kaynak göstererek.
+- **Donanım:** TRUBA `kolyoz-cuda` H100 (bir ölçümde H200); yerel NVIDIA RTX
+  3050 Laptop 4 GiB (Ampere, sürücü 610.64). Ölçülen: RTX 3050 H200'den 2,85×
+  yavaş (µs/1000 parçacık, KAYIT-041); gerçek moloz koşusunda H100 ~15× hızlı
+  (KAYIT-052). **Warp sürüm farkı:** yerel 1.16.0, TRUBA `pylib` 1.15.0 —
+  tekrarlanabilirlik bölümüne yazılmalı.
+
+### 12.5 Kullanıcı tercihleri ve iletişim
+
+- Kısa, gündelik Türkçe yazıyor ("kanka", "devam"); cevapta önce net özet ister.
+- "Durma, kod yaz, hatalarını kendin bul" diyor; ama TRUBA/GPU konusunda çok
+  hassas — sınırı aşmak en büyük hata.
+- Yüzde, takvim ve "başaracak mıyız" soruları soruyor → dürüst aralık ver,
+  garanti verme, varsayımı açıkça yaz.
+- Hedef: İSEF / TÜBİTAK sunumu.
+
+### 12.6 Kullanıcıdan bekleyen kararlar
+
+- [ ] Yeni TRUBA hesabı ve çalışma alanı yolu
+- [ ] Defter kayıtları (KAYIT-056+) yazılsın mı
+- [ ] Sürüm etiketleri + zaman çizelgesi eklensin mi
+- [ ] Savunma notu ve literatür tablosuna başlansın mı

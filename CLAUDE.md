@@ -18,6 +18,11 @@ f blok kesri)` — gerçek DART gözleminden (momentum aktarımı `β`) çıkarm
 - `main` dalına commit + push serbest.
 - Kullanıcı projeyi İSEF/TÜBİTAK'ta sunmayı düşünüyor: kararlar ve kod
   kullanıcının savunabileceği biçimde açıklanmalı.
+- Kısa, gündelik Türkçe yazar ("kanka", "devam"); önce net özet ister; yüzde,
+  takvim, "başaracak mıyız" sorar → dürüst aralık ver, varsayımı yaz.
+- **Son yazışmalar, verilen cevaplar ve kullanıcıdan bekleyen kararlar:**
+  `docs/DEVAM-BITIS3.md` §12 — aynı soruları yeniden sorma.
+- Yapay/boş commit atılmaz (kullanıcı commit sayısını sordu; reddedildi, §12.4).
 
 ## Değişmez kurallar
 
