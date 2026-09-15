@@ -1,0 +1,9 @@
+{
+ "aciklama": "Bitis 3 yeniden gonderim, 1. halka: Protokol U (model yeterliligi). 2026-09-14 19:20 iptalinde U 1561438'in 20 gorevinin HICBIRI kosmamisti. Siralama: once kaba (0-15, 8 varyant x 2 tohum), bitince orta (16-19, U0/U8 x 2 tohum). Ortak hesap: ayni anda en fazla 8 GPU, kuyrukta yigin yok (scripts/sirali_gonderici.py). Gondermeden once is betiginin KOK yolu (u1/u4) TRUBA'da denetlenecek.",
+ "adimlar": [
+  {"ad": "U_kaba", "betik": "truba/is_U_model.slurm",
+   "gorevler": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], "gpu": 1},
+  {"ad": "U_orta", "betik": "truba/is_U_model.slurm",
+   "gorevler": [16, 17, 18, 19], "gpu": 1}
+ ]
+}

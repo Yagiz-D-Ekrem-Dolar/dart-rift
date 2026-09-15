@@ -13,6 +13,7 @@ rapor hata vermeden tek kampanyayla koştu. Bu sınavlar:
 """
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -22,7 +23,32 @@ import pytest
 
 _KOK = Path(__file__).resolve().parents[1]
 TRUBA = _KOK / "truba"
-BASH = shutil.which("bash")
+
+
+def _bash() -> str | None:
+    """POSIX bash bul; Windows'ta WSL kısayolunu ATLA.
+
+    PowerShell'den koşunca `shutil.which("bash")` `System32\\bash.exe`'yi (WSL)
+    buluyordu: Windows yolunu ters eğik çizgisiz alıp "No such file" ile 127
+    döndü ve 32 sınav betiklerde kusur yokken düştü (2026-09-15). Git Bash'ten
+    koşunca geçiyordu — sınav ortama bağlıydı.
+    """
+    adaylar = [os.environ.get("DARTRIFT_BASH"), shutil.which("bash")]
+    if os.name == "nt":
+        pf = [os.environ.get("ProgramFiles"), os.environ.get("ProgramW6432"),
+              os.environ.get("LOCALAPPDATA") and os.path.join(os.environ["LOCALAPPDATA"],
+                                                               "Programs")]
+        adaylar += [os.path.join(p, "Git", "bin", "bash.exe") for p in pf if p]
+    for a in adaylar:
+        if not a or not os.path.isfile(a):
+            continue
+        if os.name == "nt" and any(s in a.lower() for s in ("system32", "windowsapps")):
+            continue
+        return a
+    return None
+
+
+BASH = _bash()
 
 
 @pytest.mark.skipif(BASH is None, reason="bash yok")
