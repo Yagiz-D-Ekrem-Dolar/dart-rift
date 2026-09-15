@@ -36,6 +36,7 @@ import argparse
 import json
 import os
 import re
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -227,6 +228,46 @@ def adim_at(plan: dict, durum_yolu: Path, *, kuru: bool, calistir=_calistir,
             "bekleyen_adim": s["bekleyen_adim"], "duran_adim": s["duran_adim"]}
 
 
+_DIZI = re.compile(r"^#SBATCH\s+(?:--array[= ]|-a\s+)\S+\s*$")
+_AD = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def gorev_betigi(metin: str, gorev, export: dict | None = None) -> str:
+    """Tek görevlik betik metni — `sbatch <dosya>` dışında argüman almayan araç için.
+
+    Yeni TRUBA MCP'si (2026-09-15) yalnız betik yolu alıyor; `--array=i` ve
+    `--export` geçilemiyor. Bu yüzden `#SBATCH --array=...` satırı görevin
+    tek indeksiyle değiştirilir ve `export` değerleri **son `#SBATCH`
+    satırından sonra** yazılır (sbatch ilk komut satırından sonraki
+    yönergeleri yok sayar; önüne yazılsaydı yönergeler sessizce düşerdi).
+    """
+    satirlar = metin.splitlines()
+    dizi = [i for i, s in enumerate(satirlar) if _DIZI.match(s)]
+    if gorev is None:
+        if dizi:
+            raise ValueError("dizi betigi gorevsiz tek is olarak uretilemez")
+    else:
+        if not dizi:
+            raise ValueError("betik dizi degil; gorev indeksi verilemez")
+        for i in dizi:
+            satirlar[i] = f"#SBATCH --array={int(gorev)}"
+    yon = [i for i, s in enumerate(satirlar) if s.startswith("#SBATCH")]
+    if not yon:
+        raise ValueError("#SBATCH yonergesi yok")
+    ek = []
+    for k, v in (export or {}).items():
+        if not _AD.match(str(k)):
+            raise ValueError(f"gecersiz degisken adi: {k!r}")
+        ek.append(f"export {k}={shlex.quote(str(v))}")
+    if ek:
+        satirlar[yon[-1] + 1:yon[-1] + 1] = ["# sirali_gonderici: --export yerine", *ek]
+    return "\n".join(satirlar) + "\n"
+
+
+def gorev_dosya_adi(adim: dict, gorev) -> str:
+    return f"sira_{adim['ad']}.slurm" if gorev is None else f"sira_{adim['ad']}_{int(gorev)}.slurm"
+
+
 _SURE = re.compile(r"^#SBATCH\s+(?:--time=|-t\s+)(\S+)", re.M)
 
 
@@ -269,6 +310,47 @@ def butce(plan: dict, durum: dict, saatler: dict[str, float], azami: int = AZAMI
     return {"adimlar": satir, "gpu_saat_ust": gs_top, "duvar_saat_ust": duvar}
 
 
+def _yaz(yol: Path, durum: dict) -> None:
+    tmp = yol.with_suffix(".tmp")
+    tmp.write_text(json.dumps(durum, indent=1), encoding="utf-8")
+    os.replace(tmp, yol)
+
+
+def hazir_gpu(plan: dict, durum: dict) -> int:
+    """Betiği yazılmış ama henüz gönderilmemiş (`HAZIRLANDI`) görevlerin GPU'su.
+
+    Kuyrukta görünmezler; sayılmasalar `betikler` ikinci kez çağrılınca
+    8 GPU sınırının ötesinde betik üretilirdi.
+    """
+    top = 0
+    for a in plan["adimlar"]:
+        for g in _gorevler(a):
+            if durum.get(_anahtar(a, g), {}).get("durum") == "HAZIRLANDI":
+                top += int(a.get("gpu", 1))
+    return top
+
+
+def _betikler(ns) -> int:
+    plan = json.loads(ns.plan.read_text(encoding="utf-8"))
+    durum = json.loads(ns.durum.read_text(encoding="utf-8")) if ns.durum.exists() else {}
+    kul = ns.kullanilan_gpu + hazir_gpu(plan, durum)
+    s = secim(plan, durum, kul)
+    ns.cikti_dizini.mkdir(parents=True, exist_ok=True)
+    for a, g in s["secilen"]:
+        metin = Path(a["betik"]).read_text(encoding="utf-8")
+        p = ns.cikti_dizini / gorev_dosya_adi(a, g)
+        p.write_text(gorev_betigi(metin, g, a.get("export")), encoding="utf-8", newline="\n")
+        durum[_anahtar(a, g)] = {"is": None, "durum": "HAZIRLANDI", "betik": p.name}
+        print(f"  {_anahtar(a, g)} -> {p.as_posix()}")
+    _yaz(ns.durum, durum)
+    print(f"kuyruk GPU {ns.kullanilan_gpu} + hazir {kul - ns.kullanilan_gpu} / {AZAMI_GPU}; "
+          f"yazilan {len(s['secilen'])} betik")
+    if s["duran_adim"]:
+        print("DURDU (bagimli adimda HATA):", ", ".join(s["duran_adim"]))
+        return 7
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -280,7 +362,27 @@ def main(argv=None) -> int:
     b = alt.add_parser("butce", help="kalan isin ust sinir GPU-saat / duvar saati")
     b.add_argument("--plan", type=Path, required=True)
     b.add_argument("--durum", type=Path, default=None)
+    g = alt.add_parser("betikler", help="MCP icin: bos yuva kadar tek-gorev betigi yaz")
+    g.add_argument("--plan", type=Path, required=True)
+    g.add_argument("--durum", type=Path, required=True)
+    g.add_argument("--kullanilan-gpu", type=int, required=True,
+                   help="kuyruktaki calisan+bekleyen GPU (truba_queue'dan elle)")
+    g.add_argument("--cikti-dizini", type=Path, required=True)
+    k = alt.add_parser("kaydet", help="MCP gonderiminden donen is kimligini/durumu yaz")
+    k.add_argument("--durum", type=Path, required=True)
+    k.add_argument("--anahtar", required=True, help="ör. U_kaba:3")
+    k.add_argument("--is", dest="is_kimligi", required=True)
+    k.add_argument("--hal", choices=("GONDERILDI", "BITTI", "HATA"), default="GONDERILDI")
     ns = ap.parse_args(argv)
+    if ns.komut == "betikler":
+        return _betikler(ns)
+    if ns.komut == "kaydet":
+        durum = (json.loads(ns.durum.read_text(encoding="utf-8"))
+                 if ns.durum.exists() else {})
+        durum[ns.anahtar] = {"is": ns.is_kimligi, "durum": ns.hal}
+        _yaz(ns.durum, durum)
+        print(f"{ns.anahtar} -> {ns.is_kimligi} {ns.hal}")
+        return 0
     if ns.komut == "butce":
         plan = json.loads(ns.plan.read_text(encoding="utf-8"))
         durum = (json.loads(ns.durum.read_text(encoding="utf-8"))
