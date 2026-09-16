@@ -152,6 +152,31 @@ sınırı çok geniş; orta için 24 sa kabadan ~110 kat pahalılığa kadar yet
   Banda girmek için `β−1 ≳ 1,44` gerekiyor. Kalan varyantlar (μ_f, Pe/Ps,
   `ρ = 1500`, U8) koşuyor; U6/U8'de gözlenen β da kütleyle birlikte düşer.
 
+### 22:50 — kalite denetimi (`$KOK/kontrol_u.py`, salt okunur)
+
+Biten 6 koşunun **6'sı temiz**: çözücünün kendi `gecerlilik` kaydı
+`gecerli = True` (`sonlu, tamamlandi, rho_pozitif, momentum_defteri, enerji,
+kurucu_sinir`); U0 örneğinde momentum artığı `1,0e-14`, toplam enerji sapması
+`-%0,37` (eşik %5), `rho_min = 16,9`, `t = 0,1000`. Özetlerde bayraklar doğru:
+U0 `onsel_disi = False`; U1, U2 `True`; `malzeme_ek = {}` (Y₀ θ'dan gelir).
+
+**U1 ile U2 neredeyse aynı β veriyor — hata mı, fizik mi?** Sınandı:
+
+| koşu | `theta` (npz) | β | `M_ejekta` | `n_adim` |
+|---|---|---|---|---|
+| U0 / 20260906 | `[1,15 ; 1e5 ; 0,275]` | 1,918815 | 1,312e5 | 39 353 |
+| U1 / 20260906 | `[1,15 ; 10 ; 0,275]` | 2,006690 | 1,467e5 | 39 348 |
+| U2 / 20260906 | `[1,15 ; 1 ; 0,275]` | 2,006727 | 1,467e5 | 39 351 |
+| U1 / 99991111 | `[1,15 ; 10 ; 0,275]` | 2,091916 | 1,770e5 | 39 295 |
+| U2 / 99991111 | `[1,15 ; 1 ; 0,275]` | 2,091779 | 1,801e5 | 39 295 |
+
+θ gerçekten farklı kaydedilmiş, tasarım dosyaları doğru, çıktılar (β, ejekta,
+adım sayısı) küçük ama gerçek farklar gösteriyor → **hata değil, doyum**:
+`Y₀ = 1e5 → 10 Pa` β'yı ~+0,09 artırıyor, `10 → 1 Pa` pratikte hiçbir şey
+(bu kohezyonda Lundborg dayanımını basınç–sürtünme terimi `μ_f·P` belirliyor).
+KAYIT-049'daki "`1/10/100 Pa` kolları aynı β" gözlemiyle tutarlı. Sonuç: U2,
+U1'den ayrı bir bilgi taşımıyor; asıl soru μ_f, Pe/Ps ve yoğunluk varyantlarında.
+
 ## 3. Sonuç
 
 *(Kaba bitince `u_model_raporu.py`; orta 16–19 gönderilir; ikisi bitince kilitli
