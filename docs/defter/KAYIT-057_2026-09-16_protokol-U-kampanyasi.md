@@ -177,6 +177,21 @@ adım sayısı) küçük ama gerçek farklar gösteriyor → **hata değil, doyu
 KAYIT-049'daki "`1/10/100 Pa` kolları aynı β" gözlemiyle tutarlı. Sonuç: U2,
 U1'den ayrı bir bilgi taşımıyor; asıl soru μ_f, Pe/Ps ve yoğunluk varyantlarında.
 
+### 23:00 — 10 kaba bitti, hepsi geçerli; otomatik rapor işi kuyrukta
+
+- `kontrol_u.py`: U0–U4 (10 koşu) **0 sorunlu**; bayraklar kayıtta doğru
+  (U3 `mu_f 0,2`, U4 `mu_f 0,05`). Ara β (kilitli değil): U3 `1,948 / 2,015`,
+  U4 `1,968 / 2,037` — hiçbiri bandın alt ucuna (~2,44) yaklaşmıyor.
+- Kullanıcının kullanım limiti azaldığı için **`U_RAPOR` işi `1565226`**
+  gönderildi: `afterany` ile 20 U görevinin hepsini bekler; `kontrol_u.py` →
+  kilitli `u_model_raporu.py` (`kampanya/S_U.json`) → kilitli
+  `v_gonderim_karari.py` (`kampanya/S_V_karar.json`). **V yalnız karar
+  `gonder = true` ise** (U kapsam TAM **ve** HİÇBİR VARYANT ULAŞMIYOR)
+  `sirali_gonderici betikler` ile gönderilir (u1 yolu ve `V4_U` denetimi;
+  durum `kampanya/SIRA_V.json`, günlük `gonderimler.txt`). Aksi hâlde sebep
+  çıktıya yazılır, hiçbir şey gönderilmez. Betik: `$KOK/is/u_rapor_ve_v.slurm`
+  (`bash -n` geçti). Kuyruk: 11 iş (sınır 20).
+
 ## 3. Sonuç
 
 *(Kaba bitince `u_model_raporu.py`; orta 16–19 gönderilir; ikisi bitince kilitli
