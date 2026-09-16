@@ -40,7 +40,10 @@ else j=$((i - 16)); v=$(( (j / 2) == 0 ? 0 : 7 )); LAD=orta; S=${TOHUMLAR[$((j %
 A=${AD[$v]}
 TAS="$KOK/kampanya/U_tasarim_${A}.json"
 read -r TA TY TF <<< "${TH[$v]}"
-echo "{\"theta\": [[$TA, $TY, $TF]]}" > "$TAS"
+# Atomik yazim (2026-09-16): ayni varyantin iki tohumu (ör. gorev 0 ve 1) AYNI
+# dosyaya yaziyor. `> "$TAS"` biri dosyayi sifirlarken otekinin python'u okursa
+# bos JSON okuyup duserdi. Gecici dosya + mv -f: okuyan her zaman tam dosya gorur.
+echo "{\"theta\": [[$TA, $TY, $TF]]}" > "$TAS.$SLURM_JOB_ID.tmp" && mv -f "$TAS.$SLURM_JOB_ID.tmp" "$TAS"
 echo "U/$i  varyant=$A  merdiven=$LAD  sahne=$S  ek=${EK[$v]}  kod: $(git rev-parse HEAD)"
 python scripts/faz5_ensemble_merdiven.py --device cuda:0 \
     --t-end 0.1 --root-seed 20260906 --sahne-tohum "$S" \

@@ -50,7 +50,9 @@ if [ "$A" = V4 ]; then
 fi
 TAS="$KOK/kampanya/V_tasarim_${A}.json"
 read -r TA TY TF <<< "$TH"
-echo "{\"theta\": [[$TA, $TY, $TF]]}" > "$TAS"
+# Atomik yazim (2026-09-16): iki tohum ayni V_tasarim dosyasina yaziyor; gecici
+# dosya + mv -f ile yarim/bos dosya okunmaz (bkz. is_U_model.slurm).
+echo "{\"theta\": [[$TA, $TY, $TF]]}" > "$TAS.$SLURM_JOB_ID.tmp" && mv -f "$TAS.$SLURM_JOB_ID.tmp" "$TAS"
 echo "V/$i  varyant=$A  sahne=$S  ek=${EK[$v]}  kod: $(git rev-parse HEAD)"
 python scripts/faz5_ensemble_merdiven.py --device cuda:0 \
     --t-end 0.2 --root-seed 20260906 --sahne-tohum "$S" \
