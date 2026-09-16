@@ -1,0 +1,7 @@
+{
+ "aciklama": "2026-09-16: U_orta (16-19) kaba bitmeden gonderildi. Siralama 8 GPU sinirindan kalmaydi; sinir 20 ve 16 kaba + 4 orta = 20. Kullanici 24 saat yok. Orta sure siniri uretilen betikte 10 sa -> 1-00:00:00 (kaba sure olculemedi; kolyoz-cuda azamisi 3 gun). Kod ayni: sabit commit 24e513e; TRUBA kopyasi kampanya/sira_U_orta_simdi.json.",
+ "kok": "/arf/scratch/egitimg16u3/driftclaude",
+ "adimlar": [
+  {"ad": "U_orta", "betik": "truba/is_U_model.slurm", "gorevler": [16, 17, 18, 19], "gpu": 1}
+ ]
+}

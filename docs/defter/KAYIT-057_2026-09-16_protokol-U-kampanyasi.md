@@ -103,6 +103,55 @@ gözlenen β; `z = (β−1_gözlem − β̄−1_sim) / σ_β`; `|z| ≤ 2` BANDA
   süre sınırı yükseltilir (yeni commit + yeniden sabitleme), süre aşımıyla GPU
   saati yakılmaz.
 
+### 22:45 — orta şimdi gönderildi (kural değişikliği ve gerekçesi)
+
+Kullanıcı 24 saat yok ve "U çözülsün" dedi. Orta'yı kaba bitene kadar
+bekletmek, orta'yı 24 saat geciktirirdi. Sıralama zinciri **8 GPU** sınırından
+kalmaydı; sınır **20** ve `16 kaba + 4 orta = 20` → sınırın içinde. Kaba süre
+ölçülemediği için orta süre sınırı **üretilen betikte** `10:00:00 →
+1-00:00:00` yapıldı (`kolyoz-cuda` azamisi `3-00:00:00`, QoS sınırı yok).
+**Kod aynı** (`24e513e`): çalışma dizinine dokunulmadı (bekleyen kaba görevler
+sabit commit denetimiyle koşuyor; dizin değişseydi 92 ile dururlardı). Plan:
+TRUBA `kampanya/sira_U_orta_simdi.json`, depoda `truba/sira_bitis3_U_orta.json`.
+Gönderim öncesi 4 betik denetlendi (süre satırı tek ve `1-00:00:00`, dizi 16–19,
+u1 yok, atomik yazım, exclude).
+
+| görev | varyant | tohum | iş |
+|---|---|---|---|
+| 16 | U0 orta | 20260906 | `1565222_16` |
+| 17 | U0 orta | 99991111 | `1565223_17` |
+| 18 | U8 orta | 20260906 | `1565224_18` |
+| 19 | U8 orta | 99991111 | `1565225_19` |
+
+### 22:46 — ilk beş kaba görev BİTTİ (süre ölçüldü)
+
+| görev | durum | `Elapsed` | sürücü duvarı | düğüm |
+|---|---|---|---|---|
+| 0 U0 | COMPLETED 0:0 | 13:17 | 794 s | kolyoz22 |
+| 1 U0 | COMPLETED 0:0 | 13:29 | 802 s | kolyoz36 |
+| 2 U1 | COMPLETED 0:0 | 13:18 | 792 s | kolyoz47 |
+| 3 U1 | COMPLETED 0:0 | 13:11 | 784 s | kolyoz52 |
+| 4 U2 | COMPLETED 0:0 | 13:19 | 792 s | kolyoz55 |
+
+Hepsinde `tamamlanan 1/1, dusen 0`, `npz` ~2,0 MB. Kaba görev **~13 dk** → 10 sa
+sınırı çok geniş; orta için 24 sa kabadan ~110 kat pahalılığa kadar yeter.
+
+**Ara bakış — KİLİTLİ YARGI DEĞİL** (`u_model_raporu.py`, 5 koşu,
+`kampanya/S_U_ara_2248.json`):
+
+| varyant | sim β−1 | gözlem β−1 ± σ_β | z | |
+|---|---|---|---|---|
+| U0 (2 tohum) | 0,946 | 2,121 ± 0,341 | +3,4 | ALTINDA |
+| U1 `Y₀ = 10 Pa` (2 tohum) | 1,049 | 2,121 ± 0,341 | +3,1 | ALTINDA |
+| U2 `Y₀ = 1 Pa` (**1 tohum**) | 1,007 | 2,117 ± 0,341 | +3,3 | ALTINDA |
+
+- Rapor gerçek veride **KAPSAM: EKSİK (8)** yazdı ve "V kararı verilmez" dedi
+  → A88 düzeltmesi sahada çalıştı.
+- Plato anında taban `β ≈ 1,95` (24 ms keşfin model üst sınırı ~1,85).
+- `Y₀`'ı `1e5 → 1–10 Pa` düşürmek `β−1`'i yalnız `+0,06 – +0,10` artırdı.
+  Banda girmek için `β−1 ≳ 1,44` gerekiyor. Kalan varyantlar (μ_f, Pe/Ps,
+  `ρ = 1500`, U8) koşuyor; U6/U8'de gözlenen β da kütleyle birlikte düşer.
+
 ## 3. Sonuç
 
 *(Kaba bitince `u_model_raporu.py`; orta 16–19 gönderilir; ikisi bitince kilitli
