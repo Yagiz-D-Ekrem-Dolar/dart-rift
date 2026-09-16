@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
 #SBATCH --time=01:00:00
-#SBATCH --exclude=kolyoz19
+#SBATCH --exclude=kolyoz19,kolyoz9
 #SBATCH -o /arf/scratch/egitimg16u1/driftclaude/ciktilar/DUMAN_%j.out
 #SBATCH -e /arf/scratch/egitimg16u1/driftclaude/ciktilar/DUMAN_%j.err
 

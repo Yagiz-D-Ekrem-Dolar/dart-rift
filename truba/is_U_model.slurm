@@ -8,7 +8,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --time=10:00:00
 #SBATCH --array=0-19
-#SBATCH --exclude=kolyoz19
+#SBATCH --exclude=kolyoz19,kolyoz9
 #SBATCH -o /arf/scratch/egitimg16u1/driftclaude/ciktilar/U_%A_%a.out
 #SBATCH -e /arf/scratch/egitimg16u1/driftclaude/ciktilar/U_%A_%a.err
 
