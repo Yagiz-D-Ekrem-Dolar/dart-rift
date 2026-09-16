@@ -1,0 +1,94 @@
+# KAYIT-057 — Protokol U kampanyası: model DART'ın β'sına ulaşabiliyor mu (2026-09-16)
+
+**Kapsam:** Bitiş 3 / Protokol U (model yeterliliği) · **Durum:** kaba görevler
+koşuyor · **Öncül:** [KAYIT-056](KAYIT-056_2026-09-16_yagiztruba-kurulum-ve-duman.md),
+[`PROTOKOL-U-MODEL.md`](../truba/PROTOKOL-U-MODEL.md) (kural koşudan önce kilitli),
+[`BITIS3-DURUM.md`](../BITIS3-DURUM.md)
+
+---
+
+## 0. Soru
+
+Gerçek DART `β = 3,12 ± 0,34`; model önsel boyunca en fazla `β ≈ 1,85`
+(24 ms keşif, kaba-72, +5,2σ). **Hangi model bileşeni `β`'yı gözlem bandına
+taşır?** Tek faktörlü tarama, merkez θ `(1,15 ; 1e5 ; 0,275)`, plato anı
+`t = 0,1 s`, üretim fiziği (kesme + taban), matris sahası, iki tohum
+(`20260906`, `99991111`).
+
+| varyant | değişiklik |
+|---|---|
+| U0 | taban (üretim) |
+| U1 | `Y₀ = 10 Pa` (önsel dışı) |
+| U2 | `Y₀ = 1 Pa` (önsel dışı) |
+| U3 | `μ_f = 0,2` (üretim 0,6) |
+| U4 | `μ_f = 0,05` |
+| U5 | `Pe = 1e5, Ps = 1e7` (üretim 1e6 / 1e8) |
+| U6 | yığın yoğunluğu `1500 kg/m³` (sahne 1800) |
+| U8 | birleşik: `Y₀ = 1`, `μ_f = 0,2`, Pe/Ps düşük, `ρ = 1500` |
+
+**Yargı (kilitli, `u_model_raporu.py`):** varyantın **kendi hedef kütlesiyle**
+gözlenen β; `z = (β−1_gözlem − β̄−1_sim) / σ_β`; `|z| ≤ 2` BANDA ULAŞIYOR,
+`z > 2` ALTINDA. En az bir varyant ulaşırsa MODEL GÖZLEME ULAŞABİLİYOR; hiçbiri
+→ HİÇBİR VARYANT ULAŞMIYOR (→ koşullu Protokol V). Rapor artık kapsamı da yazar
+(beklenen 20 görev; eksikse "EKSİK", V kararı verilmez — A88).
+
+Önceden denetlendi (2026-09-15): bayraklar çözücüye gerçekten ulaşıyor (malzeme
+θ başına değiştirilmeden `WarpSolid3D`'ye gidiyor, `ρ` sahne tabanında korunuyor).
+
+## 1. Gönderim
+
+| | |
+|---|---|
+| hesap / alan | `egitimg16u3`, `/arf/scratch/egitimg16u3/driftclaude` |
+| kod | **`24e513e343cdbccf240a73258cb3909b0fb41340`** (`SABIT_COMMIT`; uymazsa iş 92 ile durur) |
+| plan / durum | `truba/sira_bitis3_U.json` / `kampanya/SIRA_U.json`; günlük `gonderimler.txt` |
+| gönderim öncesi denetim | 16 betik: tek `--array=i`, u1 yolu yok, atomik tasarım yazımı var, `--exclude=kolyoz19,kolyoz9` |
+| sıra | `U_orta` (16–19) **üretilmedi** — kaba tamamen bitmeden gönderilmez |
+| GPU | 16 (sınır 20) |
+| zaman | 2026-09-16 22:31:59–22:32:01 (+03) |
+
+| görev | varyant | tohum | iş |
+|---|---|---|---|
+| 0 | U0 | 20260906 | `1565205_0` |
+| 1 | U0 | 99991111 | `1565206_1` |
+| 2 | U1 | 20260906 | `1565207_2` |
+| 3 | U1 | 99991111 | `1565208_3` |
+| 4 | U2 | 20260906 | `1565209_4` |
+| 5 | U2 | 99991111 | `1565210_5` |
+| 6 | U3 | 20260906 | `1565211_6` |
+| 7 | U3 | 99991111 | `1565212_7` |
+| 8 | U4 | 20260906 | `1565213_8` |
+| 9 | U4 | 99991111 | `1565214_9` |
+| 10 | U5 | 20260906 | `1565215_10` |
+| 11 | U5 | 99991111 | `1565216_11` |
+| 12 | U6 | 20260906 | `1565217_12` |
+| 13 | U6 | 99991111 | `1565218_13` |
+| 14 | U8 | 20260906 | `1565219_14` |
+| 15 | U8 | 99991111 | `1565220_15` |
+
+45 s sonra: 5 koşuyor (`kolyoz22, 36, 47, 52, 55`), 11 öncelik sırası bekliyor.
+
+## 2. İzleme
+
+*(Koşu sırasında eklenecek.)*
+
+### 22:34 — ilk iki dakika (5 görev koşuyor, 11 bekliyor)
+
+| görev | düğüm | GPU | ilk çıktı |
+|---|---|---|---|
+| 0 (U0) | kolyoz22 | H100 80GB HBM3 | `ortak_bas` geçti, commit `24e513e`, `ek=` boş |
+| 2 (U1) | kolyoz47 | **H200** | `ek=--onsel-disi-izin`, `! ONSEL DISI TASARIM … cikarim verisi DEGIL` |
+| 4 (U2) | kolyoz55 | **H200** | aynı uyarı |
+| 1, 3 | kolyoz36, kolyoz52 | — | koşuyor |
+
+- `.err`'lerde bilinen `module: command not found` dışında satır **yok**; `launch failed/held` **yok**.
+- **Karışık donanım:** görevler H100 ve H200'e düşüyor. İkisi de Hopper
+  (`sm_90`) mimarisi; FP64 çekirdekler aynı derleme hedefiyle koşuyor. Yine de
+  aynı varyantın iki tohumu farklı kartta koşabilir — tohum farkı yorumlanırken
+  bu not akılda tutulmalı (bit düzeyi kıyas yapılmayacak; yargı tohum
+  ortalamasıyla).
+
+## 3. Sonuç
+
+*(Kaba bitince `u_model_raporu.py`; orta 16–19 gönderilir; ikisi bitince kilitli
+yargı. Satırlar silinmez.)*

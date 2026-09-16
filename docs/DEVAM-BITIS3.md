@@ -25,6 +25,15 @@ gözleme taşır) cevaplayacak; hiçbiri taşımazsa koşullu **Protokol V**
 (yerçekimi/hasar/0,2 s). 14 Eylül'de TRUBA işlerinin çoğu iptal oldu; U hiç
 koşmadı. Yeni TRUBA hesabı bekleniyor.
 
+> **Güncel (2026-09-16 22:35):** YağızTRUBA (`egitimg16u3`) kuruldu, duman
+> sınavı geçti, **Protokol U kaba koşuyor**: 16 görev `1565205_0 … 1565220_15`,
+> kod `24e513e`'ye sabit, durum `kampanya/SIRA_U.json`, günlük `gonderimler.txt`.
+> Kaba bitince `U_orta` (16–19) `sirali_gonderici betikler` ile, sonra
+> `u_model_raporu.py`. Ayrıntı ve iş kimlikleri: defter **KAYIT-056, KAYIT-057**.
+> TRUBA notları: `kolyoz9` dışlandı (başlatma hatası); iş kabuğunda `module`
+> yok (zararsız, `ortak_bas.sh` PATH'i kuruyor); tutulan iş `scontrol release`
+> ile serbest bırakılamıyor → iptal + yeniden gönder.
+
 ## 2. Bilimsel durum
 
 ### Kilitli sonuçlar
