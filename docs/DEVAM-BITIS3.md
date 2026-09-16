@@ -212,6 +212,15 @@ Yeni oturum bunları **kullanıcıya yeniden sormadan** bilmeli.
   proje alanına erişemedi → hiçbir şey gönderilmedi. Kullanıcı **başka hesap
   verecek**; Claude aboneliği de bitmek üzere → başka Claude hesabına geçecek
   (bu belge o yüzden yazıldı).
+- **2026-09-16:** kullanıcı kendi MCP'sini kurdu (**YağızTRUBA**, kullanıcı
+  `egitimg16u3`, Slurm hesabı yine `egitimg16`, shell var; varsayılan hedef
+  `arf`, GPU için `cuda`). **GPU sınırı 20'ye çıkarıldı** ("8 GPU fazlası da
+  olur, 20'ye kadar okey"); kuyruğa yığmama kuralı sürüyor. u3'ten u4/u1
+  alanları okunamıyor → yeni çalışma alanı kurulacak. Modül ortamı
+  `gpu-2024.0`: Python 3.10.15, numpy 1.26.4, h5py, pydantic, yaml, pytest var;
+  **Warp yok** (1.15.0 wheel indirmek için kullanıcı onayı istendi). Çıplak
+  `python` modül sonrası bile sistem 3.9'a gidebiliyor → `ortak_bas.sh` ortam
+  `bin`'ini PATH'in başına koymalı. u3 scratch'inde başka projeler var; dokunulmaz.
 
 ### 12.2 Kullanıcıya anlatılanlar (tutarlı kalsın)
 

@@ -83,16 +83,17 @@ def test_CLI_betikler_HAZIRLANDI_sayar_iki_kez_cagrilinca_sinir_ASILMAZ(tmp_path
     pp, dp, od = tmp_path / "p.json", tmp_path / "SIRA.json", tmp_path / "b"
     pp.write_text(json.dumps(plan), encoding="utf-8")
     arg = ["betikler", "--plan", str(pp), "--durum", str(dp), "--cikti-dizini", str(od)]
-    assert sg.main([*arg, "--kullanilan-gpu", "6"]) == 0
+    dolu = sg.AZAMI_GPU - 2                               # kuyrukta sinirin 2 eksigi
+    assert sg.main([*arg, "--kullanilan-gpu", str(dolu)]) == 0
     assert sorted(p.name for p in od.iterdir()) == ["sira_U_0.slurm", "sira_U_1.slurm"]
     d = json.loads(dp.read_text("utf-8"))
     assert d["U:0"]["durum"] == "HAZIRLANDI" and d["U:1"]["betik"] == "sira_U_1.slurm"
-    # gonderilmeden tekrar: kuyruk hala 6 ama 2 hazir -> yeni betik YOK
-    assert sg.main([*arg, "--kullanilan-gpu", "6"]) == 0
+    # gonderilmeden tekrar: kuyruk ayni ama 2 hazir -> yeni betik YOK
+    assert sg.main([*arg, "--kullanilan-gpu", str(dolu)]) == 0
     assert len(list(od.iterdir())) == 2
-    # U:0 gonderildi (kuyruk 7 oldu), U:1 hala hazir -> 7 + 1 = 8, yeni YOK
+    # U:0 gonderildi (kuyruk +1), U:1 hala hazir -> sinir dolu, yeni YOK
     assert sg.main(["kaydet", "--durum", str(dp), "--anahtar", "U:0", "--is", "900_0"]) == 0
-    assert sg.main([*arg, "--kullanilan-gpu", "7"]) == 0
+    assert sg.main([*arg, "--kullanilan-gpu", str(dolu + 1)]) == 0
     assert len(list(od.iterdir())) == 2
     assert json.loads(dp.read_text("utf-8"))["U:0"] == {"is": "900_0", "durum": "GONDERILDI"}
     assert "#SBATCH --array=1" in (od / "sira_U_1.slurm").read_text("utf-8")

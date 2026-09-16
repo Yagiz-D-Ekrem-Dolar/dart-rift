@@ -59,10 +59,12 @@ def test_U_planinin_butcesi_ust_sinir():
     plan = json.loads((_KOK / "truba" / "sira_bitis3_U.json").read_text(encoding="utf-8"))
     saat = {a["ad"]: sg.sure_saat((_KOK / a["betik"]).read_text(encoding="utf-8"))
             for a in plan["adimlar"]}
-    r = sg.butce(plan, {}, saat)
+    r = sg.butce(plan, {}, saat, azami=8)
     assert r["gpu_saat_ust"] == pytest.approx(200.0)          # 20 gorev x 10 sa
-    assert r["duvar_saat_ust"] == pytest.approx(30.0)         # kaba 2 tur + orta 1 tur
+    assert r["duvar_saat_ust"] == pytest.approx(30.0)         # 8 GPU: kaba 2 tur + orta 1 tur
+    # varsayilan sinir 20 (2026-09-16): kaba 16 gorev tek turda -> 10 + 10 sa
+    assert sg.butce(plan, {}, saat)["duvar_saat_ust"] == pytest.approx(20.0)
     durum = {f"U_kaba:{i}": {"is": f"9_{i}", "durum": "BITTI"} for i in range(8)}
-    r = sg.butce(plan, durum, saat)
+    r = sg.butce(plan, durum, saat, azami=8)
     assert r["adimlar"]["U_kaba"] == {"kalan": 8, "gpu_saat_ust": 80.0, "duvar_saat_ust": 10.0}
     assert r["duvar_saat_ust"] == pytest.approx(20.0)

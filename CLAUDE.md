@@ -28,8 +28,9 @@ f blok kesri)` — gerçek DART gözleminden (momentum aktarımı `β`) çıkarm
 
 1. Parola/anahtar **asla** commit'e, belgeye, ekrana yazılmaz (TRUBA
    belgelerinde düz metin parolalar var).
-2. TRUBA hesabı **ortak**: aynı anda **en fazla 8 GPU** (çalışan + bekleyen);
-   kuyruğa yığın iş yok, biri bitince diğeri — `scripts/sirali_gonderici.py`.
+2. TRUBA hesabı **ortak**: aynı anda **en fazla 20 GPU** (çalışan + bekleyen;
+   2026-09-16 kullanıcı kararı, önceden 8); kuyruğa yığın iş yok, biri bitince
+   diğeri — `scripts/sirali_gonderici.py`.
 3. `ardababatrubamcpi` MCP'si **kullanılmaz**. Toplu `scancel`/iptal gibi
    yıkıcı işlemlerden önce kullanıcıya sor.
 4. `/arf`'a pip/conda kurulumu **yasak** (paketler `pylib/` altında açılmış wheel).

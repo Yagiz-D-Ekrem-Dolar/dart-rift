@@ -40,7 +40,10 @@ import shlex
 import subprocess
 from pathlib import Path
 
-AZAMI_GPU = 8
+# 2026-09-15: 8 (ortak hesap; 32 GPU olayindan sonra once 10, sonra 8).
+# 2026-09-16 kullanici: "8 GPU fazlasi da olur, 20'ye kadar okey". Kuyruga
+# yigmama kurali DEGISMEDI: bos yuva kadar, gorev gorev.
+AZAMI_GPU = 20
 BITTI_DURUMLARI = {"COMPLETED"}
 HATA_DURUMLARI = {"FAILED", "CANCELLED", "TIMEOUT", "OUT_OF_MEMORY", "NODE_FAIL",
                   "PREEMPTED", "BOOT_FAIL", "DEADLINE"}

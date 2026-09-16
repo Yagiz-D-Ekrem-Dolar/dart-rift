@@ -1,4 +1,4 @@
-"""Sıralı gönderici — 8 GPU sınırı (bekleyenler dahil), sıra, HATA'da durma, A84."""
+"""Sıralı gönderici — GPU sınırı (bekleyenler dahil), sıra, HATA'da durma, A84."""
 from __future__ import annotations
 
 import importlib.util
@@ -22,8 +22,9 @@ def _plan():
     ]}
 
 
-def test_sinir_8_ve_ust_sinir_degismez():
-    assert sg.AZAMI_GPU == 8
+def test_sinir_kullanici_karariyla_ayni():
+    # 2026-09-15: 8 (ortak hesap). 2026-09-16 kullanici: "20'ye kadar okey".
+    assert sg.AZAMI_GPU == 20
 
 
 def test_gpu_ayristirma_ve_bekleyenler_de_sayilir():
@@ -37,10 +38,14 @@ def test_gpu_ayristirma_ve_bekleyenler_de_sayilir():
 
 
 def test_bos_yuva_kadar_secer_asla_asmaz():
-    s = sg.secim(_plan(), {}, kullanilan_gpu=3)
+    s = sg.secim(_plan(), {}, kullanilan_gpu=3, azami=8)
     assert [(a["ad"], g) for a, g in s["secilen"]] == [("Mt", i) for i in range(5)]
-    assert sg.secim(_plan(), {}, kullanilan_gpu=8)["secilen"] == []
-    assert sg.secim(_plan(), {}, kullanilan_gpu=11)["secilen"] == []
+    assert sg.secim(_plan(), {}, kullanilan_gpu=8, azami=8)["secilen"] == []
+    assert sg.secim(_plan(), {}, kullanilan_gpu=11, azami=8)["secilen"] == []
+    # varsayilan sinir (20): kuyrukta 15 varsa yalniz 5 yuva
+    s = sg.secim(_plan(), {}, kullanilan_gpu=15)
+    assert len(s["secilen"]) == 5 and s["bos_gpu_sonra"] == 0
+    assert sg.secim(_plan(), {}, kullanilan_gpu=sg.AZAMI_GPU)["secilen"] == []
 
 
 def test_onceki_adim_BITMEDEN_sonraki_gonderilmez():
@@ -96,8 +101,9 @@ def test_adim_at_sacct_ile_gunceller_ve_sinirda_gonderir(tmp_path):
     r = sg.adim_at(plan, yol, kuru=False, calistir=calistir, kullanici="u4")
     d = json.loads(yol.read_text("utf-8"))
     assert d["U:0"]["durum"] == "BITTI" and d["U:1"]["durum"] == "HATA"
-    assert len(r["gonderilen"]) == 6                                  # 8 - 2
+    beklenen = min(8, sg.AZAMI_GPU - 2)                   # 8 gorev kaldi; bos yuva sinir-2
+    assert len(r["gonderilen"]) == beklenen
     assert d["U:2"] == {"is": "100_2", "durum": "GONDERILDI"}
-    assert sum(1 for k in cagrilar if k[0] == "sbatch") == 6
+    assert sum(1 for k in cagrilar if k[0] == "sbatch") == beklenen
     kuru = sg.adim_at(plan, yol, kuru=True, calistir=calistir, kullanici="u4")
     assert all(g.startswith("sbatch") for g in kuru["gonderilen"])
