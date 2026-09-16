@@ -88,6 +88,21 @@ gözlenen β; `z = (β−1_gözlem − β̄−1_sim) / σ_β`; `|z| ≤ 2` BANDA
   bu not akılda tutulmalı (bit düzeyi kıyas yapılmayacak; yargı tohum
   ortalamasıyla).
 
+### 22:40 — 8 dakika
+
+- 6 koşuyor (görev 0–5; görev 5 `kolyoz27`), 10 bekliyor, **düşen yok**; hiçbir
+  görev henüz bitmedi → kaba bir görev **≥ 8 dk**.
+- **Grup kotası:** `egitimg16` `GrpTRESMins cpu = 37 200 000`; kullanım
+  (`sshare` RawUsage, CPU-saniye) `598 229 080` ≈ `9,97M` CPU-dk (~%27). U'nun
+  tamamı en fazla `20 × 16 × 600` = `192 000` CPU-dk (sınırın ~%0,5'i) → kota riski yok.
+- **Açık risk — orta süre sınırı:** `is_U_model.slurm` 20 görevin hepsine
+  `--time=10:00:00` veriyor. Orta merdiven kabadan kat kat pahalı; kaba süre
+  ölçülmeden orta'nın 10 saate sığdığı **bilinmiyor**. **Kural (orta
+  gönderilmeden önce):** kaba görevlerin `Elapsed`'inden ve parçacık sayısı
+  oranından orta süresi kestirilir; `≥ %60 × 10 sa` çıkarsa orta gönderilmeden
+  süre sınırı yükseltilir (yeni commit + yeniden sabitleme), süre aşımıyla GPU
+  saati yakılmaz.
+
 ## 3. Sonuç
 
 *(Kaba bitince `u_model_raporu.py`; orta 16–19 gönderilir; ikisi bitince kilitli
