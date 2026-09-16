@@ -1,0 +1,7 @@
+{
+ "aciklama": "Duman sinavi (protokol degil): yeni hesapta (egitimg16u3, YagizTRUBA) U'dan ONCE tek GPU'da uctan uca boru hatti. Gecmeden U gonderilmez.",
+ "kok": "/arf/scratch/egitimg16u3/driftclaude",
+ "adimlar": [
+  {"ad": "DUMAN", "betik": "truba/is_DUMAN.slurm", "gorevler": null, "gpu": 1}
+ ]
+}
