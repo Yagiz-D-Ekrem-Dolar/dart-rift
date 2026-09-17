@@ -85,3 +85,32 @@ TRUBA deposu `f193083`'e güncellendi, `SABIT_COMMIT` yenilendi.
 - Gerinimle kohezyon kaybı (L1'de var, bizde yok) — W KISMİ çıkarsa ilk aday.
 - Merdivenin 2× sıçramaları yerine kademeli kabuk (L9 Spheral) — ölçülmedi.
 - `Y₀ = 0` satırı için `θ` kısıtı (pozitif `Y₀`) gevşetilmeli mi: ADR gerekir.
+
+## 6. Ek tanı: mevcut 30 U/V koşusu yeni ölçümlerden geçirildi (GPU yok)
+
+`scripts/uv_ek_tani.py`, TRUBA giriş düğümünde, aynı `npz` durumları üzerinde.
+**Kilitli U/V yargısı değişmedi**; bunlar tanıdır.
+Veri: `docs/olcumler/U_V_2026-09-17/S_UV_ek_ozet.csv`.
+
+| ölçüm | bulgu |
+|---|---|
+| `β_km` (kütle merkezi) | **OKUNAMAZ**: mermi bağsız kesri `0,73 – 1,00`, yani mermi hâlâ `~6 km/s` gidiyor. L1'in 2. yöntemi yeniden toplanmadan sonra anlamlı. |
+| **bekleyen** madde (`r ≤ R`, `v_r > v_esc`) | hedef kütlesinin `%0,08 – 0,90`'ı |
+| bekleyen **nerede** | 30/30 koşuda **`kazi_benzeri`**: `0–20 m` kuşağında parçacıkların `%21–57`'si bekliyor, `40 m` ötesinde **sıfır** |
+| bekleyenin tamamı kaçsaydı `β` | **`2,04 – 4,53`** (sayılan: `1,75 – 2,09`) |
+| ejekta koni açısı (kütle ağırlıklı `%90`) | `86 – 118°` (ortanca `100°`); gözlem `140 ± 4°` (L17) |
+
+**Okuma (yargı değil):**
+
+1. Kırpılan madde **çınlama değil kazı akışı** — çarpma noktasına yığılmış.
+   (Daha önce 0,07 s'lik bir koşuda tersi ölçülmüştü; o ölçüm o koşu içindi.)
+2. `r > R` ölçütünün kırptığı momentum, **üst sınırda** açığın önemli bir
+   kısmını kapatıyor: orta çözünürlükte U0 için `3,10 – 3,53` — gözlem bandının
+   (`2,44 – 3,80`) **içinde**. Bu bir tahmin değil, **üst sınırdır**: bekleyen
+   maddenin ne kadarının gerçekten kaçacağı simüle edilmedi.
+3. Bekleyen kesir **çözünürlükle büyüyor** (kaba `%0,1–0,3`, orta `%0,34–0,90`):
+   kaba koşular bu etkiyi **az** gösteriyor. Kilitli U sonucundaki "orta daha
+   düşük β" okuması bu ışıkta yeniden değerlendirilmeli — ama kural değişmez.
+4. Koni açımız gözlemden **dar**. Tanımlar aynı değil (LICIACube toz konisini
+   görüyor, biz kaçan kütlenin açısal dağılımını); yine de yeni gözlenebilir
+   olarak izlenecek.
