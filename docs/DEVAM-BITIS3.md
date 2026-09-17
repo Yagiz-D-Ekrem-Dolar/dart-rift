@@ -306,3 +306,24 @@ Yeni oturum bunları **kullanıcıya yeniden sormadan** bilmeli.
 - [ ] Defter kayıtları (KAYIT-056+) yazılsın mı
 - [ ] Sürüm etiketleri + zaman çizelgesi eklensin mi
 - [ ] Savunma notu ve literatür tablosuna başlansın mı
+
+### 12.7 U/V ulaşmadı → kurtarma planı (2026-09-17, önerildi, onay bekliyor)
+
+- Kullanıcı: "U ve V geçmiyorsa proje başarısız mı, nasıl çözeceksin?"
+- **Ön bulgu (koddan, ölçülmedi):** `momentum_defteri.py` kaçışı `r > R` **ve**
+  `v_r > v_esc` ile sayıyor → 0,1–0,2 s'de hâlâ `R` içinde olan yavaş ama kaçacak
+  ejekta sayılmıyor olabilir (β'yı sistematik düşürür).
+- **Önerilen fazlar:** A (GPU yok): A1 `R` şartsız kırpılmış momentum, A2 ejekta
+  hız dağılımı + ölçekleme yasasıyla geç ejekta, A3 literatür doğrulama — önce
+  **Protokol W** kilitlenir. B (~30 GPU-saat): zayıf θ'da 0,5/1/2 s. C: açık
+  kapanırsa "SPH erken + ölçekleme geç" hibrit model, havuzlar yeniden, gerçek
+  posterior. D: kapanmazsa nicel teşhis + koşulsuz Hera öngörüsü.
+- **Kullanıcıya söylenen:** D = **asıl hedefte (gerçek veriyle iç yapı) başarısızlık**,
+  ama proje çöp değil (doğrulanmış sentetik çıkarım zinciri + kilitli nicel
+  teşhis); İSEF tavanı düşer. Hibrit modelde ölçekleme parametreleri SPH'nin
+  kendi ejektasından ölçülmeli, DART'a ayarlanmamalı (yoksa β bedava tutar).
+- **"~1 500 GPU-saat"** = §5 tablosundaki üst sınır (kaba 288 + orta 576 + Mt 576
+  + rapor/kararlılık ~90; görev × süre sınırı). Ölçülen sürelerle (kaba 0,2 s
+  yerçekimli ~0,9 sa, orta ~2 kat+) gerçekçi tahmin **~250–450** (ince süresi
+  ölçülmedi); SPH'nin 1–2 s'ye uzaması gerekirse ×5–10 → bütçe aşılır, kapsam
+  daraltılır. Karşılaştırma: U+V üst sınır 440, gerçek ~20.
