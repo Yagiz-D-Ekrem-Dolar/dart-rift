@@ -361,3 +361,13 @@ Yeni oturum bunları **kullanıcıya yeniden sormadan** bilmeli.
   çözünürlüğü; merdiven kademeleri; tarih eşleme `I < 3` + model eksikliği terimi;
   17° açı. **Hera varışı Aralık 2026 sonu** → HT mührü öncesinde. Uygulama sırası
   için kullanıcı onayı bekleniyor.
+- **Kullanıcı: "bulduğun her şeyi koda ekle, sonra ilk testlere başlayalım"**
+  (2026-09-17 akşam) → yapıldı: ADR-0050 (kod paketi, hepsi varsayılan kapalı),
+  PROTOKOL-W (kıyas sınaması, koşudan önce kilitli), `w_kiyas_raporu.py`,
+  `truba/is_W0_zamanlama.slurm` ve `truba/is_W_kiyas.slurm`. Ayrıntı:
+  **KAYIT-065**. TRUBA deposu `f193083`'e güncellendi, `SABIT_COMMIT` yenilendi.
+  **W0 zamanlama koşusu `1566860`** (kolyoz1, H100) — bilimsel sonuç değil;
+  `t_end` seçimi PROTOKOL-W §3.2 kuralıyla onun ölçtüğü hıza göre yapılacak,
+  sonra W1–W6 (3 `Y₀` × 2 geçiş anı) sıralı gönderilecek.
+  **Uyarı (kayıtlı):** `sbatch` yalnız `cuda` hedefinden (cuda-ui) ve `/arf/scratch`
+  altından çalışıyor; arf arayüzünden `kolyoz-cuda` görünmüyor.

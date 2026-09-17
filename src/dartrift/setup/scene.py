@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from .blok_cozunurluk import blok_cozunurluk_tanisi
 from .impactor import build_impactor, coklu_kure_mermi, impact_geometry, place_impactor
 from .rubble_generator import build_rubble_pile
 from .shape_mesh import TriMesh, ellipsoid, icosphere, load_obj, orient_outward
@@ -304,6 +305,13 @@ def build_scene(
             "pile": pile.diagnostics,
             "carpma_sahasi": carpma_sahasi,
             "mermi_kureleri": imp.diagnostics.get("coklu_kure"),
+            # ADR-0050 / L8: blok basina parcacik. "Blok var" ile "blok
+            # cozulmus" ayni sey degil; sayi her sahnede kayda gecsin.
+            "blok_cozunurluk": (
+                blok_cozunurluk_tanisi(x_t, pile.m, pile.boulders.centers,
+                                       pile.boulders.radii)
+                if pile.boulders is not None and len(pile.boulders.radii)
+                else None),
             "settling": settle_diag,
         },
         blok_alani=pile.boulders,

@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-13 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 70 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86 · A70 ve A84 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-17 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 71 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89 · A70 ve A84 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5148,6 +5148,37 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A89 — **Bloklar kaba düzeyde çözülmüyor: blok kütlesinin %99,3'ü ortanca 1 parçacık** (2026-09-17) — *açık, ölçüldü*
+
+ADR-0050 ile eklenen `setup/blok_cozunurluk.py` üretim sahnesine (U/V ile
+**aynı**: `R = 82 m`, `spacing 7`, `f_boulder 0,275`, `blok-rmin 1,7`,
+`blok-rmax 6,5`, v2 üretici, matris sahası, tohum `20260906`) uygulandı.
+
+| nerede | blok | blok başına parçacık (ortanca) | çözülmemiş (`< 30`) |
+|---|---|---|---|
+| kaba yığın (inceltmeden önce) | 2 387 | **1** | 2 387 (`%100`) |
+| merdiven sonrası, tümü | 2 387 | **1** | 2 375 (kütlece **`%99,3`**) |
+| çarpmadan `< 12 m` | 7 | **84** | 0 |
+| çarpmadan `< 24 m` | 29 | 20 | 17 |
+| çarpmadan `< 48 m` | 189 | 2 | 177 |
+
+Yani **kazı bölgesindeki bloklar çözülmüş**, cismin geri kalanındakiler
+çözülmemiş. Erken `β` için (kazı yakınında) bu kabul edilebilir; ama
+literatür (L8, Raducan ve diğ. 2022) blok **kütle kesrinin** `β`'yı
+`%60`'a kadar değiştirdiğini ve etkinin global paketlemeden geldiğini
+ölçüyor. Geç evre / global deformasyon rejiminde (ADR-0050'nin hedefi)
+çözülmemiş bloklar **doğrudan yargıyı** etkileyebilir.
+
+Ölçüt kaynağı: L8 en küçük çözülebilir blok yarıçapını `2,5 m` alıyor ve
+bunu blok başına `~30` SPH parçacığıyla gerekçelendiriyor.
+
+**Ne yapılmadı:** üretim sahnesi değiştirilmedi, kilitli U/V sonuçlarına
+dokunulmadı. Tanı artık **her sahnede** `diagnostics["blok_cozunurluk"]`
+olarak kayda geçiyor; kararı Protokol W sonrası model kurulumu verecek
+(seçenekler: daha ince taban aralığı, daha büyük `r_min`, ya da blokların
+istatistiksel temsili).
 
 ---
 ### A88 — **Kısmi kampanya raporlara ve kararlara SESSİZCE giriyordu (Mt çözünürlük terimi, U kapsamı, V θ'sı)** (2026-09-15) — **KAPANDI** (öz denetim; hiçbiri henüz koşmamıştı)
