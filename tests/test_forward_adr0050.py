@@ -100,3 +100,13 @@ def test_ELIPSOIT_sahnede_yari_eksenler_TURETILIYOR():
     k = inspect.getsource(ileri_kosu_merdiven)
     assert 'get("shape") == "ellipsoid"' in k
     assert '_st_["semi_axes"]' in k
+
+
+def test_adim_bildir_VARSAYILAN_kapali_ve_NEGATIF_reddediliyor():
+    """Uzun koşuda ilerleme yazılmazsa takılan koşu bitmiş koşudan
+    ayırt edilemez; varsayılan yine de kapalı (çıktı bit-aynı kalsın)."""
+    assert inspect.signature(ileri_kosu_merdiven).parameters[
+        "adim_bildir"].default == 0
+    with pytest.raises(ValueError, match="adim_bildir"):
+        _kos(sahne_taban=SAHNE, adim_bildir=-1)
+    assert "adim_bildir and adim %" in inspect.getsource(ileri_kosu_merdiven)

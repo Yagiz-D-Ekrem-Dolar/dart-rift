@@ -215,6 +215,9 @@ def main() -> int:
     g.add_argument("--beta-km", action="store_true",
                    help="son durumda beta'yi kutle merkezi yoluyla da hesapla "
                         "+ ejekta koni acisi (L1, L17)")
+    g.add_argument("--adim-bildir", type=int, default=0,
+                   help="her N adimda bir t/dt/gecis/donmus yaz (uzun kosu; "
+                        "0 = kapali)")
     g.add_argument("--azami-adim", type=int, default=None,
                    help="ileri modelin adim ust siniri (varsayilan 400000)")
     g.add_argument("--hedef-yaricapi", type=float, default=None,
@@ -454,6 +457,7 @@ def main() -> int:
             mermi_h_kipi=a.mermi_h_kipi, adim_gozlemcisi=gozlemci,
             dayanim_kesme=a.dayanim_kesme, yogunluk_tabani=a.yogunluk_tabani,
             gec_evre=gec_evre, dondurma=dondurma, beta_km=a.beta_km,
+            adim_bildir=int(a.adim_bildir),
             impuls_zaman="log" if a.impuls_log else "dogrusal",
             **({"azami_adim": int(a.azami_adim)} if a.azami_adim else {}))[0]
         if not np.all(np.isfinite(y)):
@@ -503,6 +507,7 @@ def main() -> int:
         "dondurma": dondurma,
         "beta_km": bool(a.beta_km),
         "impuls_zaman": "log" if a.impuls_log else "dogrusal",
+        "adim_bildir": int(a.adim_bildir),
         "azami_adim": a.azami_adim,
         "onsel_disi": bool(a.tasarim_dosyasi is not None and onsel_disi),
         "surum": surum,

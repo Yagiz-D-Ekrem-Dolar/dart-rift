@@ -564,6 +564,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         yari_eksenler=None,
                         impuls_zaman: str = "dogrusal",
                         beta_km: bool = False,
+                        adim_bildir: int = 0,
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
@@ -669,6 +670,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
     if impuls_zaman not in ("dogrusal", "log"):
         raise ValueError(
             f"impuls_zaman 'dogrusal' ya da 'log', {impuls_zaman!r} geldi")
+    if int(adim_bildir) < 0:
+        raise ValueError("adim_bildir >= 0 olmali")
     for i, th in enumerate(x):
         kw = sahne_parametreleri(th, sahne_taban)
         try:
@@ -808,6 +811,13 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                                    float(_dt_["beta_hedef"]),
                                    float(_dt_["M_ejekta"])])
                     _imp_k += 1
+                if adim_bildir and adim % int(adim_bildir) == 0:
+                    # ADR-0050: saat mertebesindeki kosuda hicbir cikti
+                    # olmadan saatlerce beklemek, takilan kosuyu bitmis
+                    # kosudan ayirt edilemez kiliyor.
+                    print(f"      adim {adim:>9}  t = {t:.4e} s  "
+                          f"dt = {dt:.3e}  gecis={'E' if sol.gec_evre else 'H'}"
+                          f"  donmus={sol.dondurulmus_sayisi}", flush=True)
                 if t <= SOK_PENCERESI or adim % kontrol == 0:
                     _r = np.asarray(sol.rho.numpy())[_h_maske]
                     np.maximum(rho_zirve, _r, out=rho_zirve)
