@@ -35,11 +35,19 @@ __all__ = ["beta_kutle_merkezi", "beta_iki_yontem", "ejekta_koni_acisi"]
 
 
 def beta_kutle_merkezi(x, v, m, *, R: float, ehat, p_imp: float,
-                       G: float = G_SI) -> dict:
+                       G: float = G_SI, mermi_kesri=None) -> dict:
     """Yöntem 2 — bağlı kalan maddenin eksenel momentumu / `p_imp`.
 
     Bağlı küme `kacis_siniflari` ile (yinelemeli, öz-potansiyel). Mermi
     maddesi de bağlıysa cismin parçasıdır ve sayılır.
+
+    > **Bu sayı ancak GEÇ zamanda anlamlıdır.** Ölçüldü (kaba sahne,
+    > `t = 4e-4 s`): mermi hâlâ `~6 km/s` gittiği için enerjice **bağsız**
+    > sayılıyor ve `β_km = 0,0004` çıkıyor — oysa kaçan-momentum yöntemi
+    > `1,0` diyor. Yani erken zamanda fark, fizik değil **sınıflamadır**.
+    > `mermi_bagsiz_kesri` bunu görünür kılar: `1`'e yakınsa `β_km`
+    > okunmamalıdır. Literatürde de yöntem 2 yeniden toplanmadan SONRA
+    > kullanılıyor (L1).
     """
     x = np.asarray(x, dtype=np.float64)
     v = np.asarray(v, dtype=np.float64)
@@ -48,16 +56,31 @@ def beta_kutle_merkezi(x, v, m, *, R: float, ehat, p_imp: float,
         raise ValueError(f"p_imp pozitif olmali, {p_imp} geldi")
     e = np.asarray(ehat, dtype=np.float64)
     e = e / np.linalg.norm(e)
-    ks = kacis_siniflari(x, v, m, R=R, G=G)
+    try:
+        ks = kacis_siniflari(x, v, m, R=R, G=G)
+    except ValueError as hata:
+        # Baglilik siniflamasi TANIDIR, kapi degil: cozumsuz kaldiginda
+        # (ornegin oz-yercekimi yaninda hizlarin buyuk oldugu kucuk cisim,
+        # "bagli kume bosaldi") kosu DUSURULMEZ; sayi `nan` ve GEREKCE yazilir.
+        return {"beta_km": float("nan"), "M_bagli": float("nan"),
+                "P_bagli_vektor": [float("nan")] * 3, "yakinsadi": False,
+                "n_tur": 0, "hata": str(hata)}
     bagli = ~np.asarray(ks["bagsiz_maske"], dtype=bool)
     P_bagli = m[bagli] @ v[bagli]
-    return {
+    out = {
         "beta_km": float(P_bagli @ e) / float(p_imp),
         "M_bagli": float(m[bagli].sum()),
         "P_bagli_vektor": [float(t) for t in P_bagli],
         "yakinsadi": bool(ks["yakinsadi"]),
         "n_tur": int(ks["n_tur"]),
     }
+    if mermi_kesri is not None:
+        f = np.asarray(mermi_kesri, dtype=np.float64)
+        m_mermi = float((m * f).sum())
+        out["mermi_bagsiz_kesri"] = (
+            float((m * f)[~bagli].sum() / m_mermi) if m_mermi > 0.0
+            else float("nan"))
+    return out
 
 
 def ejekta_koni_acisi(v, m, *, kesir: float = 0.9, eksen=None) -> dict:
@@ -102,7 +125,8 @@ def beta_iki_yontem(x, v, m, *, mermi_kesri, R: float, v_esc: float, ehat,
     f = np.asarray(mermi_kesri, dtype=np.float64)
     d = momentum_defteri(x, v, m, mermi_kesri=f, R=R, v_esc=v_esc, ehat=ehat,
                          p_imp=p_imp, yari_eksenler=yari_eksenler)
-    km = beta_kutle_merkezi(x, v, m, R=R, ehat=ehat, p_imp=p_imp, G=G)
+    km = beta_kutle_merkezi(x, v, m, R=R, ehat=ehat, p_imp=p_imp, G=G,
+                            mermi_kesri=f)
     x = np.asarray(x, dtype=np.float64)
     v = np.asarray(v, dtype=np.float64)
     m = np.asarray(m, dtype=np.float64)
@@ -125,6 +149,9 @@ def beta_iki_yontem(x, v, m, *, mermi_kesri, R: float, v_esc: float, ehat,
         "M_ejekta_hedef": d["M_ejekta"],
         "M_bagli": km["M_bagli"],
         "km_yakinsadi": km["yakinsadi"],
+        "km_hatasi": km.get("hata"),
+        # `1`'e yakinsa `beta_km` HENUZ okunamaz (mermi bagsiz sayiliyor).
+        "mermi_bagsiz_kesri": km.get("mermi_bagsiz_kesri", float("nan")),
         "koni_tam_acisi_derece": koni["koni_tam_acisi_derece"],
         "koni_kesri": float(koni_kesri),
         "defter_kapandi": bool(d["kapandi"]),

@@ -64,7 +64,8 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
                  komsu_arama="hash", mermi_eos="hedef",
                  ilk_degerlendirme=False, matris_cekme_siniri=None,
                  mermi_h_kipi="merdiven", dayanim_kesme=False,
-                 yogunluk_tabani=False) -> str:
+                 yogunluk_tabani=False, gec_evre=None, dondurma=None,
+                 yari_eksenler=None) -> str:
     """Kosunun FIZIK yapilandirmasinin SHA-256 ozeti (16 hane).
 
     Iki cikti ayni `theta`yi tasiyip FARKLI fizikle uretilmis
@@ -119,6 +120,16 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
     # A83: sureklilik yogunlugu tabani.
     if bool(yogunluk_tabani):
         parcalar.append(f"yogunluk_tabani={YOGUNLUK_TABANI_ETA:.17g}")
+    # ADR-0050: gec evre semasi, uzak kacan dondurma ve elipsoit kacis
+    # olcutu FIZIGI (ve olcumu) degistirir. Yalniz verildiklerinde eklenir
+    # -> eski kayitlarin ozeti AYNEN korunur.
+    if gec_evre:
+        parcalar.append("gec_evre=" + repr(sorted(dict(gec_evre).items())))
+    if dondurma:
+        parcalar.append("dondurma=" + repr(sorted(dict(dondurma).items())))
+    if yari_eksenler is not None:
+        parcalar.append("yari_eksenler=" + repr(
+            [f"{float(t):.17g}" for t in yari_eksenler]))
     ham = "|".join(parcalar).encode("utf-8")
     return hashlib.sha256(ham).hexdigest()[:16]
 
@@ -275,7 +286,8 @@ KRATER_KUTUP_KUTUSU_ESIGI_DEG = 7.0
 
 def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,
                            target_radius, is_impactor, impact_direction,
-                           x_reference, krater_ayarlari=None) -> np.ndarray:
+                           x_reference, krater_ayarlari=None,
+                           yari_eksenler=None) -> np.ndarray:
     """Son durumdan üç gözlenebilir — `GOZLENEBILIRLER` sırasında.
 
     Patlamış bir koşu **sessizce** sayı döndürmez: `nan` görünürse
@@ -340,7 +352,7 @@ def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,
         st["x"], st["v"], st["m"],
         mermi_kesri=np.asarray(is_impactor, dtype=bool).astype(np.float64),
         R=float(target_radius), v_esc=v_kacis, ehat=_ehat / _p_imp,
-        p_imp=_p_imp)
+        p_imp=_p_imp, yari_eksenler=yari_eksenler)
     y = np.array([float(_def["beta_hedef"]), float(kr.depth),
                   float(mt.ejecta_fraction)], dtype=np.float64)
     if not np.all(np.isfinite(y)):
@@ -546,12 +558,37 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         mermi_h_kipi: str = "merdiven",
                         adim_gozlemcisi=None,
                         dayanim_kesme: bool = False,
-                        yogunluk_tabani: bool = False
+                        yogunluk_tabani: bool = False,
+                        gec_evre: dict | None = None,
+                        dondurma: dict | None = None,
+                        yari_eksenler=None,
+                        impuls_zaman: str = "dogrusal",
+                        beta_km: bool = False,
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
     `adim_gozlemcisi(adim, t, dt, sol)` (A80): her adımdan sonra çağrılır,
     yalnız OKUR (ör. `patlama_tanisi.PatlamaGozlemcisi`). `None` → bit-aynı.
+
+    ## ADR-0050 — literatür paketi (hepsi varsayılan KAPALI, bit-aynı)
+
+    - `gec_evre = {"t_gecis", "A", "gerilme_olcekle"}` — `t_gecis`'te düşük
+      ses hızlı malzemeye geçer (`P = A μ`, enerji terimleri `0`, kayma
+      modülü ve `S` aynı oranda); adım büyür, saat mertebesi koşulabilir.
+      **L1** (Raducan & Jutzi 2022), **L3** (SCI).
+    - `dondurma = {"k_uzak", "her_adim"}` — `r > k_uzak·R` ve `v_r > v_esc`
+      parçacığı dondurur; adımı ve ağaç sürüklenmesini o belirlemesin.
+    - `yari_eksenler` — elipsoit hedefte "dışarıda" ölçütü. `None` ve sahne
+      `shape="ellipsoid"` ise `semi_axes`'ten **türetilir** (**L1**: şekil
+      `β`'yı `%15–21` değiştiriyor).
+    - `impuls_zaman = "log"` — `β(t)` örneklemesi logaritmik (uzun koşuda
+      erken evre de görünsün).
+    - `beta_km` — son durumda `β`'yı **ikinci** yolla (bağlı kütle merkezi)
+      da hesaplar, ejekta koni açısını yazar (**L1**, **L17**: koni `140°`).
+
+    Geçiş bilgisi, dondurulan sayı ve iki yöntemli `β` **fizik tanısına**
+    yazılır (kapı değil) ve durum `npz`'sine girer. `gec_evre`/`dondurma`/
+    `yari_eksenler` fizik özetine (koşu kimliğine) de girer.
 
     ## `cfl` ve `akma_kipi` (rapor A72, Protokol J)
 
@@ -600,6 +637,38 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
     x = np.atleast_2d(np.asarray(x, dtype=np.float64))
     Y = np.full((len(x), len(GOZLENEBILIRLER)), np.nan)
     kad = kademe_ayristir(kademeler, spacing)
+    # --- ADR-0050 ayarlari: SAHNE KURULMADAN ONCE dogrulanir -------------
+    # Elipsoit hedefte "disarida" olcutu yari eksenlerden okunur; verilmezse
+    # sahne tabanindan TURETILIR. Kure sahnesinde eksen verilmesi sessiz bir
+    # tutarsizlik olurdu -> HATA.
+    _yari = None if yari_eksenler is None else tuple(
+        float(t) for t in yari_eksenler)
+    _st_ = dict(sahne_taban or {})
+    if _yari is None and _st_.get("shape") == "ellipsoid" and _st_.get("semi_axes"):
+        _yari = tuple(float(t) for t in _st_["semi_axes"])
+    if _yari is not None and _st_.get("shape", "icosphere") != "ellipsoid":
+        raise ValueError("yari_eksenler yalniz elipsoit sahnede anlamli; "
+                         f"sahne sekli {_st_.get('shape', 'icosphere')!r}")
+    _gec = dict(gec_evre) if gec_evre else None
+    _gec_t = _gec_A = None
+    _gec_olcek = True
+    if _gec is not None:
+        _gec_t = float(_gec["t_gecis"])
+        _gec_A = float(_gec["A"])
+        _gec_olcek = bool(_gec.get("gerilme_olcekle", True))
+        if not (0.0 < _gec_t < t_end):
+            raise ValueError(
+                f"t_gecis (0, t_end) icinde olmali: {_gec_t} / {t_end}")
+    _dond = dict(dondurma) if dondurma else None
+    _dond_k, _dond_her = 3.0, 200
+    if _dond is not None:
+        _dond_k = float(_dond.get("k_uzak", 3.0))
+        _dond_her = int(_dond.get("her_adim", 200))
+        if _dond_her < 1:
+            raise ValueError("dondurma.her_adim >= 1 olmali")
+    if impuls_zaman not in ("dogrusal", "log"):
+        raise ValueError(
+            f"impuls_zaman 'dogrusal' ya da 'log', {impuls_zaman!r} geldi")
     for i, th in enumerate(x):
         kw = sahne_parametreleri(th, sahne_taban)
         try:
@@ -689,7 +758,13 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             _p_imp = float(np.linalg.norm(rs.impactor_momentum))
             _ehat = np.asarray(rs.impactor_momentum, dtype=np.float64) / _p_imp
             _m_h = np.ascontiguousarray(rs.m)[_h_maske]
-            _imp_t = np.linspace(0.0, t_end, IMPULS_ORNEK + 1)[1:]
+            if impuls_zaman == "log":
+                # ADR-0050: saat mertebesindeki kosuda dogrusal ornekleme
+                # erken evreyi (soku ve ilk ejektayi) HIC gormez.
+                _imp_t = np.geomspace(max(t_end * 1e-6, 1e-4), t_end,
+                                      IMPULS_ORNEK)
+            else:
+                _imp_t = np.linspace(0.0, t_end, IMPULS_ORNEK + 1)[1:]
             from ..observables.momentum_defteri import momentum_defteri
             from ..observables.momentum_transfer import escape_speed
             _m_tum = np.ascontiguousarray(rs.m, dtype=np.float64)
@@ -698,6 +773,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             _vesc_h = float(escape_speed(float(rs.target_mass), _R_h))
             _imp_k = 0
             impuls = []
+            _gec_bilgi = None
             for adim in range(1, azami_adim + 1):
                 dt = sol.compute_dt()
                 if t + dt > t_end:
@@ -706,6 +782,17 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 t += dt
                 if adim_gozlemcisi is not None:
                     adim_gozlemcisi(adim, t, dt, sol)
+                # ADR-0050: sok gectikten sonra dusuk ses hizli malzeme.
+                if _gec is not None and sol.gec_evre is None and t >= _gec_t:
+                    _gec_once = _enerji_ozeti(sol.budgets())
+                    _gec_bilgi = sol.gec_evreye_gec(
+                        _gec_A, t=t, gerilme_olcekle=_gec_olcek)
+                    _gec_bilgi["enerji_once"] = _gec_once
+                    _gec_bilgi["enerji_sonra"] = _enerji_ozeti(sol.budgets())
+                    _gec_bilgi["adim_gecis"] = int(adim)
+                if _dond is not None and adim % _dond_her == 0:
+                    sol.uzak_kacanlari_dondur(R=_R_h, v_esc=_vesc_h,
+                                              k_uzak=_dond_k)
                 while (_imp_k < len(_imp_t)
                        and t >= _imp_t[_imp_k] * (1.0 - 1e-12)):
                     # [t, hedef eksenel momentum / p_imp, beta_hedef, M_ejekta]
@@ -714,7 +801,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                     _xt = np.asarray(sol.x.numpy(), dtype=np.float64)
                     _dt_ = momentum_defteri(
                         _xt, _vt, _m_tum, mermi_kesri=_fk_tum, R=_R_h,
-                        v_esc=_vesc_h, ehat=_ehat, p_imp=_p_imp)
+                        v_esc=_vesc_h, ehat=_ehat, p_imp=_p_imp,
+                        yari_eksenler=_yari)
                     impuls.append([float(t),
                                    float(_m_h @ (_vt[_h_maske] @ _ehat)) / _p_imp,
                                    float(_dt_["beta_hedef"]),
@@ -758,13 +846,33 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 R=float(rs.target_radius),
                 v_esc=float(escape_speed(float(rs.target_mass),
                                          float(rs.target_radius))),
-                ehat=_ehat, p_imp=_p_imp)
+                ehat=_ehat, p_imp=_p_imp, yari_eksenler=_yari)
+            # ADR-0050: `beta` IKI YOLLA (Raducan & Jutzi 2022) + koni acisi.
+            # Kutle merkezi yolu baglilik siniflamasi yapar (O(N) x tur);
+            # varsayilan KAPALI, cunku kisa kosuda anlamli degil.
+            _beta2 = None
+            if beta_km:
+                from ..observables.beta_iki_yontem import beta_iki_yontem
+
+                _beta2 = beta_iki_yontem(
+                    st["x"], st["v"], st["m"], mermi_kesri=_fk,
+                    R=float(rs.target_radius), v_esc=_vesc_h, ehat=_ehat,
+                    p_imp=_p_imp, yari_eksenler=_yari)
             gecerlilik = sayisal_gecerlilik(
                 st=st, t=t, t_end=t_end, enerji=enerji, akma_tani=akma_tani,
                 akma_kipi=akma_kipi, defter=_defter)
             fizik_tani = fizik_tanilari(
                 rho_zirve=rho_zirve, alpha0_hedef=_a0_h, m_hedef=_m_h,
                 defter=_defter, enerji=enerji, impuls_egrisi=impuls)
+            # ADR-0050 kayitlari -- KAPI DEGIL, tani.
+            if _beta2 is not None:
+                fizik_tani["beta_iki_yontem"] = _beta2
+            if _gec_bilgi is not None:
+                fizik_tani["gec_evre"] = _gec_bilgi
+            if _dond is not None:
+                fizik_tani["dondurulmus"] = int(sol.dondurulmus_sayisi)
+            if _yari is not None:
+                fizik_tani["yari_eksenler"] = [float(t) for t in _yari]
             if sok_yargisi:
                 from ..observables.sok import sok_gecti
                 # A48: mermi MASKELENMELI. Aliminyum mermi `alpha0 = 1`
@@ -822,7 +930,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                                              ilk_degerlendirme,
                                              matris_cekme_siniri,
                                              mermi_h_kipi, dayanim_kesme,
-                                             yogunluk_tabani),
+                                             yogunluk_tabani, gec_evre,
+                                             dondurma, _yari),
                     # A72 / Protokol J: zaman adimi ve kuvvet aninda
                     # akma tanisi. JSON metni -- pickle gerektirmez.
                     cfl=float(cfl), akma_kipi=str(akma_kipi),
@@ -838,7 +947,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 target_mass=rs.target_mass, target_radius=rs.target_radius,
                 is_impactor=rs.is_impactor,
                 impact_direction=rs.impact_direction, x_reference=x0,
-                krater_ayarlari=krater_ayarlari)
+                krater_ayarlari=krater_ayarlari, yari_eksenler=_yari)
         except (RuntimeError, ValueError) as e:
             if ilerleme:
                 ilerleme(i, len(x), f"DUSTU: {e}")

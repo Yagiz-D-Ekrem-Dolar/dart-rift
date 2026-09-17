@@ -30,12 +30,25 @@ import math
 from dataclasses import dataclass, field
 
 __all__ = ["PeriodChange", "DIMORPHOS_SYSTEM", "period_change",
-           "beta_from_period_change", "dart_beta_budget"]
+           "beta_from_period_change", "dart_beta_budget",
+           "YENIDEN_SEKILLENME_S"]
 
 # Cheng ve digerleri 2023'un bildirdigi beta (tam yorunge analiziyle). Bu
 # modulun basit dairesel iki-cisim arayuzu ayni Delta_T'den 3,22 uretir;
 # fark KAYIT ALTINDADIR (bkz. `dart_beta_budget`), gizlenmez.
 DART_PUBLISHED_BETA = 3.6
+
+# ADR-0050 / L16: Dimorphos'un carpma sonrasi YENIDEN SEKILLENMESI (eksen
+# orani 1,06 -> ~1,3) karsilikli potansiyeli degistirir ve yorunge periyodunu
+# AYNI YONDE kisaltir. Nakano ve digerleri 2024 (PSJ 5, 133): olculen 33
+# dakikalik degisimin ~125 saniyesi, belirsizlikle ~250 saniyeye kadari
+# sekil degisiminden gelebilir. Kinetik itkiye dusen pay o kadar KUCULUR,
+# yani gozlenen beta da kuculur.
+#
+# TEYIT DUZEYI: arama ozeti (makale tam metni okunmadi). Bu yuzden KILITLI
+# degeri DEGISTIRMEZ; `dart_beta_budget` YAN YANA bir alan olarak raporlar
+# (A88 kurali: duzeltme yan yana yazilir, eski sayi silinmez).
+YENIDEN_SEKILLENME_S = (125.0, 250.0)
 
 # Didymos-Dimorphos sistemi (Daly ve digerleri 2023; Thomas ve digerleri 2023)
 DIMORPHOS_SYSTEM = {
@@ -197,10 +210,23 @@ def dart_beta_budget(impactor_momentum: float, **kw) -> dict:
     b_hi = beta_from_period_change(dT - sig, impactor_momentum, **kw)
     # beta kutleyle dogru orantili -> yayinlanan degeri verecek kutle
     m_gerekli = m_t * DART_PUBLISHED_BETA / b if b != 0.0 else float("nan")
+    # YENIDEN SEKILLENME (L16) -- YAN YANA, kilitli `beta`ya DOKUNMAZ.
+    # Sekil degisimi periyodu ayni yonde kisalttigi icin kinetik itkiye
+    # dusen |Delta_T| KUCULUR: dT_kinetik = dT + dt_sekil (dT negatif).
+    sekil = {}
+    for dts in YENIDEN_SEKILLENME_S:
+        bs = beta_from_period_change(dT + float(dts), impactor_momentum, **kw)
+        sekil[f"beta_{int(dts)}s"] = bs
+        sekil[f"bagil_dusus_{int(dts)}s"] = (b - bs) / b if b else float("nan")
     return {
         "beta": b,
         "beta_low": min(b_lo, b_hi),
         "beta_high": max(b_lo, b_hi),
+        # Kapi DEGIL, tani: sekil duzeltmesi uygulanirsa gozlenen beta.
+        "yeniden_sekillenme": {
+            "kaynak": "Nakano ve dig. 2024 (PSJ 5, 133) -- arama ozeti, "
+                      "tam metin teyidi bekliyor",
+            "dt_sekil_s": list(YENIDEN_SEKILLENME_S), **sekil},
         "delta_period_s": dT,
         "delta_period_sigma_s": sig,
         "target_mass_assumed": float(m_t),

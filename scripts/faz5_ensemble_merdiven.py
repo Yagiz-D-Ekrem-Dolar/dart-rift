@@ -195,6 +195,59 @@ def main() -> int:
                     help="A80: her 25 adimda sonluluk; ilk bozulmada tani "
                          "(patlama_tani.json + npz) bu dizine yazilir. "
                          "Fizige dokunmaz; yalniz tani kosulari icin.")
+    # ---------------- ADR-0050 literatur paketi (varsayilan KAPALI) -------
+    g = ap.add_argument_group(
+        "ADR-0050 literatur paketi",
+        "Raducan & Jutzi 2022 / Raducan 2024 / Owen 2022 -- "
+        "docs/LITERATUR-DART-SIMULASYONLARI.md S8")
+    g.add_argument("--gec-evre-t", type=float, default=None,
+                   help="gec evre gecis ani [s]; --gec-evre-A ile birlikte")
+    g.add_argument("--gec-evre-A", type=float, default=None,
+                   help="gec evre hacim modulu [Pa] (L1 ~1e5, L3 ~2,7e4)")
+    g.add_argument("--gec-evre-gerilme-olcekleme-yok", action="store_true",
+                   help="gecerken deviatorik S OLCEKLENMEZ (karsilastirma kolu)")
+    g.add_argument("--dondurma-k", type=float, default=None,
+                   help="r > k*R ve v_r > v_esc parcaciklari dondur (ADR-0050)")
+    g.add_argument("--dondurma-her", type=int, default=200,
+                   help="dondurma denetimi kac adimda bir (varsayilan 200)")
+    g.add_argument("--impuls-log", action="store_true",
+                   help="beta(t) ornekleme zamanlari LOGARITMIK (uzun kosu)")
+    g.add_argument("--beta-km", action="store_true",
+                   help="son durumda beta'yi kutle merkezi yoluyla da hesapla "
+                        "+ ejekta koni acisi (L1, L17)")
+    g.add_argument("--azami-adim", type=int, default=None,
+                   help="ileri modelin adim ust siniri (varsayilan 400000)")
+    g.add_argument("--hedef-yaricapi", type=float, default=None,
+                   help="kure hedef yaricapi [m] (SAHNE 82)")
+    g.add_argument("--hedef-yari-eksenler", type=float, nargs=3, default=None,
+                   metavar=("A", "B", "C"),
+                   help="BASIK ELIPSOIT hedef yari eksenleri [m] "
+                        "(L2 Dimorphos: 88.5 87 58); kacis olcutu de elipsoit olur")
+    g.add_argument("--carpma-acisi", type=float, default=None,
+                   help="yuzey normalinden sapma [derece] (DART ~17, L20)")
+    g.add_argument("--carpma-azimut", type=float, default=None,
+                   help="egik carpmada tegetsel yon [derece]")
+    g.add_argument("--nisan", type=float, nargs=3, default=None,
+                   metavar=("X", "Y", "Z"),
+                   help="carpma noktasini belirleyen nisan yonu (varsayilan 0 0 1)")
+    g.add_argument("--mermi-uc-kure", action="store_true",
+                   help="DART uc kure mermisi (%%88 govde + 2 x %%6 panel, "
+                        "2,215 m); kure mermi beta'yi %%10-20 fazla veriyor (L9)")
+    g.add_argument("--mermi-yuvarlanma", type=float, default=0.0,
+                   help="uc kure diziliminin gelis ekseni etrafinda donusu [derece]")
+    g.add_argument("--mermi-kutlesi", type=float, default=None,
+                   help="mermi kutlesi [kg] (DART 579,4; L1 kiyasi 500)")
+    g.add_argument("--mermi-hizi", type=float, default=None,
+                   help="mermi hizi [m/s] (DART 6144,9; L1 kiyasi 6000)")
+    g.add_argument("--mermi-yogunlugu", type=float, default=None,
+                   help="mermi yogunlugu [kg/m3] (L1 kiyasi 1000)")
+    g.add_argument("--model-sinifi", default=None, choices=("M0", "M1"),
+                   help="M0 homojen (bloksuz, L1 kiyasi), M1 bloklu (uretim)")
+    g.add_argument("--blok-kesri", type=float, default=None,
+                   help="sahne tabaninda f_boulder. DIKKAT: tasarimdaki "
+                        "theta[2] bunu EZER (sahne_parametreleri). Homojen "
+                        "kiyas kolu icin --model-sinifi M0 kullanin: M0 dalinda "
+                        "blok uretilmez ve f_boulder yoksayilir.")
     a = ap.parse_args()
 
     kok = int(SAHNE["root_seed"]) if a.root_seed is None else a.root_seed
@@ -280,6 +333,34 @@ def main() -> int:
     sahne_ek = {}
     if a.yigin_yogunlugu is not None:
         sahne_ek["bulk_density"] = float(a.yigin_yogunlugu)
+    # ADR-0050: hedef sekli / mermi geometrisi / carpma acisi
+    if a.hedef_yaricapi is not None:
+        sahne_ek["radius"] = float(a.hedef_yaricapi)
+    if a.hedef_yari_eksenler is not None:
+        sahne_ek["shape"] = "ellipsoid"
+        sahne_ek["semi_axes"] = [float(t) for t in a.hedef_yari_eksenler]
+        sahne_ek["radius"] = None
+    if a.carpma_acisi is not None:
+        sahne_ek["angle_deg"] = float(a.carpma_acisi)
+    if a.carpma_azimut is not None:
+        sahne_ek["azimuth_deg"] = float(a.carpma_azimut)
+    if a.nisan is not None:
+        sahne_ek["aim"] = [float(t) for t in a.nisan]
+    if a.mermi_uc_kure:
+        from dartrift.setup.impactor import DART_UC_KURE
+
+        sahne_ek["mermi_kureleri"] = list(DART_UC_KURE)
+        sahne_ek["mermi_yuvarlanma_deg"] = float(a.mermi_yuvarlanma)
+    if a.mermi_kutlesi is not None:
+        sahne_ek["impactor_mass"] = float(a.mermi_kutlesi)
+    if a.mermi_hizi is not None:
+        sahne_ek["impactor_speed"] = float(a.mermi_hizi)
+    if a.mermi_yogunlugu is not None:
+        sahne_ek["impactor_density"] = float(a.mermi_yogunlugu)
+    if a.model_sinifi is not None:
+        sahne_ek["model_class"] = a.model_sinifi
+    if a.blok_kesri is not None:
+        sahne_ek["f_boulder"] = float(a.blok_kesri)
     # PROTOKOL U: malzeme bir kez kurulur; degisiklik yoksa _mat() AYNEN.
     import dataclasses as _dc
 
@@ -331,6 +412,21 @@ def main() -> int:
     if a.dilim:
         yol = yol.with_suffix(f".dilim{a.dilim.replace('/', '_')}.jsonl")
 
+    # ADR-0050 kosu ayarlari
+    gec_evre = None
+    if (a.gec_evre_t is None) != (a.gec_evre_A is None):
+        raise SystemExit("--gec-evre-t ve --gec-evre-A birlikte verilmeli")
+    if a.gec_evre_t is not None:
+        gec_evre = {"t_gecis": float(a.gec_evre_t), "A": float(a.gec_evre_A),
+                    "gerilme_olcekle": not a.gec_evre_gerilme_olcekleme_yok}
+    dondurma = (None if a.dondurma_k is None
+                else {"k_uzak": float(a.dondurma_k),
+                      "her_adim": int(a.dondurma_her)})
+    if gec_evre or dondurma or a.beta_km or a.impuls_log:
+        print(f"  ADR-0050    : gec_evre={gec_evre}  dondurma={dondurma}  "
+              f"beta_km={a.beta_km}  impuls={'log' if a.impuls_log else 'dogrusal'}",
+              flush=True)
+
     def _ileri(theta):
         gozlemci = None
         if a.patlama_tanisi is not None:
@@ -356,7 +452,10 @@ def main() -> int:
             ilk_degerlendirme=a.ilk_dt_duzelt,
             matris_cekme_siniri=a.matris_cekme_siniri,
             mermi_h_kipi=a.mermi_h_kipi, adim_gozlemcisi=gozlemci,
-            dayanim_kesme=a.dayanim_kesme, yogunluk_tabani=a.yogunluk_tabani)[0]
+            dayanim_kesme=a.dayanim_kesme, yogunluk_tabani=a.yogunluk_tabani,
+            gec_evre=gec_evre, dondurma=dondurma, beta_km=a.beta_km,
+            impuls_zaman="log" if a.impuls_log else "dogrusal",
+            **({"azami_adim": int(a.azami_adim)} if a.azami_adim else {}))[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
         return y
@@ -400,6 +499,11 @@ def main() -> int:
         "yogunluk_tabani": bool(a.yogunluk_tabani),
         "sahne_ek": sahne_ek,
         "malzeme_ek": malzeme_ek,
+        "gec_evre": gec_evre,
+        "dondurma": dondurma,
+        "beta_km": bool(a.beta_km),
+        "impuls_zaman": "log" if a.impuls_log else "dogrusal",
+        "azami_adim": a.azami_adim,
         "onsel_disi": bool(a.tasarim_dosyasi is not None and onsel_disi),
         "surum": surum,
         "n_tasarim_tam": int(tam_n),
