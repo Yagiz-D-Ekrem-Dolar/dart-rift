@@ -327,3 +327,19 @@ Yeni oturum bunları **kullanıcıya yeniden sormadan** bilmeli.
   yerçekimli ~0,9 sa, orta ~2 kat+) gerçekçi tahmin **~250–450** (ince süresi
   ölçülmedi); SPH'nin 1–2 s'ye uzaması gerekirse ×5–10 → bütçe aşılır, kapsam
   daraltılır. Karşılaştırma: U+V üst sınır 440, gerçek ~20.
+- **C mi D mi (kullanıcı sordu, öznel tahmin):** D ~%40 · C ama zayıf (β tutar,
+  posterior geniş / çözünürlük sorunu) ~%25 · C güçlü (gerçek veriyle Y₀ kısıtı)
+  ~%35; her biri ±10. "A/B kesin olumlu gelsin" isteğine: **garanti verilemez**,
+  sonuca göre kural değiştirmek savunmayı çökertir.
+  - Lehine (zarf arkası, doğrulanmadı): nokta kaynak ölçeklemesiyle 0,2 s'de
+    fırlatma hızı ~8 m/s, `v_esc ≈ 8 cm/s`; `p(>v) ∝ v^(1−3μ)`, μ ≈ 0,4 → geç
+    yavaş ejekta momentumu ×~2,5 (açık ~×2). Y₀ = 1e3 Pa'da kesilme ~0,75 m/s →
+    β ≈ 2,45; Y₀ ≲ 10 Pa → β ≈ 3,2. Literatürde zayıf hedefle DART β'sını
+    üreten SPH çalışmaları var (hatırlanan: Raducan ve diğ. 2024, **teyit edilmedi**).
+  - Aleyhine: (1) ölçekleme 0,1→0,2 s'de ~+%10 bekler, model −%4,5 verdi (sayısal
+    sönüm şüphesi); (2) orta < kaba, hibrit bunu düzeltmez; (3) `R` içindeki hızlı
+    maddenin çoğu kazı değil **cismin çınlaması** (önceden ölçüldü:
+    `momentum_transfer.py` `kacis_bekleyenler` DÜZELTME notu, hedefin %26'sı,
+    çarpma noktasında en düşük) → A1 saf "`R` şartını kaldır" yanıltır, uzaysal
+    profil gerekir; (4) çarpan μ'ya çok duyarlı (0,36 → ×1,4; 0,45 → ×5) →
+    "açık kapanır" ucuz doğru olabilir ama posterior genişler.
