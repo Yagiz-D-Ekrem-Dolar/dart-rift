@@ -56,7 +56,7 @@ python scripts/faz5_ensemble_merdiven.py --device cuda:0 \
     --tasarim-dosyasi "$TAS" --kademeler kaba $ORTAK $KIYAS \
     --gec-evre-t "${GEC[$i]}" --gec-evre-A 1.0e5 \
     --dondurma-k 3.0 --dondurma-her 200 \
-    --impuls-log --beta-km --azami-adim 20000000 \
+    --impuls-log --beta-km --azami-adim 20000000 --adim-bildir 20000 \
     --out "$KOK/kampanya/${AD}.jsonl"
 rc=$?
 echo "W/$i ($AD) rc=$rc"
