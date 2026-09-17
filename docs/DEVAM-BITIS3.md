@@ -343,3 +343,12 @@ Yeni oturum bunları **kullanıcıya yeniden sormadan** bilmeli.
     çarpma noktasında en düşük) → A1 saf "`R` şartını kaldır" yanıltır, uzaysal
     profil gerekir; (4) çarpan μ'ya çok duyarlı (0,36 → ×1,4; 0,45 → ×5) →
     "açık kapanır" ucuz doğru olabilir ama posterior genişler.
+- **Kullanıcı "A'dan başlayalım" dedi**, sonra "aynı simülasyonu yapanlar var,
+  oku, feyz al" → literatür okundu: [`LITERATUR-DART-SIMULASYONLARI.md`](LITERATUR-DART-SIMULASYONLARI.md).
+  Ana bulgu: Raducan & Jutzi 2022 / Raducan ve diğ. 2024 (Bern SPH) DART'ı
+  **30 dk – 2 sa** simüle etti (geç evrede düşük ses hızı şeması + öz-yerçekimi);
+  75 m küre, `f = 0,6`: `Y₀ = 50 / 10 / 1 / 0 Pa` → `β = 3,63 / 4,18 / 4,66 / 4,93`.
+  Bizim önsel `Y₀ ≥ 1e3 Pa` ve süre 0,1–0,2 s → açığın yönü süre + önsel kırpmasıyla
+  uyumlu (hipotez). Faz A için öneri: geç evre şeması + L1 küre kıyas sınaması
+  (kullanıcı onayı bekleniyor). W protokolü henüz **yazılmadı**; TRUBA'da
+  30 koşunun `npz` durumları ve 50 noktalı β(t) eğrileri var (`*.durumlar/`).
