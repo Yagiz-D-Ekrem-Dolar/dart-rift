@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from .impactor import build_impactor, impact_geometry, place_impactor
+from .impactor import build_impactor, coklu_kure_mermi, impact_geometry, place_impactor
 from .rubble_generator import build_rubble_pile
 from .shape_mesh import TriMesh, ellipsoid, icosphere, load_obj, orient_outward
 
@@ -149,6 +149,8 @@ def build_scene(
     carpma_sahasi: str = "rastgele",
     saha_yaricapi: float = 3.0,
     saha_blok_yaricapi: float = 4.0,
+    mermi_kureleri=None,
+    mermi_yuvarlanma_deg: float = 0.0,
 ) -> Scene:
     """Config parametrelerinden tam sahneyi kur.
 
@@ -156,6 +158,12 @@ def build_scene(
     hedefin oturmus konumlari kullanilir. Verilmezse yigin uretildigi gibi
     kalir — ADR-0024'e gore bu bir kayip degildir: baslangic durumu zaten
     dengedir (maks |a_SPH| = 0 tam olarak).
+
+    `mermi_kureleri` (ADR-0050): `None` -> tek kure (eski yol, bit-ayni).
+    Verilirse `[(kutle_payi, yanal_ofset_m), ...]` -- ornegin
+    `impactor.DART_UC_KURE` (Owen ve dig. 2022: kure mermi `beta`yi zayif
+    hedefte %10-20 fazla veriyor). `mermi_yuvarlanma_deg` kurelerin dizildigi
+    dogruyu gelis ekseni etrafinda dondurur.
     """
     mesh = _build_mesh(shape, radius=radius, semi_axes=semi_axes,
                        subdiv=subdiv, obj_path=obj_path, obj_units=obj_units)
@@ -218,10 +226,16 @@ def build_scene(
         }
 
     # carpma geometrisi ve mermi
-    imp = place_impactor(
-        build_impactor(n_impactor, mass=impactor_mass, speed=impactor_speed,
-                       density=impactor_density),
-        geom, standoff=standoff)
+    if mermi_kureleri is None:
+        imp = place_impactor(
+            build_impactor(n_impactor, mass=impactor_mass, speed=impactor_speed,
+                           density=impactor_density),
+            geom, standoff=standoff)
+    else:
+        imp = coklu_kure_mermi(
+            n_impactor, mermi_kureleri, geom, mass=impactor_mass,
+            speed=impactor_speed, density=impactor_density, standoff=standoff,
+            yuvarlanma_deg=mermi_yuvarlanma_deg)
 
     n_t, n_i = len(x_t), imp.n
     r_eff = float((3.0 * mesh.volume / (4.0 * np.pi)) ** (1.0 / 3.0))
@@ -289,6 +303,7 @@ def build_scene(
                 imp.diagnostics["particles_across_diameter"]),
             "pile": pile.diagnostics,
             "carpma_sahasi": carpma_sahasi,
+            "mermi_kureleri": imp.diagnostics.get("coklu_kure"),
             "settling": settle_diag,
         },
         blok_alani=pile.boulders,

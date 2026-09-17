@@ -255,7 +255,14 @@ class WarpSolid3D:
                     f"{mat.tillotson.rho0}: ADR-0032 alpha eslemesi bozulur")
             self._mermi = wp.array(mk.astype(np.uint8), dtype=wp.uint8, device=dev)
             self._tp_m = make_tillotson_wp(mermi_tillotson)
+        self._mermi_tillotson = mermi_tillotson
         self._sp = make_strength_wp(mat.strength)
+        # GEC EVRE (ADR-0050): ETKIN kayma modulu. Gecisten once malzemeninki
+        # (ayni float -> bit-ayni); `gec_evreye_gec` onu `A` orani kadar
+        # kucultur. `None` -> gecis yapilmadi.
+        self._G_etkin = float(mat.strength.shear_G)
+        self.gec_evre: dict | None = None
+        self._dondurulmus = 0
         self._pp = make_porosity_wp(mat.porosity)
         # --- Grady-Kipp hasar (P2 §1.3 STRETCH; ADR-0027) ---
         self._damage = mat.damage.enabled
@@ -497,7 +504,7 @@ class WarpSolid3D:
         if self.mat.strength.enabled:
             self._launch(
                 SS.stress_rate_3d,
-                [self.L, self.S, F(self.mat.strength.shear_G),
+                [self.L, self.S, F(self._G_etkin),
                  1 if self.mat.strength.jaumann else 0, self.dSdt],
             )
         else:
@@ -616,6 +623,106 @@ class WarpSolid3D:
             self._eval()
             self._evaluated = True
 
+    # -- GEC EVRE HIZLI ENTEGRASYON (ADR-0050) ------------------------------
+    def gec_evreye_gec(self, A_gec: float, *, t: float | None = None,
+                       gerilme_olcekle: bool = True) -> dict:
+        """Şok geçtikten sonra **düşük ses hızlı** malzemeye geç.
+
+        Raducan & Jutzi 2022 (*PSJ* 3, 128) ve Raducan ve diğ. 2022
+        (Hayabusa2 SCI): geç evre düşük hızlı granüler akıştır ve
+        *"low bulk sound speed material"* ile modellenebilir. Geçişte
+        Tillotson'un **enerji terimleri sıfırlanır** (`a = b = 0`), `B = 0`
+        ve hacim modülü `A → A_gec` (L1: `~0,1 MPa`, L3: `0,027 MPa`);
+        kayma modülü **aynı oranda** küçültülür. Zaman adımı `c_long`
+        üzerinden kendiliğinden büyür (`compute_dt`).
+
+        - Hedef ve mermi **ikisi de** geçer: aksi halde alüminyumun ses
+          hızı adımı küçük tutar.
+        - `gerilme_olcekle`: deviatorik `S` de aynı oranla ölçeklenir; yani
+          elastik **gerinim** geçişte süreklidir (yumuşayan malzeme aynı
+          gerinimde daha az gerilme taşır). `False` yalnız karşılaştırma içindir.
+        - `u` ve `v` değişmez → `e_kin + e_int` geçişte **süreklidir**.
+        - Gözenek güncellemesi yeni EOS'u görür (`P_s = A_gec μ` küçük → pratikte
+          yeni ezilme yok).
+
+        Hasar modeliyle birlikte **desteklenmez** (Young modülü ayrı kurulur);
+        sessizce yanlış çalışmasın diye reddedilir.
+        """
+        import dataclasses as _dc
+
+        if self.gec_evre is not None:
+            raise ValueError("gec_evreye_gec ikinci kez cagrildi")
+        if self.mat.eos != "tillotson":
+            raise ValueError("gec evre yalniz Tillotson EOS ile")
+        if self._damage:
+            raise ValueError("gec evre hasar modeliyle desteklenmiyor")
+        A_gec = float(A_gec)
+        if not (np.isfinite(A_gec) and A_gec > 0.0):
+            raise ValueError(f"A_gec pozitif ve sonlu olmali, {A_gec} geldi")
+        A_eski = float(self.mat.tillotson.A)
+        if A_gec >= A_eski:
+            raise ValueError(f"A_gec ({A_gec}) hacim modulunden ({A_eski}) "
+                             "kucuk olmali -- gec evre YUMUSATMADIR")
+        oran = A_gec / A_eski
+        yeni = _dc.replace(self.mat.tillotson, A=A_gec, B=0.0, a=0.0, b=0.0)
+        self._tp = make_tillotson_wp(yeni)
+        if self._mermi is not None:
+            yeni_m = _dc.replace(self._mermi_tillotson, A=A_gec, B=0.0,
+                                 a=0.0, b=0.0)
+            self._tp_m = make_tillotson_wp(yeni_m)
+        G_eski = self._G_etkin
+        self._G_etkin = G_eski * oran
+        if gerilme_olcekle and self.mat.strength.enabled:
+            self.S = wp.array(self.S.numpy().astype(np.float64) * oran,
+                              dtype=M3, device=self.device)
+        # Yeni EOS ile HEMEN degerlendir: bir sonraki `compute_dt` eski
+        # ses hizini gormesin.
+        self._eval()
+        self._evaluated = True
+        self.gec_evre = {
+            "t_gecis": None if t is None else float(t),
+            "A_eski": A_eski, "A_gec": A_gec, "oran": oran,
+            "G_eski": G_eski, "G_gec": self._G_etkin,
+            "gerilme_olceklendi": bool(gerilme_olcekle),
+            "adim": int(self._step_count),
+        }
+        return dict(self.gec_evre)
+
+    def uzak_kacanlari_dondur(self, *, R: float, v_esc: float,
+                              k_uzak: float = 3.0,
+                              merkez=(0.0, 0.0, 0.0)) -> int:
+        """Cisimden **çok uzağa** kaçmış parçacıkları dondur (etkinliği kapat).
+
+        `r > k_uzak·R` **ve** `v_r > v_esc` olan parçacık artık cisimle
+        etkileşmez; uzun (saat mertebesi) koşuda zaman adımını ve
+        yerçekimi ağacı sürüklenme denetimini onun hızı belirlemesin.
+        Konumu ve hızı **olduğu gibi** saklanır → momentum defteri onu
+        kaçan olarak saymaya devam eder. Yerçekimsiz koşuda serbest
+        parçacık zaten yavaşlamaz; yerçekimli koşuda `k_uzak·R`'den sonraki
+        yavaşlama ihmal edilir (`β` literatürde fırlatma hızından sayılır).
+
+        Döner: bu çağrıda dondurulan parçacık sayısı.
+        """
+        if k_uzak <= 1.0:
+            raise ValueError(f"k_uzak > 1 olmali, {k_uzak} geldi")
+        x = self.x.numpy().astype(np.float64) - np.asarray(merkez, np.float64)
+        v = self.v.numpy().astype(np.float64)
+        act = self.active.numpy().astype(bool)
+        r = np.linalg.norm(x, axis=1)
+        vr = np.einsum("ij,ij->i", v, x) / np.maximum(r, 1e-300)
+        sec = act & (r > float(k_uzak) * float(R)) & (vr > float(v_esc))
+        k = int(sec.sum())
+        if k:
+            act[sec] = False
+            self.active = wp.array(act.astype(np.uint8), dtype=wp.uint8,
+                                   device=self.device)
+            self._dondurulmus += k
+        return k
+
+    @property
+    def dondurulmus_sayisi(self) -> int:
+        return int(self._dondurulmus)
+
     # -- KDK + tam trapez (solid_ref.step_kdk_solid ile ayni sira) ----------
     def step(self, dt: float) -> None:
         if not self._evaluated:
@@ -644,8 +751,12 @@ class WarpSolid3D:
             # parcacik ARALIGINA gore surukleneye baglidir, adim sayisina
             # degil. Ust sinir global maks hizla biriktirilir — kesin
             # surukleneden buyuk oldugu icin guvenli taraftadir.
-            vmax = float(np.sqrt(np.max(np.sum(
-                self.v.numpy().astype(np.float64) ** 2, axis=1))))
+            # ADR-0050: DONDURULMUS (etkin olmayan) parcacik hareket etmez;
+            # hepsi etkinken secim dizinin kendisidir (bit-ayni).
+            _v2 = np.sum(self.v.numpy().astype(np.float64) ** 2, axis=1)
+            if self._dondurulmus > 0:
+                _v2 = _v2[self.active.numpy().astype(bool)]
+            vmax = float(np.sqrt(np.max(_v2))) if len(_v2) else 0.0
             self._tree_drift += abs(dt) * vmax
             self._tree_drift_max = max(self._tree_drift_max, self._tree_drift)
         self._eval()  # (x1, v_half)
@@ -700,10 +811,10 @@ class WarpSolid3D:
         if self.mat.strength.enabled and self._kes is not None:
             # A80: kesik parcacik kayma dalgasi TASIMAZ; G/rho terimi yok.
             # (Kesmesiz yol asagida AYNEN: bit-ayni.)
-            g_eff = self.mat.strength.shear_G * (1.0 - self.kesik.numpy())
+            g_eff = self._G_etkin * (1.0 - self.kesik.numpy())
             c_long = np.sqrt(cs**2 + (4.0 / 3.0) * g_eff / rho)
         elif self.mat.strength.enabled:
-            c_long = np.sqrt(cs**2 + (4.0 / 3.0) * self.mat.strength.shear_G / rho)
+            c_long = np.sqrt(cs**2 + (4.0 / 3.0) * self._G_etkin / rho)
         else:
             c_long = cs
         divv = self.divv.numpy()
@@ -762,7 +873,7 @@ class WarpSolid3D:
             # ADR-0012 — `u` bu isi zaten tasiyor)
             ss = np.einsum("nab,nab->n", s["S"], s["S"])
             row["e_dev_stored"] = float(
-                np.sum(s["m"] * ss / (4.0 * self.mat.strength.shear_G * s["rho"]))
+                np.sum(s["m"] * ss / (4.0 * self._G_etkin * s["rho"]))
             )
             if self._damage:
                 # `e_dev_stored` HAM S'den hesaplanir; hasarli malzemede
@@ -773,7 +884,7 @@ class WarpSolid3D:
                 f2 = (1.0 - np.clip(self.D.numpy(), 0.0, 1.0)) ** 2
                 row["e_dev_effective"] = float(
                     np.sum(s["m"] * f2 * ss
-                           / (4.0 * self.mat.strength.shear_G * s["rho"]))
+                           / (4.0 * self._G_etkin * s["rho"]))
                 )
         return row
 

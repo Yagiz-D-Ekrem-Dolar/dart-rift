@@ -32,9 +32,11 @@ __all__ = [
     "DART_MASS",
     "DART_SPEED",
     "DART_MOMENTUM",
+    "DART_UC_KURE",
     "Impactor",
     "ImpactGeometry",
     "build_impactor",
+    "coklu_kure_mermi",
     "impact_geometry",
     "place_impactor",
     "resolution_series",
@@ -314,6 +316,75 @@ def place_impactor(
         radius=imp.radius, spacing=imp.spacing, density=imp.density,
         diagnostics={**imp.diagnostics, "standoff": off,
                      "impact_point": geom.point, "angle_deg": geom.angle_deg},
+    )
+
+
+#: ADR-0050 — DART "üç küre" mermisi (Owen ve diğ. 2022, *PSJ* 3, 218;
+#: DART çarpma modelleme grubunun en iyi uygulaması, Stickle ve diğ. LPSC 2023).
+#: `(kütle payı, yanal ofset [m])`: ortada gövde (%88), iki yanda güneş paneli
+#: küreleri (%6 + %6), merkezler arası **2,215 m** (panel boyunun dörtte biri).
+#: TEYİT DÜZEYİ: arama özeti — bir başka özette 2,33 m geçiyor. Protokol bu
+#: değeri kilitler ya da ofseti duyarlılık olarak tarar.
+DART_UC_KURE = ((0.88, 0.0), (0.06, -2.215), (0.06, 2.215))
+
+
+def coklu_kure_mermi(
+    n_target: int,
+    kureler,
+    geom: ImpactGeometry,
+    *,
+    mass: float = DART_MASS,
+    speed: float = DART_SPEED,
+    density: float = 2700.0,
+    standoff: float | None = None,
+    yuvarlanma_deg: float = 0.0,
+) -> Impactor:
+    """Birden çok küreden oluşan mermi (ör. :data:`DART_UC_KURE`), yerleştirilmiş.
+
+    Her küre aynı yoğunlukta; parçacık sayısı **kütle payıyla orantılı** →
+    parçacık kütleleri ve aralıkları kürelerde (yuvarlama dışında) aynı; SPH
+    komşu kütle oranı bozulmaz. Küre merkezleri **geliş yönüne dik** bir
+    doğru üzerindedir (paneller gövdenin yanında); doğrunun yönü
+    `yuvarlanma_deg` ile geliş ekseni etrafında döndürülür. Hepsi aynı
+    ön düzlemde başlar: `standoff` en büyük kürenin yarıçapından türetilir.
+    """
+    kureler = [(float(p), float(o)) for p, o in kureler]
+    if not kureler:
+        raise ValueError("kureler bos olamaz")
+    paylar = np.array([p for p, _ in kureler])
+    if np.any(paylar <= 0.0) or abs(float(paylar.sum()) - 1.0) > 1e-9:
+        raise ValueError(f"kutle paylari pozitif ve toplami 1 olmali: {paylar}")
+    d = _unit(geom.direction)
+    tmp = np.array([1.0, 0.0, 0.0])
+    if abs(float(np.dot(tmp, d))) > 0.9:
+        tmp = np.array([0.0, 1.0, 0.0])
+    e1 = _unit(np.cross(d, tmp))
+    e2 = np.cross(d, e1)
+    yv = math.radians(yuvarlanma_deg)
+    t_hat = math.cos(yv) * e1 + math.sin(yv) * e2
+    parcalar = [build_impactor(max(8, int(round(n_target * p))), mass=mass * p,
+                               speed=speed, density=density) for p, _ in kureler]
+    buyuk = max(parcalar, key=lambda q: q.radius)
+    off = (buyuk.radius + buyuk.spacing) if standoff is None else float(standoff)
+    xs, vs, ms = [], [], []
+    for q, (_, ofset) in zip(parcalar, kureler, strict=True):
+        yer = place_impactor(q, geom, standoff=off)
+        xs.append(yer.x + ofset * t_hat[None, :])
+        vs.append(yer.v)
+        ms.append(yer.m)
+    x = np.vstack(xs)
+    return Impactor(
+        x=x, m=np.concatenate(ms), v=np.vstack(vs), radius=buyuk.radius,
+        spacing=buyuk.spacing, density=density,
+        diagnostics={
+            **buyuk.diagnostics, "standoff": off,
+            "impact_point": geom.point, "angle_deg": geom.angle_deg,
+            "coklu_kure": [{"pay": p, "ofset_m": o, "n": q.n,
+                            "yaricap_m": q.radius}
+                           for (p, o), q in zip(kureler, parcalar, strict=True)],
+            "yuvarlanma_deg": float(yuvarlanma_deg),
+            "n_actual": int(len(x)),
+        },
     )
 
 

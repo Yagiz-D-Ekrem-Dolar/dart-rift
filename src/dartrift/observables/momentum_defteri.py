@@ -150,8 +150,27 @@ def plato_gecti(t, deger, *, pencere: float = 0.2,
     }
 
 
+def disarida_maskesi(x, *, R: float, yari_eksenler=None) -> np.ndarray:
+    """Parçacık başlangıç yüzeyinin **dışında** mı.
+
+    Küre: `r > R`. `yari_eksenler = (a, b, c)` verilirse (ADR-0050, basık
+    elipsoit hedef) eksenlere hizalı, merkezi orijinde elipsoidin dışı:
+    `(x/a)² + (y/b)² + (z/c)² > 1`. Elipsoitte `r > R_eş` kullanmak uzun
+    eksen ucundaki yüzey maddesini (`r` = 88 m > `R_eş` = 76 m) "dışarıda"
+    sayar ve cismin çınlamasını ejekta diye toplardı.
+    """
+    x = np.asarray(x, dtype=np.float64)
+    if yari_eksenler is None:
+        return np.linalg.norm(x, axis=1) > float(R)
+    a, b, c = (float(t) for t in yari_eksenler)
+    if min(a, b, c) <= 0.0:
+        raise ValueError(f"yari_eksenler pozitif olmali, {(a, b, c)} geldi")
+    s = (x[:, 0] / a) ** 2 + (x[:, 1] / b) ** 2 + (x[:, 2] / c) ** 2
+    return s > 1.0
+
+
 def momentum_defteri(x, v, m, *, mermi_kesri, R, v_esc, ehat,
-                     p_imp: float) -> dict:
+                     p_imp: float, yari_eksenler=None) -> dict:
     """Momentumu **provenance** ve **kaçış** ile dört kutuya ayır.
 
     Parameters
@@ -161,6 +180,9 @@ def momentum_defteri(x, v, m, *, mermi_kesri, R, v_esc, ehat,
     R, v_esc
         Kaçış ölçütü: `r > R` **ve** `v_r > v_esc`. Yerçekimi kapalıyken
         bu parçacık bir daha yavaşlamaz (rapor A12).
+    yari_eksenler
+        ADR-0050: elipsoit hedefte "dışarıda" ölçütü (bkz.
+        :func:`disarida_maskesi`). `None` → küre, bit-aynı.
     ehat
         Merminin gidiş yönü (birim). Momentum bu eksene izdüşürülür.
     p_imp
@@ -183,7 +205,10 @@ def momentum_defteri(x, v, m, *, mermi_kesri, R, v_esc, ehat,
     r = np.linalg.norm(x, axis=1)
     with np.errstate(invalid="ignore", divide="ignore"):
         v_r = np.einsum("ij,ij->i", v, x) / np.maximum(r, 1e-300)
-    kacan = (r > R) & (v_r > v_esc)
+    if yari_eksenler is None:
+        kacan = (r > R) & (v_r > v_esc)
+    else:
+        kacan = disarida_maskesi(x, R=R, yari_eksenler=yari_eksenler) & (v_r > v_esc)
 
     # P_ejekta EKSENEL izdusum: `beta` carpma dogrultusundaki
     # momentumdan geliyor, buyuklukten degil. Tam VEKTOR de
