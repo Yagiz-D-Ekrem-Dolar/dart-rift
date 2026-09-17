@@ -164,6 +164,11 @@ uygulanmadı; her biri ADR + koşudan önce kilitli protokol ister.
 | **11** | Karar kuralı (yeni protokoller için, **geriye dönük değil**): tarih eşleme `I < 3`, paydada **model eksikliği** terimi (mermi geometrisi, açı, şekil, çözünürlük) | L19 | — | protokol |
 | **12** | Çarpma açısı ~17° (sistematik terim) | L5, L13, L20 | küçük ↓ | düşük öncelik |
 
+**Not (2026-09-17, ölçüldü):** Öncelik 10 için **kod değişikliği gerekmiyor**:
+`kademe_ayristir` aralıkları metre cinsinden serbest alıyor (`r:s` çiftleri,
+tek kısıt `s ≤ taban aralık`). Kademeli kabuk denemesi yalnız yeni bir
+merdiven listesi (ör. `2` yerine `√2` oranlı, daha çok basamak) ve ölçüm ister.
+
 ## 9. Bu tarama projeye ne söylüyor
 
 - U/V'nin "ulaşmıyor" sonucu, literatürdeki başarılı DART modellerinin üç ortak
