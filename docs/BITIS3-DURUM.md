@@ -92,6 +92,32 @@ En iyi model `β ≈ 2,05` (Y₀ = 10 Pa), gözlem `3,12 ± 0,34`; en yakın `z 
 DART β'sını üretmiyor → iç yapı çıkarımı gerçek veriyle yapılamaz.* Ayrıntı:
 defter KAYIT-057, KAYIT-064; veri `docs/olcumler/U_V_2026-09-17/`.
 
+### 3d. Kurtarma yolu: literatür paketi ve Protokol W (2026-09-17 akşam)
+
+U/V'nin negatif sonucundan sonra literatür tarandı
+([`LITERATUR-DART-SIMULASYONLARI.md`](LITERATUR-DART-SIMULASYONLARI.md)).
+Aynı çarpışmayı üreten çalışmalarda üç ortak özellik bizde eksikti: **süre**
+(30 dk – 2 sa), **geç evre düşük ses hızı şeması** ve **çok düşük kohezyon**
+(< birkaç Pa). L1 (Raducan & Jutzi 2022): `Y₀ = 50/10/1/0 Pa` → `β =
+3,63/4,18/4,66/4,93`.
+
+[ADR-0050](adr/ADR-0050-literatur-paketi-gec-evre-ve-olcum.md) bu araçları
+koda ekledi (hepsi varsayılan kapalı, eski yollar bit-aynı):
+geç evre şeması, uzak kaçanı dondurma, `β` iki yöntem + koni açısı, elipsoit
+kaçış ölçütü, üç küre mermi, yeniden şekillenme düzeltmesi (gözlenen `β`
+`%6–13` düşer), tarih eşleme `I < 3`, blok çözünürlük tanısı.
+
+[PROTOKOL-W](truba/PROTOKOL-W-KIYAS.md) **koşudan önce** kilitlendi: kendi
+kodumuz L1'in küresini (75 m, `ρ 1600`, homojen, 500 kg / `ρ 1000` / 6 km/s,
+öz-yerçekimi açık) yeniden üretebiliyor mu? Ölçüt faktör 2 bandı + eğilim +
+geçiş anı sağlamlığı. W0 zamanlama koşusu (iş `1566860`) gönderildi; `t_end`
+seçimi `scripts/w_sure_karari.py` ile kuralla yapılacak.
+
+**Ek tanı (kilitli yargıyı değiştirmez, KAYIT-065 §6):** U/V'nin kırptığı
+madde (`r ≤ R`, `v_r > v_esc`) 30/30 koşuda **kazı benzeri** (çarpma
+noktasına yığılmış); hepsi kaçsaydı `β` üst sınırı `2,04 – 4,53`. Bloklar
+kaba düzeyde çözülmüyor (**A89**: blok kütlesinin `%99,3`'ü).
+
 ## 4. Bitiş 3'e kalan
 
 1. D kilitli yargısı (plato anı). Önsel içindeyse → gerçek gözlemle
