@@ -352,3 +352,12 @@ Yeni oturum bunları **kullanıcıya yeniden sormadan** bilmeli.
   uyumlu (hipotez). Faz A için öneri: geç evre şeması + L1 küre kıyas sınaması
   (kullanıcı onayı bekleniyor). W protokolü henüz **yazılmadı**; TRUBA'da
   30 koşunun `npz` durumları ve 50 noktalı β(t) eğrileri var (`*.durumlar/`).
+- Kullanıcı "A/B/C'den önce genel literatüre de bak, yarayan değişiklikleri bizde
+  yapalım" dedi → genişletilmiş tarama: `LITERATUR-DART-SIMULASYONLARI.md` §7–9
+  (L8–L20). Öncelikli değişiklik listesi §8 (12 madde): geç evre şeması + öz-yerçekimi
+  + 1–2 sa; Y₀ 0–500 Pa ve μ_f belirsiz; β iki yöntem; L1 kıyas sınaması; üç küre
+  mermi (β ↓ %10–20); basık elipsoit + hacim/kütle eşleme; gözlenen β'ya yeniden
+  şekillenme sistematiği (↓ %6–13); ejekta kütlesi/koni ek gözlenebilir; blok
+  çözünürlüğü; merdiven kademeleri; tarih eşleme `I < 3` + model eksikliği terimi;
+  17° açı. **Hera varışı Aralık 2026 sonu** → HT mührü öncesinde. Uygulama sırası
+  için kullanıcı onayı bekleniyor.

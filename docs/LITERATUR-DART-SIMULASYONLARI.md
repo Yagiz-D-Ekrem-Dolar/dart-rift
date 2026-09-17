@@ -118,3 +118,66 @@ hipotezdir; bizim kodumuzla sınanmadan sonuç sayılmaz.
 - L2 β'nın yanında ejekta konisi ve ejekta kütlesini de kullandı; biz yalnız β
   kullanıyoruz → yoğunluk/blok kesri tek başına β'dan ayrışmayabilir.
 - L7 okunamadı; L6'da simülasyon bitiş zamanı bulunamadı.
+
+---
+
+## 7. Genişletilmiş tarama (2026-09-17, aynı gün)
+
+Kullanıcı: *"sadece bunu değil genel fizik simülasyonu, benzer makalelere bak;
+onlarda yarayan değişiklikleri A/B/C'den önce bizde yapalım."* "Teyit" sütunu:
+**tam metin** = makale sayfaları okundu; **sayfa özeti** = yayıncı sayfasından
+araç özeti; **arama özeti** = yalnız arama sonucu (birebir teyit edilmedi).
+
+| # | çalışma | ne buldu (bizimle ilgili) | teyit |
+|---|---|---|---|
+| L8 | Raducan, Jutzi, Zhang, Ormö, Michel 2022, *A&A* 665, L10 — [arXiv:2209.02677](https://arxiv.org/abs/2209.02677) | Bern SPH, 160 m moloz küre, **2,5e6** parçacık (mermide 50); matris Drucker-Prager `Y = 0`, `f = 0,56`, %35 gözenek; bloklar `Y = 1e7 Pa`, çekme ~1 MPa, `f = 0,8`; bloklar pkdgrav/SSDEM çöküşünden. Geç evre şeması `t_geçiş = 5, 50, 500 s`, **2 saate kadar**. Blok kütle kesri **> %35**: `β ≈ 1,5–3,2` (homojen `4,3`'ten **%60'a kadar düşük**); **< %20**: çarpma noktası yakınındaki blok `β`'yı −%35 / +%15 değiştiriyor; çarpma yeri kaynaklı yayılma ~%60. En küçük çözülebilen blok yarıçapı 2,5 m (~30 parçacık). `v/U > 1e-2` ejekta "çözülmemiş" sayılmış. | tam metin (s. 1–4) |
+| L9 | Owen ve diğ. 2022, *PSJ* 3, 218 — [doi:10.3847/PSJ/ac8932](https://iopscience.iop.org/article/10.3847/PSJ/ac8932) | Spheral/CTH/iSALE: **küre mermi β'yı gerçek DART geometrisine göre fazla veriyor** — zayıf hedefte %10–20, güçlüde %5–25. "Üç küre" modeli etkinin çoğunu yakalıyor; silindir yakalamıyor. Spheral: çarpma noktasında 5 cm, dışa doğru kademeli kabuklar. | sayfa özeti |
+| L10 | Stickle ve diğ. 2023 LPSC #2563; 2025 *PSJ* 6, 38 — [doi:10.3847/PSJ/ad944d](https://iopscience.iop.org/article/10.3847/PSJ/ad944d) | DART IWG varsayımları: `ρ = 2400 ± 300`, blok SFD Dimorphos'tan, blok kayma dayanımı 1 MPa / çekme 1 kPa, **mermi = üç alüminyum küre** (L9). Gözlemler: periyot/hız değişimi, β, ejekta morfolojisi, ejekta kütlesi. Sonuç: yüzey dayanımı **birkaç Pa – onlarca kPa**, krater **~40–60 m**. | LPSC tam metin; PSJ arama özeti |
+| L11 | Senel ve diğ. 2025, *PSJ* — [doi:10.3847/PSJ/addf31](https://iopscience.iop.org/article/10.3847/PSJ/addf31) (iSALE-3D) | Dimorphos neredeyse kohezyonsuz (< birkaç Pa), küresel yeniden yüzeylenme. **1–10 Pa'da yüzey eğriliği momentum aktarımını düz yüzeye göre %44 ± 10 azaltıyor.** 1–80 Pa homojen de, katmanlı/kümeli bloklu iç yapı da β = 2,2–4,9 ile uyumlu → **β tek başına iç yapıyı ayırt etmiyor.** | arama özeti |
+| L12 | Senel ve diğ. 2025, *MNRAS* 545 — [doi:10.1093/mnras/staf2162](https://academic.oup.com/mnras/article/545/3/staf2162/8365559) | Yakın bloklar yalnız çarpma noktasından ~10 m (~16 mermi yarıçapı) içinde etkili; net β değişimi ≤ %8. | arama özeti |
+| L13 | Dai ve diğ. 2024, *PSJ* 5 — [doi:10.3847/PSJ/ad72eb](https://iopscience.iop.org/article/10.3847/PSJ/ad72eb) | Yüzeyin hemen altındaki büyük blok "ters zırhlama" ile momentum aktarımını **%50'ye kadar artırabiliyor**; 60–75° eğik çarpmada keskin düşüş. | arama özeti |
+| L14 | Jiao, Yan, Cheng, Baoyin 2024, *MNRAS* 527, 10348 — [doi:10.1093/mnras/stad3888](https://doi.org/10.1093/mnras/stad3888) | **SPH–DEM hibrit**: erken evre SPH, geç evre bloklar DEM; DART'ın momentum aktarımı ve kütle atımını yeniden üretiyor; temas O(N)→O(N^2/3), yerçekimi ~100× hızlı. | arama özeti |
+| L15 | Kumamoto ve diğ. 2022 — [arXiv:2209.11876](https://arxiv.org/abs/2209.11876) | 7 malzeme parametresinde **300+ 3B simülasyon**, ML; aynı hız değişimini birçok özellik birleşimi üretebiliyor → dayanımı ayırmak için **kütle ya da krater boyutu** gerekli. | özet sayfası |
+| L16 | Nakano ve diğ. 2024, *PSJ* 5, 133 — [doi:10.3847/PSJ/ad4350](https://iopscience.iop.org/article/10.3847/PSJ/ad4350); inceleme [arXiv:2502.14990](https://arxiv.org/abs/2502.14990) | Dimorphos'un yeniden şekillenmesi (eksen oranı 1,06 → ~1,3) 33 dk periyot değişiminin **~125 s'sini (belirsizlikle ~250 s'ye kadar)** açıklayabilir, **aynı yönde** (kısaltıyor). İnceleme: yeniden şekillenme hesaba katılınca `ΔV_T = 2,42 mm/s` (diğer analiz 2,70); β yeniden hesaplanmamış; en büyük belirsizlik Dimorphos kütlesi; **Hera varışı Aralık 2026 sonu.** | Nakano arama özeti; inceleme özet sayfası |
+| L17 | Lolachi ve diğ. 2025, *PSJ* — [doi:10.3847/PSJ/adec6b](https://iopscience.iop.org/article/10.3847/PSJ/adec6b); Dotto ve diğ. 2024, *Nature* — [doi:10.1038/s41586-023-06998-2](https://www.nature.com/articles/s41586-023-06998-2) | Ejekta kütlesi **1,6 ± 0,3 × 10⁷ kg** (LICIACube); ejekta konisi açıklığı **140 ± 4°** (başka analizde eliptik ~95° × ~133°); ejekta hızları onlarca m/s – ~500 m/s. | arama özeti |
+| L18 | Herreros & Charnoz 2026 — [arXiv:2606.15459](https://arxiv.org/abs/2606.15459) | Kazılan kütlenin çoğunu taşıyan **1–9 cm/s** yavaş ejekta; yeniden toplanan kütlenin > %99'u 5 saatte Dimorphos'a dönüyor. | özet sayfası |
+| L19 | Vernon, Goldstein, Bower (galaksi oluşumu) — [Stat. Sci. 29(1)](https://projecteuclid.org/journals/statistical-science/volume-29/issue-1/Galaxy-Formation-Bayesian-History-Matching-for-the-Observable-Universe/10.1214/12-STS412.pdf) | **Tarih eşleme (history matching):** `I = |E[f(x)] − z| / √(Var_vekil + σ²_gözlem + σ²_model)`; kesme `I < 3` (Pukelsheim 3σ). Model eksikliği (**model discrepancy**) terimi açıkça var. | arama özeti |
+| L20 | Daly ve diğ. 2023 (arama özeti üzerinden) | DART, Dimorphos'un şekil merkezine < 25 m, yüzey normaline **~17°** açıyla çarptı. | arama özeti |
+
+## 8. Bizde yapılacak değişiklikler — kanıta göre sıralı öneri
+
+İşaret: β'ya beklenen etki yönü (↑ artırır, ↓ azaltır). Hiçbiri henüz
+uygulanmadı; her biri ADR + koşudan önce kilitli protokol ister.
+
+| öncelik | değişiklik | kanıt | β etkisi | maliyet |
+|---|---|---|---|---|
+| **1** | Geç evre hızlı entegrasyon şeması (EOS → `P = A(1 − ρ/ρ₀)`, `A ≈ 0,03–0,1 MPa`, kayma modülü orantılı) + öz-yerçekimi + **~1–2 sa** simülasyon | L1, L2, L3, L8 | **↑↑** (zayıf hedefte asıl momentum) | kod (GPU yok) + uzun koşular |
+| **2** | `Y₀` önseli **0–500 Pa**; sürtünme `μ_f` sabit 0,6 yerine belirsiz (0,4–1,0; L2 en iyi 0,55) | L1 Tablo 2, L2, L11 | ↑ (Y₀ ↓); `μ_f` 0,4→1,0: `β` ~%25 düşer | tasarım/önsel |
+| **3** | β **iki yöntemle**: kaçan momentum + yeniden toplanma sonrası kütle merkezi | L1, L2 | doğrulama | küçük kod |
+| **4** | Kıyas sınaması: L1 küresi (75 m, 1600, 500 kg, 6 km/s, `Y₀ = 50/10/1/0`, `μ_f = 0,6`) Tablo 2'ye karşı; `t_geçiş` en az iki değer (L3, L8) | L1, L3, L8 | güven | ~4–8 kaba koşu |
+| **5** | Mermi: tek küre yerine **üç alüminyum küre** (DART IWG) ya da en azından sistematik terim | L9, L10 | **↓ %10–20** | sahne kodu |
+| **6** | Hedef şekli: küre `R = 81,9 m` yerine **basık elipsoit** (177×174×116 m) + hacim/kütle tutarlılığı (sahne hacmi şekil modelinin ~1,27 katı) | L1 (elipsoit `β` küreden %15–21 yüksek), L2, L11 | ↑ (şekil) / kütle eşlemesi | sahne kodu |
+| **7** | Gözlenen β'ya **yeniden şekillenme sistematiği** (~125–250 s, aynı yön) — kilitli değerin yanına ayrı satır | L16 | gözlem `β − 1` **↓ ~%6–13** | belge/arayüz |
+| **8** | **Ek gözlenebilirler**: ejekta kütlesi (1,6 ± 0,3e7 kg), koni açısı (~140°); depoda `M_ejekta`, `theta_ejekta` zaten var | L2, L10, L11, L15, L17 | β'nın ayırt edemediğini ayırmak | vekil/olabilirlik |
+| **9** | Blok modeli: kütle kesri etkisi büyük; blok başına ≥ ~30 parçacık şartı; sahne tohumu = çarpma yeri belirsizliği → tohum sayısı artırılmalı | L8, L12, L13 | ↓ (yoğun blok) / ±%35 (yakın blok) | çözünürlük/koşu |
+| **10** | Çözünürlük: düşük çözünürlük hızlı ejektayı ~%15 fazla veriyor (bizde kaba > orta ile **aynı yön**); geç evrede momentum yavaş ejektaya kaydığı için hassasiyet azalabilir; merdivenin 2× sıçramaları yerine kademeli kabuk (Spheral) düşünülmeli | L1, L9 | kaba ↑ yanlılık | ölçüm |
+| **11** | Karar kuralı (yeni protokoller için, **geriye dönük değil**): tarih eşleme `I < 3`, paydada **model eksikliği** terimi (mermi geometrisi, açı, şekil, çözünürlük) | L19 | — | protokol |
+| **12** | Çarpma açısı ~17° (sistematik terim) | L5, L13, L20 | küçük ↓ | düşük öncelik |
+
+## 9. Bu tarama projeye ne söylüyor
+
+- U/V'nin "ulaşmıyor" sonucu, literatürdeki başarılı DART modellerinin üç ortak
+  özelliğinin bizde eksik olmasıyla uyumlu: **uzun süre + geç evre şeması + çok
+  düşük kohezyon**. Bu bir açıklama önerisi; kıyas sınaması (öncelik 4) olmadan
+  kanıt değil.
+- Bazı düzeltmeler β'yı **düşürür** (üç küre mermi %10–20, yoğun blok, çözünürlük);
+  bazıları **artırır** (süre, düşük Y₀, basık şekil); gözlenen β ise yeniden
+  şekillenmeyle **düşer**. Net sonucu yalnız koşu söyler.
+- L2, L11, L15: **β tek başına iç yapıyı belirlemiyor.** Literatür ejekta kütlesi,
+  koni açısı, şekil değişimi ve (Hera ile) krater/kütle ekleyerek daraltıyor. Bizim
+  posteriorumuz da yalnız β ile kalırsa en iyi ihtimalle `Y₀` üst sınırı verir.
+- **Hera Aralık 2026 sonunda varıyor** (L16): mühürlü öngörü (Protokol HT) bundan
+  önce depoya işlenmeli.
+- **Özgünlük:** L2, L10, L11, L14 aynı soruyu farklı kodlarla çözdü. Katkımız:
+  açık GPU (Warp) kodu, kalibre Bayesçi çıkarım + açık model eksikliği/çözünürlük
+  terimi, koşudan önce kilitli protokoller, mühürlü Hera öngörüsü.
