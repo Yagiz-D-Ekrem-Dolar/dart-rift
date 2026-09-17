@@ -1,0 +1,29 @@
+{
+ "gonder": true,
+ "sebep": "U: HICBIR VARYANT ULASMIYOR (en yakin U6:kaba, z = +2.8)",
+ "en_yakin": "U6:kaba",
+ "V4_U": "U6",
+ "V4_EK": "--yigin-yogunlugu 1500",
+ "komut": "sbatch --export=ALL,V4_EK=\"--yigin-yogunlugu 1500\",V4_U=U6 is/is_V_model.slurm",
+ "plan_adimi": {
+  "ad": "V",
+  "betik": "truba/is_V_model.slurm",
+  "gorevler": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9
+  ],
+  "gpu": 1,
+  "export": {
+   "V4_EK": "--yigin-yogunlugu 1500",
+   "V4_U": "U6"
+  }
+ }
+}

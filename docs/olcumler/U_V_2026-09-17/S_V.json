@@ -1,0 +1,62 @@
+{
+ "satirlar": {
+  "V0:kaba": {
+   "varyant": "V0",
+   "merdiven": "kaba",
+   "n": 2,
+   "beta_eksi_1_sim": 0.9044744376531686,
+   "tohum_yari_farki": 0.01845109756694252,
+   "beta_eksi_1_gozlem": 2.1210826241468865,
+   "sigma_beta": 0.3410884059164351,
+   "z": 3.5668412217792613,
+   "karar": "ALTINDA"
+  },
+  "V1:kaba": {
+   "varyant": "V1",
+   "merdiven": "kaba",
+   "n": 2,
+   "beta_eksi_1_sim": 0.9044679255640831,
+   "tohum_yari_farki": 0.018455683559450264,
+   "beta_eksi_1_gozlem": 2.1210826241468865,
+   "sigma_beta": 0.3410884059164351,
+   "z": 3.566860313864986,
+   "karar": "ALTINDA"
+  },
+  "V2:kaba": {
+   "varyant": "V2",
+   "merdiven": "kaba",
+   "n": 2,
+   "beta_eksi_1_sim": 0.9046573513042917,
+   "tohum_yari_farki": 0.018268183915819414,
+   "beta_eksi_1_gozlem": 2.1210826241468865,
+   "sigma_beta": 0.3410884059164351,
+   "z": 3.5663049571395073,
+   "karar": "ALTINDA"
+  },
+  "V3:kaba": {
+   "varyant": "V3",
+   "merdiven": "kaba",
+   "n": 2,
+   "beta_eksi_1_sim": 0.9046509403119474,
+   "tohum_yari_farki": 0.018272668811585957,
+   "beta_eksi_1_gozlem": 2.1210826241468865,
+   "sigma_beta": 0.3410884059164351,
+   "z": 3.566323752830692,
+   "karar": "ALTINDA"
+  },
+  "V4:kaba": {
+   "varyant": "V4",
+   "merdiven": "kaba",
+   "n": 2,
+   "beta_eksi_1_sim": 0.7620643853353941,
+   "tohum_yari_farki": 0.005977895772637742,
+   "beta_eksi_1_gozlem": 1.5998843862847463,
+   "sigma_beta": 0.2841291076449113,
+   "z": 2.948729920330489,
+   "karar": "ALTINDA"
+  }
+ },
+ "genel": "HICBIR VARYANT ULASMIYOR (en yakin V4:kaba, z = +2.9)",
+ "tam": true,
+ "eksik": []
+}

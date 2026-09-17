@@ -34,6 +34,11 @@ koşmadı. Yeni TRUBA hesabı bekleniyor.
 > yok (zararsız, `ortak_bas.sh` PATH'i kuruyor); tutulan iş `scontrol release`
 > ile serbest bırakılamıyor → iptal + yeniden gönder.
 
+> **Güncel (2026-09-17 19:00):** U (20/20) ve otomatik gönderilen V (10/10)
+> bitti, kuyruk boş. **İkisinin de kilitli yargısı HİÇBİR VARYANT ULAŞMIYOR**
+> (kapsam TAM). Bitiş 3 **negatif dalda** (§6 madde 9). Ayrıntı: defter
+> KAYIT-064; sonuç JSON'ları `docs/olcumler/U_V_2026-09-17/`.
+
 ## 2. Bilimsel durum
 
 ### Kilitli sonuçlar

@@ -82,6 +82,16 @@ bir **üst sınır tahmini** değil, yalnız "gözlenen `β`'nın kütleye
 duyarlılığı"dır. Gerçek cevap Protokol U'nun `ρ = 1500` varyantından
 (U5, U8) gelecek.
 
+### 3c. KİLİTLİ SONUÇ (2026-09-17): U ve V — model gözleme ulaşmıyor
+
+Protokol U (20 koşu, 0,1 s) ve koşullu Protokol V (10 koşu, 0,2 s, yerçekimi /
+hasar) **ikisi de "HİÇBİR VARYANT ULAŞMIYOR"**, kapsam TAM, 30/30 geçerli.
+En iyi model `β ≈ 2,05` (Y₀ = 10 Pa), gözlem `3,12 ± 0,34`; en yakın `z = +2,8`
+(yoğunluk 1500). Süre (0,2 s), yerçekimi ve hasar açığı kapatmıyor; orta
+çözünürlük açığı **büyütüyor**. PROTOKOL-V yorumu: *bu SPH ileri modeli (0,2 s)
+DART β'sını üretmiyor → iç yapı çıkarımı gerçek veriyle yapılamaz.* Ayrıntı:
+defter KAYIT-057, KAYIT-064; veri `docs/olcumler/U_V_2026-09-17/`.
+
 ## 4. Bitiş 3'e kalan
 
 1. D kilitli yargısı (plato anı). Önsel içindeyse → gerçek gözlemle

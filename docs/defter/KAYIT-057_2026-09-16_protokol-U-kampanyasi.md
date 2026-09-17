@@ -196,3 +196,35 @@ U1'den ayrı bir bilgi taşımıyor; asıl soru μ_f, Pe/Ps ve yoğunluk varyant
 
 *(Kaba bitince `u_model_raporu.py`; orta 16–19 gönderilir; ikisi bitince kilitli
 yargı. Satırlar silinmez.)*
+
+### 2026-09-17 — KİLİTLİ YARGI: **HİÇBİR VARYANT ULAŞMIYOR** (kapsam TAM)
+
+20/20 görev `COMPLETED 0:0` (kaba 13–15 dk, orta 26–27 dk); kalite denetimi
+**20/20 geçerli**. `U_RAPOR` (`1565226`, afterany) kilitli raporu yazdı
+(`docs/olcumler/U_V_2026-09-17/S_U.json`, TRUBA SHA-256 `d67951a3…`):
+
+| satır | sim β−1 | gözlem β−1 ± σ_β | z | U0'dan fark (tohum ölçeği) |
+|---|---:|---|---:|---|
+| U0 kaba (taban) | 0,946 | 2,121 ± 0,341 | +3,44 | — |
+| U0 **orta** | 0,820 | 2,122 ± 0,341 | +3,81 | — |
+| U1 `Y₀ = 10 Pa` | **1,049** | 2,121 ± 0,341 | +3,14 | **+0,103 (2,4)** |
+| U2 `Y₀ = 1 Pa` | 1,049 | 2,121 ± 0,341 | +3,14 | +0,103 (2,4) |
+| U3 `μ_f = 0,2` | 0,981 | 2,121 ± 0,341 | +3,34 | +0,035 (1,1) |
+| U4 `μ_f = 0,05` | 1,003 | 2,121 ± 0,341 | +3,28 | +0,057 (1,6) |
+| U5 `Pe/Ps` düşük | 0,828 | 2,121 ± 0,341 | +3,79 | **−0,118 (−4,3)** |
+| U6 `ρ = 1500` | 0,811 | **1,600 ± 0,284** | **+2,78** | −0,136 (−4,9) |
+| U8 birleşik | 0,795 | 1,600 ± 0,284 | +2,83 | −0,152 (−5,5) |
+| U8 **orta** | 0,770 | 1,600 ± 0,284 | +2,92 | −0,050 (−2,7) |
+
+**GENEL: HİÇBİR VARYANT ULAŞMIYOR (en yakın U6:kaba, z = +2,8) · KAPSAM: TAM.**
+
+Okuma:
+- En büyük artış dayanımı düşürmekten (`+0,10`); sürtünme azaltmak daha az
+  (`+0,04 … +0,06`). Gözeneklerin kolay ezilmesi β'yı **azaltıyor** (`−0,12`):
+  enerji kompaksiyona gidiyor (A45 ile tutarlı).
+- `ρ = 1500` simülasyon β'sını düşürüyor ama gözlenen β kütleyle **daha çok**
+  düştüğü için en küçük `z` orada: kütle/yoğunluk en umutlu kol, yine de yetmiyor.
+- **Çözünürlük açığı büyütüyor:** orta, kabadan düşük (U0 `0,946 → 0,820`,
+  U8 `0,795 → 0,770`) — risk listesindeki 1 numara gerçekleşti.
+- Kilitli kural gereği `U_RAPOR` V'yi **otomatik gönderdi** (`S_V_karar.json`:
+  `gonder = true`, V4 = U6 + yerçekimi + hasar). Sonuç: KAYIT-064.
