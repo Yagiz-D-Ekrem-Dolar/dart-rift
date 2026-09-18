@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-18 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 72 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93 · A70, A84, A91 ve A92 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-18 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 72 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93 · A70, A84, A91, A92 ve A94 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5148,6 +5148,21 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A94 — **Geç evre geçişinden sonra plastik iş tanısı eski kayma modülüyle hesaplanıyordu** (2026-09-18) — **KAPANDI** (kendi hatam; dinamiğe etkisi yok)
+
+`gec_evreye_gec` etkin kayma modülünü (`_G_etkin`) küçültüyor ve gerilme
+hızına, `dt`'ye, enerji tanısına onu veriyordu; ama akma çekirdeği
+(`return_mapping_k`) plastik işi malzeme **yapısındaki** `shear_G` ile
+hesaplıyor. Yapı yenilenmediği için geçişten sonra `plastic_du` `1/oran`
+(`~2,7e5`) kat yanlış olurdu. **Dinamik etkilenmez** (ADR-0012: `u` bu
+çekirdekte güncellenmez); geçerlilik denetimleri plastik işi kullanmaz →
+W ve W2'nin yargısı etkilenmez. Düzeltme: geçişte yapı `_G_etkin` ile
+yeniden kurulur. Sınav: `test_gec_evre.py::test_A94_*` (yapının `G`'si
+etkin `G`'ye eşit; `S` ölçeklenmeden geçişte plastik iş `1/oran` ile büyüyor —
+eski davranış oranı `~1` verirdi). Bulunuş: gerinimle kohezyon kaybı için
+akma çekirdeğini okurken.
 
 ---
 ### A92 — **Dondurulan parçacık gövdeyi TEK YÖNLÜ çekiyordu: 600 s'de momentum defteri artığı eşiği 2–5 kat aştı** (2026-09-18) — **KAPANDI** (kendi hatam)

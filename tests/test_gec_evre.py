@@ -297,3 +297,34 @@ def test_A92_DONMADAN_once_cekim_GERCEKTEN_etkili():
     F_sonra = m @ s.g.numpy()[:-1]
     assert abs(F_once[0]) > 0.0
     assert abs(F_sonra[0]) < 1e-9 * abs(F_once[0])
+
+
+
+def test_A94_akma_yapisi_da_ETKIN_kayma_modulunu_goruyor():
+    """Plastik iş tanısı (`plastic_du`) akma çekirdeğinde `sp.shear_G` ile
+    hesaplanıyor; geçişte yapı yenilenmezse tanı `1/oran` kat yanlış olur."""
+    s = _cozucu()
+    assert s._sp.shear_G == s._G_etkin
+    s.gec_evreye_gec(A_GEC)
+    assert s._sp.shear_G == pytest.approx(s._G_etkin, rel=1e-15)
+    assert s._sp.Y0 == _mat().strength.Y0 and s._sp.mu_f == _mat().strength.mu_f
+
+
+def test_A94_gecis_sonrasi_plastik_is_ETKIN_G_ile_hesaplaniyor():
+    """`S` ölçeklenmeden geçiş (`gerilme_olcekle=False`): aynı `S`, `oran`
+    kat küçük `G` → elastik enerji `S²/(4Gρ)` ve plastik iş `1/oran` kat
+    büyük olmalı. Yapı yenilenmeseydi (A94 öncesi) çekirdek eski `G`'yi
+    kullanır ve oran `~1` çıkardı — sınav bunu ayırt ediyor."""
+    n = len(_kafes())
+    S0 = np.zeros((n, 3, 3))
+    S0[:, 0, 1] = S0[:, 1, 0] = 5.0e4          # akma siniri (1e4) USTUNDE
+    a = _cozucu(S0=S0.copy())
+    a.step(1e-7)
+    once = float(np.max(a.plastic_du.numpy()))
+    b = _cozucu(S0=S0.copy())
+    b.gec_evreye_gec(A_GEC, gerilme_olcekle=False)
+    b.step(1e-7)
+    sonra = float(np.max(b.plastic_du.numpy()))
+    assert once > 0.0 and sonra > 0.0
+    oran = A_GEC / _mat().tillotson.A
+    assert sonra / once == pytest.approx(1.0 / oran, rel=0.5)

@@ -678,6 +678,12 @@ class WarpSolid3D:
             self._tp_m = make_tillotson_wp(yeni_m)
         G_eski = self._G_etkin
         self._G_etkin = G_eski * oran
+        # A94: akma cekirdegi plastik is tanisini (`plastic_du`) malzeme
+        # YAPISINDAKI `shear_G` ile hesapliyor. Yapi yenilenmezse gecisten
+        # sonra plastik is `1/oran` (~2,7e5) kat yanlis olur. Dinamigi
+        # etkilemez (ADR-0012: `u` guncellenmez) ama tani yanlis olmasin.
+        self._sp = make_strength_wp(
+            _dc.replace(self.mat.strength, shear_G=self._G_etkin))
         if gerilme_olcekle and self.mat.strength.enabled:
             self.S = wp.array(self.S.numpy().astype(np.float64) * oran,
                               dtype=M3, device=self.device)
