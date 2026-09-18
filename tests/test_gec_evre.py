@@ -225,3 +225,75 @@ def test_k_uzak_birden_kucuk_REDDEDILIYOR():
     s = _cozucu()
     with pytest.raises(ValueError, match="k_uzak"):
         s.uzak_kacanlari_dondur(R=1.0, v_esc=1.0, k_uzak=1.0)
+
+
+# ------------------------------------------------------- A92: donmus etkilesim
+def _yercekimli_bulut():
+    """Yerçekimi açık küçük bulut + uzakta dışa kaçan tek parçacık."""
+    from dartrift.warp_core.solver_solid import WarpSolid3D
+
+    x = _kafes()
+    n = len(x)
+    x = np.vstack([x, [[40.0, 0.0, 0.0]]])
+    v = np.zeros((n + 1, 3))
+    v[-1] = [30.0, 0.0, 0.0]
+    m = np.full(n + 1, RHO0 / ALFA0 * 0.125)
+    m[-1] = 50.0 * m[0]                        # agir: tek yonlu cekim belirgin olsun
+    mat = MaterialParams(
+        eos="tillotson", density_method="continuity",
+        strength=StrengthParams(enabled=True, Y0=1e4, mu_f=0.6, YM=1.5e9,
+                                shear_G=2.27e10),
+        porosity=PorosityParams(enabled=True, alpha0=ALFA0, Pe=1e6, Ps=1e8,
+                                n_exp=2.0),
+        gravity=GravityParams(enabled=True, G=6.6743e-3, eps=0.1, mode="direct"))
+    s = WarpSolid3D(x, v, m, np.zeros(n + 1), 0.65, mat, R.RefParams(),
+                    alpha0=np.full(n + 1, ALFA0),
+                    rho_durum=np.full(n + 1, RHO0 / ALFA0), device="cpu")
+    s.hazirla()
+    return s
+
+
+def _P(s):
+    st = s.state_numpy()
+    return st["m"] @ st["v"]
+
+
+def test_A92_dondurma_yoksa_etkilesim_kutlesi_AYNI_NESNE():
+    s = _cozucu()
+    assert s._m_etk is s.m
+
+
+def test_A92_donmus_parcacik_ETKILESIMDEN_cikiyor_gercek_kutle_kaliyor():
+    s = _yercekimli_bulut()
+    m_once = s.m.numpy().copy()
+    assert s.uzak_kacanlari_dondur(R=1.5, v_esc=1.0, k_uzak=3.0) == 1
+    assert s._m_etk.numpy()[-1] == 0.0
+    np.testing.assert_array_equal(s.m.numpy(), m_once)        # gercek kutle
+    np.testing.assert_array_equal(s._m_etk.numpy()[:-1], m_once[:-1])
+
+
+def test_A92_donmus_parcacikla_MOMENTUM_KORUNUYOR():
+    """İlk sürümde donmuş parçacık gövdeyi tek yönlü çekiyordu; toplam
+    momentum (gerçek kütlelerle) her adımda kayıyordu."""
+    s = _yercekimli_bulut()
+    s.uzak_kacanlari_dondur(R=1.5, v_esc=1.0, k_uzak=3.0)
+    P0 = _P(s)
+    for _ in range(30):
+        s.step(1e-5)
+    olcek = abs(P0[0]) + 1e-300
+    assert np.max(np.abs(_P(s) - P0)) / olcek < 1e-10
+
+
+def test_A92_DONMADAN_once_cekim_GERCEKTEN_etkili():
+    """Sınavın kör olmadığını göster: dondurmadan önce uzak ağır parçacık
+    buluta anlamlı ivme veriyor (yani sıfırlama bir şeyi değiştiriyor)."""
+    s = _yercekimli_bulut()
+    m = s.m.numpy()[:-1]
+    # Bulutun NET cekim kuvveti: ic kuvvetler ciftler halinde sifirlanir,
+    # geriye yalniz uzak agir parcacigin cekimi kalir.
+    F_once = m @ s.g.numpy()[:-1]
+    s.uzak_kacanlari_dondur(R=1.5, v_esc=1.0, k_uzak=3.0)
+    s.hazirla()
+    F_sonra = m @ s.g.numpy()[:-1]
+    assert abs(F_once[0]) > 0.0
+    assert abs(F_sonra[0]) < 1e-9 * abs(F_once[0])

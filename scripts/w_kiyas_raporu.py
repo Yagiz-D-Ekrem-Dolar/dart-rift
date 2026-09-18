@@ -45,15 +45,28 @@ SAGLAMLIK_ESIGI = 0.20
 DESEN = re.compile(r"W_Y(?P<y0>[0-9]+(?:p[0-9]+)?)_g(?P<gecis>[0-9]+(?:p[0-9]+)?)")
 
 
+def desen(onek: str = "W") -> re.Pattern:
+    """`onek` (W, W2, ...) icin ad deseni -- kampanyalar birbirine karismasin."""
+    if not re.fullmatch(r"W[0-9]*", onek):
+        raise ValueError(f"onek 'W' ya da 'W<sayi>' olmali, {onek!r} geldi")
+    return re.compile(rf"^{onek}_Y(?P<y0>[0-9]+(?:p[0-9]+)?)"
+                      rf"_g(?P<gecis>[0-9]+(?:p[0-9]+)?)")
+
+
 def _sayi(s: str) -> float:
     return float(s.replace("p", "."))
 
 
-def topla(kok: Path) -> dict:
-    """`{(Y0, t_gecis): kayit}` — her koşudan `β`, geçerlilik ve tanılar."""
+def topla(kok: Path, onek: str = "W") -> dict:
+    """`{(Y0, t_gecis): kayit}` — her koşudan `β`, geçerlilik ve tanılar.
+
+    `onek`: kampanya öneki (`W`, tekrar koşusu `W2`). Kural aynıdır; önek
+    yalnız çıktıların karışmamasını sağlar.
+    """
     out: dict = {}
-    for dz in sorted(glob.glob(str(kok / "W_*.durumlar"))):
-        m = DESEN.search(Path(dz).name)
+    ds = desen(onek)
+    for dz in sorted(glob.glob(str(kok / f"{onek}_*.durumlar"))):
+        m = ds.search(Path(dz).name)
         if not m:
             continue
         anahtar = (_sayi(m.group("y0")), _sayi(m.group("gecis")))
@@ -154,12 +167,15 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--kok", type=Path, required=True)
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--onek", default="W",
+                    help="kampanya oneki (W; A92 sonrasi tekrar W2). Kural ayni.")
     a = ap.parse_args(argv)
-    v = topla(a.kok)
+    v = topla(a.kok, a.onek)
     out = yargi(v)
     out.update(kapsam(v))
+    out["onek"] = a.onek
     print("=" * 78)
-    print(f"PROTOKOL W -- kiyas sinamasi ({len(v)} kosu; L1 Tablo 2)")
+    print(f"PROTOKOL {a.onek} -- kiyas sinamasi ({len(v)} kosu; L1 Tablo 2)")
     print("=" * 78)
     for k, s in out["satirlar"].items():
         if s.get("karar") == "OKUNMAZ":

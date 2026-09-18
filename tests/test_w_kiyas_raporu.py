@@ -157,3 +157,23 @@ def test_A91_desen_NOKTAYI_sayiya_katmiyor():
     assert m.group("y0") == "50" and m.group("gecis") == "0p2"
     m = W.DESEN.search("W_Y1_g1p0.durumlar")
     assert m.group("y0") == "1" and m.group("gecis") == "1p0"
+
+
+def test_ONEK_kampanyalari_KARISTIRMIYOR(tmp_path):
+    """A92 sonrası tekrar koşusu (`W2`) ilk kampanyanın (`W`) dizinlerini
+    okumamalı ve tersi; kural aynı kalır."""
+    for y0, yad in ((50.0, "50"), (10.0, "10"), (1.0, "1")):
+        for gad in ("0p2", "1p0"):
+            _npz(tmp_path, f"W_Y{yad}_g{gad}", W.L1_BETA[y0], gecerli=False)
+            _npz(tmp_path, f"W2_Y{yad}_g{gad}", W.L1_BETA[y0])
+    a = W.topla(tmp_path, "W")
+    b = W.topla(tmp_path, "W2")
+    assert len(a) == len(b) == 6
+    assert not any(k["gecerli"] for k in a.values())
+    assert all(k["gecerli"] for k in b.values())
+    assert W.yargi(b)["genel"] == "KIYAS TUTTU"
+
+
+def test_ONEK_gecersiz_REDDEDILIYOR():
+    with pytest.raises(ValueError, match="onek"):
+        W.desen("X")

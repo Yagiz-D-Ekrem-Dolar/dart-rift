@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-17 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 71 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89 · A70 ve A84 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-18 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 72 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93 · A70, A84, A91 ve A92 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5148,6 +5148,51 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A92 — **Dondurulan parçacık gövdeyi TEK YÖNLÜ çekiyordu: 600 s'de momentum defteri artığı eşiği 2–5 kat aştı** (2026-09-18) — **KAPANDI** (kendi hatam)
+
+ADR-0050'deki `uzak_kacanlari_dondur` parçacığın **hareketini** donduruyor ama
+onu **etkileşimden çıkarmıyordu**: yerçekiminde ve SPH toplamlarında gerçek
+kütlesiyle kalıyordu. Gövde donmuş ejektaya doğru çekildi, ejekta tepki
+görmedi → toplam momentum korunmadı.
+
+**Belirti:** Protokol W'nin 6 koşusunun 6'sı yalnız `momentum_defteri`
+denetiminden düştü: artık `2,2e-3 – 5,0e-3` (eşik `1e-3`); enerji `−%0,9`,
+kurucu sınır ve sonluluk temiz. 2 s'lik W0'da artık `2,25e-4` (geçti).
+
+**Kanıt (β'ya bakılmadan):** `r > 3R` kütlenin gövdeye çekim itmesinin üst
+kestirimi (`F·t/p`, ê yönü) `−3,5e-3 … −6,4e-3`; defter artığı `+2,2e-3 …
++5,0e-3` — işaret tutarlı (gövde ejektaya çekiliyor), büyüklük aynı mertebe.
+
+**Düzeltme:** etkileşim kütlesi (`_m_etk`) ayrı tutuluyor; donmuş parçacığınki
+`0` → SPH toplamlarında ve yerçekiminde yok, **gerçek kütlesi** defterde
+(kaçan olarak sayılmaya devam ediyor). Barnes-Hut önbelleği donmada
+geçersizleniyor. Dondurma yoksa aynı nesne → bit-aynı. Sınav:
+`test_gec_evre.py::test_A92_*` (dondurmayla toplam momentum `< 1e-10`
+bağıl; sınavın kör olmadığı net kuvvetle gösterildi).
+
+**Sonucu:** W'nin kilitli yargısı **OKUNMAZ** (değişmez). Tekrar koşusu
+ayrı önekle (`W2`), aynı kuralla — PROTOKOL-W2.
+
+---
+### A91 — **W raporu gerçek dizin adını ayrıştıramıyordu** (2026-09-18) — **KAPANDI**
+
+Desen `[0-9p.]+` `W_Y50_g0p2.durumlar` adındaki noktayı sayıya katıyordu
+(`0p2.` → `ValueError`). Sınavlar sahte `_kaba_sahne1` sonekli adlarla
+yazılmıştı. Rapor **hiçbir `β` okunmadan** çöktü; kural değişmedi. Desen
+düzeltildi, gerçek adla sınav eklendi. Kalıp: **sınav girdisi üretimdeki
+adla birebir aynı olmalı** (A84'ün akrabası).
+
+---
+### A93 — **Güçlü deformasyonda krater operatörü düşüyor (W `Y50/g1,0`)** (2026-09-18) — *açık, tanı*
+
+`faz5_ensemble_merdiven` noktası `DUSTU: carpma ekseni kutusunda 4 parcacik
+var (en az 5 gerekir)` ile düştü (600 s, `t = 14 994 s` duvar). `npz` durumu
+**krater ölçümünden önce** yazıldığı için korundu. Protokol W'nin geçerliliği
+`sayisal_gecerlilik` + defterdir (§4); krater derinliği W'nin gözlenebiliri
+değildir. A86'nın akrabası: operatör, kraterin değil **küresel
+deformasyonun** olduğu rejimde tanımsız (L1: düşük kohezyonda "deformation").
 
 ---
 ### A89 — **Bloklar kaba düzeyde çözülmüyor: blok kütlesinin %99,3'ü ortanca 1 parçacık** (2026-09-17) — *açık, ölçüldü*

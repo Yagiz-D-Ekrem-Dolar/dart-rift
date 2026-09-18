@@ -106,6 +106,12 @@ class WarpSolid3D:
         self.x = wp.array(np.asarray(x, np.float64), dtype=V3, device=dev)
         self.v = wp.array(np.asarray(v, np.float64), dtype=V3, device=dev)
         self.m = wp.array(np.asarray(m, np.float64), dtype=F, device=dev)
+        # A92: ETKILESIM kutlesi. SPH toplamlari ve yercekimi bunu gorur;
+        # defter/enerji/durum GERCEK kutleyi (`self.m`). Dondurma yoksa AYNI
+        # nesne -> bit-ayni. `uzak_kacanlari_dondur` donmus parcacigin
+        # etkilesim kutlesini 0 yapar: yoksa donmus parcacik govdeyi TEK
+        # YONLU ceker (kendisi hareket etmez) ve momentum korunmaz.
+        self._m_etk = self.m
         self.u = wp.array(np.asarray(u, np.float64), dtype=F, device=dev)
         act = np.ones(n, np.uint8) if active is None else np.asarray(active, np.uint8)
         self.active = wp.array(act, dtype=wp.uint8, device=dev)
@@ -433,10 +439,10 @@ class WarpSolid3D:
             r32 = wp.float32(self._radius32)
         if not self._continuity:
             if self._bvh:
-                self._launch(D.density_3d_csr, [bas, nbr, self.x, self.m, h, self.rho])
+                self._launch(D.density_3d_csr, [bas, nbr, self.x, self._m_etk, h, self.rho])
             else:
                 self._launch(D.density_3d,
-                             [gid, self.gridman.x32, self.x, self.m, h, r32, self.rho])
+                             [gid, self.gridman.x32, self.x, self._m_etk, h, r32, self.rho])
         if self.mat.eos == "tillotson":
             if self._mermi is not None:
                 self._launch(eos_solid_iki,
@@ -490,13 +496,13 @@ class WarpSolid3D:
         if self._bvh:
             self._launch(
                 SS.velocity_gradient_3d_csr,
-                [bas, nbr, self.x, self.v, self.m, self.rho, self.cs, h,
+                [bas, nbr, self.x, self.v, self._m_etk, self.rho, self.cs, h,
                  1 if self.num.use_balsara else 0, self.L, self.divv, self.fbal],
             )
         else:
             self._launch(
                 SS.velocity_gradient_3d,
-                [gid, self.gridman.x32, self.x, self.v, self.m, self.rho, self.cs, h, r32,
+                [gid, self.gridman.x32, self.x, self.v, self._m_etk, self.rho, self.cs, h, r32,
                  1 if self.num.use_balsara else 0, self.L, self.divv, self.fbal],
             )
         if self._continuity:
@@ -543,8 +549,8 @@ class WarpSolid3D:
                     self._drift_exceeded += 1
                 self._tree_drift = 0.0
             x_np = None if hit else self.x.numpy().astype(np.float64)
-            m_np = None if hit else self.m.numpy()
-            self._gravity.compute(self.x, self.m, self.g, self.phi, x_np, m_np,
+            m_np = None if hit else self._m_etk.numpy()
+            self._gravity.compute(self.x, self._m_etk, self.g, self.phi, x_np, m_np,
                                   x_version=gver)
         else:
             self.g.zero_()
@@ -557,7 +563,7 @@ class WarpSolid3D:
         if self._bvh:
             self._launch(
                 SS.forces_solid_3d_csr,
-                [bas, nbr, self.x, self.v, self.m, self.rho, p_use, s_use,
+                [bas, nbr, self.x, self.v, self._m_etk, self.rho, p_use, s_use,
                  self.cs, self.fbal, self.g, h, F(self.num.alpha_av), F(self.num.beta_av),
                  1 if ast.enabled else 0, F(ast.eps), F(ast.n_exp), F(self._ast_w_dp),
                  self.a, self.dudt],
@@ -565,7 +571,7 @@ class WarpSolid3D:
         else:
             self._launch(
                 SS.forces_solid_3d,
-                [gid, self.gridman.x32, self.x, self.v, self.m, self.rho, p_use, s_use,
+                [gid, self.gridman.x32, self.x, self.v, self._m_etk, self.rho, p_use, s_use,
                  self.cs, self.fbal, self.g, h, r32, F(self.num.alpha_av), F(self.num.beta_av),
                  1 if ast.enabled else 0, F(ast.eps), F(ast.n_exp), F(self._ast_w_dp),
                  self.a, self.dudt],
@@ -701,6 +707,13 @@ class WarpSolid3D:
         parçacık zaten yavaşlamaz; yerçekimli koşuda `k_uzak·R`'den sonraki
         yavaşlama ihmal edilir (`β` literatürde fırlatma hızından sayılır).
 
+        **A92:** donmuş parçacık **etkileşimden de çıkar** — etkileşim
+        kütlesi (`_m_etk`) sıfırlanır; SPH toplamlarında ve yerçekiminde
+        yoktur. İlk sürümde yalnız hareketi dondurulmuştu; gövdeyi tek yönlü
+        çekmeye devam etti ve 600 s'lik koşularda momentum defteri artığı
+        eşiği (`1e-3`) `2–5` kat aştı. Bedeli: gövde–donmuş kütle arasındaki
+        potansiyel enerji donma anında defterden düşer (küçük, tanı).
+
         Döner: bu çağrıda dondurulan parçacık sayısı.
         """
         if k_uzak <= 1.0:
@@ -717,6 +730,19 @@ class WarpSolid3D:
             self.active = wp.array(act.astype(np.uint8), dtype=wp.uint8,
                                    device=self.device)
             self._dondurulmus += k
+            # A92: donmus parcacik ETKILESIMDEN cikar (SPH toplamlari ve
+            # yercekimi). Gercek kutle `self.m`'de kalir -> defter onu kacan
+            # olarak saymaya devam eder. Olculdu (W, 600 s): bu yapilmadan
+            # momentum defteri artigi %0,2-0,5 (esik %0,1) ve isareti/
+            # buyuklugu donmus kutlenin govdeyi tek yonlu cekimiyle tutuyor.
+            m_etk = self.m.numpy().astype(np.float64) * act.astype(np.float64)
+            self._m_etk = wp.array(m_etk, dtype=F, device=self.device)
+            if self._gravity is not None:
+                # Barnes-Hut agaci eski kutlelerle onbellekte: gecersiz kil.
+                self._gravity._cache_version = None
+                self._gravity._cache_arrays = None
+            # Etkilesim degisti: bir sonraki adim yeniden degerlendirsin.
+            self._evaluated = False
         return k
 
     @property

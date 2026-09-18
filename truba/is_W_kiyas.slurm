@@ -30,7 +30,11 @@ cd "$KOK/dart-rift"
 #   secer; sessiz varsayilan YOK.
 # ============================================================
 if [ -z "${T_END:-}" ]; then echo "HATA: T_END verilmedi (PROTOKOL-W S3.2)"; exit 2; fi
-# ZORUNLU_EXPORT: T_END
+# A92 (2026-09-18): tekrar kosusu eski ciktilarin USTUNE yazmasin -> ONEK zorunlu
+# (W: ilk kampanya, W2: A92 duzeltmeli tekrar). Sessiz varsayilan YOK.
+if [ -z "${ONEK:-}" ]; then echo "HATA: ONEK verilmedi (W ya da W2)"; exit 2; fi
+case "$ONEK" in W|W[0-9]*) ;; *) echo "HATA: ONEK '$ONEK' gecersiz"; exit 2;; esac
+# ZORUNLU_EXPORT: T_END ONEK
 Y0=(50.0 50.0 10.0 10.0 1.0 1.0)
 YAD=(50 50 10 10 1 1)
 GEC=(0.2 1.0 0.2 1.0 0.2 1.0)
@@ -38,7 +42,7 @@ GAD=(0p2 1p0 0p2 1p0 0p2 1p0)
 i=$SLURM_ARRAY_TASK_ID
 if [ "$i" -ge 6 ]; then echo "HATA: gorev $i tanimsiz"; exit 3; fi
 
-TAS="$KOK/kampanya/W_tasarim_Y${YAD[$i]}.json"
+TAS="$KOK/kampanya/${ONEK}_tasarim_Y${YAD[$i]}.json"
 echo "{\"theta\": [[1.15, ${Y0[$i]}, 0.0]]}" > "$TAS.$SLURM_JOB_ID.$i.tmp" \
   && mv -f "$TAS.$SLURM_JOB_ID.$i.tmp" "$TAS"
 
@@ -49,7 +53,7 @@ KIYAS="--model-sinifi M0 --hedef-yaricapi 75.0 --yigin-yogunlugu 1600.0 \
 --mermi-kutlesi 500.0 --mermi-hizi 6000.0 --mermi-yogunlugu 1000.0 \
 --mu-f 0.6 --yercekimi"
 
-AD="W_Y${YAD[$i]}_g${GAD[$i]}"
+AD="${ONEK}_Y${YAD[$i]}_g${GAD[$i]}"
 echo "W/$i  $AD  Y0=${Y0[$i]} Pa  t_gecis=${GEC[$i]} s  t_end=$T_END s  kod: $(git rev-parse HEAD)"
 python scripts/faz5_ensemble_merdiven.py --device cuda:0 \
     --t-end "$T_END" --root-seed 20260906 --sahne-tohum 20260906 \
