@@ -63,3 +63,23 @@ CPU sınavında dondurmayla toplam momentum `< 1e-10` bağıl korunuyor.
 1. **W2 duman** (`1567704`, 5 s): kabul `donmuş ≥ 1` ve `artık ≤ 1e-4`.
 2. Tutarsa **W2** (6 koşu, `ONEK=W2`, `T_END=600`), aynı kilitli kural.
 3. Tutmazsa W2 gönderilmez; artığın kalan kaynağı aranır.
+
+## 6. Ek (2026-09-18 15:15): duman geçti, W2 gönderildi
+
+**W2 duman** `1567704` (kolyoz33, 32:45, `COMPLETED 0:0`), kod `9ab7b36`
+(A92 düzeltmeli). `scripts/w2_duman_kontrol.py` (β yazdırmaz):
+
+| | değer | ölçüt |
+|---|---|---|
+| donmuş parçacık | **326** | `≥ 1` |
+| momentum defteri artığı | **5,7 × 10⁻¹⁵** | `≤ 1e-4` |
+| geçerlilik denetimleri | 6/6 `True` | — |
+
+A92'den önce aynı tür koşuda artık `2,2e-4` (2 s) ve `2–5e-3` (600 s) idi; şimdi
+**makine hassasiyeti**. Etkileşim kütlesi ayrımı momentumu tam koruyor.
+
+**W2 gönderildi:** iş `1567714_0…5`, `T_END=600`, `ONEK=W2`, kod `b7c27af`
+(duman sonrası eklenenler yalnız tanı/çıkarım: A94 plastik iş tanısı, gerinim
+yumuşaması **kapalı**, çok doğruluklu vekil, koni kenar açısı — momentuma ve
+W kuralına dokunmuyor). Altı görev hemen başladı (kolyoz33/37/38).
+
