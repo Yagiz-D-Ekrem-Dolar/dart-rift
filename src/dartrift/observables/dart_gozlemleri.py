@@ -20,7 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 __all__ = ["Gozlem", "GOZLEMLER", "cheng_beta", "EJEKTA_KUTLESI",
-           "KONI_ACISI", "DIMORPHOS_SEKIL"]
+           "KONI_ACISI", "KONI_ACISI_HST", "KONI_ELIPTIK", "DIMORPHOS_SEKIL"]
 
 
 @dataclass(frozen=True)
@@ -57,6 +57,21 @@ KONI_ACISI = Gozlem(
     "arama_ozeti",
     "Baska analizde eliptik koni: ~94,8 x ~133,3 derece")
 
+#: Ayni koninin DIGER olcumleri (2026-09-18 taramasi). Hepsi gorunen tozun
+#: KENARINDAN olculuyor; model tarafinda kutle yuzdeligi DEGIL, `kenar`
+#: (%99) acisi karsilastirilmali. Tanim farki yuzunden bu uc deger birbiriyle
+#: de tam ortusmuyor -- tek bir "gozlem" gibi kullanilmamali.
+KONI_ACISI_HST = Gozlem(
+    "ejekta_koni_tam_acisi_hst", 125.0, 10.0, "derece",
+    "HST gozlemleri (Li ve dig. 2023 / Hirabayashi ve dig. 2023, arama ozeti)",
+    "arama_ozeti", "uc boyutlu acilma acisi, konum acilarindan basit modelle")
+KONI_ELIPTIK = {
+    "dar_derece": (94.8, 5.4), "genis_derece": (133.3, 9.2),
+    "kaynak": "Hirabayashi ve dig. 2023 (HST + LICIACube LUKE)",
+    "teyit": "arama_ozeti",
+    "not": "koni tabani eliptik ve donuk; dairesel koni veriye uymuyor",
+}
+
 #: Dimorphos şekil modeli (çarpma öncesi): `177 × 174 × 116 m`,
 #: hacim `1,81e6 m³` → eşdeğer yarıçap `~75,4 m`.
 DIMORPHOS_SEKIL = {
@@ -73,7 +88,7 @@ CARPMA_ACISI = Gozlem(
     "Daly ve dig. 2023 (arama ozeti uzerinden)", "arama_ozeti",
     "sigma bir TAHMIN; makaleden teyit edilmeli")
 
-GOZLEMLER = (EJEKTA_KUTLESI, KONI_ACISI, CARPMA_ACISI)
+GOZLEMLER = (EJEKTA_KUTLESI, KONI_ACISI, KONI_ACISI_HST, CARPMA_ACISI)
 
 
 def cheng_beta(yogunluk: float | None = None, *,

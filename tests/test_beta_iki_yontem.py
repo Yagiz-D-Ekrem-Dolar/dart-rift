@@ -141,3 +141,17 @@ def test_defter_yari_eksenler_None_ile_ESKI_sonucla_BIT_AYNI():
     b = momentum_defteri(x, v, m, **kw, yari_eksenler=None)
     c = momentum_defteri(x, v, m, **kw, yari_eksenler=(80.0, 80.0, 80.0))
     assert a["beta_hedef"] == b["beta_hedef"] == c["beta_hedef"]
+
+
+
+def test_KONI_KENAR_acisi_kutle_yuzdeliginden_GENIS():
+    """Gözlem koninin görünen kenarını ölçüyor; model tarafında %99 açısı
+    raporlanıyor ve %90'dan dar olamaz."""
+    x, v, m, e, p_imp, M = _durum()
+    rng = np.random.default_rng(5)
+    v = v.copy()
+    ej = slice(len(v) - 200, len(v))
+    v[ej] = v[ej] + rng.normal(0.0, 2.0, (200, 3))
+    r = beta_iki_yontem(x, v, m, mermi_kesri=np.zeros(len(m)), R=80.0,
+                        v_esc=escape_speed(M, 80.0), ehat=e, p_imp=p_imp)
+    assert r["koni_kenar_derece"] >= r["koni_tam_acisi_derece"]

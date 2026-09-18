@@ -141,6 +141,10 @@ def beta_iki_yontem(x, v, m, *, mermi_kesri, R: float, v_esc: float, ehat,
     kacan = disarida & (vr > v_esc)
     koni = ejekta_koni_acisi(v[kacan], m[kacan] * (1.0 - f[kacan]),
                              kesir=koni_kesri)
+    # GOZLEMLE ADIL KIYAS: LICIACube/HST koninin gorunen KENARINI olcuyor;
+    # kutle yuzdeligi (%90) daha dar bir tanim. Kenar icin %99.
+    kenar = ejekta_koni_acisi(v[kacan], m[kacan] * (1.0 - f[kacan]),
+                              kesir=0.99)
     return {
         "beta_kacan": d["beta_toplam"],
         "beta_kacan_hedef": d["beta_hedef"],
@@ -154,5 +158,6 @@ def beta_iki_yontem(x, v, m, *, mermi_kesri, R: float, v_esc: float, ehat,
         "mermi_bagsiz_kesri": km.get("mermi_bagsiz_kesri", float("nan")),
         "koni_tam_acisi_derece": koni["koni_tam_acisi_derece"],
         "koni_kesri": float(koni_kesri),
+        "koni_kenar_derece": kenar["koni_tam_acisi_derece"],
         "defter_kapandi": bool(d["kapandi"]),
     }
