@@ -1,0 +1,15 @@
+{
+ "satirlar": {
+  "Y50": {"Y0_Pa": 50.0, "beta_L1": 3.63, "beta_eksi_1_L1": 2.63, "karar": "OKUNMAZ"},
+  "Y10": {"Y0_Pa": 10.0, "beta_L1": 4.18, "beta_eksi_1_L1": 3.1799999999999997, "karar": "OKUNMAZ"},
+  "Y1": {"Y0_Pa": 1.0, "beta_L1": 4.66, "beta_eksi_1_L1": 3.66, "karar": "OKUNMAZ"}
+ },
+ "egilim": false,
+ "saglamlik": false,
+ "band_disi": [],
+ "genel": "OKUNMAZ (eksik ya da gecersiz kosu)",
+ "olcut": {"oran_alt": 0.5, "oran_ust": 2.0, "saglamlik_esigi": 0.2, "t_gecis": [0.2, 1.0]},
+ "tam": false,
+ "eksik": [],
+ "gecersiz": ["Y50:g0.2", "Y50:g1", "Y10:g0.2", "Y10:g1", "Y1:g0.2", "Y1:g1"]
+}
