@@ -215,6 +215,11 @@ def main() -> int:
     g.add_argument("--beta-km", action="store_true",
                    help="son durumda beta'yi kutle merkezi yoluyla da hesapla "
                         "+ ejekta koni acisi (L1, L17)")
+    g.add_argument("--gerinim-yumusama-eps", type=float, default=None,
+                   help="gerinimle kohezyon kaybi esigi eps_c (L1: 1,0); "
+                        "verilmezse KAPALI")
+    g.add_argument("--gerinim-yumusama-bicim", choices=("dogrusal", "basamak"),
+                   default="dogrusal", help="kohezyon kaybi bicimi")
     g.add_argument("--adim-bildir", type=int, default=0,
                    help="her N adimda bir t/dt/gecis/donmus yaz (uzun kosu; "
                         "0 = kapali)")
@@ -458,6 +463,9 @@ def main() -> int:
             dayanim_kesme=a.dayanim_kesme, yogunluk_tabani=a.yogunluk_tabani,
             gec_evre=gec_evre, dondurma=dondurma, beta_km=a.beta_km,
             adim_bildir=int(a.adim_bildir),
+            gerinim_yumusama=(None if a.gerinim_yumusama_eps is None else
+                              {"eps_c": float(a.gerinim_yumusama_eps),
+                               "bicim": a.gerinim_yumusama_bicim}),
             impuls_zaman="log" if a.impuls_log else "dogrusal",
             **({"azami_adim": int(a.azami_adim)} if a.azami_adim else {}))[0]
         if not np.all(np.isfinite(y)):
@@ -508,6 +516,9 @@ def main() -> int:
         "beta_km": bool(a.beta_km),
         "impuls_zaman": "log" if a.impuls_log else "dogrusal",
         "adim_bildir": int(a.adim_bildir),
+        "gerinim_yumusama": (None if a.gerinim_yumusama_eps is None else
+                             {"eps_c": float(a.gerinim_yumusama_eps),
+                              "bicim": a.gerinim_yumusama_bicim}),
         "azami_adim": a.azami_adim,
         "onsel_disi": bool(a.tasarim_dosyasi is not None and onsel_disi),
         "surum": surum,

@@ -29,7 +29,9 @@ from .strength_lundborg import (
     akma_orani_k,
     birikim_k,
     dayanim_kes_k,
+    kohezyon_yumusat_k,
     make_strength_wp,
+    return_mapping_gerinim_k,
     return_mapping_k,
 )
 
@@ -69,6 +71,7 @@ class WarpSolid3D:
         cekme_siniri=None,
         dayanim_kesme: dict | None = None,
         yogunluk_tabani: float | None = None,
+        gerinim_yumusama: dict | None = None,
     ):
         _init_warp()
         # A52: "hash" -- tek kuresel yaricapli hash izgarasi (eski, BIT-AYNI);
@@ -165,6 +168,30 @@ class WarpSolid3D:
             # Y(P) formulunde (YM - Y0) paydada: esitlik sonsuza gider.
             raise ValueError("Y0 < YM olmali (Lundborg paydasi)")
         self.Y0 = wp.array(y0, dtype=F, device=dev)
+        # GERINIMLE KOHEZYON KAYBI (ADR-0050 ek, L1). `None` -> cekirdekler
+        # hic baslatilmaz, `return_mapping_k` AYNEN (bit-ayni). Anahtarlar:
+        # `eps_c` (varsayilan 1,0 -- L1: "cohesion lost at total strain >= 1"),
+        # `bicim` ("dogrusal" | "basamak"; L1 bicimi belirtmiyor), `maske`
+        # (N,) bool -- verilmezse butun parcaciklar.
+        self._gy = None
+        if gerinim_yumusama is not None:
+            if not mat.strength.enabled:
+                raise ValueError("gerinim_yumusama dayanim ister")
+            eps_c = float(gerinim_yumusama.get("eps_c", 1.0))
+            if not (np.isfinite(eps_c) and eps_c > 0.0):
+                raise ValueError(f"eps_c pozitif ve sonlu olmali, {eps_c} geldi")
+            bicim = str(gerinim_yumusama.get("bicim", "dogrusal"))
+            if bicim not in ("dogrusal", "basamak"):
+                raise ValueError(f"bicim 'dogrusal' ya da 'basamak', {bicim!r} geldi")
+            mk = gerinim_yumusama.get("maske")
+            mk = np.ones(n, bool) if mk is None else np.asarray(mk, bool)
+            if mk.shape != (n,):
+                raise ValueError(f"gerinim_yumusama maske sekli {mk.shape}, ({n},) olmali")
+            self._gy = {"eps_c": eps_c, "basamak": 1 if bicim == "basamak" else 0,
+                        "bicim": bicim, "n_maske": int(mk.sum())}
+            self.eps_p = wp.zeros(n, dtype=F, device=dev)
+            self._Y0_taban = wp.array(y0.copy(), dtype=F, device=dev)
+            self._gy_maske = wp.array(mk.astype(np.uint8), dtype=wp.uint8, device=dev)
         for name in ("rho", "P", "cs", "divv", "fbal", "dudt", "phi",
                      "drhodt", "plastic_du", "dt_cfl", "dt_acc"):
             setattr(self, name, wp.zeros(n, dtype=F, device=dev))
@@ -481,11 +508,7 @@ class WarpSolid3D:
             # degerlendirmesinde x, rho ve u ayni oldugundan P de ayni:
             # projeksiyon orada etkisizdir (idempotent).
             if self._akma_ara:
-                self._launch(
-                    return_mapping_k,
-                    [self.S, self.P, self.rho, self.active, self.Y0,
-                     self._sp, self.plastic_du_ara],
-                )
+                self._akma_donusu(self.plastic_du_ara)
                 self._launch(birikim_k,
                              [self.plastic_cum_ara, self.plastic_du_ara])
             self._launch(
@@ -576,6 +599,41 @@ class WarpSolid3D:
                  1 if ast.enabled else 0, F(ast.eps), F(ast.n_exp), F(self._ast_w_dp),
                  self.a, self.dudt],
             )
+
+    def _akma_donusu(self, plastik) -> None:
+        """Akma yüzeyine dönüş; gerinim yumuşaması açıksa gerinim + `Y0`.
+
+        Kapalıyken eski çekirdek AYNI argümanlarla (bit-aynı). Açıkken aynı
+        projeksiyon + eşdeğer plastik gerinim birikimi, ardından
+        `Y0 = Y0_taban · w(ε_p)`. "ara" kipinde adım başına iki projeksiyon
+        olur (değerlendirme + adım sonu); ikinci değerlendirmedeki
+        idempotent olduğundan gerinim çift sayılmaz.
+        """
+        if self._gy is None:
+            self._launch(return_mapping_k,
+                         [self.S, self.P, self.rho, self.active, self.Y0,
+                          self._sp, plastik])
+            return
+        self._launch(return_mapping_gerinim_k,
+                     [self.S, self.P, self.rho, self.active, self.Y0,
+                      self._sp, plastik, self.eps_p])
+        self._launch(kohezyon_yumusat_k,
+                     [self.Y0, self._Y0_taban, self.eps_p, self._gy_maske,
+                      F(self._gy["eps_c"]), int(self._gy["basamak"])])
+
+    def gerinim_tanisi(self) -> dict:
+        """Gerinim yumuşaması açıksa `ε_p` ve kohezyonu sıfıra inen kütle."""
+        if self._gy is None:
+            return {}
+        e = self.eps_p.numpy()
+        y = self.Y0.numpy()
+        mk = self._gy_maske.numpy().astype(bool)
+        m = self.m.numpy()
+        sifir = mk & (y <= 0.0)
+        return {**{k: v for k, v in self._gy.items()},
+                "eps_p_max": float(e.max()) if len(e) else 0.0,
+                "eps_p_ort_maske": float(e[mk].mean()) if mk.any() else 0.0,
+                "kohezyonsuz_kutle_kesri": float(m[sifir].sum() / m.sum())}
 
     def _dayanim_kes(self) -> None:
         k = self._kes
@@ -807,11 +865,7 @@ class WarpSolid3D:
             if self._taban is not None:
                 self._yogunluk_tabanla()
         if self.mat.strength.enabled:
-            self._launch(
-                return_mapping_k,
-                [self.S, self.P, self.rho, self.active, self.Y0, self._sp,
-                 self.plastic_du],
-            )
+            self._akma_donusu(self.plastic_du)
             self.plastic_u_total += float(
                 np.sum(self.m.numpy() * self.plastic_du.numpy())
             )

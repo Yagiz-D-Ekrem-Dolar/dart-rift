@@ -65,7 +65,7 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
                  ilk_degerlendirme=False, matris_cekme_siniri=None,
                  mermi_h_kipi="merdiven", dayanim_kesme=False,
                  yogunluk_tabani=False, gec_evre=None, dondurma=None,
-                 yari_eksenler=None) -> str:
+                 yari_eksenler=None, gerinim_yumusama=None) -> str:
     """Kosunun FIZIK yapilandirmasinin SHA-256 ozeti (16 hane).
 
     Iki cikti ayni `theta`yi tasiyip FARKLI fizikle uretilmis
@@ -130,6 +130,9 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
     if yari_eksenler is not None:
         parcalar.append("yari_eksenler=" + repr(
             [f"{float(t):.17g}" for t in yari_eksenler]))
+    if gerinim_yumusama:
+        parcalar.append("gerinim_yumusama=" + repr(
+            sorted(dict(gerinim_yumusama).items())))
     ham = "|".join(parcalar).encode("utf-8")
     return hashlib.sha256(ham).hexdigest()[:16]
 
@@ -565,6 +568,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         impuls_zaman: str = "dogrusal",
                         beta_km: bool = False,
                         adim_bildir: int = 0,
+                        gerinim_yumusama: dict | None = None,
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
@@ -586,6 +590,9 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
       erken evre de görünsün).
     - `beta_km` — son durumda `β`'yı **ikinci** yolla (bağlı kütle merkezi)
       da hesaplar, ejekta koni açısını yazar (**L1**, **L17**: koni `140°`).
+    - `gerinim_yumusama = {"eps_c", "bicim", "hedef"}` — eşdeğer plastik
+      gerinim `ε_c`'ye ulaşınca kohezyon kaybolur (**L1**); `hedef` varsayılan
+      `"matris"` (bloklar ve mermi sağlam kaya).
 
     Geçiş bilgisi, dondurulan sayı ve iki yöntemli `β` **fizik tanısına**
     yazılır (kapı değil) ve durum `npz`'sine girer. `gec_evre`/`dondurma`/
@@ -672,6 +679,12 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             f"impuls_zaman 'dogrusal' ya da 'log', {impuls_zaman!r} geldi")
     if int(adim_bildir) < 0:
         raise ValueError("adim_bildir >= 0 olmali")
+    _gy = dict(gerinim_yumusama) if gerinim_yumusama else None
+    if _gy is not None:
+        if _gy.get("hedef", "matris") not in ("matris", "tum"):
+            raise ValueError("gerinim_yumusama.hedef 'matris' ya da 'tum' olmali")
+        if float(_gy.get("eps_c", 1.0)) <= 0.0:
+            raise ValueError("gerinim_yumusama.eps_c pozitif olmali")
     for i, th in enumerate(x):
         kw = sahne_parametreleri(th, sahne_taban)
         try:
@@ -730,6 +743,14 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                                else None),
                 # A83: rho >= 0,01 rho0/alpha (bosluga dagilan madde).
                 yogunluk_tabani=(YOGUNLUK_TABANI_ETA if yogunluk_tabani else None),
+                # ADR-0050 ek (L1): gerinimle kohezyon kaybi; varsayilan
+                # yalniz MATRIS (bloklar ve mermi saglam kaya).
+                gerinim_yumusama=(None if _gy is None else {
+                    "eps_c": float(_gy.get("eps_c", 1.0)),
+                    "bicim": str(_gy.get("bicim", "dogrusal")),
+                    "maske": (None if _gy.get("hedef", "matris") == "tum" else
+                              (~np.asarray(rs.is_impactor, dtype=bool)
+                               & ~np.asarray(rs.is_boulder, dtype=bool)))}),
                 **mermi_kw)
             t = 0.0
             kontrol = max(1, azami_adim // 200)
@@ -883,6 +904,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 fizik_tani["dondurulmus"] = int(sol.dondurulmus_sayisi)
             if _yari is not None:
                 fizik_tani["yari_eksenler"] = [float(t) for t in _yari]
+            if _gy is not None:
+                fizik_tani["gerinim_yumusama"] = sol.gerinim_tanisi()
             if sok_yargisi:
                 from ..observables.sok import sok_gecti
                 # A48: mermi MASKELENMELI. Aliminyum mermi `alpha0 = 1`
@@ -941,7 +964,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                                              matris_cekme_siniri,
                                              mermi_h_kipi, dayanim_kesme,
                                              yogunluk_tabani, gec_evre,
-                                             dondurma, _yari),
+                                             dondurma, _yari, _gy),
                     # A72 / Protokol J: zaman adimi ve kuvvet aninda
                     # akma tanisi. JSON metni -- pickle gerektirmez.
                     cfl=float(cfl), akma_kipi=str(akma_kipi),

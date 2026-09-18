@@ -151,3 +151,67 @@ def birikim_k(cum: wp.array(dtype=F), du: wp.array(dtype=F)):
     """Parcacik basina birikim -- her yuva kendi toplamini tutar."""
     i = wp.tid()
     cum[i] = cum[i] + du[i]
+
+
+# ------------------------------------------------------------------------
+# GERINIMLE KOHEZYON KAYBI (ADR-0050 ek; L1 Raducan & Jutzi 2022)
+# ------------------------------------------------------------------------
+@wp.kernel
+def return_mapping_gerinim_k(
+    S: wp.array(dtype=M3),
+    P: wp.array(dtype=F),
+    rho: wp.array(dtype=F),
+    active: wp.array(dtype=wp.uint8),
+    Y0: wp.array(dtype=F),
+    sp: StrengthWp,
+    plastic_du: wp.array(dtype=F),
+    eps_p: wp.array(dtype=F),
+):
+    """`return_mapping_k` ile AYNI projeksiyon + esdeger plastik gerinim.
+
+    Radyal donuste (von Mises) esdeger plastik gerinim artisi
+    `Δε_p = (σ_eq,deneme − Y) / (3G)`; burada `σ_eq = vm`, `vm − Y = vm(1 − f)`.
+    `eps_p` BIRIKIR (parcacik yalniz kendi yuvasina yazar). `plastic_du`
+    `return_mapping_k` ile ayni formul -- iki cekirdek ayni S'yi uretir.
+    """
+    i = wp.tid()
+    if active[i] == wp.uint8(0):
+        plastic_du[i] = F(0.0)
+        return
+    si = S[i]
+    j2 = F(0.5) * wp.ddot(si, si)
+    vm = wp.sqrt(F(3.0) * j2)
+    y = yield_stress(P[i], Y0[i], sp)
+    du = F(0.0)
+    if vm > y and vm > F(0.0):
+        f = y / vm
+        S[i] = f * si
+        du = f * (F(1.0) - f) * (F(2.0) * j2) / (F(2.0) * sp.shear_G * rho[i])
+        eps_p[i] = eps_p[i] + vm * (F(1.0) - f) / (F(3.0) * sp.shear_G)
+    plastic_du[i] = du
+
+
+@wp.kernel
+def kohezyon_yumusat_k(
+    Y0: wp.array(dtype=F),
+    Y0_taban: wp.array(dtype=F),
+    eps_p: wp.array(dtype=F),
+    maske: wp.array(dtype=wp.uint8),
+    eps_c: F,
+    basamak: int,
+):
+    """`Y0 = Y0_taban · w(ε_p)`; `w` dogrusal `max(0, 1 − ε_p/ε_c)` ya da basamak.
+
+    Yalniz `maske[i] != 0` parcaciklarda (or. matris). Kohezyon GERI GELMEZ:
+    `ε_p` monoton birikir, `w` monoton azalir.
+    """
+    i = wp.tid()
+    if maske[i] == wp.uint8(0):
+        return
+    w = F(1.0)
+    if basamak != 0:
+        if eps_p[i] >= eps_c:
+            w = F(0.0)
+    else:
+        w = wp.max(F(0.0), F(1.0) - eps_p[i] / eps_c)
+    Y0[i] = Y0_taban[i] * w

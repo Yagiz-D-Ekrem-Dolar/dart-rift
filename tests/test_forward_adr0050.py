@@ -110,3 +110,17 @@ def test_adim_bildir_VARSAYILAN_kapali_ve_NEGATIF_reddediliyor():
     with pytest.raises(ValueError, match="adim_bildir"):
         _kos(sahne_taban=SAHNE, adim_bildir=-1)
     assert "adim_bildir and adim %" in inspect.getsource(ileri_kosu_merdiven)
+
+
+def test_gerinim_yumusama_VARSAYILAN_kapali_ozete_giriyor_ve_dogrulaniyor():
+    p = inspect.signature(ileri_kosu_merdiven).parameters
+    assert p["gerinim_yumusama"].default is None
+    taban = _fizik_ozeti(SAHNE, None, ("6:1.0",), 2.0, 0.1)
+    assert _fizik_ozeti(SAHNE, None, ("6:1.0",), 2.0, 0.1,
+                        gerinim_yumusama=None) == taban
+    assert _fizik_ozeti(SAHNE, None, ("6:1.0",), 2.0, 0.1,
+                        gerinim_yumusama={"eps_c": 1.0}) != taban
+    with pytest.raises(ValueError, match="hedef"):
+        _kos(sahne_taban=SAHNE, gerinim_yumusama={"hedef": "bloklar"})
+    with pytest.raises(ValueError, match="eps_c"):
+        _kos(sahne_taban=SAHNE, gerinim_yumusama={"eps_c": 0.0})
