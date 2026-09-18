@@ -371,3 +371,17 @@ Yeni oturum bunları **kullanıcıya yeniden sormadan** bilmeli.
   sonra W1–W6 (3 `Y₀` × 2 geçiş anı) sıralı gönderilecek.
   **Uyarı (kayıtlı):** `sbatch` yalnız `cuda` hedefinden (cuda-ui) ve `/arf/scratch`
   altından çalışıyor; arf arayüzünden `kolyoz-cuda` görünmüyor.
+- **2026-09-18 (W sonucu ve sonrası, KAYIT-066):** W0 → `t_end = 600 s` (`dt` 219×,
+  ~7,2 GPU-saat/koşu). **W kilitli yargısı OKUNMAZ**: 6/6 koşu yalnız momentum
+  defterinden düştü → sebep **A92** (dondurulan parçacık gövdeyi tek yönlü
+  çekiyordu; benim hatam, β'ya bakılmadan bulundu ve düzeltildi). A91 (rapor
+  deseni), A93 (krater operatörü, tanı), A94 (geç evrede plastik iş tanısı eski
+  `G` ile) de kapandı/kaydedildi. **PROTOKOL-W2** yazıldı (aynı kural, `W2_`
+  öneki); önce **duman** `1567704` (5 s, kabul: donmuş ≥ 1 ve artık ≤ 1e-4).
+  Kullanıcı: *"devam et, araştır, düzelt, kod geliştir, kusursuzlaştır"* →
+  ayrıca eklendi: **çok doğruluklu vekil** (`inference/cok_dogruluk.py`,
+  Kennedy–O'Hagan; Forrester sınamasında tek katmandan 4×+ iyi), **gerinimle
+  kohezyon kaybı** (L1; seçenek, varsayılan kapalı, `--gerinim-yumusama-eps`),
+  koni **kenar** açısı + HST/eliptik koni ölçümleri, çözünürlük araştırması
+  (LITERATUR §10: literatürün tüm cisim SPH'si de çarpma çevresinde cppr < 1;
+  bizim zayıf noktamız **uzak alan**, 3–4× kaba).

@@ -221,3 +221,9 @@ kaynak birebir okunamadı (MDPI 403, OSTI bağlantı reddi)]. Bizim cppr'ımız 
 `~7 → ~60` GPU-saat. Havuz için pahalı, **bir–iki koşuluk çözünürlük
 sınaması** için karşılanabilir.
 
+**Durum notu (2026-09-18):** §8'den koda girenler — öncelik 1–10'un hepsi
+(ADR-0050) + **gerinimle kohezyon kaybı** (L1'in son eksik bileşeni; seçenek,
+varsayılan kapalı) + **çok doğruluklu vekil** (kaba çok + orta az; bütçe
+sorununun yöntemsel çözümü). Öncelik 11 (tarih eşleme) kütüphane olarak var,
+henüz hiçbir kilitli protokolde kullanılmadı.
+
