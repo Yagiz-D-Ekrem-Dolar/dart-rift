@@ -385,3 +385,11 @@ Yeni oturum bunları **kullanıcıya yeniden sormadan** bilmeli.
   koni **kenar** açısı + HST/eliptik koni ölçümleri, çözünürlük araştırması
   (LITERATUR §10: literatürün tüm cisim SPH'si de çarpma çevresinde cppr < 1;
   bizim zayıf noktamız **uzak alan**, 3–4× kaba).
+- **Takvim uyarısı (Hera, 2026-09-18):** PROTOKOL-HT eski modelin 0,1 s / 24 ms
+  havuzlarına bağlı; geç evre modeliyle **yeniden yazılmalı** (düşük kohezyonda
+  krater değil küresel deformasyon olabilir — L2, L11). Hera varışı **Aralık 2026
+  sonu**; mühür ondan önce depoda olmalı. Kabaca: W2 (~1 gün) → model kilidi +
+  ADR → kaba havuz 72 × ~7 GPU-saat ≈ 500 GPU-saat (20 GPU'yla ~1–2 gün duvar,
+  kuyrukla ~1 hafta) + birkaç orta nokta (çok doğruluklu vekil) → posterior →
+  HT mührü. **Kasım ortası hedef** gerçekçi; W2 TUTMADI çıkarsa HT "koşulsuz
+  öngörü" dalına düşer.
