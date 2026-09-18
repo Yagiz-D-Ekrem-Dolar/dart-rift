@@ -37,8 +37,12 @@ L1_BETA = {50.0: 3.63, 10.0: 4.18, 1.0: 4.66}
 T_GECIS = (0.2, 1.0)
 ORAN_ALT, ORAN_UST = 0.5, 2.0
 SAGLAMLIK_ESIGI = 0.20
-#: Dosya adi deseni: `W_Y50_g0.2_...durumlar` (is betiginin urettigi ad).
-DESEN = re.compile(r"W_Y(?P<y0>[0-9p.]+)_g(?P<gecis>[0-9p.]+)")
+#: Dosya adi deseni: `W_Y50_g0p2.durumlar` (is betiginin urettigi ad).
+#: A91 (2026-09-18): eski desen `[0-9p.]+` idi ve gercek addaki `.durumlar`
+#: noktasini da sayiya katiyordu (`0p2.` -> `0.2.` -> ValueError). Sinavlar
+#: adin sonunda `_kaba_...` olan sahte adlarla yazildigi icin gormedi; rapor
+#: HICBIR beta okunmadan coktu, kilitli KURAL degismedi.
+DESEN = re.compile(r"W_Y(?P<y0>[0-9]+(?:p[0-9]+)?)_g(?P<gecis>[0-9]+(?:p[0-9]+)?)")
 
 
 def _sayi(s: str) -> float:

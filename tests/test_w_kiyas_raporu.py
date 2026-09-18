@@ -138,3 +138,22 @@ def test_CLI_json_yaziyor(tmp_path, capsys):
     veri = json.loads(yol.read_text(encoding="utf-8"))
     assert veri["genel"] == "KIYAS TUTTU"
     assert "KIYAS TUTTU" in capsys.readouterr().out
+
+
+def test_A91_GERCEK_is_adi_ayristiriliyor(tmp_path):
+    """`is_W_kiyas.slurm` adi `W_Y50_g0p2` ve dizin `W_Y50_g0p2.durumlar`:
+    sonda `_kaba_...` YOK. Eski desen `.durumlar` noktasini sayiya katip
+    `0p2.` okuyordu (A91)."""
+    for y0, yad in ((50.0, "50"), (10.0, "10"), (1.0, "1")):
+        for gad in ("0p2", "1p0"):
+            _npz(tmp_path, f"W_Y{yad}_g{gad}", W.L1_BETA[y0])
+    v = W.topla(tmp_path)
+    assert sorted(v) == sorted((y, t) for y in W.L1_BETA for t in W.T_GECIS)
+    assert W.kapsam(v)["tam"]
+
+
+def test_A91_desen_NOKTAYI_sayiya_katmiyor():
+    m = W.DESEN.search("W_Y50_g0p2.durumlar")
+    assert m.group("y0") == "50" and m.group("gecis") == "0p2"
+    m = W.DESEN.search("W_Y1_g1p0.durumlar")
+    assert m.group("y0") == "1" and m.group("gecis") == "1p0"
