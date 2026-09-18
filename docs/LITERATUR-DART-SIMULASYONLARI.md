@@ -186,3 +186,38 @@ merdiven listesi (ör. `2` yerine `√2` oranlı, daha çok basamak) ve ölçüm
 - **Özgünlük:** L2, L10, L11, L14 aynı soruyu farklı kodlarla çözdü. Katkımız:
   açık GPU (Warp) kodu, kalibre Bayesçi çıkarım + açık model eksikliği/çözünürlük
   terimi, koşudan önce kilitli protokoller, mühürlü Hera öngörüsü.
+
+---
+
+## 10. Çözünürlük: çarpma çevresi mi, küresel alan mı? (2026-09-18)
+
+**Soru:** literatür (iSALE geleneği) momentum aktarımının yakınsaması için
+**mermi yarıçapı başına ≥ 10 hücre** (cppr) öneriyor; kraterden daha fazla
+çözünürlük istiyor. [arama özeti — iki bağımsız aramada aynı ifade; birincil
+kaynak birebir okunamadı (MDPI 403, OSTI bağlantı reddi)]. Bizim cppr'ımız ne?
+
+| | cppr (çarpma çevresi) | küresel aralık | parçacık |
+|---|---|---|---|
+| L1 Raducan & Jutzi 2022 (düzgün dağılım **varsayımıyla**) | 0,32 (5e5) – 0,51 (2e6) | 1,5 – 0,96 m | 5e5 – 2e6 |
+| L8 Raducan ve diğ. 2022 A&A | 0,40 (mermide 50 parçacık) | 0,95 m | 2,5e6 |
+| biz, DART sahnesi (kaba / orta / ince) | 1,06 / 2,12 / 4,24 | 5,6 m uzak alan | 1,7e4 / 6,9e4 / 4,9e5 |
+| biz, W kıyas sahnesi (kaba) | 1,41 | 4,7 m eşdeğer, 5,6 m uzak | 1,7e4 |
+
+**Okuma:**
+
+1. DART'ı **saat mertebesinde, tüm cisim** olarak koşan SPH çalışmaları da
+   çarpma çevresinde cppr `< 1` ile çalışıyor ve gözlenen `β`'yı üretiyor.
+   "cppr ≥ 10" kuralı **erken evre / dayanım rejimi** (iSALE, düz yarı-uzay)
+   için; zayıf hedefte `β`'nın çoğu geç evre küresel akıştan geliyor.
+2. Merdiven sayesinde çarpma çevresinde literatürden **ince**yiz; ama uzak
+   alanda **3–4× kaba** ve toplamda **~30× az** parçacığız. L1'de düşük
+   kohezyonda sonuç "krater" değil **küresel deformasyon**; bunu çözmek uzak
+   alan çözünürlüğü ister. Yani W2 sapma verirse ilk şüpheli **uzak alan**.
+3. L1'in kendi çözünürlük sınaması: düşük çözünürlük hızlı ejektayı `~%15`,
+   toplam ejekta kütlesini `~%6` **fazla** veriyor; `β` için sayı vermiyor.
+
+**Uygulanabilir sınama (öneri, koşulmadı):** merdivenin taban aralığını
+`7 → 3,5 m` yapmak parçacığı `~8×` artırır; geç evre koşusu başına maliyet
+`~7 → ~60` GPU-saat. Havuz için pahalı, **bir–iki koşuluk çözünürlük
+sınaması** için karşılanabilir.
+
