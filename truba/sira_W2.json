@@ -1,0 +1,10 @@
+{
+ "aciklama": "PROTOKOL-W2: kiyas sinamasinin A92 duzeltmeli tekrari. 3 Y0 x 2 gecis ani, kaba, 600 s (W0 hizindan S3.2 kurali). ONEK=W2 zorunlu (W kanitinin ustune yazilmaz). ONKOSUL: W2 duman kabulu (scripts/w2_duman_kontrol.py 'W2 GONDERILEBILIR').",
+ "kok": "/arf/scratch/egitimg16u3/driftclaude",
+ "kok_notu": "YagizTRUBA (egitimg16u3). 6 GPU, sinir 20.",
+ "adimlar": [
+  {"ad": "W2_kiyas", "betik": "truba/is_W_kiyas.slurm",
+   "gorevler": [0, 1, 2, 3, 4, 5], "gpu": 1,
+   "export": {"T_END": "600", "ONEK": "W2"}}
+ ]
+}
