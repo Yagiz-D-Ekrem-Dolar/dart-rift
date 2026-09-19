@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-18 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 72 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93 · A70, A84, A91, A92 ve A94 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-19 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 74 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97 · A70, A84, A91, A92, A94 ve A96 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5148,6 +5148,45 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A97 — **Geç evreye geçiş anı yakınsamamış: `t_geçiş` 0,2 → 1,0 s `β − 1`'i %9–15 artırıyor** (2026-09-19) — *açık, protokol UG koşuyor*
+
+W2'nin kilitli sağlamlık ölçütü (`≤ 0,20`) geçti, ama fark üç `Y₀`'da da
+**aynı yönde**: `β` 3,295 → 3,494 (50 Pa), 3,667 → 4,070 (10 Pa), 3,992 →
+4,389 (1 Pa). 0,2 s'de hedef hâlâ akıyor (geçişte kinetik enerji 0,2 ile 1,0 s
+arasında `3,757e8 → 3,746e8 J`); `A_geç = 1e5 Pa` ile ses hızı `~8 m/s`'ye
+iniyor. Literatür daha geç geçiyor (L3: `10 L / c_s`; L8: `5–500 s`).
+**Sonucu:** 0,2 s geçişle üretilen her `β` aşağı yanlı olabilir; W2'nin
+0,2 s oranları (`0,82–0,87`) 1,0 s'de `0,94–0,97`. Çare: PROTOKOL-UG
+(`t_geçiş` 2,5 ve 5,0 s, iş `1569287_2/3`), üretim geçiş anı kilitli kuralla
+seçilir; 0,2 s koşuları çok doğruluklu vekilde düşük doğruluk olabilir.
+Bulunuş: W2 `β(t)` eğrilerine kilitli yargıdan **sonra** bakarken (keşif).
+
+---
+### A96 — **Koşu sürerken TRUBA ağacı güncelleniyordu; tembel içe aktarım yeni kodu okuyabilirdi** (2026-09-19) — **KAPANDI** (süreç kusuru, zarar yok)
+
+UA gönderilirken W2 koşuyordu ve `dart-rift` ağacı `b7c27af → a877269`
+güncellendi. Kod bazı modülleri döngü içinde/koşunun sonunda içe aktarıyor
+(`beta_iki_yontem`, alüminyum Tillotson): koşunun sonu **yeni** kodu
+okuyabilirdi ve bunu hiçbir denetim görmezdi (`ortak_bas.sh` yalnız işin
+başında bakıyor). Bu sefer `src` farkı boştu (TRUBA'da `git diff --stat`
+ile doğrulandı) → W2/UA etkilenmedi. **Düzeltme:** `is_UY_UG.slurm` kendi
+git worktree'sinden (`AGAC`) koşuyor; `AGAC` zorunlu, temiz ve
+`SABIT_COMMIT` ile aynı olmalı, `PYTHONPATH` ona bakıyor. Ana ağaç artık
+koşuları etkilemeden güncellenebilir. Yeni iş betikleri bu kalıbı izler.
+
+---
+### A95 — **Ejekta koni açısı çözünürlükle yakınsamıyor ve gözlemle aynı büyüklük değil** (2026-09-19) — *açık, ölçüldü*
+
+UA'nın üç kolunda `β` `%0,4` içinde kalırken `%90` koni açısı `151 / 174 /
+161°`, `%99` kenar `162 / 194 / 174°` (`180°`'yi aşıyor: küresel
+deformasyonda ejekta yarım küreden geniş). Ölçü 600 s'de **hız yönünden**
+alınıyor; LICIACube ise koniyi 160–180 s'de **konumdan** görüyor (L2
+simülasyonda da o anlarda konumdan ölçmüş: `ω ≈ 115–139°`). **Sonucu:**
+mevcut `koni_tam_acisi_derece` gözlenebilir olarak kullanılamaz; olabilirliğe
+girmez. Çare: LICIACube anında (`~170 s`) konumdan ölçülen koni + yakınsama
+sınaması (ADR-0051 §4). Bulunuş: UA raporunda kapı olmayan tanılar.
 
 ---
 ### A94 — **Geç evre geçişinden sonra plastik iş tanısı eski kayma modülüyle hesaplanıyordu** (2026-09-18) — **KAPANDI** (kendi hatam; dinamiğe etkisi yok)
