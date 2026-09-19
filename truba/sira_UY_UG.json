@@ -1,0 +1,10 @@
+{
+ "aciklama": "PROTOKOL-UY (yakin/orta alan, gorev 0-1, 300 s) + PROTOKOL-UG (gecis ani 2,5 / 5,0 s, gorev 2-3, 600 s). W2_Y10 ile ayni sahne. AGAC: kosu boyunca degismeyen git worktree (KAYIT-067 dersi: tembel ice aktarim).",
+ "kok": "/arf/scratch/egitimg16u3/driftclaude",
+ "kok_notu": "YagizTRUBA (egitimg16u3). 4 GPU, sinir 20. Beklenen ~34 GPU-sa (UY ~12, UG ~22).",
+ "adimlar": [
+  {"ad": "UY_UG", "betik": "truba/is_UY_UG.slurm",
+   "gorevler": [0, 1, 2, 3], "gpu": 1,
+   "export": {"AGAC": "/arf/scratch/egitimg16u3/driftclaude/agac_uyug"}}
+ ]
+}
