@@ -19,7 +19,7 @@ parametreleri MaterialParams'tan. Ikisi ayri kaynaklardir (ADR-0006).
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 
@@ -434,6 +434,14 @@ def _apply_strength_and_porosity(state: SolidState, mat: MaterialParams) -> None
         # ADR-0031: crush tavani PARCACIK BASINA baslangic distansiyonudur.
         a_new = solve_alpha_implicit(state.alpha, state.rho, state.u, mat,
                                      alpha_ref=state.alpha_ref)
+        # P1: crush residual must use the same material EOS as pressure.
+        # Porous projectiles previously received the target's EOS here.
+        if state.mermi_tillotson is not None and state.mermi_maske is not None:
+            mask = np.asarray(state.mermi_maske, dtype=bool)
+            a_new[mask] = solve_alpha_implicit(
+                state.alpha[mask], state.rho[mask], state.u[mask],
+                replace(mat, tillotson=state.mermi_tillotson),
+                alpha_ref=state.alpha_ref[mask])
         state.alpha[state.active] = a_new[state.active]
 
 

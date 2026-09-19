@@ -107,3 +107,43 @@ def porosity_update_k(
         else:
             hi = mid
     alpha[i] = wp.min(a_old, F(0.5) * (lo + hi))  # geri genlesme yok
+
+
+@wp.kernel
+def porosity_update_iki_k(
+    alpha: wp.array(dtype=F),
+    alpha_ref: wp.array(dtype=F),
+    rho: wp.array(dtype=F),
+    u: wp.array(dtype=F),
+    active: wp.array(dtype=wp.uint8),
+    pp: PorosityWp,
+    tp: TillotsonWp,
+    tp_m: TillotsonWp,
+    mermi: wp.array(dtype=wp.uint8),
+):
+    """P1: route the implicit crush residual through the particle's EOS.
+
+    The target branch preserves the original arithmetic. This does not
+    introduce a new crush curve or change material parameters.
+    """
+    i = wp.tid()
+    if active[i] == wp.uint8(0):
+        return
+    a0 = alpha_ref[i]
+    a_old = alpha[i]
+    if a_old <= F(1.0):
+        return
+    lo = F(1.0)
+    hi = a_old
+    for _ in range(BISECTION_STEPS):
+        mid = F(0.5) * (lo + hi)
+        residual = F(0.0)
+        if mermi[i] != wp.uint8(0):
+            residual = _residual(mid, a_old, a0, rho[i], u[i], pp, tp_m)
+        else:
+            residual = _residual(mid, a_old, a0, rho[i], u[i], pp, tp)
+        if residual < F(0.0):
+            lo = mid
+        else:
+            hi = mid
+    alpha[i] = wp.min(a_old, F(0.5) * (lo + hi))

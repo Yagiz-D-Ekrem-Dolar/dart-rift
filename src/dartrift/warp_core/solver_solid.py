@@ -23,7 +23,7 @@ from .damage_gradykipp import accumulate_damage_k, apply_damage_k, damage_rate_k
 from .eos_tillotson import eos_solid, eos_solid_iki, make_tillotson_wp
 from .gravity_tree import GravitySolver
 from .hash_grid import GridManager
-from .porosity_palpha import make_porosity_wp, porosity_update_k
+from .porosity_palpha import make_porosity_wp, porosity_update_iki_k, porosity_update_k
 from .solver import _budget_row, _check_finite
 from .strength_lundborg import (
     akma_orani_k,
@@ -959,11 +959,18 @@ class WarpSolid3D:
             # ORTUK cozum (ADR-0023): alpha, P'den ACIK okunamaz — cekirdek
             # rho ve u alir ve alpha = crush(P_kati(alpha*rho,u)/alpha)
             # denklemini bisection ile cozer.
-            self._launch(
-                porosity_update_k,
-                [self.alpha, self.alpha_ref, self.rho, self.u, self.active,
-                 self._pp, self._tp],
-            )
+            if self._mermi is not None:
+                self._launch(
+                    porosity_update_iki_k,
+                    [self.alpha, self.alpha_ref, self.rho, self.u, self.active,
+                     self._pp, self._tp, self._tp_m, self._mermi],
+                )
+            else:
+                self._launch(
+                    porosity_update_k,
+                    [self.alpha, self.alpha_ref, self.rho, self.u, self.active,
+                     self._pp, self._tp],
+                )
         if self._damage:
             # Hasar TAM adimda ilerletilir (yariya bolunmez): D monoton ve
             # [0,1]'e kisik oldugu icin trapez yolunun bir anlami yok, ustelik
