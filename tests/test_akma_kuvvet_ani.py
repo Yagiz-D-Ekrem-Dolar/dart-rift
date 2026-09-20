@@ -161,7 +161,13 @@ def test_ara_kipte_DEVIATORIK_hiz_tepkisi_akma_orani_kadar_kuculuyor():
     dev_son = _norm(_v("son")[0] - v_bas)
     dev_ara = _norm(_v("ara")[0] - v_bas)
     oran = dev_son / max(dev_ara, 1e-300)
-    beklenen = UZMAN_Q / 100.0
+    # P1 cache duzeltmesi: adim basindaki kick artik geri dondurulmus
+    # S_n'yi gorur; eski test bayat deneme-S'nin o kick'te TEKRAR
+    # kullanilmasini bekliyordu. n adimda ilk kick sifir, kalan 2n-1
+    # yarim kick vardir. "son"da n tanesi q_deneme, n-1 tanesi Y;
+    # ilk q_deneme=UZMAN_Q, sonrakiler=UZMAN_Q+Y. "ara"da hepsi Y.
+    n_adim = 3
+    beklenen = (n_adim * UZMAN_Q / 100.0 + 2 * n_adim - 2) / (2 * n_adim - 1)
     assert abs(oran - beklenen) / beklenen < 0.01, (oran, beklenen)
 
 

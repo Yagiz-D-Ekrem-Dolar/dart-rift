@@ -979,9 +979,18 @@ class WarpSolid3D:
             self._launch(accumulate_damage_k,
                          [self.D_cbrt, self.dDdt_cbrt, self.D, self.active, F(dt)])
         self._step_count += 1
+        # The final u/rho/S half-kicks and alpha/D updates change the state
+        # AFTER the last force evaluation. The next CFL and first kick must
+        # share one fresh evaluation of that completed state. Keep reads
+        # (state_numpy/budgets) passive: _eval may project S in "ara" mode.
+        self._evaluated = False
 
     def compute_dt(self, cfl: float | None = None) -> float:
         """CFL (boyuna elastik hiz) + ivme + gerinim (solid_ref ile ayni)."""
+        # Preserve the separate A77 initial-evaluation opt-in. Once a step
+        # has completed, its constitutive changes must reach the CFL too.
+        if self._step_count > 0:
+            self.hazirla()
         cs = self.cs.numpy()
         rho = self.rho.numpy()
         if self.mat.strength.enabled and self._kes is not None:

@@ -92,6 +92,9 @@ class SolidState:
     # TASINAN gerilme. `P`/`S` HAM kalir; kuvvetler bunlari gorur.
     P_eff: np.ndarray = field(default=None)  # type: ignore[assignment]
     S_eff: np.ndarray = field(default=None)  # type: ignore[assignment]
+    # Completed KDK/constitutive updates invalidate the derived force fields.
+    # Evaluation is deferred until the next timestep calculation or kick.
+    _derived_dirty: bool = field(default=False, init=False, repr=False)
 
     def __post_init__(self) -> None:
         self.x = np.atleast_2d(np.asarray(self.x, dtype=np.float64))
@@ -409,6 +412,7 @@ def evaluate_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> No
         state.dudt = state.dudt + 0.5 * np.einsum(
             "nj,nja,nja->n", m_j * r_pair, vij3, gw3
         )
+    state._derived_dirty = False
 
 
 def _apply_strength_and_porosity(state: SolidState, mat: MaterialParams) -> None:
@@ -509,6 +513,8 @@ def _accumulate_damage(state: SolidState, mat: MaterialParams, dt: float) -> Non
 
 def step_kdk_solid(state: SolidState, mat: MaterialParams, num: RefParams, dt: float) -> None:
     """KDK + tam-trapez u/S guncellemesi (sph_ref.step_kdk ile ayni iskelet)."""
+    if state._derived_dirty:
+        evaluate_solid(state, mat, num)
     act = state.active
     cont = mat.density_method == "continuity"
     state.v[act] += 0.5 * dt * state.a[act]
@@ -526,10 +532,13 @@ def step_kdk_solid(state: SolidState, mat: MaterialParams, num: RefParams, dt: f
         state.rho[act] += 0.5 * dt * state.drhodt[act]
     _apply_strength_and_porosity(state, mat)
     _accumulate_damage(state, mat, dt)
+    state._derived_dirty = True
 
 
 def compute_timestep_solid(state: SolidState, mat: MaterialParams, num: RefParams) -> float:
     """CFL (boyuna elastik hizla) + ivme + gerinim kriterleri (P2 §4.1)."""
+    if state._derived_dirty:
+        evaluate_solid(state, mat, num)
     if mat.strength.enabled:
         c_long = np.sqrt(state.cs**2 + (4.0 / 3.0) * mat.strength.shear_G / state.rho)
     else:
