@@ -395,3 +395,30 @@ def resolution_series(
     if len(n_list) < 3:
         raise ValueError("P3-VR-02 en az 3 cozunurluk ister")
     return [build_impactor(n, **kw) for n in n_list]
+
+
+def eslesik_mermi_sayisi(s_hedef_min: float, *, mass: float, density: float,
+                         oran: float, packing: str = "fcc") -> int:
+    """A100 — merdivenle **öz-benzer** mermi: `s_mermi = s_hedef_min / oran`.
+
+    P1 3×3 matrisi (TRUBA, 2026-09-20/21; `docs/COZUNURLUK-DENETIMI.md` §2):
+    24 ms `β`'sı mutlak çözünürlüğe değil hedef/mermi **aralık oranına** bağlı
+    — köşegenler kaba/800 `1,601` ≈ orta/6400 `1,600`, orta/800 `1,407` ≈
+    ince/6400 `1,398`. Mermi sabit tutulup yalnız hedef inceltildiğinde oran
+    merdivenle değişiyor ve "yakınsamama" gibi görünüyor. Bu işlev mermi
+    parçacık sayısını en ince hedef aralığından türetir; böylece her merdiven
+    temas bölgesinde aynı oranla çözülür (P1 "joint" serisi).
+
+    Aralık `build_impactor` ile aynı tanımdır (`V_p = particle_volume(s)`).
+    Kaba merdiven (`s_min = 0,35 m`), L1 mermisi (500 kg, 1000 kg/m³) ve
+    `oran = 3,65` → `~800` (P1 kaba/800).
+    """
+    for ad, deger in (("s_hedef_min", s_hedef_min), ("mass", mass),
+                      ("density", density), ("oran", oran)):
+        if not (math.isfinite(deger) and deger > 0.0):
+            raise ValueError(f"{ad} pozitif ve sonlu olmali, {deger} geldi")
+    s_p = float(s_hedef_min) / float(oran)
+    n = int(round((float(mass) / float(density)) / particle_volume(s_p, packing)))
+    if n < 8:
+        raise ValueError(f"eslesik mermi {n} parcacik (< 8): oran cok kucuk")
+    return n

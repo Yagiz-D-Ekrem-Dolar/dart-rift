@@ -170,6 +170,30 @@ def stress_rate_3d(
 
 
 @wp.kernel
+def continuity_rate_trL_3d(
+    rho: wp.array(dtype=F),
+    L: wp.array(dtype=M3),
+    drhodt: wp.array(dtype=F),
+):
+    """A101 -- drho/dt = -rho tr(L), DUZELTILMIS hiz gradyaninin izi.
+
+    `continuity_rate_3d` duzeltilmemis SPH diverjansini kullanir; serbest
+    yuzeyde cekirdek yarim oldugu icin hacim degisiminin yalniz `~%50`'sini
+    gorur (olculdu: duzgun genlesmede yuzey `0,49 / 0,53`, `tr L` `1,000`).
+    Etkilenen kusak `~2s` kalin -> fiziksel kalinligi cozunurluge bagli.
+
+    YALNIZ GEC EVREDE kullanilir (`gec_evreye_gec(duzeltilmis_sureklilik=
+    True)`): orada Tillotson'un enerji terimleri sifir (`a = b = 0`), basinc
+    `u`'ya bagli degil; enerji denkleminin cift bicimli `PdV` terimiyle
+    yogunlugun farkli diverjans kullanmasi dinamigi degistirmez (yalniz enerji
+    TANISINI). Sok evresinde bu ayrisma `P(rho, u)` uzerinden fizige girerdi.
+    """
+    i = wp.tid()
+    li = L[i]
+    drhodt[i] = -rho[i] * (li[0, 0] + li[1, 1] + li[2, 2])
+
+
+@wp.kernel
 def kick_S_3d(
     S: wp.array(dtype=M3),
     dSdt: wp.array(dtype=M3),

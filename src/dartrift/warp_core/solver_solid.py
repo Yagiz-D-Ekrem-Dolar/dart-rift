@@ -215,6 +215,9 @@ class WarpSolid3D:
         # enerji parcacik basina SAYILIR, sessizce atilmaz.
         self._u_tabani = bool(u_tabani)
         self._continuity = mat.density_method == "continuity"
+        # A101: sureklilik tr(L) ile (yalniz gec evrede acilir; bkz.
+        # `gec_evreye_gec(duzeltilmis_sureklilik=)`). Varsayilan: SPH div.
+        self._sureklilik_L = False
         if self._continuity:
             # rho artik bir DURUM degiskeni ve baslangici GOZENEKLILIGE
             # BAGLIDIR. P-alpha modelinde basinc P = P_kati(rho*alpha, u)/alpha
@@ -528,7 +531,10 @@ class WarpSolid3D:
                 [gid, self.gridman.x32, self.x, self.v, self._m_etk, self.rho, self.cs, h, r32,
                  1 if self.num.use_balsara else 0, self.L, self.divv, self.fbal],
             )
-        if self._continuity:
+        if self._continuity and self._sureklilik_L:
+            # A101: duzeltilmis gradyanin izi (gec evre, bkz. gec_evreye_gec).
+            self._launch(SS.continuity_rate_trL_3d, [self.rho, self.L, self.drhodt])
+        elif self._continuity:
             self._launch(I.continuity_rate_3d, [self.rho, self.divv, self.drhodt])
         if self.mat.strength.enabled:
             self._launch(
@@ -752,7 +758,8 @@ class WarpSolid3D:
     def gec_evreye_gec(self, A_gec: float, *, t: float | None = None,
                        gerilme_olcekle: bool = True,
                        alpha_av: float | None = None,
-                       beta_av: float | None = None) -> dict:
+                       beta_av: float | None = None,
+                       duzeltilmis_sureklilik: bool = False) -> dict:
         """Şok geçtikten sonra **düşük ses hızlı** malzemeye geç.
 
         Raducan & Jutzi 2022 (*PSJ* 3, 128) ve Raducan ve diğ. 2022
@@ -781,6 +788,14 @@ class WarpSolid3D:
           `ρ α c h |∇v|` mertebesindeki yapay gerilme kohezyonu (`~10 Pa`)
           ve ataleti aşabiliyor ve `h` ile ölçeklendiği için sonucu
           çözünürlüğe bağlıyor (rapor A98).
+        - `duzeltilmis_sureklilik` (A101): geçişten sonra yoğunluk
+          `dρ/dt = −ρ tr(L)` ile (düzeltilmiş gradyanın izi) ilerler.
+          Düzeltilmemiş SPH diverjansı serbest yüzeyde hacim değişiminin
+          yalnız `~%50`'sini görüyor ve etkilenen kuşak `~2s` kalın.
+          Geç evrede `a = b = 0` (basınç `u`'ya bağlı değil); enerji
+          denkleminin çift biçimli `PdV` terimiyle ayrışma yalnız enerji
+          tanısını etkiler. `False` → bit-aynı. Yoğunluk yöntemi
+          `continuity` değilse reddedilir.
         """
         import dataclasses as _dc
 
@@ -791,6 +806,9 @@ class WarpSolid3D:
                 raise ValueError(f"{_ad} sonlu ve >= 0 olmali, {_deger} geldi")
         if self.mat.eos != "tillotson":
             raise ValueError("gec evre yalniz Tillotson EOS ile")
+        if duzeltilmis_sureklilik and not self._continuity:
+            raise ValueError("duzeltilmis_sureklilik yalniz density_method="
+                             "'continuity' ile anlamli")
         if self._damage:
             raise ValueError("gec evre hasar modeliyle desteklenmiyor")
         A_gec = float(A_gec)
@@ -826,6 +844,9 @@ class WarpSolid3D:
                 self.num,
                 alpha_av=self.num.alpha_av if alpha_av is None else float(alpha_av),
                 beta_av=self.num.beta_av if beta_av is None else float(beta_av))
+        # A101: sureklilik tr(L) ile. Verilmezse bayrak DOKUNULMAZ (bit-ayni).
+        if duzeltilmis_sureklilik:
+            self._sureklilik_L = True
         # Yeni EOS ile HEMEN degerlendir: bir sonraki `compute_dt` eski
         # ses hizini gormesin.
         self._eval()
@@ -838,6 +859,7 @@ class WarpSolid3D:
             "adim": int(self._step_count),
             "av_once": list(av_once),
             "av_sonra": [float(self.num.alpha_av), float(self.num.beta_av)],
+            "sureklilik": "trL" if self._sureklilik_L else "sph",
         }
         return dict(self.gec_evre)
 

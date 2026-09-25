@@ -596,6 +596,9 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
       `"matris"` (bloklar ve mermi sağlam kaya).
     - `gec_evre["alpha_av"]`, `gec_evre["beta_av"]` (A98) — geçişten sonraki
       yapay viskozite katsayıları; verilmezse değişmez (bit-aynı).
+    - `gec_evre["duzeltilmis_sureklilik"] = True` (A101) — geçişten sonra
+      yoğunluk `−ρ tr(L)` ile ilerler (serbest yüzeyde tam hacim değişimi);
+      verilmezse SPH diverjansı (bit-aynı).
     - `av_tanisi_her = N` (A98) — her `N` adımda yapay viskozitenin gücü ve
       ivme payı örneklenir, geç evredeki toplam AV ısısı ve plastik iş
       `fizik_tani["av_tanisi"]`ye yazılır. Fiziğe dokunmaz; `0` → kapalı.
@@ -677,8 +680,12 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
         # A98: gec evre yapay viskozitesi (verilmezse degismez).
         _gec_av = {k: float(_gec[k]) for k in ("alpha_av", "beta_av")
                    if _gec.get(k) is not None}
+        # A101: gec evrede sureklilik tr(L) ile (verilmezse SPH div, bit-ayni).
+        if _gec.get("duzeltilmis_sureklilik"):
+            _gec_av["duzeltilmis_sureklilik"] = True
         _bilinmeyen = set(_gec) - {"t_gecis", "A", "gerilme_olcekle",
-                                   "alpha_av", "beta_av"}
+                                   "alpha_av", "beta_av",
+                                   "duzeltilmis_sureklilik"}
         if _bilinmeyen:
             raise ValueError(f"gec_evre bilinmeyen anahtar: {sorted(_bilinmeyen)}")
     if int(av_tanisi_her) < 0:

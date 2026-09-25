@@ -211,6 +211,9 @@ def main() -> int:
                         "(verilmezse --alpha-av aynen kalir)")
     g.add_argument("--gec-evre-beta-av", type=float, default=None,
                    help="A98: gecisten SONRA yapay viskozite karesel katsayisi")
+    g.add_argument("--gec-evre-duzeltilmis-sureklilik", action="store_true",
+                   help="A101: gecisten SONRA yogunluk -rho tr(L) ile "
+                        "(serbest yuzeyde tam hacim degisimi)")
     g.add_argument("--av-tanisi-her", type=int, default=0,
                    help="A98 TANI: her N adimda AV gucu/ivme payi (0 = kapali)")
     g.add_argument("--dondurma-k", type=float, default=None,
@@ -259,6 +262,11 @@ def main() -> int:
     g.add_argument("--mermi-parcacik", type=int, default=None,
                    help="A98: istenen mermi parcacik sayisi (SAHNE 800); "
                         "mermi cozunurlugu sinamasi")
+    g.add_argument("--mermi-aralik-orani", type=float, default=None,
+                   help="A100: mermi araligi = en ince hedef araligi / ORAN; "
+                        "parcacik sayisi merdivenden turetilir (oz-benzer "
+                        "temas; P1 kaba/800 icin ~3,65). --mermi-parcacik "
+                        "ile birlikte verilemez")
     g.add_argument("--model-sinifi", default=None, choices=("M0", "M1"),
                    help="M0 homojen (bloksuz, L1 kiyasi), M1 bloklu (uretim)")
     g.add_argument("--blok-kesri", type=float, default=None,
@@ -379,6 +387,30 @@ def main() -> int:
         if a.mermi_parcacik < 8:
             raise SystemExit("--mermi-parcacik >= 8 olmali")
         sahne_ek["n_impactor"] = int(a.mermi_parcacik)
+    if a.mermi_aralik_orani is not None:
+        # A100: mermi merdivenle birlikte incelir (oz-benzer temas bolgesi).
+        if a.mermi_parcacik is not None:
+            raise SystemExit("--mermi-parcacik ve --mermi-aralik-orani "
+                             "birlikte verilemez")
+        import inspect
+
+        from dartrift.setup.impactor import eslesik_mermi_sayisi
+        from dartrift.setup.refine import kademe_ayristir
+        from dartrift.setup.scene import build_scene as _bs
+
+        _var = inspect.signature(_bs).parameters
+        _taban = {**SAHNE, **sahne_ek}
+        _kutle = float(_taban.get("impactor_mass",
+                                  _var["impactor_mass"].default))
+        _yog = float(_taban.get("impactor_density",
+                                _var["impactor_density"].default))
+        _s_min = min(float(a.spacing) / lam for _, lam in
+                     kademe_ayristir(merdiven, float(a.spacing)))
+        sahne_ek["n_impactor"] = eslesik_mermi_sayisi(
+            _s_min, mass=_kutle, density=_yog, oran=float(a.mermi_aralik_orani))
+        print(f"  mermi (A100): s_hedef_min={_s_min:g} m  oran="
+              f"{a.mermi_aralik_orani:g}  -> n_impactor="
+              f"{sahne_ek['n_impactor']}", flush=True)
     if a.model_sinifi is not None:
         sahne_ek["model_class"] = a.model_sinifi
     if a.blok_kesri is not None:
@@ -446,8 +478,14 @@ def main() -> int:
             gec_evre["alpha_av"] = float(a.gec_evre_alpha_av)
         if a.gec_evre_beta_av is not None:
             gec_evre["beta_av"] = float(a.gec_evre_beta_av)
+        # A101: yalniz VERILDIYSE eklenir (fizik ozeti eski kosularla AYNI).
+        if a.gec_evre_duzeltilmis_sureklilik:
+            gec_evre["duzeltilmis_sureklilik"] = True
     elif a.gec_evre_alpha_av is not None or a.gec_evre_beta_av is not None:
         raise SystemExit("--gec-evre-alpha/beta-av gec evre (--gec-evre-t) ister")
+    elif a.gec_evre_duzeltilmis_sureklilik:
+        raise SystemExit("--gec-evre-duzeltilmis-sureklilik gec evre "
+                         "(--gec-evre-t) ister")
     dondurma = (None if a.dondurma_k is None
                 else {"k_uzak": float(a.dondurma_k),
                       "her_adim": int(a.dondurma_her)})
@@ -539,6 +577,7 @@ def main() -> int:
         "impuls_zaman": "log" if a.impuls_log else "dogrusal",
         "adim_bildir": int(a.adim_bildir),
         "av_tanisi_her": int(a.av_tanisi_her),
+        "mermi_aralik_orani": a.mermi_aralik_orani,
         "gerinim_yumusama": (None if a.gerinim_yumusama_eps is None else
                              {"eps_c": float(a.gerinim_yumusama_eps),
                               "bicim": a.gerinim_yumusama_bicim}),
