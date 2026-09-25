@@ -42,7 +42,7 @@ export WARP_CACHE_PATH="$KOK/.warp_cache_a98k"
 source "$KOK/ortak_bas.sh"
 cd "$AGAC"
 
-T_END=__T_END__
+T_END=40
 CIK="$KOK/kampanya/a98k"
 echo "A98K  kod: $BULUNAN  agac: $AGAC  t_end: $T_END"
 for S in 1.0 0.5 0.25; do

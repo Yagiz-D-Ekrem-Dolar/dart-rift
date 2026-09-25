@@ -2,6 +2,9 @@
 
 > **TASLAK — henüz KİLİTLİ DEĞİL.** `t_end` (§2.4) duman koşusundan sonra
 > doldurulup ayrı commit'le kilitlenecek; o commit'ten önce hiçbir kol koşulmaz.
+>
+> **NOT (2026-09-26, kilit):** `t_end = 40 s` dolduruldu (§2.4). Bu commit'le
+> **KİLİTLİ**; TRUBA'ya bundan sonra gönderilir. K2 tanıya indirildi (§4).
 
 **Yazıldı:** 2026-09-26, **A98K koşularından ÖNCE**. Kilitlenmeden önce
 görülenler §2.4'te **tek tek** yazılı: süre seçimi için kaba kolda iki CPU
@@ -68,7 +71,7 @@ aynıdır ve AV'nin payı doğrudan ölçülür. Sorular:
 | `K_s*_av0` | aynı | | `(0 ; 0)` (sınır) | SPH |
 | `K_s*_av01L` | aynı | | `(0,1 ; 0,2)` | `tr(L)` (A101 çaresi) |
 
-`t_end = __T_END__ s` (§2.4). Hepsi TRUBA'da tek GPU'da (H100, FP64),
+`t_end = 40 s` (§2.4). Hepsi TRUBA'da tek GPU'da (H100, FP64),
 sırayla koşar; kod tek commit'te sabitlenir (`AGAC_COMMIT`). Kod A99
 düzeltmelerini **içerir** (yerel `HEAD`; PROTOKOL-A98'in tam sahne
 koşuları içermez). İki deney ayrı sorulara cevap verir; A98K içinde her kol
@@ -89,7 +92,17 @@ en yakın komşu mesafesi.
    `n = 5620`, 47 adım. `E_AV = 3,2e3 J`, `W_pl = 1,9e3 J`.
 2. CPU duman koşusu, `K_s1_av1` ayarıyla, `t_end = 40 s`: **yalnız süre
    seçimi için.** `Q(t)` eğrisinin platoya ulaştığı an okundu:
-   __DUMAN_OZETI__
+   `n = 5620`, 2243 adım (`Δt` `4,7e-3 … 2,2e-2`), CPU 24 dk.
+   `Q(t)`: 2 s `7,5e3`, 6 s `3,2e4`, 10 s `3,7e4`, 16 s `4,2e4`, 20 s `4,1e4`,
+   30 s `3,93e4`, 40 s `3,91e4` (kg m/s). Plato 14–16 s'den sonra; 20–40 s
+   arası ±%4. `E_AV` 20 s'ye kadar doyuyor (`9,5e3 J`); `W_pl` 40 s'de hâlâ
+   yavaş artıyor (`1,26e4 J`); kabada AV payı `0,432`. Momentum sapması
+   `2e-16`, enerji `−2,5e-4`, `nn_min/s = 0,85`.
+   **Seçim:** `t_end = 40 s`. İnce kollarda AV zayıf, akış daha uzun sürer;
+   kabada platonun 2,5 katı süre pay bırakır.
+   **Görülen değerlerin etkisi:** `Q(s=1, av1)` ve kabanın AV payı biliniyor.
+   K1, K3, K4 ince aralıklara bağlı (görülmedi). K2'nin kaba değeri
+   görüldüğü için K2 **tanıdır, yargı değildir** (§4).
 
 Başka hiçbir kol (hiçbir ince aralık, hiçbir düşük AV kolu) kilitlenmeden
 önce koşulmadı.
@@ -111,7 +124,7 @@ bağıl fark.
 yönü) → **VARSAYILAN AV'DE ÇÖZÜNÜRLÜK BAĞIMLILIĞI VAR**. Değilse
 **ÜRETİLMEDİ**.
 
-**K2 — AV payı (tanı):** kaba kolda (`K_s1_av1`)
+**K2 — AV payı (TANI; kaba değeri kilitlemeden önce görüldü, §2.4):** kaba kolda (`K_s1_av1`)
 `E_AV / (E_AV + W_plastik) ≥ 0,5` → **AV KABADA BASKIN**, değilse
 **İKİNCİL**. Üç aralığın payı ayrıca yazılır.
 
