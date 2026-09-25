@@ -1,0 +1,10 @@
+{
+ "aciklama": "PROTOKOL-A98 (gec evre yapay viskozitesi; UY ile ayni sahne, 300 s). Gorev 0: AV 1/2 + tani (W2 gerileme), 1: kaba AV 0,1/0,2, 2: orta AV 0,1/0,2, 3: kaba AV 0, 4: kaba AV 1/2 mermi 6400 (M5). AGAC: kosu boyunca degismeyen git worktree (KAYIT-067).",
+ "kok": "/arf/scratch/egitimg16u3/driftclaude",
+ "kok_notu": "YagizTRUBA (egitimg16u3). 5 GPU, sinir 20. Beklenen ~20 GPU-sa (ust sinir 5 x 16 = 80).",
+ "adimlar": [
+  {"ad": "A98", "betik": "truba/is_A98_gec_av.slurm",
+   "gorevler": [0, 1, 2, 3, 4], "gpu": 1,
+   "export": {"AGAC": "/arf/scratch/egitimg16u3/driftclaude/agac_a98"}}
+ ]
+}

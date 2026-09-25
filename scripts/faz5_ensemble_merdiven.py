@@ -206,6 +206,13 @@ def main() -> int:
                    help="gec evre hacim modulu [Pa] (L1 ~1e5, L3 ~2,7e4)")
     g.add_argument("--gec-evre-gerilme-olcekleme-yok", action="store_true",
                    help="gecerken deviatorik S OLCEKLENMEZ (karsilastirma kolu)")
+    g.add_argument("--gec-evre-alpha-av", type=float, default=None,
+                   help="A98: gecisten SONRA yapay viskozite dogrusal katsayisi "
+                        "(verilmezse --alpha-av aynen kalir)")
+    g.add_argument("--gec-evre-beta-av", type=float, default=None,
+                   help="A98: gecisten SONRA yapay viskozite karesel katsayisi")
+    g.add_argument("--av-tanisi-her", type=int, default=0,
+                   help="A98 TANI: her N adimda AV gucu/ivme payi (0 = kapali)")
     g.add_argument("--dondurma-k", type=float, default=None,
                    help="r > k*R ve v_r > v_esc parcaciklari dondur (ADR-0050)")
     g.add_argument("--dondurma-her", type=int, default=200,
@@ -249,6 +256,9 @@ def main() -> int:
                    help="mermi hizi [m/s] (DART 6144,9; L1 kiyasi 6000)")
     g.add_argument("--mermi-yogunlugu", type=float, default=None,
                    help="mermi yogunlugu [kg/m3] (L1 kiyasi 1000)")
+    g.add_argument("--mermi-parcacik", type=int, default=None,
+                   help="A98: istenen mermi parcacik sayisi (SAHNE 800); "
+                        "mermi cozunurlugu sinamasi")
     g.add_argument("--model-sinifi", default=None, choices=("M0", "M1"),
                    help="M0 homojen (bloksuz, L1 kiyasi), M1 bloklu (uretim)")
     g.add_argument("--blok-kesri", type=float, default=None,
@@ -365,6 +375,10 @@ def main() -> int:
         sahne_ek["impactor_speed"] = float(a.mermi_hizi)
     if a.mermi_yogunlugu is not None:
         sahne_ek["impactor_density"] = float(a.mermi_yogunlugu)
+    if a.mermi_parcacik is not None:
+        if a.mermi_parcacik < 8:
+            raise SystemExit("--mermi-parcacik >= 8 olmali")
+        sahne_ek["n_impactor"] = int(a.mermi_parcacik)
     if a.model_sinifi is not None:
         sahne_ek["model_class"] = a.model_sinifi
     if a.blok_kesri is not None:
@@ -427,6 +441,13 @@ def main() -> int:
     if a.gec_evre_t is not None:
         gec_evre = {"t_gecis": float(a.gec_evre_t), "A": float(a.gec_evre_A),
                     "gerilme_olcekle": not a.gec_evre_gerilme_olcekleme_yok}
+        # A98: yalniz VERILDIYSE eklenir -> fizik ozeti eski kosularla AYNI.
+        if a.gec_evre_alpha_av is not None:
+            gec_evre["alpha_av"] = float(a.gec_evre_alpha_av)
+        if a.gec_evre_beta_av is not None:
+            gec_evre["beta_av"] = float(a.gec_evre_beta_av)
+    elif a.gec_evre_alpha_av is not None or a.gec_evre_beta_av is not None:
+        raise SystemExit("--gec-evre-alpha/beta-av gec evre (--gec-evre-t) ister")
     dondurma = (None if a.dondurma_k is None
                 else {"k_uzak": float(a.dondurma_k),
                       "her_adim": int(a.dondurma_her)})
@@ -467,6 +488,7 @@ def main() -> int:
                               {"eps_c": float(a.gerinim_yumusama_eps),
                                "bicim": a.gerinim_yumusama_bicim}),
             impuls_zaman="log" if a.impuls_log else "dogrusal",
+            av_tanisi_her=int(a.av_tanisi_her),
             **({"azami_adim": int(a.azami_adim)} if a.azami_adim else {}))[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
@@ -516,6 +538,7 @@ def main() -> int:
         "beta_km": bool(a.beta_km),
         "impuls_zaman": "log" if a.impuls_log else "dogrusal",
         "adim_bildir": int(a.adim_bildir),
+        "av_tanisi_her": int(a.av_tanisi_her),
         "gerinim_yumusama": (None if a.gerinim_yumusama_eps is None else
                              {"eps_c": float(a.gerinim_yumusama_eps),
                               "bicim": a.gerinim_yumusama_bicim}),

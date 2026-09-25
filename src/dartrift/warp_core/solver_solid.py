@@ -673,6 +673,67 @@ class WarpSolid3D:
             return self._komsu.tani()
         return {"komsu_arama": "hash", "sorgu_yaricapi": float(self._radius32)}
 
+    def av_tanisi(self, maske: np.ndarray | None = None) -> dict:
+        """A98 -- yapay viskozitenin (AV) o anki payı. Fiziğe DOKUNMAZ.
+
+        Son değerlendirmenin alanlarıyla (`P`, `S`, `ρ`, `c_s`, Balsara)
+        ve **aynı** komşu yapısıyla AV terimini gerilme teriminden ayırır:
+
+        - `P_av` [W]: AV'nin kinetik enerjiyi ısıya çevirme hızı
+          `Σ m_i du_av,i` (etkin parçacıklar; `maske` verilirse onlar).
+        - `av_ivme_payi`: `Σ m|a_AV| / Σ m(|a_AV| + |a_gerilme|)` — ivmenin
+          ne kadarını yapay viskozitenin taşıdığı (0: hiç, 1: tamamı).
+        - `e_kin` [J]: aynı kümenin kinetik enerjisi (oran için).
+
+        Değerlendirilmemiş durumda çağrılırsa önce değerlendirir (adımın
+        kendisinin yapacağı değerlendirmenin aynısı).
+        """
+        from . import solid_stress as _SS
+
+        if not self._evaluated:
+            self._eval()
+            self._evaluated = True
+        n = self.n
+        dev = self.device
+        du_av = wp.zeros(n, dtype=F, device=dev)
+        a_av = wp.zeros(n, dtype=F, device=dev)
+        a_ger = wp.zeros(n, dtype=F, device=dev)
+        p_use = self.P_eff if self._damage else self.P
+        s_use = self.S_eff if self._damage else self.S
+        aa, bb = F(self.num.alpha_av), F(self.num.beta_av)
+        if self._bvh:
+            # Konum surumu degismediyse liste yeniden KURULMAZ (ayni cift kumesi).
+            self._komsu.kur(self.x, self.h_arr, self._x_version)
+            self._launch(_SS.av_tanisi_3d_csr,
+                         [self._komsu.bas, self._komsu.nbr, self.x, self.v,
+                          self._m_etk, self.rho, p_use, s_use, self.cs, self.fbal,
+                          self.h_arr, aa, bb, du_av, a_av, a_ger])
+        else:
+            r32 = self.gridman.build(self.x, self.support)
+            self._launch(_SS.av_tanisi_3d,
+                         [self.gridman.id, self.gridman.x32, self.x, self.v,
+                          self._m_etk, self.rho, p_use, s_use, self.cs, self.fbal,
+                          self.h_arr, wp.float32(r32), aa, bb, du_av, a_av, a_ger])
+        m = self.m.numpy()
+        sec = self.active.numpy().astype(bool)
+        if maske is not None:
+            sec = sec & np.asarray(maske, bool)
+        d = du_av.numpy()[sec]
+        av = a_av.numpy()[sec]
+        ag = a_ger.numpy()[sec]
+        mm = m[sec]
+        vv = self.v.numpy().astype(np.float64)[sec]
+        pay_payda = float(np.sum(mm * (av + ag)))
+        return {
+            "alpha_av": float(self.num.alpha_av),
+            "beta_av": float(self.num.beta_av),
+            "P_av": float(np.sum(mm * d)),
+            "e_kin": 0.5 * float(np.sum(mm * np.sum(vv * vv, axis=1))),
+            "av_ivme_payi": (float(np.sum(mm * av)) / pay_payda
+                             if pay_payda > 0.0 else 0.0),
+            "n": int(sec.sum()),
+        }
+
     def hazirla(self) -> None:
         """Ilk degerlendirmeyi ADIMDAN ONCE yap (idempotent) -- rapor A77.
 
@@ -689,7 +750,9 @@ class WarpSolid3D:
 
     # -- GEC EVRE HIZLI ENTEGRASYON (ADR-0050) ------------------------------
     def gec_evreye_gec(self, A_gec: float, *, t: float | None = None,
-                       gerilme_olcekle: bool = True) -> dict:
+                       gerilme_olcekle: bool = True,
+                       alpha_av: float | None = None,
+                       beta_av: float | None = None) -> dict:
         """Şok geçtikten sonra **düşük ses hızlı** malzemeye geç.
 
         Raducan & Jutzi 2022 (*PSJ* 3, 128) ve Raducan ve diğ. 2022
@@ -711,11 +774,21 @@ class WarpSolid3D:
 
         Hasar modeliyle birlikte **desteklenmez** (Young modülü ayrı kurulur);
         sessizce yanlış çalışmasın diye reddedilir.
+
+        - `alpha_av`, `beta_av` (A98): geçişten **sonra** kullanılacak yapay
+          viskozite katsayıları. `None` → değişmez (bit-aynı). Yapay
+          viskozite şok yakalama aracıdır; geç evrede şok yoktur ama
+          `ρ α c h |∇v|` mertebesindeki yapay gerilme kohezyonu (`~10 Pa`)
+          ve ataleti aşabiliyor ve `h` ile ölçeklendiği için sonucu
+          çözünürlüğe bağlıyor (rapor A98).
         """
         import dataclasses as _dc
 
         if self.gec_evre is not None:
             raise ValueError("gec_evreye_gec ikinci kez cagrildi")
+        for _ad, _deger in (("alpha_av", alpha_av), ("beta_av", beta_av)):
+            if _deger is not None and not (np.isfinite(_deger) and _deger >= 0.0):
+                raise ValueError(f"{_ad} sonlu ve >= 0 olmali, {_deger} geldi")
         if self.mat.eos != "tillotson":
             raise ValueError("gec evre yalniz Tillotson EOS ile")
         if self._damage:
@@ -745,6 +818,14 @@ class WarpSolid3D:
         if gerilme_olcekle and self.mat.strength.enabled:
             self.S = wp.array(self.S.numpy().astype(np.float64) * oran,
                               dtype=M3, device=self.device)
+        # A98: gec evre yapay viskozitesi. Verilmezse `self.num` AYNI nesne
+        # kalir (bit-ayni). `_eval` ve `compute_dt` katsayilari buradan okur.
+        av_once = (float(self.num.alpha_av), float(self.num.beta_av))
+        if alpha_av is not None or beta_av is not None:
+            self.num = _dc.replace(
+                self.num,
+                alpha_av=self.num.alpha_av if alpha_av is None else float(alpha_av),
+                beta_av=self.num.beta_av if beta_av is None else float(beta_av))
         # Yeni EOS ile HEMEN degerlendir: bir sonraki `compute_dt` eski
         # ses hizini gormesin.
         self._eval()
@@ -755,6 +836,8 @@ class WarpSolid3D:
             "G_eski": G_eski, "G_gec": self._G_etkin,
             "gerilme_olceklendi": bool(gerilme_olcekle),
             "adim": int(self._step_count),
+            "av_once": list(av_once),
+            "av_sonra": [float(self.num.alpha_av), float(self.num.beta_av)],
         }
         return dict(self.gec_evre)
 

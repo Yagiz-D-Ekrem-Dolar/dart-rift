@@ -569,6 +569,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         beta_km: bool = False,
                         adim_bildir: int = 0,
                         gerinim_yumusama: dict | None = None,
+                        av_tanisi_her: int = 0,
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
@@ -593,6 +594,11 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
     - `gerinim_yumusama = {"eps_c", "bicim", "hedef"}` — eşdeğer plastik
       gerinim `ε_c`'ye ulaşınca kohezyon kaybolur (**L1**); `hedef` varsayılan
       `"matris"` (bloklar ve mermi sağlam kaya).
+    - `gec_evre["alpha_av"]`, `gec_evre["beta_av"]` (A98) — geçişten sonraki
+      yapay viskozite katsayıları; verilmezse değişmez (bit-aynı).
+    - `av_tanisi_her = N` (A98) — her `N` adımda yapay viskozitenin gücü ve
+      ivme payı örneklenir, geç evredeki toplam AV ısısı ve plastik iş
+      `fizik_tani["av_tanisi"]`ye yazılır. Fiziğe dokunmaz; `0` → kapalı.
 
     Geçiş bilgisi, dondurulan sayı ve iki yöntemli `β` **fizik tanısına**
     yazılır (kapı değil) ve durum `npz`'sine girer. `gec_evre`/`dondurma`/
@@ -660,6 +666,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
     _gec = dict(gec_evre) if gec_evre else None
     _gec_t = _gec_A = None
     _gec_olcek = True
+    _gec_av: dict = {}
     if _gec is not None:
         _gec_t = float(_gec["t_gecis"])
         _gec_A = float(_gec["A"])
@@ -667,6 +674,15 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
         if not (0.0 < _gec_t < t_end):
             raise ValueError(
                 f"t_gecis (0, t_end) icinde olmali: {_gec_t} / {t_end}")
+        # A98: gec evre yapay viskozitesi (verilmezse degismez).
+        _gec_av = {k: float(_gec[k]) for k in ("alpha_av", "beta_av")
+                   if _gec.get(k) is not None}
+        _bilinmeyen = set(_gec) - {"t_gecis", "A", "gerilme_olcekle",
+                                   "alpha_av", "beta_av"}
+        if _bilinmeyen:
+            raise ValueError(f"gec_evre bilinmeyen anahtar: {sorted(_bilinmeyen)}")
+    if int(av_tanisi_her) < 0:
+        raise ValueError("av_tanisi_her >= 0 olmali")
     _dond = dict(dondurma) if dondurma else None
     _dond_k, _dond_her = 3.0, 200
     if _dond is not None:
@@ -798,6 +814,11 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             _imp_k = 0
             impuls = []
             _gec_bilgi = None
+            # A98 tanisi: [t, P_av, e_kin(hedef), av_ivme_payi, plastik_is,
+            # E_av_birikmis, gec_evrede_mi]
+            _av_satir: list = []
+            _E_av = 0.0
+            _E_av_gec = 0.0
             for adim in range(1, azami_adim + 1):
                 dt = sol.compute_dt()
                 if t + dt > t_end:
@@ -810,13 +831,28 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 if _gec is not None and sol.gec_evre is None and t >= _gec_t:
                     _gec_once = _enerji_ozeti(sol.budgets())
                     _gec_bilgi = sol.gec_evreye_gec(
-                        _gec_A, t=t, gerilme_olcekle=_gec_olcek)
+                        _gec_A, t=t, gerilme_olcekle=_gec_olcek, **_gec_av)
                     _gec_bilgi["enerji_once"] = _gec_once
                     _gec_bilgi["enerji_sonra"] = _enerji_ozeti(sol.budgets())
                     _gec_bilgi["adim_gecis"] = int(adim)
                 if _dond is not None and adim % _dond_her == 0:
                     sol.uzak_kacanlari_dondur(R=_R_h, v_esc=_vesc_h,
                                               k_uzak=_dond_k)
+                if av_tanisi_her and adim % int(av_tanisi_her) == 0:
+                    # A98: yapay viskozitenin gucu; trapez ile zamanda
+                    # biriktirilir. Plastik is cozucunun kendi toplamindan.
+                    _av = sol.av_tanisi(maske=_h_maske)
+                    _pl = float(sol.plastic_u_total) + (
+                        float(np.sum(sol.m.numpy() * sol.plastic_cum_ara.numpy()))
+                        if getattr(sol, "_akma_ara", False) else 0.0)
+                    if _av_satir:
+                        _t0, _p0 = _av_satir[-1][0], _av_satir[-1][1]
+                        _E_av += 0.5 * (_p0 + _av["P_av"]) * (t - _t0)
+                        if sol.gec_evre is not None:
+                            _E_av_gec += 0.5 * (_p0 + _av["P_av"]) * (t - _t0)
+                    _av_satir.append([float(t), _av["P_av"], _av["e_kin"],
+                                      _av["av_ivme_payi"], _pl, float(_E_av),
+                                      1.0 if sol.gec_evre is not None else 0.0])
                 while (_imp_k < len(_imp_t)
                        and t >= _imp_t[_imp_k] * (1.0 - 1e-12)):
                     # [t, hedef eksenel momentum / p_imp, beta_hedef, M_ejekta]
@@ -906,6 +942,24 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 fizik_tani["yari_eksenler"] = [float(t) for t in _yari]
             if _gy is not None:
                 fizik_tani["gerinim_yumusama"] = sol.gerinim_tanisi()
+            if av_tanisi_her:
+                # A98: AV isisi ve plastik is -- ikisi de kinetik enerjiyi
+                # isiya ceviriyor; hangisi baskin, gec evrede ayrica.
+                _pl_gec = None
+                if _av_satir and _gec_bilgi is not None:
+                    _ilk_gec = next((r for r in _av_satir if r[6] > 0.5), None)
+                    if _ilk_gec is not None:
+                        _pl_gec = _av_satir[-1][4] - _ilk_gec[4]
+                fizik_tani["av_tanisi"] = {
+                    "her_adim": int(av_tanisi_her),
+                    "E_av_toplam": float(_E_av),
+                    "E_av_gec_evre": float(_E_av_gec),
+                    "plastik_is_gec_evre": _pl_gec,
+                    "satirlar": _av_satir,
+                    "sutunlar": ["t", "P_av", "e_kin_hedef", "av_ivme_payi",
+                                 "plastik_is_birikmis", "E_av_birikmis",
+                                 "gec_evre"],
+                }
             if sok_yargisi:
                 from ..observables.sok import sok_gecti
                 # A48: mermi MASKELENMELI. Aliminyum mermi `alpha0 = 1`

@@ -254,6 +254,121 @@ def forces_solid_3d(
     dudt[i] = du
 
 
+# ------------------------------------------------------------------------
+# A98 TANISI: yapay viskozitenin payi (fizige DOKUNMAZ)
+# ------------------------------------------------------------------------
+# `forces_solid_3d*` ile AYNI cift ifadeleri; yalniz AV terimini gerilme
+# teriminden AYIRIR ve kendi dizilerine yazar. Uretim yolu bu cekirdekleri
+# hic cagirmaz (bit-ayni). Yapay gerilme (ADR-0014) uretimde kapali oldugu
+# icin burada yok.
+@wp.kernel
+def av_tanisi_3d(
+    grid: wp.uint64,
+    x32: wp.array(dtype=wp.vec3),
+    x: wp.array(dtype=V3),
+    v: wp.array(dtype=V3),
+    m: wp.array(dtype=F),
+    rho: wp.array(dtype=F),
+    P: wp.array(dtype=F),
+    S: wp.array(dtype=M3),
+    cs: wp.array(dtype=F),
+    fbal: wp.array(dtype=F),
+    h: wp.array(dtype=F),
+    radius32: wp.float32,
+    alpha_av: F,
+    beta_av: F,
+    du_av: wp.array(dtype=F),
+    a_av: wp.array(dtype=F),
+    a_ger: wp.array(dtype=F),
+):
+    """AV isitma hizi `du_av` [W/kg], |a_AV| ve |a_gerilme| (A98)."""
+    i = wp.tid()
+    xi = x[i]
+    hi = h[i]
+    vi = v[i]
+    ident = M3(F(1.0), F(0.0), F(0.0), F(0.0), F(1.0), F(0.0), F(0.0), F(0.0), F(1.0))
+    t_i = (S[i] - P[i] * ident) / (rho[i] * rho[i])
+    acc_s = V3(F(0.0), F(0.0), F(0.0))
+    acc_v = V3(F(0.0), F(0.0), F(0.0))
+    du = F(0.0)
+    q = wp.hash_grid_query(grid, x32[i], radius32)
+    j = int(0)
+    while wp.hash_grid_query_next(q, j):
+        rij = xi - x[j]
+        r = wp.length(rij)
+        hij = F(0.5) * (hi + h[j])
+        qq = r / hij
+        if qq < F(2.0) and r > F(1.0e-12):
+            gw = grad_w3d(rij, hij)
+            vij = vi - v[j]
+            vr = wp.dot(vij, rij)
+            c_bar = F(0.5) * (cs[i] + cs[j])
+            rho_bar = F(0.5) * (rho[i] + rho[j])
+            f_bar = F(0.5) * (fbal[i] + fbal[j])
+            pi_ij = artificial_visc(vr, r * r, hij, c_bar, rho_bar, f_bar,
+                                    alpha_av, beta_av)
+            t_j = (S[j] - P[j] * ident) / (rho[j] * rho[j])
+            acc_s += m[j] * ((t_i + t_j) * gw)
+            acc_v += (-m[j] * pi_ij) * gw
+            du += F(0.5) * m[j] * pi_ij * wp.dot(vij, gw)
+    du_av[i] = du
+    a_av[i] = wp.length(acc_v)
+    a_ger[i] = wp.length(acc_s)
+
+
+@wp.kernel
+def av_tanisi_3d_csr(
+    bas: wp.array(dtype=wp.int32),
+    nbr: wp.array(dtype=wp.int32),
+    x: wp.array(dtype=V3),
+    v: wp.array(dtype=V3),
+    m: wp.array(dtype=F),
+    rho: wp.array(dtype=F),
+    P: wp.array(dtype=F),
+    S: wp.array(dtype=M3),
+    cs: wp.array(dtype=F),
+    fbal: wp.array(dtype=F),
+    h: wp.array(dtype=F),
+    alpha_av: F,
+    beta_av: F,
+    du_av: wp.array(dtype=F),
+    a_av: wp.array(dtype=F),
+    a_ger: wp.array(dtype=F),
+):
+    """`av_tanisi_3d` ile GOVDE BIREBIR; yalniz komsu dongusu CSR (A52)."""
+    i = wp.tid()
+    xi = x[i]
+    hi = h[i]
+    vi = v[i]
+    ident = M3(F(1.0), F(0.0), F(0.0), F(0.0), F(1.0), F(0.0), F(0.0), F(0.0), F(1.0))
+    t_i = (S[i] - P[i] * ident) / (rho[i] * rho[i])
+    acc_s = V3(F(0.0), F(0.0), F(0.0))
+    acc_v = V3(F(0.0), F(0.0), F(0.0))
+    du = F(0.0)
+    for k in range(bas[i], bas[i + 1]):
+        j = nbr[k]
+        rij = xi - x[j]
+        r = wp.length(rij)
+        hij = F(0.5) * (hi + h[j])
+        qq = r / hij
+        if qq < F(2.0) and r > F(1.0e-12):
+            gw = grad_w3d(rij, hij)
+            vij = vi - v[j]
+            vr = wp.dot(vij, rij)
+            c_bar = F(0.5) * (cs[i] + cs[j])
+            rho_bar = F(0.5) * (rho[i] + rho[j])
+            f_bar = F(0.5) * (fbal[i] + fbal[j])
+            pi_ij = artificial_visc(vr, r * r, hij, c_bar, rho_bar, f_bar,
+                                    alpha_av, beta_av)
+            t_j = (S[j] - P[j] * ident) / (rho[j] * rho[j])
+            acc_s += m[j] * ((t_i + t_j) * gw)
+            acc_v += (-m[j] * pi_ij) * gw
+            du += F(0.5) * m[j] * pi_ij * wp.dot(vij, gw)
+    du_av[i] = du
+    a_av[i] = wp.length(acc_v)
+    a_ger[i] = wp.length(acc_s)
+
+
 @wp.kernel
 def forces_solid_3d_csr(
     bas: wp.array(dtype=wp.int32),
