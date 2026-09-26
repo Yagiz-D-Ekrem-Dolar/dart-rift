@@ -323,7 +323,7 @@ def test_ensemble_kos_SURUMU_satira_yaziyor() -> None:
     from dartrift.inference import ensemble
     k = inspect.getsource(ensemble.ensemble_kos)
     assert '"surum": surum' in k
-    assert "oku_tamamlananlar(yol, root_seed, surum)" in k
+    assert "tasarim=tasarim, kosu_kimligi=kosu_kimligi" in k
 
 
 def test_surucu_KOD_SURUMUNU_gecirıyor() -> None:
@@ -334,3 +334,5 @@ def test_surucu_KOD_SURUMUNU_gecirıyor() -> None:
     import faz5_ensemble_merdiven as m
     k = inspect.getsource(m.main)
     assert "rev-parse" in k and "surum=surum" in k
+    assert "kosu_kimligi = ayar_karmasi(" in k
+    assert "kosu_kimligi=kosu_kimligi" in k

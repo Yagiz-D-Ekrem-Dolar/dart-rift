@@ -132,8 +132,8 @@ def grid_posterior(space: ParamSpace, surrogates, data, sigma,
         raise ValueError("en az bir gözlenebilir gerekir")
     sig = np.broadcast_to(np.asarray(sigma, dtype=np.float64).ravel(),
                           (len(data),)).astype(np.float64)
-    if np.any(sig <= 0.0):
-        raise ValueError("gözlem gürültüsü pozitif olmalı")
+    if not np.all(np.isfinite(sig)) or np.any(sig <= 0.0):
+        raise ValueError("gözlem gürültüsü pozitif ve sonlu olmalı")
     if n_grid < 8:
         raise ValueError(f"n_grid >= 8 olmalı, {n_grid} geldi")
 

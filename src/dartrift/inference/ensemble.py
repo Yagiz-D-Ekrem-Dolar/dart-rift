@@ -38,13 +38,21 @@ koşuda doğru noktalarla eşleşir. Tohum değişirse eski satırlar
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
-__all__ = ["EnsembleDurum", "oku_tamamlananlar", "ensemble_kos"]
+__all__ = ["EnsembleDurum", "ayar_karmasi", "oku_tamamlananlar", "ensemble_kos"]
+
+
+def ayar_karmasi(ayarlar: dict) -> str:
+    """İleri koşunun JSON ile temsil edilen ayarlarından sabit kimlik üret."""
+    metin = json.dumps(ayarlar, sort_keys=True, separators=(",", ":"),
+                       ensure_ascii=False, allow_nan=False)
+    return hashlib.sha256(metin.encode("utf-8")).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -64,7 +72,8 @@ class EnsembleDurum:
 
 
 def oku_tamamlananlar(yol, root_seed: int | None = None,
-                      surum: str | None = None) -> tuple[dict, int]:
+                      surum: str | None = None, *, tasarim=None,
+                      kosu_kimligi: str | None = None) -> tuple[dict, int]:
     """JSONL'den `{indeks: y}` ve **bozuk satır sayısı**.
 
     Bozuk (yarım yazılmış) satırlar **atlanır**; o noktalar yeniden
@@ -82,11 +91,15 @@ def oku_tamamlananlar(yol, root_seed: int | None = None,
     > Geçerlilik: `var ∧ doğru tohum ∧ doğru şema ∧ doğru sürüm`.
 
     `surum` verilirse sürümü uyuşmayan satırlar da **atlanır** ve o
-    noktalar yeniden koşulur.
+    noktalar yeniden koşulur. `tasarim` ve `kosu_kimligi` yalnız yeni
+    koşuların sürdürülmesinde kullanılır; verilmezse eski kayıtları okuyan
+    raporlar eski davranışla çalışır.
     """
     yol = Path(yol)
     if not yol.is_file():
         return {}, 0
+    if tasarim is not None:
+        tasarim = np.atleast_2d(np.asarray(tasarim, dtype=np.float64))
     tamam: dict = {}
     bozuk = 0
     for satir in yol.read_text(encoding="utf-8").splitlines():
@@ -106,6 +119,20 @@ def oku_tamamlananlar(yol, root_seed: int | None = None,
         if root_seed is not None and d.get("root_seed") != root_seed:
             bozuk += 1          # tasarim degismis -> gecersiz
             continue
+        if kosu_kimligi is not None and d.get("kosu_kimligi") != kosu_kimligi:
+            continue
+        if tasarim is not None:
+            # Indeks tek başına kimlik değildir: aynı tohumla tasarım
+            # dosyası veya nokta sırası değişebilir. Eski satırda theta
+            # yoksa doğrulanamaz, dolayısıyla yeniden koşulur.
+            if not 0 <= i < len(tasarim):
+                continue
+            try:
+                theta = np.asarray(d["theta"], dtype=np.float64)
+            except (KeyError, TypeError, ValueError):
+                continue
+            if not np.array_equal(theta, tasarim[i]):
+                continue
         if y is None:
             tamam[i] = None     # DUSEN nokta -- tekrar denenmez
             continue
@@ -119,7 +146,8 @@ def oku_tamamlananlar(yol, root_seed: int | None = None,
 
 def ensemble_kos(tasarim, ileri, yol, root_seed: int,
                  ilerleme=None, yeniden_dene_dusenleri: bool = False,
-                 surum: str | None = None) -> EnsembleDurum:
+                 surum: str | None = None,
+                 kosu_kimligi: str | None = None) -> EnsembleDurum:
     """Tasarımı koştur; **zaten tamamlanmış** noktaları atla.
 
     Parameters
@@ -135,18 +163,34 @@ def ensemble_kos(tasarim, ileri, yol, root_seed: int,
         Kod sürümü (commit SHA). Verilirse **başka sürümle** üretilmiş
         satırlar geçersiz sayılır ve o noktalar yeniden koşulur
         (rapor A40).
+    kosu_kimligi
+        İleri modelin sahne, malzeme ve sayısal ayarlarının karması.
+        Verilirse farklı ayarlı satırlar yeniden koşulur.
     yeniden_dene_dusenleri
         `False` (varsayılan): düşen nokta **tekrar denenmez** — aynı
         parametre aynı şekilde düşer ve GPU boşa gider. `True` yalnızca
         düşme nedeni **düzeltildikten sonra** anlamlıdır.
     """
     tasarim = np.atleast_2d(np.asarray(tasarim, dtype=np.float64))
+    if not np.all(np.isfinite(tasarim)):
+        raise ValueError("tasarim sonlu olmali")
     yol = Path(yol)
     yol.parent.mkdir(parents=True, exist_ok=True)
-    tamam, bozuk = oku_tamamlananlar(yol, root_seed, surum)
+    tamam, bozuk = oku_tamamlananlar(
+        yol, root_seed, surum, tasarim=tasarim, kosu_kimligi=kosu_kimligi)
+
+    # Son yazma yarım kaldıysa yeni JSON'u onun sonuna yapıştırma. Bozuk
+    # satırı kanıt için sakla; yeni kayıt ayrı ve okunabilir bir satırdır.
+    if yol.is_file():
+        with yol.open("rb+") as f:
+            f.seek(0, 2)
+            if f.tell():
+                f.seek(-1, 2)
+                if f.read(1) != b"\n":
+                    f.seek(0, 2)
+                    f.write(b"\n")
 
     atlanan = 0
-    dusen = sum(1 for v in tamam.values() if v is None)
     for i, th in enumerate(tasarim):
         if i in tamam and (tamam[i] is not None or not yeniden_dene_dusenleri):
             atlanan += 1
@@ -156,14 +200,16 @@ def ensemble_kos(tasarim, ileri, yol, root_seed: int,
             if not np.all(np.isfinite(y)):
                 raise RuntimeError(f"sonlu olmayan cikti: {y}")
             kayit = {"i": i, "y": [float(v) for v in y],
-                     "root_seed": root_seed, "surum": surum}
+                     "root_seed": root_seed, "surum": surum,
+                     "theta": [float(v) for v in th],
+                     "kosu_kimligi": kosu_kimligi}
             durum = "tamam"
         except Exception as e:                             # noqa: BLE001
             kayit = {"i": i, "y": None, "root_seed": root_seed,
-                     "surum": surum,
+                     "surum": surum, "theta": [float(v) for v in th],
+                     "kosu_kimligi": kosu_kimligi,
                      "hata": str(e)[:400]}
             durum = f"DUSTU: {str(e)[:120]}"
-            dusen += 1
         # HER NOKTA HEMEN YAZILIR ve dosya kapatilir: kesinti en fazla
         # SON noktayi kaybeder.
         with yol.open("a", encoding="utf-8") as f:
@@ -174,6 +220,7 @@ def ensemble_kos(tasarim, ileri, yol, root_seed: int,
             ilerleme(i, len(tasarim), durum)
 
     tamamlanan = sum(1 for v in tamam.values() if v is not None)
+    dusen = sum(1 for v in tamam.values() if v is None)
     return EnsembleDurum(toplam=len(tasarim), tamamlanan=tamamlanan,
                          dusen=dusen, atlanan=atlanan, bozuk_satir=bozuk,
                          yol=str(yol))
