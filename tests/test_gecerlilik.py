@@ -55,6 +55,15 @@ def test_NaN_sonlu_kontrolunu_dusuruyor():
     assert g["kontroller"]["sonlu"] is False
 
 
+@pytest.mark.parametrize("eksik", ["x", "v", "u", "rho", "P", "S"])
+def test_eksik_durum_alani_GECERLI_sayilmiyor(eksik):
+    """Eksik alanı atlayıp `sonlu=True` üretmek sessiz yanlış geçiştir."""
+    st = _st()
+    del st[eksik]
+    with pytest.raises(ValueError, match=eksik):
+        sayisal_gecerlilik(**_kw(st=st))
+
+
 def test_son_kipinde_kurucu_sinir_DURUSTCE_false():
     """A72: `son` kipinde kuvvet anında aşım tasarım gereği var."""
     g = sayisal_gecerlilik(**_kw(akma_tani={"oran_max": 1966.0},

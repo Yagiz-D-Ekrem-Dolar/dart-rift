@@ -101,6 +101,16 @@ def test_uygunsuzluk_gecersiz_sigma_REDDEDILIYOR():
         uygunsuzluk(1.0, 2.0, sigma_gozlem=0.3, sigma_model=-1.0)
 
 
+@pytest.mark.parametrize("alan", ["sigma_gozlem", "var_vekil", "sigma_model"])
+@pytest.mark.parametrize("deger", [np.nan, np.inf])
+def test_uygunsuzluk_sonlu_olmayan_belirsizligi_REDDEDIYOR(alan, deger):
+    """Sonsuz belirsizlik `I=0` ile tüm modelleri sahte makul yapmamalı."""
+    kw = {"sigma_gozlem": 0.3, "var_vekil": 0.0, "sigma_model": 0.0}
+    kw[alan] = deger
+    with pytest.raises(ValueError, match="sonlu"):
+        makul_mu(2.0, 3.0, **kw)
+
+
 def test_makul_mu_U_ORNEGI_model_eksikligiyle_ELENMIYOR():
     """U'nun en iyi kolu (`β − 1 = 1,05`) `|z| = 3,4` ile elenmişti.
     Model eksikliği payda ya girince uygunsuzluk `3`'ün altına iner —

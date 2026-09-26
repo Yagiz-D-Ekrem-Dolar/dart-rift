@@ -71,8 +71,10 @@ def uygunsuzluk(model, gozlem, *, sigma_gozlem: float,
 
     `model` dizi olabilir; `I` aynı şekilde döner.
     """
-    if sigma_gozlem <= 0.0:
-        raise ValueError(f"sigma_gozlem pozitif olmali, {sigma_gozlem} geldi")
+    if not np.isfinite(sigma_gozlem) or sigma_gozlem <= 0.0:
+        raise ValueError(f"sigma_gozlem pozitif ve sonlu olmali, {sigma_gozlem} geldi")
+    if not np.isfinite(var_vekil) or not np.isfinite(sigma_model):
+        raise ValueError("var_vekil ve sigma_model sonlu olmali")
     if var_vekil < 0.0 or sigma_model < 0.0:
         raise ValueError("var_vekil ve sigma_model negatif olamaz")
     payda = np.sqrt(float(var_vekil) + float(sigma_gozlem) ** 2

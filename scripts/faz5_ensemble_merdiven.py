@@ -51,7 +51,7 @@ from dartrift.inference.design import (  # noqa: E402
     factorial_design,
     lhs_design,
 )
-from dartrift.inference.ensemble import ensemble_kos  # noqa: E402
+from dartrift.inference.ensemble import ayar_karmasi, ensemble_kos  # noqa: E402
 from dartrift.inference.forward import (  # noqa: E402
     GOZLENEBILIRLER,
     ileri_kosu_merdiven,
@@ -484,8 +484,23 @@ def main() -> int:
         ["git", "rev-parse", "HEAD"], cwd=REPO, capture_output=True,
         text=True, check=False).stdout.strip() or None
     print(f"  kod surumu  : {surum or 'BILINMIYOR'}", flush=True)
+    # Kod sürümü tek başına yeterli değil: aynı commit ve tasarım tohumu
+    # farklı sahne tohumu, merdiven, CFL veya geç evre ayarıyla koşabilir.
+    # Noktanın theta'sı ayrıca ensemble sürücüsünde satır başına sınanır.
+    kosu_kimligi = ayar_karmasi({
+        "args": {k: str(v) if isinstance(v, Path) else v
+                 for k, v in vars(a).items()},
+        "sahne": {**SAHNE, "root_seed": sahne_kok, **sahne_ek},
+        "malzeme": _dc.asdict(MALZEME),
+        "merdiven": merdiven,
+        "uzay": {"names": UZAY.names, "lo": UZAY.lo,
+                 "hi": UZAY.hi, "log": UZAY.log},
+        "gozlenebilirler": GOZLENEBILIRLER,
+        "surum": surum,
+    })
     durum = ensemble_kos(tasarim, _ileri, yol, root_seed=kok,
-                         ilerleme=_ilerleme, surum=surum)
+                         ilerleme=_ilerleme, surum=surum,
+                         kosu_kimligi=kosu_kimligi)
     print(chr(10) + f"  tamamlanan : {durum.tamamlanan}/{durum.toplam}", flush=True)
     print(f"  dusen      : {durum.dusen}   atlanan: {durum.atlanan}", flush=True)
     if durum.bozuk_satir:
@@ -522,6 +537,7 @@ def main() -> int:
         "azami_adim": a.azami_adim,
         "onsel_disi": bool(a.tasarim_dosyasi is not None and onsel_disi),
         "surum": surum,
+        "kosu_kimligi": kosu_kimligi,
         "n_tasarim_tam": int(tam_n),
         "gozlenebilirler": list(GOZLENEBILIRLER),
         "duvar_s": time.perf_counter() - t0,

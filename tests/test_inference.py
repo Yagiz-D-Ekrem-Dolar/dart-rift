@@ -213,6 +213,15 @@ def test_posterior_gecersiz_girdi_REDDEDILIYOR() -> None:
         grid_posterior(DART_UZAYI, [], [], sigma=0.1)              # bos
 
 
+@pytest.mark.parametrize("sigma", [np.nan, np.inf, [0.1, np.nan, 0.1],
+                                         [0.1, np.inf, 0.1]])
+def test_posterior_sonlu_olmayan_gozlem_sigmasini_REDDEDIYOR(sigma) -> None:
+    """NaN posterior veya sonsuz sigma kaynaklı sahte bilgisiz önsel üretme."""
+    with pytest.raises(ValueError, match="sonlu"):
+        grid_posterior(DART_UZAYI, [object()] * 3, [1.0, 2.0, 3.0],
+                       sigma=sigma, n_grid=8)
+
+
 # --------------------------------------------------------------- G4-C
 
 def _kurtarma(sigma_nominal=0.02, taramali=True):
