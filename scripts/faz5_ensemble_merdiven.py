@@ -214,6 +214,10 @@ def main() -> int:
     g.add_argument("--gec-evre-duzeltilmis-sureklilik", action="store_true",
                    help="A101: gecisten SONRA yogunluk -rho tr(L) ile "
                         "(serbest yuzeyde tam hacim degisimi)")
+    g.add_argument("--h-orani", type=float, default=None,
+                   help="keskin cekirdek: h = ORAN * s_yerel (varsayilan 2; "
+                        "verilmezse bit-ayni). Sonuc h'ye mi N'ye mi bagli "
+                        "(COZUNURLUK-DENETIMI 8.3)")
     g.add_argument("--av-tanisi-her", type=int, default=0,
                    help="A98 TANI: her N adimda AV gucu/ivme payi (0 = kapali)")
     g.add_argument("--dondurma-k", type=float, default=None,
@@ -353,6 +357,9 @@ def main() -> int:
     print(f"  t_end       : {a.t_end} s", flush=True)
     print(f"  cfl         : {a.cfl}  (uretim 0,25)", flush=True)
     print(f"  akma kipi   : {a.akma_kipi}", flush=True)
+    if a.h_orani is not None:
+        print(f"  h/s         : {a.h_orani}  (keskin cekirdek; varsayilan 2)",
+              flush=True)
     # A74: sahne tabani -- varsayilanlar verilmezse SAHNE AYNEN kalir
     # (bit-ayni); verilen her alan `_fizik_ozeti`ne sahne_taban
     # uzerinden girer.
@@ -527,6 +534,7 @@ def main() -> int:
                                "bicim": a.gerinim_yumusama_bicim}),
             impuls_zaman="log" if a.impuls_log else "dogrusal",
             av_tanisi_her=int(a.av_tanisi_her),
+            **({"h_orani": float(a.h_orani)} if a.h_orani is not None else {}),
             **({"azami_adim": int(a.azami_adim)} if a.azami_adim else {}))[0]
         if not np.all(np.isfinite(y)):
             raise RuntimeError(f"nokta okunamadi: {y}")
@@ -578,6 +586,7 @@ def main() -> int:
         "adim_bildir": int(a.adim_bildir),
         "av_tanisi_her": int(a.av_tanisi_her),
         "mermi_aralik_orani": a.mermi_aralik_orani,
+        "h_orani": a.h_orani,
         "gerinim_yumusama": (None if a.gerinim_yumusama_eps is None else
                              {"eps_c": float(a.gerinim_yumusama_eps),
                               "bicim": a.gerinim_yumusama_bicim}),

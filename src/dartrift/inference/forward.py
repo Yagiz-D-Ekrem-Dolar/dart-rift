@@ -65,7 +65,8 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
                  ilk_degerlendirme=False, matris_cekme_siniri=None,
                  mermi_h_kipi="merdiven", dayanim_kesme=False,
                  yogunluk_tabani=False, gec_evre=None, dondurma=None,
-                 yari_eksenler=None, gerinim_yumusama=None) -> str:
+                 yari_eksenler=None, gerinim_yumusama=None,
+                 h_orani=2.0) -> str:
     """Kosunun FIZIK yapilandirmasinin SHA-256 ozeti (16 hane).
 
     Iki cikti ayni `theta`yi tasiyip FARKLI fizikle uretilmis
@@ -133,6 +134,9 @@ def _fizik_ozeti(sahne_taban, material, kademeler, spacing, t_end,
     if gerinim_yumusama:
         parcalar.append("gerinim_yumusama=" + repr(
             sorted(dict(gerinim_yumusama).items())))
+    # Keskin cekirdek (h/s): yalniz 2'den farkliysa (eski ozetler aynen).
+    if float(h_orani) != 2.0:
+        parcalar.append(f"h_orani={float(h_orani):.17g}")
     ham = "|".join(parcalar).encode("utf-8")
     return hashlib.sha256(ham).hexdigest()[:16]
 
@@ -570,6 +574,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         adim_bildir: int = 0,
                         gerinim_yumusama: dict | None = None,
                         av_tanisi_her: int = 0,
+                        h_orani: float = 2.0,
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
@@ -599,6 +604,11 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
     - `gec_evre["duzeltilmis_sureklilik"] = True` (A101) — geçişten sonra
       yoğunluk `−ρ tr(L)` ile ilerler (serbest yüzeyde tam hacim değişimi);
       verilmezse SPH diverjansı (bit-aynı).
+    - `h_orani` (keskin çekirdek): bütün parçacıklarda `h = h_orani ·
+      s_yerel` (merdiven `2 s` kuruyor; `h_orani/2` ile ölçeklenir). Aynı
+      parçacık sayısında `h` küçülür (Wendland C2, `1,5` → `~160` komşu).
+      Sonucun `h`'ye mi `N`'ye mi bağlı olduğunu sınamak için
+      (COZUNURLUK-DENETIMI §8.3). `2,0` → bit-aynı.
     - `av_tanisi_her = N` (A98) — her `N` adımda yapay viskozitenin gücü ve
       ivme payı örneklenir, geç evredeki toplam AV ısısı ve plastik iş
       `fizik_tani["av_tanisi"]`ye yazılır. Fiziğe dokunmaz; `0` → kapalı.
@@ -690,6 +700,9 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             raise ValueError(f"gec_evre bilinmeyen anahtar: {sorted(_bilinmeyen)}")
     if int(av_tanisi_her) < 0:
         raise ValueError("av_tanisi_her >= 0 olmali")
+    _h_orani = float(h_orani)
+    if not (np.isfinite(_h_orani) and 1.0 < _h_orani <= 3.0):
+        raise ValueError(f"h_orani (1, 3] icinde olmali, {h_orani} geldi")
     _dond = dict(dondurma) if dondurma else None
     _dond_k, _dond_her = 3.0, 200
     if _dond is not None:
@@ -719,6 +732,10 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             rs = refine_scene_kademeli(kaba, mesh, kad,
                                        malzeme_kaynagi=malzeme_kaynagi,
                                        mermi_h_kipi=mermi_h_kipi)
+            if _h_orani != 2.0:
+                # Keskin cekirdek: merdiven h = 2 s_yerel kuruyor (hedef,
+                # kaba artik ve mermi); hepsi ayni oranla olceklenir.
+                rs.h = np.asarray(rs.h, dtype=np.float64) * (_h_orani / 2.0)
             x0 = np.array(rs.x, dtype=np.float64, copy=True)
             # A75: "aluminyum" -> mermi parcaciklari kendi Tillotson'uyla.
             if mermi_eos == "aluminyum":
@@ -1025,7 +1042,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                                              matris_cekme_siniri,
                                              mermi_h_kipi, dayanim_kesme,
                                              yogunluk_tabani, gec_evre,
-                                             dondurma, _yari, _gy),
+                                             dondurma, _yari, _gy,
+                                             h_orani=_h_orani),
                     # A72 / Protokol J: zaman adimi ve kuvvet aninda
                     # akma tanisi. JSON metni -- pickle gerektirmez.
                     cfl=float(cfl), akma_kipi=str(akma_kipi),
