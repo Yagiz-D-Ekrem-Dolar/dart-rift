@@ -29,13 +29,13 @@ gerçek Dimorphos da tek bir gerçeklemedir.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 
 from .design import ParamSpace
 
-__all__ = ["GpVekil", "gp_uydur", "gp_grup_loo"]
+__all__ = ["GpVekil", "gp_uydur", "gp_grup_loo", "gp_varyans_kalibre"]
 
 #: Log-uzay sınırları (standartlaştırılmış `y`).
 LOG_SINIR = {"s2": (np.log(1e-3), np.log(1e2)),
@@ -98,6 +98,9 @@ class GpVekil:
     alfa: np.ndarray
     L: np.ndarray
     nlml: float
+    #: Öngörü varyansı çarpanı (Bachoc 2013 çapraz doğrulama ölçeği;
+    #: `gp_varyans_kalibre`). `1,0` → eski davranış, bit-aynı.
+    varyans_carpani: float = 1.0
 
     @property
     def s2(self) -> float:
@@ -123,6 +126,8 @@ class GpVekil:
             var[b:b + parca] = np.maximum(self.s2 - np.sum(v * v, axis=0), 0.0)
         if yeni_gerceklem:
             var = var + self.n2
+        if self.varyans_carpani != 1.0:
+            var = var * self.varyans_carpani
         return self.y_ort + self.y_olcek * mu, (self.y_olcek ** 2) * var
 
     def predict(self, x):
@@ -183,3 +188,56 @@ def gp_grup_loo(v: GpVekil, y, gruplar) -> tuple[np.ndarray, np.ndarray]:
         e[k] = B @ a[k]
         s2[k] = np.diag(B)
     return v.y_olcek * e, (v.y_olcek ** 2) * s2
+
+
+def gp_varyans_kalibre(v: GpVekil, y, gruplar, *,
+                       yalniz_buyut: bool = True) -> tuple[GpVekil, dict]:
+    """Öngörü varyansını **bırak-bir-grup** artıklarıyla kalibre et (ADR-0051).
+
+    ## Neden
+
+    P-v4b GP dış doğrulamada **AŞIRI GÜVENLİ** çıktı (kapsama68 `0,34–0,44`).
+    Hiperparametreler en çok olabilirlikle (ML) seçiliyor; çekirdek yanlış
+    belirlenmişse ML varyansı **küçük** tahmin eder. Bachoc (2013, *CSDA* 66,
+    55) yanlış belirlenmiş modelde çapraz doğrulamanın (CV) varyans ölçeğini
+    ML'den iyi kestirdiğini gösterdi:
+
+        k = (1/N) Σ_G  e_Gᵀ C_G⁻¹ e_G
+
+    `e_G` grubun bırak-dışarı artığı, `C_G` onun öngörü kovaryansı. Kalibre
+    bir GP'de `E[k] = 1`. Ortalama değişmez (çekirdeğin tamamı `k` ile
+    ölçeklenince `K⁻¹y` ile `k(x, X)` birbirini götürür), yalnız varyans `k`
+    ile çarpılır.
+
+    Kapalı form: `C_G = (K⁻¹_GG)⁻¹`, `e_G = C_G (K⁻¹y)_G` ⇒
+    `e_Gᵀ C_G⁻¹ e_G = (K⁻¹y)_Gᵀ C_G (K⁻¹y)_G`.
+
+    `yalniz_buyut=True` (varsayılan): `k < 1` ise varyans **küçültülmez** —
+    az noktayla ölçülen bir ölçekle posterioru daraltmak, kanıtlanmamış
+    kesinlik iddiasıdır.
+    """
+    y = np.asarray(y, float).ravel()
+    ys = (y - v.y_ort) / v.y_olcek
+    Kinv = np.linalg.solve(v.L.T, np.linalg.solve(v.L, np.eye(len(ys))))
+    a = Kinv @ ys
+    gruplar = np.asarray(gruplar).ravel()
+    if len(gruplar) != len(ys):
+        raise ValueError("gruplar ile y ayni uzunlukta olmali")
+    q = 0.0
+    z = np.empty(len(ys))
+    for g in np.unique(gruplar):
+        k_ = np.flatnonzero(gruplar == g)
+        C = np.linalg.inv(Kinv[np.ix_(k_, k_)])
+        q += float(a[k_] @ C @ a[k_])
+        z[k_] = (C @ a[k_]) / np.sqrt(np.diag(C))
+    k = q / len(ys)
+    if not np.isfinite(k) or k <= 0.0:
+        raise ValueError(f"CV varyans olcegi gecersiz: {k}")
+    # ML varyansi zaten `varyans_carpani`yla carpilmis olabilir; olcek HAM
+    # cekirdege gore olculdu -> dogrudan yazilir, carpilmaz.
+    kullan = max(k, 1.0) if yalniz_buyut else k
+    return replace(v, varyans_carpani=float(kullan)), {
+        "k_cv": float(k), "k_kullanilan": float(kullan), "n": int(len(ys)),
+        "grup_sayisi": int(len(np.unique(gruplar))),
+        "z_ortalama": float(z.mean()), "z_kare_ortalama": float(np.mean(z * z)),
+        "yalniz_buyut": bool(yalniz_buyut)}

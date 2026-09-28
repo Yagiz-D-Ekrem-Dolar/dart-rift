@@ -36,7 +36,8 @@ from __future__ import annotations
 import numpy as np
 
 __all__ = ["MODEL_EKSIKLIGI", "model_eksikligi_sigma", "uygunsuzluk",
-           "makul_mu", "KESME"]
+           "makul_mu", "KESME", "MODEL_EKSIKLIGI_KAYNAKLI",
+           "model_eksikligi_kaynakli", "kod_kiyasi_olc", "uygunsuzluk_cok"]
 
 #: Pukelsheim 3σ kuralı — tek çıktılı uygunsuzluk eşiği (L19).
 KESME = 3.0
@@ -101,3 +102,83 @@ def makul_mu(model, gozlem, *, sigma_gozlem: float, var_vekil: float = 0.0,
                   "var_vekil": float(var_vekil),
                   "sigma_model": float(sigma_model)},
     }
+
+
+# ---------------------------------------------------------------------------
+# ADR-0051 (2026-09-19): KAYNAKLI model eksikligi.
+#
+# `MODEL_EKSIKLIGI` (yukarida) dort TAHMINDI ve hicbiri bizim kodumuzla
+# olculmemisti. Asagidaki tablo her terimi KAYNAGIYLA tutar; `nan` = henuz
+# olculmedi. `nan` bir terim secilirse HATA verilir -- olculmemis bir terimi
+# sessizce sifir saymak, olculmemis bir kesinlik iddiasidir.
+# Degerler `beta - 1` uzerinden BAGIL.
+# ---------------------------------------------------------------------------
+_NAN = float("nan")
+
+MODEL_EKSIKLIGI_KAYNAKLI = {
+    "cozunurluk_uzak": (0.004, "UA: Delta(3,5 m; 7 m), S_UA.json (KAYIT-067)"),
+    "cozunurluk_yakin": (_NAN, "PROTOKOL-UY kosuyor (1569287_0/1)"),
+    "gecis_ani": (_NAN, "PROTOKOL-UG kosuyor (1569287_2/3); W2'de 0,2 -> 1,0 s +%9-15"),
+    "kod_kiyasi": (_NAN, "uretim t_gecis'inde W2/UG kolundan kod_kiyasi_olc ile; "
+                         "0,2 s'de 0,16 (L1'e 0,82-0,87)"),
+    "plato": (0.01, "W2 beta(t): 200 -> 600 s %1-3 geri cekme (KAYIT-067 §2b)"),
+    "carpma_yeri": (0.10, "L12 Senel ve dig. 2025 MNRAS: yakin bloklar beta'yi "
+                          "<= %7,6 degistiriyor -> beta-1'de ~%10 (beta ~3,2)"),
+    "mermi_geometrisi": (0.15, "L9 Owen ve dig. 2022: kure mermi %10-20; UC KURE "
+                               "mermiyle kalan terim OLCULMEDI (ust sinir)"),
+    "hedef_sekli": (0.20, "L1: elipsoit/kure %15-21; ELIPSOIT sahnede kalan "
+                          "terim OLCULMEDI (ust sinir)"),
+    "carpma_acisi": (0.05, "L5, L13, L20; Daly ve dig. 2023: 17 +- 7 derece"),
+}
+
+
+def model_eksikligi_kaynakli(deger: float, secim) -> dict:
+    """Seçilen **kaynaklı** terimlerden mutlak `σ_model` (`deger = β − 1`).
+
+    `secim` terim adları listesi; boş olamaz. Ölçülmemiş (`nan`) bir terim
+    seçilirse `ValueError` — protokol ya terimi ölçmeli ya da **açıkça**
+    dışarıda bırakıp gerekçesini yazmalı.
+    """
+    secim = list(secim)
+    if not secim:
+        raise ValueError("en az bir terim secilmeli")
+    bil = {}
+    for ad in secim:
+        if ad not in MODEL_EKSIKLIGI_KAYNAKLI:
+            raise ValueError(f"bilinmeyen terim: {ad}")
+        s, kaynak = MODEL_EKSIKLIGI_KAYNAKLI[ad]
+        if not np.isfinite(s):
+            raise ValueError(f"{ad} henuz OLCULMEDI ({kaynak})")
+        bil[ad] = s
+    return {"sigma": model_eksikligi_sigma(deger, bil), "terimler": bil}
+
+
+def kod_kiyasi_olc(bizim, literatur) -> float:
+    """Kodlar arası fark: `(β − 1)` bağıl farklarının karekök ortalaması."""
+    b = np.asarray(bizim, dtype=np.float64).ravel() - 1.0
+    L = np.asarray(literatur, dtype=np.float64).ravel() - 1.0
+    if b.shape != L.shape or b.size == 0 or np.any(L <= 0.0):
+        raise ValueError("bizim/literatur ayni uzunlukta, beta_L > 1 olmali")
+    return float(np.sqrt(np.mean(((b - L) / L) ** 2)))
+
+
+def uygunsuzluk_cok(modeller, gozlemler, sigmalar, *, ikinci: bool = False):
+    """Çok çıktılı uygunsuzluk `I_M = max_k I_k` (Vernon ve diğ., L19).
+
+    `modeller` `(N, k)`, `gozlemler` `(k,)`, `sigmalar` `(k,)` ya da `(N, k)`
+    **toplam** sd (gözlem + vekil + model eksikliği). `ikinci=True` en büyük
+    ikinci `I`'yı verir (tek bir çıktının vekil hatasına karşı sağlam).
+    """
+    m = np.atleast_2d(np.asarray(modeller, dtype=np.float64))
+    z = np.asarray(gozlemler, dtype=np.float64).ravel()
+    s = np.broadcast_to(np.asarray(sigmalar, dtype=np.float64), m.shape)
+    if m.shape[1] != z.size:
+        raise ValueError(f"modeller {m.shape}, {z.size} gozlem")
+    if np.any(~np.isfinite(s)) or np.any(s <= 0.0):
+        raise ValueError("sigmalar pozitif ve sonlu olmali")
+    ii = np.abs(m - z[None, :]) / s
+    if ikinci:
+        if m.shape[1] < 2:
+            raise ValueError("ikinci en buyuk icin en az 2 cikti gerekir")
+        return np.sort(ii, axis=1)[:, -2]
+    return ii.max(axis=1)

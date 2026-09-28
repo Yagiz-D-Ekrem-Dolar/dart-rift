@@ -20,7 +20,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 __all__ = ["Gozlem", "GOZLEMLER", "cheng_beta", "EJEKTA_KUTLESI",
-           "KONI_ACISI", "KONI_ACISI_HST", "KONI_ELIPTIK", "DIMORPHOS_SEKIL"]
+           "KONI_ACISI", "KONI_ACISI_HST", "KONI_ELIPTIK", "DIMORPHOS_SEKIL",
+           "CARPMA_HIZI", "UZAY_ARACI_KUTLESI", "CARPMA_KACIKLIGI",
+           "CARPMA_ACISI_DALY", "CARPMA_YERI_BLOKLARI", "DALY_2023"]
 
 
 @dataclass(frozen=True)
@@ -88,7 +90,38 @@ CARPMA_ACISI = Gozlem(
     "Daly ve dig. 2023 (arama ozeti uzerinden)", "arama_ozeti",
     "sigma bir TAHMIN; makaleden teyit edilmeli")
 
-GOZLEMLER = (EJEKTA_KUTLESI, KONI_ACISI, KONI_ACISI_HST, CARPMA_ACISI)
+# --- Daly ve dig. 2023 TAM METIN (2026-09-19, ADR-0051) ----------------------
+# Nature 616, 443; arXiv:2303.02248, Tablo 1 ve s. 5-7 okundu. `CARPMA_ACISI`
+# (yukarida, arama ozeti) ayni degeri veriyor: 17 +- 7 derece TEYIT EDILDI;
+# eski tanim yerinde kaldi, tam metin surumu yan yana.
+DALY_2023 = "Daly ve dig. 2023, Nature 616, 443 (arXiv:2303.02248), Tablo 1"
+
+CARPMA_HIZI = Gozlem("carpma_hizi", 6144.9, 0.3, "m/s", DALY_2023, "tam_metin")
+UZAY_ARACI_KUTLESI = Gozlem(
+    "uzay_araci_kutlesi", 579.4, 0.7, "kg", DALY_2023, "tam_metin",
+    "govde (bus) kutlenin ~%88'i; gunes panelleri govdeden once bloklara degdi")
+CARPMA_KACIKLIGI = Gozlem(
+    "carpma_yeri_sekil_merkezinden", 25.0, 1.0, "m", DALY_2023, "tam_metin",
+    "8,84 G, 264,30 D; carpma yeri 1-sigma belirsizligi 68 cm")
+CARPMA_ACISI_DALY = Gozlem(
+    "carpma_acisi_normalden", 17.0, 7.0, "derece", DALY_2023, "tam_metin",
+    "yerel yataydan 73 +- 7 derece")
+
+#: Carpma yerinin hemen yanindaki iki buyuk blok (Daly ve dig. 2023, s. 6).
+#: Govde IKI BLOK ARASINA carpti; +Y paneli blok 1'e dogrudan carpti, -Y
+#: paneli blok 2'yi siyirdi. Konumlar (govdeden uzaklik) metinde sayi olarak
+#: YOK (Sekil 3) -- panel boyu 8,5 m oldugundan bloklar govdeden ~10 m icinde.
+CARPMA_YERI_BLOKLARI = {
+    "blok1_Atabaque": {"uzunluk_m": 6.5, "yukseklik_m": 2.2},
+    "blok2_Bodhran": {"uzunluk_m": 6.1, "yukseklik_m": 1.6},
+    "blok_boyu_araligi_m": (0.16, 6.5),
+    "kaynak": DALY_2023 + ", s. 6-7",
+    "teyit": "tam_metin",
+    "not": "L12 (Senel 2025): ~10 m icindeki yakin bloklar beta'yi <= %7,6 degistiriyor",
+}
+
+GOZLEMLER = (EJEKTA_KUTLESI, KONI_ACISI, KONI_ACISI_HST, CARPMA_ACISI,
+             CARPMA_HIZI, UZAY_ARACI_KUTLESI, CARPMA_KACIKLIGI, CARPMA_ACISI_DALY)
 
 
 def cheng_beta(yogunluk: float | None = None, *,
