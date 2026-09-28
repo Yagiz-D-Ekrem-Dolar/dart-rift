@@ -393,3 +393,39 @@ Yeni oturum bunları **kullanıcıya yeniden sormadan** bilmeli.
   kuyrukla ~1 hafta) + birkaç orta nokta (çok doğruluklu vekil) → posterior →
   HT mührü. **Kasım ortası hedef** gerçekçi; W2 TUTMADI çıkarsa HT "koşulsuz
   öngörü" dalına düşer.
+
+### 12.8 Çözünürlük bilançosu ve standartlaştırma (2026-09-28)
+
+**Kullanıcı istedi:** (1) TRUBA'da kalan her şeyi GitHub'a taşı, (2)
+çözünürlükler arası standartlaştırmayı koda koy, (3) çözülen sorunların
+belgelerini yaz. Üçü de yapıldı.
+
+**Nerede duruyoruz (kilitli):**
+
+| soru | cevap |
+|---|---|
+| uzak alan çözünürlüğü | **yakınsamış** (`≤ %0,4`) — UA |
+| geçiş anı | **yakınsamış**, üretim `t_geçiş = 1,0 s` — UG |
+| kaba merdiven + doğru geçiş anı literatürü tutuyor mu | **evet, `%0,3`** (`4,167` vs L1 `4,18`) |
+| yakın/orta alan `h` | `β − 1`'i **`+%11,8`** değiştiriyor — UY (`Δ_orta = 0,098`) |
+| ikisi birlikte | **ÖLÇÜLMEDİ** — tek eksik koşu |
+
+**Birleştirildi:** başka oturumların 10 commit'i (A98 AV anahtarı, mermi EOS
+düzeltmesi, türetilmiş alan tazeleme, A100/A101 seçenekleri, A98/A98K/A103/
+A104/A105 protokolleri) yamayla taşınıp `main`'e alındı; Windows'ta rapor
+çökmesi (A106) düzeltildi. Kayıp öncül belgeler A107'ye yazıldı.
+
+**Yeni kural (ADR-0052, kodda zorlanıyor):** düzeltme yalnız **ölçülmüş**
+durum çiftleri arasında, **hata payıyla**, `β − 1` üzerinden; ayrı ölçülmüş
+iki eksenin çarpanı **çarpılamaz** (`1,118 × 1,187 = 1,327` → `4,57`, oysa
+birlikte ölçülen `4,167`); iki noktalı Richardson karar veremez (`p = 0,33`
+varsayımı `%27` fazla verirdi).
+
+**Bekleyen kullanıcı kararı yok; bekleyen tek koşu var:**
+**orta merdiven × `t_geçiş = 2,5 s`** (`Y₀ = 10 Pa`, 300 s, ~10–15 GPU-saat).
+Bu koşu yapılmadan üretim havuzu başlatılmaz (ADR-0052 §4). Sonucu:
+`≈ 4,2` → kaba merdiven üretim için yeterli; `≈ 4,6` → kaba koldaki uyum iki
+hatanın birbirini götürmesiymiş.
+
+**Sırada bekleyen ikinci karar:** matris çekme dayanımı (A105) `β`'yı `%23`
+değiştiriyor ve hâlâ kararsız — çözünürlükten büyük bir belirsizlik.

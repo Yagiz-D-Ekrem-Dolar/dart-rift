@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-19 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 74 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97 · A70, A84, A91, A92, A94 ve A96 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-28 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 81 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107 · A70, A84, A91, A92, A94, A96 ve A106 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5148,6 +5148,93 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A107 — **KAYIT-068 hiçbir commit'te yok; A99 ve A102 numaraları boşta** (2026-09-28) — *açık, izlenebilirlik*
+
+PROTOKOL-A98 ve PROTOKOL-A98K öncül olarak **KAYIT-068**'i ve
+`docs/COZUNURLUK-DENETIMI.md`'yi gösteriyor; ikisi de deponun hiçbir
+commit'inde yok (TRUBA'daki çalışma ağaçlarında da yok). Aynı şekilde A99 ve
+A102 numaraları protokollerde geçmiyor. Yani **kilitli protokollerin öncülü
+okunamıyor**: bir okuyucu A98'in neden yazıldığını bu depodan takip edemez.
+Kayıp belgeler başka bir oturumun yerel kopyasında kalmış olabilir.
+KAYIT-069 §1 bu boşluğu kaydeder ama **yerine geçmez**. Çare: o oturumun
+kopyası bulunursa commit'lenir; bulunamazsa protokollerin öncül satırına
+"bu depoda yok" notu düşülür (hiçbir satır silinmez).
+
+---
+### A106 — **A98/A103/A104/A105 raporları Windows'ta çöküyordu (JSON yerel kodlamayla yazılıyordu)** (2026-09-28) — **KAPANDI**
+
+`out.write_text(json.dumps(y, ensure_ascii=False))` kodlama vermiyordu;
+Python varsayılanı Windows'ta `cp1254`. A98K'nın K4 yargısı `AV ∝ h` içeriyor
+ve `∝` bu kodlamada yok → `UnicodeEncodeError`. **Yargı doğru hesaplanmış
+olsa bile rapor çöküyordu**; TRUBA `utf-8` olduğu için orada görünmemişti.
+Sınavlar da aynı kusuru taşıyordu (okuma yerel kodlamayla). Düzeltme: bütün
+JSON okuma/yazma `encoding="utf-8"`; `a98k_raporu` ekran çıktısı gerekirse
+ASCII'ye düşer (`_yaz`). **Kilitli yargı metinleri değişmedi.** Kalıp:
+*çıktının kodlaması, hesabın doğruluğundan bağımsız olarak yargıyı
+düşürebilir* (A91'in akrabası: rapor, `β`'ya bakmadan çöküyor).
+
+---
+### A105 — **`β` matris çekme dayanımına çok duyarlı: `T_m = Y₀/μ_f` açılınca −%23** (2026-09-26, başka oturum) — *açık, ölçüldü*
+
+Üretim ayarı matriste çekmeyi tamamen kapatıyor (`--matris-cekme-yok`).
+Mohr-Coulomb uç kesmesi (`T_m = Y₀/μ_f`) açılınca aynı sahnede `β`
+`3,686 → 2,854` (kaba), `3,978 → 3,074` (orta) — **−%23**. Geç evre artışı
+da kayboluyor (`+0,77 → −0,04`). Çözünürlük farkı bağıl olarak neredeyse
+aynı kalıyor (`0,073` vs `0,072`), yani çekmesiz ayrılma farkın **bir
+kısmını** taşıyor. **Sonucu:** `β`'yı çözünürlükten büyük oranda değiştiren
+bir **modelleme seçimi** kararsız duruyor; Bitiş 3'ün önseline girmeli ya da
+protokolle sabitlenmeli. Kaynak: `S_A105.json`, PROTOKOL-A105.
+
+---
+### A104 — **`β` parçacık sayısına değil yumuşatma boyuna bağlı** (2026-09-26, başka oturum) — *açık, ölçüldü*
+
+Aynı parçacık sayısıyla (14 616) çekirdek `h/s = 2 → 1,5` yapılınca `β`
+`3,686 → 4,023`: 4,5 kat parçacık koymanın (orta: `3,978`) verdiğiyle aynı.
+Yargı KARIŞIK; eğim `0,58 → 0,22` (yakınsama başlıyor). **Sonucu:**
+"çözünürlük" bütçesi parçacık sayısıyla değil `h` ile konuşulmalı; keskin
+çekirdek ucuz bir yakınsama aracı olabilir (komşu sayısı `~160`'a çıkıyor,
+maliyeti ayrı ölçülmeli). Kaynak: `S_A104.json`.
+
+---
+### A103 — **Merdivenin bölgelerinin katkısı toplamsal değil** (2026-09-26, başka oturum) — *açık, ölçüldü*
+
+Dış kuşağı tek başına inceltmek farkın `%26`'sını taşıyor; iç + dış
+katkıları toplamı bütünü vermiyor (`Δ_toplam = 0,292`). **Sonucu:** bölge
+bazlı düzeltme çarpanları toplanamaz/çarpılamaz — ADR-0052'nin 4. kuralının
+ilk kanıtı. Kaynak: `S_A103.json`.
+
+---
+### A101 — **Geç evrede yoğunluk SPH diverjansıyla ilerliyordu (serbest yüzeyde eksik hacim değişimi)** (2026-09-26, başka oturum) — *açık, seçenek eklendi*
+
+Geç evrede serbest yüzeye yakın parçacıklarda SPH diverjansı gerçek hacim
+değişimini eksik veriyor. Düzeltilmiş süreklilik (`−ρ tr(L)`) seçenek olarak
+eklendi (`--gec-evre-duzeltilmis-sureklilik`), **varsayılan kapalı, bit-aynı**.
+A98K K6: "A101 çözünürlük farkını büyütmüyor". Üretimde açılıp açılmayacağı
+kararsız.
+
+---
+### A100 — **Mermi ile hedefin parçacık aralığı eşleşmiyordu** (2026-09-26, başka oturum) — *açık, seçenek eklendi*
+
+Mermi 800 parçacıkla kuruluyor (aralık `~0,085 m`), hedefin en ince kademesi
+`0,35 m`: temas yüzeyinde `4×` uyuşmazlık. `--mermi-aralik-orani` seçeneği
+eklendi (varsayılan bit-aynı). İlgili ölçüm A98 M5: mermi `800 → 6400`
+parçacık `β`'yı **`+%7,4`** artırıyor — yani mermi çözünürlüğü de
+yakınsamamış ve hiçbir protokolde değişken değildi.
+
+---
+### A98 — **Geç evrede yapay viskozite şok olmayan rejimde çalışıyor** (2026-09-25, başka oturum) — *açık, tanı + anahtar*
+
+Geçişten sonra Monaghan AV (`α = 1`, `β = 2`) değişmeden kalıyor; geç evrede
+Mach `~0,05`, yani **şok yok**. Yapay gerilme `q ~ ρ α c h |∇v|` `h` ile
+doğrusal: kaba merdivende `50–300 Pa`, modelin kohezyonundan (`10 Pa`) ve
+litostatik basınçtan (`< 1 Pa`) büyük. Kontrollü deneyde (A98K) AV
+küçültmek çözünürlük bağımlılığını `0,222 → 0,119` düşürüyor. **Ama tam
+sahnede kilitli yargı "AV SEBEP DEĞİL"**: AV `0,1`'e indirilince kaba–orta
+farkı `0,098 → 0,147` **büyüdü**. `β` AV'ye duyarlı (`−%7,8`) ama
+çözünürlük farkının tek sebebi değil. Anahtar eklendi
+(`--gec-evre-alpha-av/--gec-evre-beta-av`), varsayılan bit-aynı.
 
 ---
 ### A97 — **Geç evreye geçiş anı yakınsamamış: `t_geçiş` 0,2 → 1,0 s `β − 1`'i %9–15 artırıyor** (2026-09-19) — *açık, protokol UG koşuyor*
