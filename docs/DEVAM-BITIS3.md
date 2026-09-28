@@ -429,3 +429,34 @@ hatanın birbirini götürmesiymiş.
 
 **Sırada bekleyen ikinci karar:** matris çekme dayanımı (A105) `β`'yı `%23`
 değiştiriyor ve hâlâ kararsız — çözünürlükten büyük bir belirsizlik.
+
+### 12.9 Devir notu — 2026-09-29 gece (oturum kapanışında)
+
+**TRUBA'da koşanlar (kullanıcı izni: en fazla 2 GPU):**
+
+| iş | ne | beklenen bitiş | bittiğinde |
+|---|---|---|---|
+| `1582794_0` | **UY2** — orta merdiven × `t_geçiş = 1,0 s`, 300 s | ~11 sa | `python scripts/uy2_kesisim_raporu.py --kok kampanya --json kampanya/S_UY2.json` |
+| `1582695_1` | **DY** — DART sahnesi, geç evre modeli, 600 s | ~5–6 sa | `python scripts/dy_dart_raporu.py --kok kampanya --json kampanya/S_DY.json` |
+
+Kurallar **koşudan önce** kilitlendi (commit `5fd28d2`); rapor betikleri kuralı
+uygular, elle yorum yapılmaz. Sonuçlar gelince defterе (KAYIT-071) yazılır.
+
+**Dikkat — yanlış teşhis ettiğim bir şey:** UY2'nin ilk gönderimi (`1582695_0`)
+47 dakika boyunca Warp'a ulaşmadı; düğüm arızası sandım ve iptal edip yeniden
+gönderdim. Yeni düğümde **aynı davranış** görülüyor → büyük olasılıkla
+**orta merdivenin TRUBA'daki CPU kurulumu gerçekten uzun sürüyor** (yerelde
+1,6 s, orada ~45 dk). Arıza değil. Bedeli ~48 dakika GPU. Bir sonraki oturumda
+orta merdiven koşusu beklenirken bu normal karşılanmalı; gerçekten takılma
+aranacaksa ölçüt "Warp init'ten sonra adım basmıyor" olmalı.
+
+**Ana havuz başlamadan önce kullanıcıdan beklenen dört karar (0 GPU-saat):**
+
+1. **A2** — `Y₀` önseli hâlâ `[1e3, 1e7] Pa`; literatür ve W2 "birkaç Pa – 500 Pa" diyor.
+2. **A105** — matris çekme dayanımı açık mı kapalı mı (`β`'yı `%23` değiştiriyor).
+3. **A109** — hangi blok modeli (iç yapı `14–42 m` vs gözlenen boyut `1,7–6,5 m`).
+4. **C1** — gözlenen `β` olarak hangi sayı kilitlenecek (`3,12 ± 0,34` mü, başka mı).
+
+**Sıradaki GPU işleri (NUSAP soy kütüğünün seçtiği sıra):** şekil (küre/elipsoit)
+ve mermi geometrisi (tek küre/üç küre) kontrol koşuları — bütçedeki en büyük iki
+belirsizlik terimi (`0,20` ve `0,15`) ve ikisinin de doğrulaması **sıfır**.
