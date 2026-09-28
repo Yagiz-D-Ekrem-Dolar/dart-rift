@@ -1,0 +1,10 @@
+{
+ "aciklama": "PROTOKOL-UY2 (cozunurluk x gecis ani kesisimi, orta merdiven t_gecis 1,0 s, 300 s) + PROTOKOL-DY (DART sahnesinin gec evre modeliyle ILK kosusu, 600 s). Kurallar kosudan ONCE kilitli. AGAC zorunlu.",
+ "kok": "/arf/scratch/egitimg16u3/driftclaude",
+ "kok_notu": "YagizTRUBA (egitimg16u3). Kullanici izni: en fazla 2 GPU. Beklenen ~11 + ~5 = 16 GPU-sa.",
+ "adimlar": [
+  {"ad": "UY2_DY", "betik": "truba/is_UY2_DY.slurm",
+   "gorevler": [0, 1], "gpu": 1,
+   "export": {"AGAC": "/arf/scratch/egitimg16u3/driftclaude/agac_uy2dy"}}
+ ]
+}
