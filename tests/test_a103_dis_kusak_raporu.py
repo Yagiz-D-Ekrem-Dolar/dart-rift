@@ -107,6 +107,6 @@ def test_CLI_json_uzerine_yazmaz(tmp_path):
     _hepsi(tmp_path / "k")
     out = tmp_path / "S.json"
     assert RAP.main(["--kok", str(tmp_path / "k"), "--json", str(out)]) == 0
-    assert json.loads(out.read_text())["bulunan"] == 4
+    assert json.loads(out.read_text(encoding="utf-8"))["bulunan"] == 4
     with pytest.raises(SystemExit):
         RAP.main(["--kok", str(tmp_path / "k"), "--json", str(out)])

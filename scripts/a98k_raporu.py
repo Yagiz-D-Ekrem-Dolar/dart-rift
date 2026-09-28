@@ -38,7 +38,7 @@ def oku(kok: Path) -> dict:
         if not yol.exists():
             out[ad] = {"var": False, "neden": "dosya yok"}
             continue
-        r = json.loads(yol.read_text())
+        r = json.loads(yol.read_text(encoding="utf-8"))
         neden = None
         beklenen_av = {"av1": [1.0, 2.0], "av01": [0.1, 0.2], "av0": [0.0, 0.0],
                        "av01L": [0.1, 0.2]}[kol]
@@ -155,27 +155,42 @@ def yargila(sonuc: dict) -> dict:
     return y
 
 
+def _yaz(satir: str) -> None:
+    """ASCII olmayan karakter konsolda yazılamazsa raporu **düşürme**.
+
+    K4 yargısı `AV ∝ h` içeriyor; Windows konsolu (cp1254) bunu kodlayamıyor
+    ve rapor `UnicodeEncodeError` ile çöküyordu — yargı doğru hesaplanmış
+    olsa bile. JSON her zaman `utf-8` yazılır; burada yalnız **ekran** çıktısı
+    sadeleşir. (Kilitli yargı metinleri değişmez.)
+    """
+    try:
+        print(satir)
+    except UnicodeEncodeError:
+        print(satir.encode("ascii", "replace").decode("ascii"))
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--kok", required=True)
     ap.add_argument("--json", default=None)
     a = ap.parse_args(argv)
     y = yargila(oku(Path(a.kok)))
-    print(f"PROTOKOL-A98K  bulunan {y['bulunan']}/{y['beklenen']}")
+    _yaz(f"PROTOKOL-A98K  bulunan {y['bulunan']}/{y['beklenen']}")
     for ad, n in y["eksik"].items():
-        print(f"  EKSIK {ad}: {n}")
+        _yaz(f"  EKSIK {ad}: {n}")
     for k, q in y["Q"].items():
-        print(f"  {k:>6}: Q(s=1, 0,5, 0,25) = " +
-              ", ".join(f"{t:.5e}" for t in q) + f"   D = {y['D'][k]:.4f}")
+        _yaz(f"  {k:>6}: Q(s=1, 0,5, 0,25) = " +
+             ", ".join(f"{t:.5e}" for t in q) + f"   D = {y['D'][k]:.4f}")
     for k in ("K1", "K2", "K3", "K4", "K5", "K6"):
-        print(f"  {k}: {y[k]}")
-    print(f"  K2 AV payi: {y['K2_av_payi']}   K4 p = {y['K4_p']:.3f}")
-    print(f"  GENEL: {y['genel']}")
+        _yaz(f"  {k}: {y[k]}")
+    _yaz(f"  K2 AV payi: {y['K2_av_payi']}   K4 p = {y['K4_p']:.3f}")
+    _yaz(f"  GENEL: {y['genel']}")
     if a.json:
         out = Path(a.json)
         if out.exists():
             raise SystemExit(f"{out} zaten var (uzerine yazilmaz)")
-        out.write_text(json.dumps(y, indent=1, ensure_ascii=False))
+        out.write_text(json.dumps(y, indent=1, ensure_ascii=False),
+                       encoding="utf-8")
     return 0
 
 

@@ -29,7 +29,7 @@ def _yaz(kok: Path, Q: dict, *, av_payi=0.8, nn=(0.9, 0.0), atla=(),
              "sonlu": sonlu, "momentum_bagil_sapma": momentum,
              "P_up_v0.1": Q[kol][i], "av_payi": av_payi,
              "saglik": {"nn_min": nn[0], "kesir_nn_lt_0p5": nn[1]}}
-        (kok / f"{ad}.json").write_text(json.dumps(r))
+        (kok / f"{ad}.json").write_text(json.dumps(r), encoding="utf-8")
 
 
 def _Q(av1=(1.0, 1.5, 1.75), av01=(2.0, 2.02, 2.03), av0=(2.1, 2.1, 2.1),
@@ -84,9 +84,9 @@ def test_GECERSIZ_kol_eksik_sayilir(tmp_path):
 def test_YANLIS_AV_ya_da_SUREKLILIK_reddedilir(tmp_path):
     _yaz(tmp_path, _Q())
     yol = tmp_path / "K_s1_av01L.json"
-    r = json.loads(yol.read_text())
+    r = json.loads(yol.read_text(encoding="utf-8"))
     r["sureklilik"] = "sph"
-    yol.write_text(json.dumps(r))
+    yol.write_text(json.dumps(r), encoding="utf-8")
     y = RAP.yargila(RAP.oku(tmp_path))
     assert "K_s1_av01L" in y["eksik"] and y["K6"] == "OKUNMAZ"
 
@@ -107,6 +107,6 @@ def test_CLI_json_uzerine_yazmaz(tmp_path):
     _yaz(tmp_path / "k", _Q())
     out = tmp_path / "S.json"
     assert RAP.main(["--kok", str(tmp_path / "k"), "--json", str(out)]) == 0
-    assert json.loads(out.read_text())["bulunan"] == 12
+    assert json.loads(out.read_text(encoding="utf-8"))["bulunan"] == 12
     with pytest.raises(SystemExit):
         RAP.main(["--kok", str(tmp_path / "k"), "--json", str(out)])

@@ -307,7 +307,7 @@ def main(argv=None) -> int:
     r["kod"] = _surum()
     r["device"] = a.device
     tmp = out.with_suffix(out.suffix + ".tmp")
-    tmp.write_text(json.dumps(r, indent=1))
+    tmp.write_text(json.dumps(r, indent=1), encoding="utf-8")
     tmp.replace(out)
     print(f"  n={r['n']}  adim={r['adim']}  duvar={r['duvar_s']:.1f} s  "
           f"P_up={r['P_up']:.5e}  E_av={r['E_av']:.4e}  W_pl={r['W_pl']:.4e}  "

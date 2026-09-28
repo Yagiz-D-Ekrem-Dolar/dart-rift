@@ -140,7 +140,8 @@ def main(argv=None) -> int:
         out = Path(a.json)
         if out.exists():
             raise SystemExit(f"{out} zaten var (uzerine yazilmaz)")
-        out.write_text(json.dumps(y, indent=1, ensure_ascii=False))
+        out.write_text(json.dumps(y, indent=1, ensure_ascii=False),
+                       encoding="utf-8")
     return 0
 
 
