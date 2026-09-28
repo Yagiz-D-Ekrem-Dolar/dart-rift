@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-28 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 81 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107 · A70, A84, A91, A92, A94, A96 ve A106 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-28 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 83 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109 · A70, A84, A91, A92, A94, A96 ve A106 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5150,6 +5150,45 @@ da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
 
 ---
+### A109 — **Projede İKİ ayrı blok modeli var; üretimde hangisinin kullanılacağı kilitli değil** (2026-09-28) — *açık, karar bekliyor*
+
+| yapılandırma | blok yarıçapı | blok sayısı | çözünürlük (kaba) |
+|---|---|---|---|
+| `SAHNE` varsayılanı | **14 – 42 m** | 7 | ortanca **231** parçacık, çözülmemiş **yok** |
+| U/V üretim koşuları | **1,7 – 6,5 m** | 2 387 | ortanca **1** parçacık, kütlece `%99,3` çözülmemiş (A89) |
+
+İkisi `θ`'nın iki eksenine (`f` blok kesri, `α_b` blok gözenekliliği)
+**farklı anlam** veriyor: biri cismin iç yapısındaki büyük bloklar, öteki
+gözlenen yüzey blokları boyutunda (Daly 2023: `0,16 – 6,5 m`). Birinde
+bloklar çözülüyor ve `f` fiziksel bir şey ifade ediyor; ötekinde çözülmüyor
+ve `f` yalnız bir yoğunluk düzensizliği. **1000 saatlik havuz başlamadan
+hangisinin üretim olduğu kilitlenmeli** ve seçim ADR ile gerekçelenmeli.
+Bulunuş: KAYIT-070 §4 (CPU'da sahne kurulurken).
+
+---
+### A108 — **Gerçek şekle geçilirse sahne kütlesi gözlenen `β`'nın varsaydığı kütleden %22 sapıyor** (2026-09-28) — *açık, denetim eklendi*
+
+Gözlenen `β`, `M = 4,3e9 kg` varsayılarak türetildi
+(`period_interface.secondary_mass`) ve `β = Δv·M/p`, yani **`β ∝ M`**.
+
+| sahne | kütle | gözlem kütlesine göre |
+|---|---|---|
+| küre `R = 82 m`, `ρ = 1800` (mevcut) | `4,17e9 kg` | −%3,1 (kabul edilebilir) |
+| **elipsoit `88,5×87×58`, `ρ = 1800`** | **`3,36e9 kg`** | **−%22** |
+
+Yani gerçek şekle geçip yoğunluğu aynı bırakmak, model `β`'sı ile gözlenen
+`β`'yı **farklı şeyler** haline getirir ve bu **hiçbir yerde hata vermez**.
+Aynı hacimde `4,3e9 kg`'ı tutturan yoğunluk **`2376 kg/m³`** (gözlenen
+yoğunlukla da uyumlu). Ayrıca mevcut küre sahne hacimde `+%27,6`,
+yoğunlukta `−%24,2`, yüzey `g`'de `−%17,8`, kaçış hızında `−%5,6` sapıyor;
+kaçış hızı `β`'ya doğrudan girer (hangi ejekta "kaçtı" sayılıyor).
+
+**Çare (eklendi):** `observables/dart_gozlemleri.kutle_tutarliligi` sapmayı
+`%5` toleransla **adıyla** söylüyor, `yogunluk_kutleyi_tutturan` verilen
+hacimde doğru yoğunluğu veriyor. **Şekil ve yoğunluk bağımsız seçilemez;
+kütle sabitlenmelidir.** Üretim sahnesi ADR'sinde bu kilitlenmeli.
+
+---
 ### A107 — **KAYIT-068 hiçbir commit'te yok; A99 ve A102 numaraları boşta** (2026-09-28) — *açık, izlenebilirlik*
 
 PROTOKOL-A98 ve PROTOKOL-A98K öncül olarak **KAYIT-068**'i ve
@@ -5337,6 +5376,11 @@ deformasyonun** olduğu rejimde tanımsız (L1: düşük kohezyonda "deformation
 
 ---
 ### A89 — **Bloklar kaba düzeyde çözülmüyor: blok kütlesinin %99,3'ü ortanca 1 parçacık** (2026-09-17) — *açık, ölçüldü*
+
+> **Ek (2026-09-28, KAYIT-070):** bu ölçüm **küçük blok** yapılandırmasına
+> aittir (`r 1,7–6,5 m`). `SAHNE` varsayılanıyla (`r 14–42 m`) aynı kaba
+> merdivende bloklar **çözülüyor** (7 blok, ortanca 231 parçacık). Hangi
+> blok modelinin üretim olduğu kilitli değil → **A109**.
 
 ADR-0050 ile eklenen `setup/blok_cozunurluk.py` üretim sahnesine (U/V ile
 **aynı**: `R = 82 m`, `spacing 7`, `f_boulder 0,275`, `blok-rmin 1,7`,

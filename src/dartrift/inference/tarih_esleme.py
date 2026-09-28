@@ -122,6 +122,14 @@ MODEL_EKSIKLIGI_KAYNAKLI = {
     "kod_kiyasi": (_NAN, "uretim t_gecis'inde W2/UG kolundan kod_kiyasi_olc ile; "
                          "0,2 s'de 0,16 (L1'e 0,82-0,87)"),
     "plato": (0.01, "W2 beta(t): 200 -> 600 s %1-3 geri cekme (KAYIT-067 §2b)"),
+    # OLCULDU (2026-09-28, KAYIT-070): ayni theta, FARKLI sahne tohumu ->
+    # blok dizilimi degisiyor. 15 theta cifti (U/V havuzu, iki tohum):
+    # beta-1 bagil fark ortanca %4,6 -> sd = |fark|/sqrt(2) ~ %3,3.
+    # GERCEK DART da tek bir gerceklemedir: bu terim, tek gozleme asiri
+    # uymayi (overfit) engelleyen TABANDIR, atlanamaz.
+    "gerceklem_beta": (0.033, "U/V 15 theta cifti, iki tohum (KAYIT-070)"),
+    # Ayni olcum M_ejekta icin: bagil fark ortanca %20,9 -> sd ~ %15.
+    "gerceklem_M_ejekta": (0.15, "U/V 15 theta cifti, iki tohum (KAYIT-070)"),
     "carpma_yeri": (0.10, "L12 Senel ve dig. 2025 MNRAS: yakin bloklar beta'yi "
                           "<= %7,6 degistiriyor -> beta-1'de ~%10 (beta ~3,2)"),
     "mermi_geometrisi": (0.15, "L9 Owen ve dig. 2022: kure mermi %10-20; UC KURE "

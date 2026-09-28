@@ -64,6 +64,33 @@ class GridPosterior:
         u[:, j] = self.hdi_u[j]
         return self.space.from_unit(u)[:, j]
 
+    def aralik_kesin(self, j: int, seviye: float = 0.68) -> np.ndarray:
+        """`j`. eksenin **merkezi** aralığı — A85'siz (doğal birimde).
+
+        `hdi` düğüm kütlelerini `cumsum` ile topluyor; düğüm kendi kütlesinin
+        tamamını sayınca birikimli dağılım **yarım bölme sağa kayıyor**
+        (A85). Bu yöntem kenar yoğunluğunu düğümler arasında **doğrusal**
+        kabul edip CDF'yi tam integralliyor; düzgün dağılımda `%16` sınırı
+        tam `0,16` çıkar.
+
+        **`hdi` DEĞİŞMEDİ**: kilitli yargılar onunla hesaplandı ve öyle
+        kalır (kural 6). Yeni protokoller bunu kullanır; ikisi bir arada
+        raporlanabilir.
+        """
+        if not 0.0 < seviye < 1.0:
+            raise ValueError(f"seviye (0,1) icinde olmali, {seviye} geldi")
+        from .kalibrasyon import cdf_parcali_dogrusal
+
+        f = np.asarray(self.marginal(j), dtype=np.float64)
+        eksen = np.asarray(self.grid_u[j], dtype=np.float64)
+        q_alt, q_ust = 0.5 * (1.0 - seviye), 0.5 * (1.0 + seviye)
+        F = np.array([cdf_parcali_dogrusal(f, u) for u in eksen])
+        u_alt = float(np.interp(q_alt, F, eksen))
+        u_ust = float(np.interp(q_ust, F, eksen))
+        u = np.tile(self.mean_u, (2, 1))
+        u[:, j] = (u_alt, u_ust)
+        return self.space.from_unit(u)[:, j]
+
     def contains(self, j: int, deger: float) -> bool:
         """`%68` aralığı verilen değeri içeriyor mu? (G4-C1)"""
         lo, hi = self.hdi(j)

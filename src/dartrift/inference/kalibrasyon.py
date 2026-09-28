@@ -42,7 +42,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-__all__ = ["pit_degeri", "kapsama_egrisi", "pit_tanisi", "ks_duzgunluk",
+__all__ = ["cdf_parcali_dogrusal", "pit_degeri", "kapsama_egrisi", "pit_tanisi", "ks_duzgunluk",
            "SBCSonuc", "sbc_calistir", "SEVIYELER", "KS_ESIGI", "SE_KATI"]
 
 #: Kapsama eğrisinin nominal düzeyleri.
@@ -60,7 +60,7 @@ def _kenar_yogunlugu(post, j: int) -> np.ndarray:
     return m
 
 
-def _cdf_parcali_dogrusal(f: np.ndarray, u: float) -> float:
+def cdf_parcali_dogrusal(f: np.ndarray, u: float) -> float:
     """Eşit aralıklı `[0,1]` düğümlerinde doğrusal yoğunluğun CDF'si."""
     n = len(f)
     d = 1.0 / (n - 1)
@@ -78,6 +78,10 @@ def _cdf_parcali_dogrusal(f: np.ndarray, u: float) -> float:
     return float((parca[:k].sum() + ic) / toplam)
 
 
+#: Eski (özel) ad — sınavlar ve çağıranlar kırılmasın.
+_cdf_parcali_dogrusal = cdf_parcali_dogrusal
+
+
 def pit_degeri(post, j: int, gercek: float) -> float:
     """`j`. eksende gerçeğin posterior CDF'deki yeri (doğal birimde `gercek`).
 
@@ -88,7 +92,7 @@ def pit_degeri(post, j: int, gercek: float) -> float:
     x = np.array(space.from_unit(np.full((1, space.ndim), 0.5))[0], dtype=np.float64)
     x[j] = float(gercek)
     u = float(space.to_unit(x[None, :])[0, j])
-    return _cdf_parcali_dogrusal(_kenar_yogunlugu(post, j), u)
+    return cdf_parcali_dogrusal(_kenar_yogunlugu(post, j), u)
 
 
 def kapsama_egrisi(pit, seviyeler=SEVIYELER) -> list[dict]:

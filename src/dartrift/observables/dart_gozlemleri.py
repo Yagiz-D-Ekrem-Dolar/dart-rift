@@ -22,7 +22,9 @@ from dataclasses import dataclass
 __all__ = ["Gozlem", "GOZLEMLER", "cheng_beta", "EJEKTA_KUTLESI",
            "KONI_ACISI", "KONI_ACISI_HST", "KONI_ELIPTIK", "DIMORPHOS_SEKIL",
            "CARPMA_HIZI", "UZAY_ARACI_KUTLESI", "CARPMA_KACIKLIGI",
-           "CARPMA_ACISI_DALY", "CARPMA_YERI_BLOKLARI", "DALY_2023"]
+           "CARPMA_ACISI_DALY", "CARPMA_YERI_BLOKLARI", "DALY_2023",
+           "GOZLEM_KUTLESI", "kutle_tutarliligi",
+           "yogunluk_kutleyi_tutturan"]
 
 
 @dataclass(frozen=True)
@@ -156,3 +158,53 @@ def cheng_beta(yogunluk: float | None = None, *,
         "kaynak": "Cheng ve dig. 2023, Nature 616, 457",
         "teyit": "tam_metin",
     }
+
+
+# --- Sahne ile gozlemin TUTARLILIGI (2026-09-28, KAYIT-070) -----------------
+#: Gozlenen `beta`'nin TURETILDIGI Dimorphos kutlesi (`period_interface`:
+#: `secondary_mass`). `beta = dv M / p` oldugundan gozlenen `beta` bu kutleyle
+#: DOGRU ORANTILIDIR: sahne baska bir kutleyle kurulursa, model `beta`'si ile
+#: gozlem `beta`'si AYNI SEYI olcmez.
+GOZLEM_KUTLESI = 4.3e9
+#: Kabul edilen bagil kutle sapmasi. Uzerinde sessiz gecilmemeli.
+KUTLE_TOLERANSI = 0.05
+
+
+def kutle_tutarliligi(sahne_kutlesi: float, *,
+                      tolerans: float = KUTLE_TOLERANSI) -> dict:
+    """Sahnenin kutlesi, gozlenen `beta`'nin varsaydigi kutleyle uyuyor mu?
+
+    ## Neden bu denetim var (olculdu 2026-09-28)
+
+    Uretim sahnesi `R = 82 m` kure + `rho = 1800` ile `4,17e9 kg` veriyor
+    (`-%3,3`, kabul edilebilir). Ama **gercek sekle** (elipsoit
+    `88,5 x 87 x 58 m`) gecilip yogunluk ayni birakilirsa kutle `3,36e9 kg`
+    olur: **`-%22`**. O sahnenin `beta`'sini, `4,3e9 kg` varsayilarak
+    turetilmis gozlenen `beta` ile karsilastirmak **sessiz bir hatadir**.
+    Sekil ve yogunluk BAGIMSIZ secilemez; kutle sabitlenmelidir.
+
+    Doner: `bagil_fark`, `tutarli`, ve `beta_olcegi` (gozlenen `beta - 1`'in
+    bu kutleyle yeniden olceklenmesi gereken carpan).
+    """
+    if not (sahne_kutlesi > 0.0):
+        raise ValueError(f"sahne kutlesi pozitif olmali, {sahne_kutlesi} geldi")
+    if not (tolerans > 0.0):
+        raise ValueError("tolerans pozitif olmali")
+    d = (float(sahne_kutlesi) - GOZLEM_KUTLESI) / GOZLEM_KUTLESI
+    return {"sahne_kutlesi": float(sahne_kutlesi),
+            "gozlem_kutlesi": GOZLEM_KUTLESI,
+            "bagil_fark": d,
+            "tutarli": bool(abs(d) <= tolerans),
+            "tolerans": float(tolerans),
+            "beta_olcegi": float(sahne_kutlesi) / GOZLEM_KUTLESI,
+            "not": ("kutle tutarli" if abs(d) <= tolerans else
+                    "KUTLE TUTARSIZ: model ve gozlem ayni seyi olcmuyor; "
+                    "sekil degistiyse yogunluk kutleyi koruyacak sekilde "
+                    "yeniden secilmeli")}
+
+
+def yogunluk_kutleyi_tutturan(hacim_m3: float) -> float:
+    """Verilen hacimde `GOZLEM_KUTLESI`'ni tutturan yigin yogunlugu."""
+    if not (hacim_m3 > 0.0):
+        raise ValueError("hacim pozitif olmali")
+    return GOZLEM_KUTLESI / float(hacim_m3)
