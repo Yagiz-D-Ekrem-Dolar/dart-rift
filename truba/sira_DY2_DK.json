@@ -1,0 +1,19 @@
+{
+ "aciklama": "PROTOKOL-DY S6: DY2 (A112 duzeltmesi + kalibre yogunluk, elipsoit) + DK (hacim-esdeger kure kontrol kolu; sigma_sekil olcumu). Kural S4 degismedi.",
+ "kok": "/arf/scratch/egitimg16u3/driftclaude",
+ "kok_notu": "YagizTRUBA (egitimg16u3). Kullanici izni: en fazla 2 GPU. Beklenen ~6 + ~6 = 12 GPU-sa.",
+ "adimlar": [
+  {
+   "ad": "DY2_DK",
+   "betik": "truba/is_DY2_DK.slurm",
+   "gorevler": [
+    0,
+    1
+   ],
+   "gpu": 1,
+   "export": {
+    "AGAC": "/arf/scratch/egitimg16u3/driftclaude/agac_dy2"
+   }
+  }
+ ]
+}

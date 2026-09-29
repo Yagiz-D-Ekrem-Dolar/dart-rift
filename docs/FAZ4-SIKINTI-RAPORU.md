@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-28 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 83 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109 · A70, A84, A91, A92, A94, A96 ve A106 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-09-29 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 84 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A110 · A70, A84, A91, A92, A94, A96, A106, A111 ve A112 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5148,6 +5148,59 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A112 — **İnceltme kabuğu her zaman KÜRE'ydi: elipsoit hedef inceltmeden sonra küreye dönüyordu** (2026-09-29) — **KAPANDI** (DY'nin sahnesini geçersiz kıldı)
+
+`forward.py` merdiven inceltmesinde kabuğu her durumda
+`_build_mesh("icosphere", radius=kaba.target_radius)` ile kuruyordu. Küresel
+hedefte doğru; **elipsoit hedefte kabuk yanlış şekil** olduğu için inceltme
+basık ekseni şişiriyordu. Ölçüldü (DART sahnesi, kaba merdiven, CPU):
+
+| | yarı-eksenler (p99,5) | kütle | parçacık |
+|---|---|---|---|
+| kaba yığın | `83,1 / 81,7 / **52,6**` | `4,430e9` | 8 462 |
+| inceltmeden sonra (**hatalı**) | `80,2 / 76,8 / **72,9**` | `4,674e9` (**+%5,5**) | 23 021 |
+| inceltmeden sonra (**düzeltilmiş**) | `80,2 / 81,6 / **57,9**` | `4,428e9` (**−%0,05**) | 15 623 |
+
+Yani gerçek şekli kullanmak için açtığımız elipsoit, inceltmeden sonra
+**neredeyse küre** oluyordu (`58 → 73 m`) ve kütle `%5,5` artıyordu. Küresel
+sahnede fark `−%0,2`; bu yüzden bugüne kadar hiçbir koşuda görünmedi.
+
+**Sonucu:** PROTOKOL-DY'nin koşusu (`DY_dart_g1p0`) protokol §2'de yazılan
+sahneyi **gerçekleştirmedi**. Koşunun kendisi geçerli (momentum artığı
+`4,6e-15`, enerji `−%0,66`) ve kilitli yargı hesaplandı (`MODEL AŞIYOR`,
+`β = 4,719`), ama o yargı **elipsoit DART sahnesine ait değildir**. W→W2
+emsali uygulanır: yargı kayıtta kalır, **okunmaz** sayılır, koşu `DY2`
+önekiyle tekrarlanır (PROTOKOL-DY §6).
+
+**Düzeltme:** `_inceltme_kabugu(kw, kaba)` kabuğu sahnenin şeklinden kurar
+(`ellipsoid` → semi_axes, `obj` → dosya, aksi halde eski icosphere yolu
+**bit-aynı**). Sınav: `tests/test_a112_inceltme_kabugu.py` (5).
+Bulunuş: DY'nin kütlesi `4,683e9` çıkıp A108 denetimini (`%5` tolerans)
+aşınca; yani **dün yazılan denetim bugün kendi koşumuzu yakaladı**.
+
+---
+### A111 — **Üretim sahnesinin yoğunluğunu yanlış hacimle hesapladım** (2026-09-29) — **KAPANDI** (kendi hatam)
+
+`ρ = 4,3e9 / 1,81e6 = 2376` dedim; `1,81e6 m³` **şekil modelinin** hacmi, ama
+sahne `88,5 × 87 × 58` **elipsoidi** kuruyor ve onun hacmi `1,87e6 m³`.
+Sonuç: kaba sahne `4,430e9 kg` (`+%3,0`). Doğru yol hesap değil **kalibrasyon**:
+sahneyi kur, kütleyi ölç, yoğunluğu oranla. Ölçülen: **`ρ = 2307 kg/m³`**
+(`M = 4,3000e9`, sapma `%0,000`). İlginç not: bu değer Raducan ve diğ. 2024'ün
+en iyi uyumu olan `2200 kg/m³`'e yakın.
+
+---
+### A110 — **DART sahnesinde `t_end = 600 s` yetmiyor: `β` hâlâ düşüyor** (2026-09-29) — *açık, ölçüldü*
+
+Kıyas sahnesinde `β` 100–200 s'de platoya ulaşıyordu. DART sahnesinde (daha
+büyük cisim, daha yavaş geri toplanma) eğri `8,7 s`'de `5,91` ile tepe yapıp
+iniyor ve **600 s'de hâlâ inişte**: `341 s`'de `4,851`, `600 s`'de `4,719`
+(son on yılda **`−%2,7`**). `1/t` ekstrapolasyonu `β∞ ≈ 4,55` veriyor.
+**Sonucu:** üretim `t_end`'i DART sahnesi için yeniden seçilmeli ya da
+asimptotik düzeltme bir model eksikliği terimi olarak yazılmalı. Şu anki
+`plato = 0,01` terimi kıyas sahnesinden geliyor ve DART sahnesi için
+**küçük kalıyor**.
 
 ---
 ### A109 — **Projede İKİ ayrı blok modeli var; üretimde hangisinin kullanılacağı kilitli değil** (2026-09-28) — *açık, karar bekliyor*

@@ -69,3 +69,49 @@ Gözlem bandı `period_interface.dart_beta_budget` ile: **`β = 3,12 ± 0,34`**
 karşılaştırması), `M_ejekta` (gözlem `1,6 ± 0,3e7 kg`), koni açıları
 (**A95**: gözlemle kıyaslanmaz), blok çözünürlüğü, dondurulan sayı,
 enerji sapması, duvar süresi, `kutle_tutarliligi`.
+
+---
+
+## 6. DY2 tekrarı ve DK şekil kontrolü (2026-09-29, **koşulardan ÖNCE**)
+
+### 6.1 Neden tekrar
+
+`DY_dart_g1p0` koşusu **§2'de yazılan sahneyi gerçekleştirmedi** (**A112**):
+merdiven inceltmesi kabuğu küre olarak kurduğu için elipsoit, inceltmeden
+sonra neredeyse küreye dönüştü (kısa eksen `58 → 73 m`) ve kütle `%5,5`
+arttı. Koşu geçerliydi ve kilitli yargı hesaplandı (`MODEL AŞIYOR`,
+`β = 4,719`) — ama o yargı **elipsoit DART sahnesine ait değil**.
+
+**W → W2 emsali:** DY'nin yargısı kayıtta **olduğu gibi kalır** ve
+**OKUNMAZ** sayılır; koşu `DY2` önekiyle tekrarlanır. §4'ün kuralı
+**değişmedi**.
+
+### 6.2 DY2'de değişen iki şey (ve yalnız bu ikisi)
+
+| | DY | **DY2** |
+|---|---|---|
+| inceltme kabuğu | küre (A112) | **sahnenin şekli** (elipsoit) |
+| yığın yoğunluğu | `2376` (yanlış hacimden, A111) | **`2307`** (kalibre: kurulan sahne `4,3000e9 kg`) |
+
+Geri kalan her şey §2 ile aynı. Kod: A112 düzeltmesini içeren commit.
+
+### 6.3 DK — şekil kontrol kolu (**yeni, kilitli**)
+
+NUSAP soy kütüğü (KAYIT-070 §2) `hedef_sekli = 0,20` teriminin
+**doğrulamasının sıfır** olduğunu gösterdi: başka bir kodun, başka bir
+sahnede ölçtüğü sayı. DY2 zaten elipsoit koluyken, yanına **hacim-eşdeğer
+küre** kolu konursa bu terim **bizim kodumuzda ölçülmüş** olur.
+
+**DK:** DY2 ile aynı her şey; yalnız `shape = icosphere`,
+`R = 76,44 m` (hacim-eşdeğer) ve yoğunluk aynı kütleyi (`4,3e9 kg`)
+tutturacak şekilde kalibre.
+
+**Kilitli ölçüm:** `σ_şekil = |b_elipsoit − b_küre| / b_elipsoit`
+(`b = β − 1`, 600 s). Bu değer `MODEL_EKSIKLIGI_KAYNAKLI["hedef_sekli"]`
+yerine **ölçülmüş** terim olarak geçer (eski `0,20` satırı yerinde kalır,
+kaynağıyla birlikte).
+
+**Yorum (koşudan önce):** `σ_şekil` büyükse (`> 0,15`) şekil, bütçenin
+en büyük terimi olmayı sürdürür ve gerçek şekil modeline (`obj`) geçmek
+gerekir; küçükse (`< 0,05`) küresel sahneler de savunulabilir ve bütçe
+terimi küçülür.

@@ -192,6 +192,44 @@ SOK_PENCERESI = 1.0e-3
 IMPULS_ORNEK = 50
 
 
+def _inceltme_kabugu(kw: dict, kaba):
+    """Merdiven inceltmesinin kullanacağı **yüzey kabuğu** — sahnenin şekliyle.
+
+    ## A112 (2026-09-29) — bu işlev neden var
+
+    İnceltme her durumda `icosphere` çağırıyordu. Küresel hedefte doğru; ama
+    **elipsoit** hedefte kabuk bir küre olduğu için inceltme basık ekseni
+    şişiriyordu. Ölçüldü (DART sahnesi, kaba merdiven):
+
+    | | yarı-eksenler (p99,5) | kütle |
+    |---|---|---|
+    | kaba yığın | `83,1 / 81,7 / 52,6` | `4,430e9` |
+    | **inceltmeden sonra** | **`80,2 / 76,8 / 72,9`** | **`4,674e9` (+%5,5)** |
+
+    Yani gerçek şekli kullanmak için açtığımız elipsoit, inceltmeden sonra
+    neredeyse **küre** oluyordu (`58 → 73 m`) ve kütle `%5,5` artıyordu.
+    Küresel sahnede fark yok (`−%0,2`), o yüzden bugüne kadar görünmedi.
+
+    Kabuk artık sahnenin şeklinden kurulur; `icosphere` dalı **bit-aynı**.
+    """
+    from ..setup.scene import _build_mesh
+
+    sekil = str(kw.get("shape", "icosphere"))
+    if sekil == "ellipsoid":
+        ya = kw.get("semi_axes")
+        if ya is None:
+            raise ValueError("ellipsoid sahnede semi_axes zorunlu")
+        return _build_mesh("ellipsoid", semi_axes=[float(t) for t in ya], subdiv=4)
+    if sekil == "obj":
+        return _build_mesh("obj", obj_path=kw.get("obj_path"),
+                           obj_units=str(kw.get("obj_units", "m")))
+    # KURESEL DAL BIT-AYNI: eski kod her zaman `kaba.target_radius`
+    # kullaniyordu (kurucu, orgude tutturulan yaricapi dondurur; `kw["radius"]`
+    # istenen degerdir ve ikisi birebir ayni olmayabilir). Sinav:
+    # `test_kure_dalinda_kabuk_DEGISMEDI`.
+    return _build_mesh("icosphere", subdiv=4, radius=float(kaba.target_radius))
+
+
 def sahne_parametreleri(theta, taban: dict | None = None, *,
                         secenek3: bool = True) -> dict:
     """`θ = (α₀, Y₀, f_boulder)` → `build_scene` argümanları.
@@ -658,7 +696,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
     """
     from ..cpu_reference.sph_ref import RefParams
     from ..setup.refine import kademe_ayristir, refine_scene_kademeli
-    from ..setup.scene import _build_mesh, build_scene
+    from ..setup.scene import build_scene
     from ..warp_core.solver_solid import WarpSolid3D
 
     x = np.atleast_2d(np.asarray(x, dtype=np.float64))
@@ -725,8 +763,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
         kw = sahne_parametreleri(th, sahne_taban)
         try:
             kaba = build_scene(spacing=spacing, device="cpu", **kw)
-            mesh = _build_mesh("icosphere",
-                               radius=float(kaba.target_radius), subdiv=4)
+            mesh = _inceltme_kabugu(kw, kaba)
             # A74: "geometri" ince parcaciklarin malzemesini SUREKLI blok
             # alanindan yeniden degerlendirir; "kaba" eski kopya (bit-ayni).
             rs = refine_scene_kademeli(kaba, mesh, kad,
