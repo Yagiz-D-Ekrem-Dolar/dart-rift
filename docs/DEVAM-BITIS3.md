@@ -460,3 +460,26 @@ aranacaksa ölçüt "Warp init'ten sonra adım basmıyor" olmalı.
 **Sıradaki GPU işleri (NUSAP soy kütüğünün seçtiği sıra):** şekil (küre/elipsoit)
 ve mermi geometrisi (tek küre/üç küre) kontrol koşuları — bütçedeki en büyük iki
 belirsizlik terimi (`0,20` ve `0,15`) ve ikisinin de doğrulaması **sıfır**.
+
+
+### 12.10 29 Eylül gecesi — UY2 okundu, DY okunmaz, DY2/DK koşuyor
+
+**Kapanan soru:** çözünürlük × geçiş anı kesişimi. `Δ = 0,053` → **eksenler
+bağımsız değil**, üretim **kaba merdiven + çok doğruluklu vekil**,
+bütçe **~750 GPU-saat** (1500 sınırının rahat içinde). ADR-0052'nin açık
+bıraktığı tek soru kapandı.
+
+**Açılan soru:** DART sahnesinin ilk koşusu (DY) protokolün sahnesini
+gerçekleştirmedi (**A112**: inceltme kabuğu küreydi). Yargı kayıtta ama
+**okunmaz**; `DY2` (elipsoit, düzeltilmiş) + `DK` (hacim-eşdeğer küre,
+`σ_şekil` ölçümü) koşuyor — iş `1583605`, ~6 sa/kol.
+
+**Bittiğinde:**
+```
+python scripts/dy_dart_raporu.py --kok kampanya --json kampanya/S_DY2.json   # DY2 icin AD degiskeni
+```
+(`dy_dart_raporu.AD` şu an `DY_dart_g1p0`; DY2/DK için rapor betiğine önek
+seçeneği eklenmeli — **yapılacak**.)
+
+**Hâlâ bekleyen dört karar (0 GPU, ana havuzu kilitliyor):** A2 önsel,
+A105 çekme, A109 blok modeli, C1 hedef β.
