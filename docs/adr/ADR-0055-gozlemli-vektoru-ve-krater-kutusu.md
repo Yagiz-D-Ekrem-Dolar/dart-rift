@@ -71,6 +71,20 @@ sıkıştırıyor). Havuzun kısıtları yüzünden değil, **öngörüsü** yü
   Havuz `96` koşu; HT posteriorun `θ`'sında **birkaç** koşu. Orada orta
   merdiven (`4,5×` parçacık) karşılanabilir ve kutu 0 dolu olur.
 
+- **(2d) Ölçüyü değiştir: `krater_yerdegistirme` (2026-10-04'te bulundu).**
+  A19'un çaresi olarak **zaten yazılmış** ve sınavları geçiyor
+  (kımıldamamış pürüzlü yüzeyde cebirsel olarak `0`, gerçek `12 m` çukuru
+  görüyor, çözünürlükten bağımsız) — ama `src/` ve `scripts/` içinde
+  **hiç kullanılmıyor**. Derinliği *yer değiştirmeden* ölçtüğü ve
+  `−min(profil)`'i bütün kutulardan aldığı için **kutu 0 açlığına
+  yapısal olarak bağışık**: A114'ün kök nedeni ortadan kalkar ve A19 de
+  kapanır. Mevcut koşularda denendi: **hiç reddetmedi**. Ama üç koşuda
+  `0,000 m` verdi ve sebebi doğru çarpma ekseni olmadan **söylenemez**
+  (kestirilen eksenle ölçüldü). Bu yüzden **karar ölçüme bırakıldı:**
+  iki ölçü artık her koşuda yan yana hesaplanıyor
+  (`fizik_tani["krater_yerdegistirme"]`, ek maliyet yok) ve ilk gerçek
+  karşılaştırmayı PROTOKOL-DO/DC verecek.
+
 **Önerilen birleşim: (1) + (2c), (2b) ise HT'den önce.** Yani havuz
 `krater_derinlik`'i isteğe bağlı sayar ve `nan` yazar; Hera öngörüsü için
 krater, ayrı ve daha yüksek çözünürlüklü bir turda ölçülür. Bu, hem havuzu

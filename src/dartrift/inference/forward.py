@@ -1030,6 +1030,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 fizik_tani["yari_eksenler"] = [float(t) for t in _yari]
             if _gy is not None:
                 fizik_tani["gerinim_yumusama"] = sol.gerinim_tanisi()
+            _hd = ~np.asarray(rs.is_impactor, dtype=bool)
             # KAYIT-073: beta'nin uc carpani (M_kacan, v_ort, kos_ort).
             # KAPI DEGIL, tani -- ve ek maliyeti YOK (son durumdan okunuyor).
             # Havuz basladiktan sonra geriye donup olculemez, bu yuzden
@@ -1043,6 +1044,22 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
             except Exception as _e:                        # noqa: BLE001
                 # Tani basarisiz olursa kosu DUSMEZ; gerekce kayda girer.
                 fizik_tani["ejekta_ayrismasi"] = {"hata": str(_e)[:200]}
+            # A19/A114: `krater_yerdegistirme` A19'un CARESI olarak yazildi,
+            # sinavlari geciyor (puruzlu yuzeyde cebirsel olarak 0, gercek
+            # cukuru goruyor, cozunurlukten bagimsiz) ama URETIMDE HIC
+            # KULLANILMIYOR. Iki olcuyu dogru carpma ekseniyle yan yana
+            # koymak icin burada hesaplaniyor -- KAPI DEGIL, tani.
+            # Karar (hangisi gozlemli olacak) ADR-0055 §3'te, olcumden sonra.
+            try:
+                from ..observables.crater_shape import krater_yerdegistirme
+                _kyd = krater_yerdegistirme(
+                    st["x"][_hd], x0[_hd],
+                    impact_direction=rs.impact_direction,
+                    reference_radius=float(rs.target_radius))
+                fizik_tani["krater_yerdegistirme"] = {
+                    "derinlik": float(_kyd.derinlik), "cap": float(_kyd.cap)}
+            except Exception as _e:                        # noqa: BLE001
+                fizik_tani["krater_yerdegistirme"] = {"hata": str(_e)[:200]}
             if av_tanisi_her:
                 # A98: AV isisi ve plastik is -- ikisi de kinetik enerjiyi
                 # isiya ceviriyor; hangisi baskin, gec evrede ayrica.

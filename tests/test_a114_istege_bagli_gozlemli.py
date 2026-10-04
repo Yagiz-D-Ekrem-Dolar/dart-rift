@@ -100,3 +100,22 @@ def _cagir(*, istege_bagli):
         is_impactor=np.zeros(n, dtype=bool),
         impact_direction=np.array([0.0, 0.0, -1.0]), x_reference=x0,
         krater_ayarlari=F.KRATER_AYARLARI_DART, istege_bagli=istege_bagli)
+
+
+def test_iki_krater_olcusu_YAN_YANA_hesaplaniyor():
+    """A19/A114: `krater_yerdegistirme` üretime bağlandı — **tanı** olarak.
+
+    A19'un çaresi yazılmış ama hiç kullanılmıyordu. Karar (hangisi gözlemli
+    olacak) ölçümden sonra; o yüzden ikisi yan yana hesaplanıyor.
+    """
+    import inspect
+
+    from dartrift.inference import forward as FW
+    kaynak = inspect.getsource(FW)
+    assert 'fizik_tani["krater_yerdegistirme"]' in kaynak
+    assert "from ..observables.crater_shape import krater_yerdegistirme" in kaynak
+    i = kaynak.index('fizik_tani["krater_yerdegistirme"] = {')
+    assert "except Exception" in kaynak[i:i + 600]        # kosuyu DUSURMEZ
+    assert "KAPI DEGIL" in kaynak[i - 700:i]
+    # Gozlemli vektoru HALA crater_profile'dan geliyor -- karar verilmedi
+    assert "kr_depth = float(crater_profile(" in kaynak

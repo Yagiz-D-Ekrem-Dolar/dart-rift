@@ -2342,6 +2342,41 @@ dönüyor — yani tek tuttuğu değişmez bu. Pürüz girer girmez bozuluyor.
 
 **Bu A19 kapanmadan çıkarım tarafında hiçbir sayı güvenilir değil.**
 
+**NOT (2026-10-04, A114 araştırılırken bulundu) — çare YAZILMIŞ ama
+ÜRETİME BAĞLANMAMIŞ.** `observables/crater_shape.krater_yerdegistirme`
+A19'un çaresi olarak yazıldı; sınavları geçiyor (kımıldamamış pürüzlü
+yüzeyde **cebirsel olarak** `0`, gerçek `12 m` çukuru görüyor,
+**çözünürlükten bağımsız**). Ama `grep` ile ölçüldü: `src/` ve `scripts/`
+içinde **hiçbir yerde kullanılmıyor**. İleri model (`forward.
+gozlenebilirleri_cikar`) hâlâ `crater_profile`'ı çağırıyor — yani
+`GOZLENEBILIRLER`'in `krater_derinlik` bileşeni **bu kaydın kusurlu
+saydığı ölçüden** geliyor. Üstelik aynı ölçü A114'te üretim sahnesinde
+**reddetti** ve bütün `y` vektörünü düşürdü.
+
+İki ölçü mevcut koşuların son durumlarında yan yana denendi (çarpma yönü
+**kestirildi**, bu yüzden değerler **sonuç vermez**):
+
+| kol | yerdeğiştirme | `crater_profile` (üretim ayarı) |
+|---|---|---|
+| `W2_Y1` | `8,00 m` | `14,06 m` |
+| `W2_Y10` | `0,00 m` | `3,19 m` |
+| `W2_Y50` | `0,00 m` | **RED** (kutu 0'da 4 parçacık) |
+| `DK` | `2,46 m` | **RED** (4 parçacık) |
+| `DY2` | `0,00 m` | **RED** (3 parçacık) |
+
+Okunabilen tek şey: **yeni ölçü hiç reddetmiyor** (A114'ün kök nedeni
+yapısal olarak yok). Ama üç koşuda tam `0,000` veriyor ve bunun sebebi
+doğru eksen olmadan **söylenemez** (`derinlik = −min(profil)`; eksen
+yanlışsa kraterin karşı tarafı ölçülür ve orada hareket dışarı doğrudur).
+
+**Yapılan:** karar için tahmin yerine ölçüm. Doğru çarpma ekseni koşunun
+**içinde** biliniyor (`rs.impact_direction`), bu yüzden
+`krater_yerdegistirme` artık her koşuda **tanı olarak** hesaplanıp
+`fizik_tani["krater_yerdegistirme"]`'ye yazılıyor (ek maliyet yok, KAPI
+değil). İlk gerçek yan yana karşılaştırmayı PROTOKOL-DO/DC koşuları
+verecek; hangisinin gözlemli olacağına o zaman karar verilir
+(ADR-0055 §3).
+
 Kilit: `tests/test_krater_bos_sinav.py` — iki kusur
 `xfail(strict=True)` ile sabitlendi; düzeltildikleri gün testler
 **düşer** ve bu bölüm güncellenmek zorunda kalır.
