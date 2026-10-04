@@ -23,7 +23,9 @@ from pathlib import Path
 
 import numpy as np
 
-AD = "DY_dart_g1p0"
+AD = "DY_dart_g1p0"          # varsayilan kol (ilk kosu; A112 yuzunden OKUNMAZ)
+AD_DY2 = "DY2_dart_g1p0"     # PROTOKOL-DY S6.2 tekrari (elipsoit, duzeltilmis)
+AD_DK = "DK_kure_g1p0"       # PROTOKOL-DY S6.3 hacim-esdeger kure kolu
 T_END = 600.0
 BETA_GOZLEM = 3.12            # PROTOKOL-U §1 (kilitli hedef)
 SIGMA_GOZLEM = 0.34
@@ -31,8 +33,8 @@ KESME = 3.0
 TERIMLER = ("gerceklem_beta", "cozunurluk_uzak", "plato", "carpma_yeri")
 
 
-def oku(kok: Path) -> dict | None:
-    d = sorted(glob.glob(str(kok / f"{AD}.durumlar" / "nokta_*.npz")))
+def oku(kok: Path, ad: str = AD) -> dict | None:
+    d = sorted(glob.glob(str(kok / f"{ad}.durumlar" / "nokta_*.npz")))
     if not d:
         return None
     z = np.load(d[-1])
@@ -77,12 +79,43 @@ def yargi(v: dict | None) -> dict:
     return out
 
 
+def sigma_sekil(elips: dict | None, kure: dict | None) -> dict:
+    """PROTOKOL-DY §6.3 (KİLİTLİ): `σ_şekil = |b_elipsoit − b_küre| / b_elipsoit`.
+
+    `b = β − 1` (600 s). Bu **ölçülmüş** terim, `MODEL_EKSIKLIGI_KAYNAKLI`'daki
+    literatürden ödünç `hedef_sekli = 0,20` yerine geçer (eski satır yerinde
+    kalır). Bir kol geçersizse ya da 600 s'ye ulaşmadıysa **OKUNMAZ**.
+    """
+    for k in (elips, kure):
+        if k is None or not (k["gecerli"] and k["ulasti"]):
+            return {"genel": "OKUNMAZ (elipsoit ya da kure kolu gecersiz)",
+                    "sigma_sekil": None}
+    be, bk = elips["beta"] - 1.0, kure["beta"] - 1.0
+    s = abs(be - bk) / abs(be)
+    return {"sigma_sekil": s, "beta_elipsoit": elips["beta"],
+            "beta_kure": kure["beta"], "b_elipsoit": be, "b_kure": bk,
+            "eski_literatur_terimi": 0.20,
+            "yorum": ("sekil terimi KUCUK (< 0,05): kuresel sahne savunulabilir"
+                      if s < 0.05 else
+                      "sekil terimi BUYUK (> 0,15): gercek sekil modeline (obj) "
+                      "gecmek gerekir" if s > 0.15 else
+                      "sekil terimi ORTA: olculmus deger butceye girer"),
+            "genel": "OLCULDU"}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--kok", type=Path, required=True)
+    ap.add_argument("--ad", default=AD, help=f"kol adi (varsayilan {AD})")
+    ap.add_argument("--kure-kol", default=None,
+                    help=f"verilirse sigma_sekil de olculur (ornek: {AD_DK})")
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args(argv)
-    out = yargi(oku(a.kok))
+    elips = oku(a.kok, a.ad)
+    out = yargi(elips)
+    out["kol_adi"] = a.ad
+    if a.kure_kol:
+        out["sekil_olcumu"] = sigma_sekil(elips, oku(a.kok, a.kure_kol))
     print("=" * 72)
     print("PROTOKOL DY -- DART sahnesi, gec evre modeli (ilk kosu)")
     print("=" * 72)
@@ -92,6 +125,15 @@ def main(argv=None) -> int:
               f"  -> payda {out['payda']:.3f}")
         print(f"  I = {out['I']:.2f}  (kesme {KESME})")
         print(f"  M_ejekta {out['M_ejekta']:.3e} kg  (gozlem 1,6 +- 0,3e7)")
+    if "sekil_olcumu" in out:
+        so = out["sekil_olcumu"]
+        if so.get("sigma_sekil") is None:
+            print(f"  [sekil] {so['genel']}")
+        else:
+            print(f"  [sekil] beta elipsoit {so['beta_elipsoit']:.3f} / kure "
+                  f"{so['beta_kure']:.3f}  ->  sigma_sekil = {so['sigma_sekil']:.3f} "
+                  f"(literaturden odunc olan 0,20 yerine)")
+            print(f"          {so['yorum']}")
     print(f"GENEL: {out['genel']}")
     if a.json:
         a.json.write_text(json.dumps(out, indent=1, default=float), encoding="utf-8")

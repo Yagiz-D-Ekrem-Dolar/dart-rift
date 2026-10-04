@@ -96,3 +96,50 @@ def test_DY_sigma_model_OLCULMUS_terimlerden(tmp_path):
     out = DY.yargi(DY.oku(tmp_path))
     beklenen = (3.20 - 1.0) * np.sqrt(0.033**2 + 0.004**2 + 0.01**2 + 0.10**2)
     assert out["sigma_model"] == pytest.approx(beklenen, rel=1e-9)
+
+
+# --------------------------------------------- PROTOKOL-DY §6.3: sigma_sekil
+def test_DY_onek_secilebiliyor(tmp_path):
+    _npz(tmp_path, DY.AD_DY2, 3.4, 600.0)
+    out = DY.yargi(DY.oku(tmp_path, DY.AD_DY2))
+    assert out["genel"] == "MODEL GOZLEME ULASIYOR"
+    assert DY.oku(tmp_path, DY.AD) is None          # eski kol yok
+
+
+def test_sigma_sekil_kilitli_formul(tmp_path):
+    _npz(tmp_path, DY.AD_DY2, 4.20, 600.0)          # b = 3,20
+    _npz(tmp_path, DY.AD_DK, 3.80, 600.0)           # b = 2,80
+    s = DY.sigma_sekil(DY.oku(tmp_path, DY.AD_DY2), DY.oku(tmp_path, DY.AD_DK))
+    assert s["genel"] == "OLCULDU"
+    assert s["sigma_sekil"] == pytest.approx(abs(3.20 - 2.80) / 3.20)
+    assert s["eski_literatur_terimi"] == 0.20
+    assert "ORTA" in s["yorum"]            # 0,4/3,2 = 0,125 -> orta bant
+
+
+def test_sigma_sekil_uc_yorum(tmp_path):
+    for b_kure, anahtar in ((4.19, "KUCUK"), (4.00, "ORTA"), (3.50, "BUYUK")):
+        kok = tmp_path / f"{b_kure}"
+        _npz(kok, DY.AD_DY2, 4.20, 600.0)
+        _npz(kok, DY.AD_DK, b_kure, 600.0)
+        s = DY.sigma_sekil(DY.oku(kok, DY.AD_DY2), DY.oku(kok, DY.AD_DK))
+        assert anahtar in s["yorum"], (b_kure, s["sigma_sekil"], s["yorum"])
+
+
+def test_sigma_sekil_gecersiz_kolda_OKUNMAZ(tmp_path):
+    _npz(tmp_path, DY.AD_DY2, 4.20, 600.0)
+    _npz(tmp_path, DY.AD_DK, 3.80, 600.0, gecerli=False)
+    s = DY.sigma_sekil(DY.oku(tmp_path, DY.AD_DY2), DY.oku(tmp_path, DY.AD_DK))
+    assert s["sigma_sekil"] is None and s["genel"].startswith("OKUNMAZ")
+    assert DY.sigma_sekil(None, None)["sigma_sekil"] is None
+
+
+def test_CLI_kure_kol_ile_sekil_olcumu(tmp_path, capsys):
+    _npz(tmp_path, DY.AD_DY2, 4.20, 600.0)
+    _npz(tmp_path, DY.AD_DK, 3.80, 600.0)
+    yol = tmp_path / "S_DY2.json"
+    assert DY.main(["--kok", str(tmp_path), "--ad", DY.AD_DY2,
+                    "--kure-kol", DY.AD_DK, "--json", str(yol)]) == 0
+    d = json.loads(yol.read_text(encoding="utf-8"))
+    assert d["kol_adi"] == DY.AD_DY2
+    assert d["sekil_olcumu"]["sigma_sekil"] == pytest.approx(0.4 / 3.2)
+    assert "sigma_sekil" in capsys.readouterr().out
