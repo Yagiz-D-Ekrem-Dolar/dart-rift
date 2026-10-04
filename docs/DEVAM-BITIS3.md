@@ -527,3 +527,77 @@ python scripts/dy_dart_raporu.py --kok kampanya --ad DY2_dart_g1p0 \
 
 **Hâlâ bekleyen dört karar (0 GPU, ana havuzu kilitliyor):** A2 önsel,
 A105 çekme, A109 blok modeli, C1 hedef `β`.
+
+
+### 12.12 4 Ekim — dört karar paketi hazır, **A114 havuzu kurtardı**, KAYIT-073
+
+Bu tur **0 GPU-saat** harcadı (DM/DT dışında) ve üç şey yaptı.
+
+#### (a) Ana havuzu kilitleyen DÖRT kararın hepsi artık karar paketi
+
+| karar | ADR | öneri | ölçümle kilitlenecek mi |
+|---|---|---|---|
+| **A2** `Y₀` önseli | [ADR-0053](adr/ADR-0053-y0-onseli-ve-tanimlayici-gozlemli.md) | `[1e0, 1e5] Pa` (şu an `[1e3, 1e7]`) | **evet** — PROTOKOL-DO |
+| **C1** gözlenen `β` | [ADR-0054](adr/ADR-0054-c1-gozlenen-beta-hangi-sayi.md) | `cheng_beta(sahnenin kütlesi)` → `3,5418 (+0,188/−0,247)` | hayır, künye teyitli |
+| **A105** matris çekmesi | [ADR-0056](adr/ADR-0056-a105-matris-cekme-dayanimi.md) | KAPALI kalır; `−%23` **bütçeye girmez**, koşullu duyarlılık olarak raporlanır | kısmen — DC kolu `~5 sa` |
+| **A109** blok modeli | [ADR-0057](adr/ADR-0057-a109-hangi-blok-modeli.md) | `SAHNE` varsayılanı (`14–56 m`, çözülmüş) + **açık kapsam sınırı** | havuz ek maliyetsiz verecek |
+
+Üçü için **ölçüm** dayanağı var; biri (C1) birincil kaynak künyesiyle
+(arXiv:2303.03464) kapanıyor. **Hepsi `ÖNERİ`** — kilitlemek kullanıcının.
+
+> **ADR-0053'ün üç ayağı:** (i) ölçülen `β(Y₀)` güç yasası gözlemi
+> `644 Pa`'ya koyuyor, önselin alt kenarı `1e3 Pa`; (ii) bu karar
+> PROTOKOL-U §4'te **2026-09-14'te önceden kaydedilmişti**
+> ("U1/U2 ulaşıyor → ADR: önsel alt sınırı `1 Pa`'ya") ve DY2 o koşulu
+> sağladı; (iii) literatürün matris kohezyonu **`0–500 Pa`**, yani eski
+> önselin alt kenarı literatürün **bütün aralığının üstünde**. Karar
+> ayrıca **C1'den bağımsız**: sekiz `β` adayının hepsi için ima edilen
+> `Y₀` önerilen aralıkta (en yakın kenara `1,31` dekad).
+
+#### (b) **A114** — havuzun yarısını kaybedecek kusur, koşmadan önce yakalandı
+
+DY2'nin **kendi koşu kaydında** `y: null` bulundu. Krater çıkarıcısı çarpma
+ekseni kutusunda `2` parçacık bulup *haklı olarak* reddetmiş; ama tek
+gözlemlinin reddi aynı koşunun kusursuz `β`'sını (`3,748`) ve ejekta
+kesrini de çöpe atmış. DK (küre) aynı ayarla geçmiş — **eşik sırtı**.
+
+Kök neden geometrik: `outer_angle 12°`/`n_bins 8` → en iç kutu `0–1,5°`,
+`8597` yüzey parçacığıyla **beklenen `1,5`**, gereken `5`.
+`96` koşuluk havuzda kayıp **yarıya yakın ve yanlı** olurdu (`~650 GPU-saat`).
+
+[ADR-0055](adr/ADR-0055-gozlemli-vektoru-ve-krater-kutusu.md) (1) **uygulandı**,
+açık opt-in, **hiçbir geçmiş sayı değişmedi**: `istege_bagli` /
+`nan_izinli` ile krater reddi yalnız o bileşeni `nan` yapar. (2) ÖNERİ:
+en iç kutu uyarlanır olsun ya da krater HT turuna taşınsın (krater
+**çıkarımda kullanılmıyor** — DART onu görmedi, Hera görecek).
+
+**Hiçbir denetim bunu yakalamamıştı:** `gecerli = True`, momentum `5,6e-15`,
+enerji `−%0,78`, `600 s` tamam. **Koşu kusursuzdu, kaydı boştu.**
+
+#### (c) [KAYIT-073](defter/KAYIT-073_2026-10-04_beta-nin-uc-carpani-goturme.md) — `β`'nın duyarsızlığı bir **götürme**
+
+    β − 1 = K · M_kaçan · v_ort · kos_ort / p      (K⁻¹ = 0,8347 ± 0,0052)
+
+`Y₀` üsleri: `−0,3221 / +0,1866 / +0,0585`, **toplam `−0,0769`**;
+`β − 1`'in bağımsız ölçülen üssü `−0,0760` (**`%1,3`**). Yani `β` duyarsız
+değil, **üç güçlü etki birbirini götürüyor**. `M_ejekta`'nın `6,3` kat
+kazancının sebebi bu. Üçüncü yön ejektanın **yönelimi** ve o **A95**
+yüzünden gözlemle kıyaslanamıyor → A95 *"açık, ölçüldü"*'den
+**"açık, ÇIKARIMI KISITLIYOR"**'a yükseltildi.
+
+Ayrışma artık **her koşuya tanı olarak yazılıyor** (ek maliyet yok); havuz
+`α_b`/`f` eksenlerinde götürme olup olmadığını söyleyecek.
+
+#### Ayrıca
+
+- **A110 KAPANDI** (ölçülerek, `t_end` uzatılarak değil): DART sahnesinde
+  `1/t` uydurması `β∞ = 3,703`, kalan yol `−%1,64` → `plato_olculen_DART
+  = 0,016` (eski `0,01` kıyas sahnesinden). Kilitli yargı değişmiyor
+  (`I` `1,4034 → 1,4003`).
+- **A113** (yeni, ortam): Windows Uygulama Denetimi `warp-clang.dll`'i
+  engelliyor → `19` sınav **yerelde** çöküyor. Aynı beş dosya TRUBA'da
+  (Linux) `30/30` geçiyor: **kod sağlam**, kusur ortamda. İşletim
+  sisteminin güvenlik ilkesi **değiştirilmedi**.
+- **Kuyrukta:** `1588084` (DM/DT, PROTOKOL-DY §7). Sonra `is_DO.slurm`
+  (DO1 `500 Pa`, DO2 `5000 Pa`, `~10 GPU-saat`) — 2 GPU hakkı içinde,
+  sırayla.

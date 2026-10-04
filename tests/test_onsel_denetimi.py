@@ -233,3 +233,24 @@ def test_C1_in_Y0_uzerindeki_kaldiraci_bir_dekaddan_BUYUK():
     assert kayma == pytest.approx(1.17, abs=0.02)
     # yani C1 kozmetik degil: beta'daki %15 fark Y0'da 15 kat
     assert OD.y0_coz(uy, 3.120) / OD.y0_coz(uy, 3.600) > 10.0
+
+
+def test_S4_ONERI_uzayi_yaninda_duruyor_VARSAYILAN_DEGIL():
+    """ADR-0053 §4.1: yeni uzay eklendi, eski **yerinde** ve hâlâ varsayılan."""
+    from dartrift.inference.design import DART_UZAYI_S3
+    from dartrift.inference.design import DART_UZAYI_S4_ONERI as S4
+    j3 = DART_UZAYI_S3.names.index("Y0")
+    j4 = S4.names.index("Y0")
+    assert DART_UZAYI_S3.lo[j3] == 1.0e3 and DART_UZAYI_S3.hi[j3] == 1.0e7
+    assert S4.lo[j4] == 1.0e0 and S4.hi[j4] == 1.0e5
+    # YALNIZ Y0 degisti
+    assert S4.names == DART_UZAYI_S3.names and S4.log == DART_UZAYI_S3.log
+    for k in range(S4.ndim):
+        if k != j4:
+            assert (S4.lo[k], S4.hi[k]) == (DART_UZAYI_S3.lo[k], DART_UZAYI_S3.hi[k])
+    # Yeni uzay BUTUN beta adaylarini iceriyor, eskisi icermiyor
+    uy = _uy()
+    for b in BETA_ADAYLARI:
+        y = OD.y0_coz(uy, b)
+        assert S4.lo[j4] <= y <= S4.hi[j4], b
+    assert any(not (1.0e3 <= OD.y0_coz(uy, b) <= 1.0e7) for b in BETA_ADAYLARI)

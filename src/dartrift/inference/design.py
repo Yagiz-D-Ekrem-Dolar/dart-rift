@@ -149,6 +149,32 @@ DART_UZAYI_S3 = ParamSpace(
 )
 
 
+#: ADR-0053 **ÖNERİ** — `Y₀` önseli aşağı taşınmış uzay. **VARSAYILAN DEĞİL:**
+#: karar kilitlenmedi (kural 6). `DART_UZAYI_S3` olduğu gibi yerinde kalır ve
+#: varsayılan odur; bu tanım, karar kabul edilirse tek satırla devreye girsin
+#: diye ve gerileme sınavları koşabilsin diye **yanına** yazıldı.
+#:
+#: Yalnız `Y₀` değişiyor: `[1e3, 1e7] → [1e0, 1e5] Pa` (log, 5 dekad).
+#: Üç bağımsız gerekçe (ADR-0053 §2, §2a, §2b, §2c):
+#:
+#: | gerekçe | sayı |
+#: |---|---|
+#: | ölçülen `β(Y₀)` gözlemi buraya koyuyor | `644 Pa` (eski alt kenar `1e3`) |
+#: | literatürün matris kohezyonu (L1/L2) | `0 – 500 Pa` — eskisinin **tamamen altında** |
+#: | modelin **doğrulandığı** aralık | `1 – 50 Pa` (W2/UA/UY/UG/DY2/DK) |
+#: | `β` adaylarının hepsi (C1'den bağımsız) | `21 – 4951 Pa`, en yakın kenara `1,31` dekad |
+#:
+#: Karar **ölçümle** kilitlenecek: PROTOKOL-DO (`DO1 = 500 Pa`,
+#: `DO2 = 5000 Pa`) dışdeğerlemeyi interpolasyona çeviriyor. DO okunmadan
+#: varsayılan **değiştirilmez**.
+DART_UZAYI_S4_ONERI = ParamSpace(
+    names=("boulder_alpha0", "Y0", "f_boulder"),
+    lo=(1.00, 1.0e0, 0.05),
+    hi=(1.30, 1.0e5, 0.50),
+    log=(False, True, False),
+)
+
+
 def factorial_design(space: ParamSpace, levels: int = 3) -> np.ndarray:
     """Tam çarpanlı tasarım — `levels^d` nokta, **kenarlar dahil**.
 
