@@ -178,3 +178,51 @@ def test_CLI_uc_olcum_birlikte(tmp_path, capsys):
     assert {"sekil_olcumu", "mermi_olcumu", "gerceklem_olcumu"} <= set(d)
     cikti = capsys.readouterr().out
     assert "sigma_mermi" in cikti and "sigma_gerceklem" in cikti
+
+
+# ------------------------------------------- PROTOKOL-DY §8.4: sigma_cekme
+def test_sigma_cekme_sabitleri_ve_uc_yargi(tmp_path):
+    assert DY.SIGMA_CEKME_KIYAS == 0.23 and DY.SIGMA_CEKME_BANT == 0.05
+    assert DY.AD_DC == "DC_cekme_g1p0"
+    # b_DY2 = 2,748 (DY2'nin olculen degeri); DC'yi istenen sigmaya gore kur
+    b2 = 2.748
+    for hedef, genel in ((0.23, "CEKME KIYASLA AYNI"),
+                         (0.35, "CEKME DARTTA DAHA ETKILI"),
+                         (0.10, "CEKME DARTTA DAHA ETKISIZ")):
+        kok = tmp_path / f"s{hedef}"
+        _npz(kok, DY.AD_DY2, 1.0 + b2, 600.0)
+        _npz(kok, DY.AD_DC, 1.0 + b2 * (1.0 - hedef), 600.0)
+        c = DY.sigma_cekme(DY.oku(kok, DY.AD_DY2), DY.oku(kok, DY.AD_DC))
+        assert c["sigma_cekme"] == pytest.approx(hedef, abs=1e-9)
+        assert c["genel"] == genel
+        assert c["kapi_mi"] is False          # KAPI DEGIL (ADR-0056)
+
+
+def test_sigma_cekme_bant_kenarlari_AYNI_sayiliyor(tmp_path):
+    b2 = 2.748
+    for hedef in (0.18, 0.28):               # tam bant kenarlari
+        kok = tmp_path / f"k{hedef}"
+        _npz(kok, DY.AD_DY2, 1.0 + b2, 600.0)
+        _npz(kok, DY.AD_DC, 1.0 + b2 * (1.0 - hedef), 600.0)
+        c = DY.sigma_cekme(DY.oku(kok, DY.AD_DY2), DY.oku(kok, DY.AD_DC))
+        assert c["genel"] == "CEKME KIYASLA AYNI", hedef
+
+
+def test_sigma_cekme_OKUNMAZ(tmp_path):
+    _npz(tmp_path, DY.AD_DY2, 3.748, 600.0)
+    _npz(tmp_path, DY.AD_DC, 2.890, 600.0, gecerli=False)
+    c = DY.sigma_cekme(DY.oku(tmp_path, DY.AD_DY2), DY.oku(tmp_path, DY.AD_DC))
+    assert c["sigma_cekme"] is None and c["genel"].startswith("OKUNMAZ")
+    assert DY.sigma_cekme(None, None)["sigma_cekme"] is None
+
+
+def test_CLI_cekme_kol(tmp_path, capsys):
+    _npz(tmp_path, DY.AD_DY2, 3.748, 600.0)
+    _npz(tmp_path, DY.AD_DC, 2.890, 600.0)
+    yol = tmp_path / "S_DC.json"
+    assert DY.main(["--kok", str(tmp_path), "--ad", DY.AD_DY2,
+                    "--cekme-kol", DY.AD_DC, "--json", str(yol)]) == 0
+    d = json.loads(yol.read_text(encoding="utf-8"))
+    assert d["cekme_olcumu"]["sigma_cekme"] == pytest.approx(
+        abs(2.748 - 1.890) / 2.748)
+    assert "sigma_cekme" in capsys.readouterr().out

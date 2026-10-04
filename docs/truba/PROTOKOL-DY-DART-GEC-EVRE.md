@@ -163,3 +163,56 @@ değilse ilgili ölçüm **OKUNMAZ** (terim ödünç değeriyle kalır).
 **Yorum (koşudan önce):** her iki terim de `< 0,05` çıkarsa bütçenin
 ödünç kalan kısmı biter ve model eksikliği **tamamen ölçülmüş** olur;
 `> 0,15` çıkarsa o terim bütçenin başatı olur ve ayrıca çalışılır.
+
+---
+
+## 8. DC — matris çekme dayanımının DART sahnesindeki bedeli (2026-10-04, **koşudan ÖNCE**)
+
+### 8.1 Neden
+
+**A105** kıyas sahnesinde ölçtü: Mohr-Coulomb uç kesmesi
+(`T_m = Y₀/μ_f`) açılınca `β` `%23` düşüyor (`3,686 → 2,854` kaba;
+`3,978 → 3,074` orta). [ADR-0056](../adr/ADR-0056-a105-matris-cekme-dayanimi.md)
+üretimde çekmenin **kapalı** kalmasını öneriyor ve `−%23`'ü bütçeye
+**eklemiyor**; yerine her raporda duran bir **koşullu duyarlılık** cümlesi
+yazıyor. Ama o cümledeki sayı (`3,75 → ~2,89`) **kıyas sahnesinden
+taşınmış bir orandır.** DC onu DART sahnesinde ölçer.
+
+### 8.2 Tasarım (tek koşu)
+
+DY2 ile **birebir aynı** (§2 + §6.2); değişen tek şey: `--matris-cekme-yok`
+**kaldırılır**, yani matris çekmesi Mohr-Coulomb uç kesmesiyle **açık**
+(`T_m = Y₀/μ_f`, `Y₀ = 10 Pa`, `μ_f = 0,6` → `T_m ≈ 16,7 Pa`).
+
+Maliyet kestirimi DY2'den (`4:50:53`): **`~5 GPU-saat`**.
+
+### 8.3 Geçerlilik
+
+§3 ile aynı: `gecerli = True`, `t = 600 s`, `kutle_tutarliligi` tutarlı.
+Değilse ölçüm **OKUNMAZ** ve ADR-0056'nın koşullu cümlesi kıyas sahnesinin
+oranıyla (`−%23`) yazılı kalır.
+
+### 8.4 Kilitli ölçüm ve yargı
+
+`b = β − 1` (600 s). **`σ_çekme = |b_DY2 − b_DC| / b_DY2`.**
+
+| yargı | koşul | sonucu |
+|---|---|---|
+| **ÇEKME KIYASLA AYNI** | `|σ_çekme − 0,23| ≤ 0,05` | koşullu cümle **ölçülmüş** sayıyla yazılır; kıyas sahnesinden taşıma gerekçelenmiş olur |
+| **ÇEKME DART'TA DAHA ETKİLİ** | `σ_çekme > 0,28` | koşullu cümle büyür; ADR-0056 §4 yeniden açılır (seçim hâlâ fiziksel, ama bedeli daha büyük) |
+| **ÇEKME DART'TA DAHA ETKİSİZ** | `σ_çekme < 0,18` | koşullu cümle küçülür; A105'in "çözünürlükten 4 kat büyük" uyarısı DART sahnesi için yumuşar |
+
+**Bu ölçüm bir KAPI DEĞİL.** Hangi sonuç çıkarsa çıksın ADR-0056'nın
+kararı (çekme **kapalı**) değişmez: o karar fiziksel gerekçeyle ve
+koşulardan **önce** verildi. DC yalnız **bedelini** ölçer.
+
+> Tersi yapılırsa — "DC'de `β` daha iyi tuttu, çekmeyi açalım" — sonuca
+> göre model seçmiş olurduk. Kural 6 bunu yasaklıyor ve bu paragraf
+> koşudan önce yazıldı.
+
+### 8.5 Kapı olmayan tanılar
+
+§5 ile aynı, artı **ejekta ayrışması** (KAYIT-073): çekme açıkken
+`M_kaçan`/`v_ort`/`kos_ort` hangi yönde değişiyor? Götürme hâlâ var mı?
+Bu, `−%23`'ün *hangi çarpandan* geldiğini söyler.
+

@@ -28,6 +28,7 @@ AD_DY2 = "DY2_dart_g1p0"     # PROTOKOL-DY S6.2 tekrari (elipsoit, duzeltilmis)
 AD_DK = "DK_kure_g1p0"       # PROTOKOL-DY S6.3 hacim-esdeger kure kolu
 AD_DM = "DM_tekkure_g1p0"    # PROTOKOL-DY S7 tek kure mermi kolu
 AD_DT = "DT_tohum2_g1p0"     # PROTOKOL-DY S7 ikinci sahne tohumu
+AD_DC = "DC_cekme_g1p0"      # PROTOKOL-DY S8 matris cekmesi ACIK
 T_END = 600.0
 BETA_GOZLEM = 3.12            # PROTOKOL-U §1 (kilitli hedef)
 SIGMA_GOZLEM = 0.34
@@ -144,6 +145,39 @@ def sigma_gerceklem(dy2: dict | None, dt: dict | None) -> dict:
             "genel": "OLCULDU"}
 
 
+#: PROTOKOL-DY §8.4 (KİLİTLİ) — kıyas sahnesinde ölçülen oran ve bant.
+SIGMA_CEKME_KIYAS = 0.23
+SIGMA_CEKME_BANT = 0.05
+
+
+def sigma_cekme(dy2: dict | None, dc: dict | None) -> dict:
+    """PROTOKOL-DY §8.4 (KİLİTLİ): `σ_çekme = |b_DY2 − b_DC| / b_DY2`.
+
+    Kıyas sahnesinde A105 `0,23` ölçtü. Yargı (bant `±0,05`):
+    `CEKME KIYASLA AYNI` / `CEKME DARTTA DAHA ETKILI` (`> 0,28`) /
+    `CEKME DARTTA DAHA ETKISIZ` (`< 0,18`).
+
+    **KAPI DEĞİL:** ADR-0056'nın kararı (çekme kapalı) hangi sonuçta
+    değişmez; bu ölçüm yalnız **bedelini** verir.
+    """
+    a, b = _b(dy2), _b(dc)
+    if a is None or b is None or a == 0.0:
+        return {"genel": "OKUNMAZ (DY2 ya da DC kolu gecersiz)",
+                "sigma_cekme": None}
+    s = abs(a - b) / abs(a)
+    # `<=` KAPSAYICI (PROTOKOL-DY §8.4). Bant kenarinda kayan nokta
+    # artigi yargiyi cevirmesin diye 1e-12 pay birakiliyor; kural degismedi.
+    if abs(s - SIGMA_CEKME_KIYAS) <= SIGMA_CEKME_BANT + 1e-12:
+        genel = "CEKME KIYASLA AYNI"
+    elif s > SIGMA_CEKME_KIYAS + SIGMA_CEKME_BANT:
+        genel = "CEKME DARTTA DAHA ETKILI"
+    else:
+        genel = "CEKME DARTTA DAHA ETKISIZ"
+    return {"sigma_cekme": s, "beta_cekme_yok": 1.0 + a, "beta_cekme_acik": 1.0 + b,
+            "kiyas_orani": SIGMA_CEKME_KIYAS, "bant": SIGMA_CEKME_BANT,
+            "kapi_mi": False, "genel": genel}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--kok", type=Path, required=True)
@@ -154,6 +188,8 @@ def main(argv=None) -> int:
                     help=f"verilirse sigma_mermi olculur (ornek: {AD_DM})")
     ap.add_argument("--tohum-kol", default=None,
                     help=f"verilirse sigma_gerceklem olculur (ornek: {AD_DT})")
+    ap.add_argument("--cekme-kol", default=None,
+                    help=f"verilirse sigma_cekme olculur (ornek: {AD_DC})")
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args(argv)
     elips = oku(a.kok, a.ad)
@@ -165,6 +201,8 @@ def main(argv=None) -> int:
         out["mermi_olcumu"] = sigma_mermi(elips, oku(a.kok, a.mermi_kol))
     if a.tohum_kol:
         out["gerceklem_olcumu"] = sigma_gerceklem(elips, oku(a.kok, a.tohum_kol))
+    if a.cekme_kol:
+        out["cekme_olcumu"] = sigma_cekme(elips, oku(a.kok, a.cekme_kol))
     print("=" * 72)
     print("PROTOKOL DY -- DART sahnesi, gec evre modeli (ilk kosu)")
     print("=" * 72)
@@ -184,7 +222,8 @@ def main(argv=None) -> int:
                   f"(literaturden odunc olan 0,20 yerine)")
             print(f"          {so['yorum']}")
     for anahtar, etiket, alan in (("mermi_olcumu", "mermi", "sigma_mermi"),
-                                  ("gerceklem_olcumu", "gerceklem", "sigma_gerceklem")):
+                                  ("gerceklem_olcumu", "gerceklem", "sigma_gerceklem"),
+                                  ("cekme_olcumu", "cekme", "sigma_cekme")):
         if anahtar in out:
             o = out[anahtar]
             print(f"  [{etiket}] " + (o["genel"] if o.get(alan) is None else
