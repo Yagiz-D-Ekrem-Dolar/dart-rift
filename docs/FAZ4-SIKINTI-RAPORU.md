@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-10-04 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 85 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113, A114 · A70, A84, A91, A92, A94, A96, A106, A110, A111 ve A112 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-10-04 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 86 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113, A114, A115 · A70, A84, A91, A92, A94, A96, A106, A110, A111 ve A112 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5183,6 +5183,47 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A115 — **Vekil hatası posteriora i.i.d. gürültü gibi ekleniyor; SBC posterioru AŞIRI TEMKİNLİ buluyor** (2026-10-04) — *açık, ÖLÇÜLDÜ (prova), havuzdan önce çözülmeli*
+
+`scripts/prova_cikarim.py` çıkarım hattını **havuz koşmadan** sentetik veriyle
+uçtan uca koşuyor (0 GPU-saat): tasarım `96` nokta → ikinci derece vekil →
+iki gözlemli `grid_posterior` → SBC → tanımlanabilirlik. Ölçülen
+(`n_sbc = 200`, `n_grid = 30`, önerilen uzay `[1e0, 1e5] Pa`):
+
+| senaryo | `boulder_alpha0` | `Y₀` | `f_boulder` |
+|---|---|---|---|
+| `ayrik` | **AŞIRI TEMKİNLİ** (`p = 0,081`) | **AŞIRI TEMKİNLİ** (`p = 0,095`) | KALİBRE (`0,584`) |
+| `dejenere` | KALİBRE (`0,580`) | **AŞIRI TEMKİNLİ + YANLI** (`p = 0,000`) | **AŞIRI TEMKİNLİ** (`0,024`) |
+
+`n_sbc = 30` ile aynı koşular `KALİBRE` görünüyordu; tekrar sayısı artınca
+sapma **netleşti**. Yani kusur gürültü değil.
+
+**Teşhis.** Posteriorun paydası `σ² = σ_gözlem² + σ_vekilLOO²` olarak
+kuruluyor; SBC'nin veri üreticisi ise yalnız **gerçeklem** gürültüsünü
+ekliyor. Ama vekil hatası tekrarlar arasında **rastgele değil**: vekil bir
+kez uyduruluyor ve aynı kalıyor, yani hatası θ'nın **düzgün bir
+fonksiyonu** — korelasyonlu. Korelasyonlu bir hatayı i.i.d. gürültü gibi
+karelerin toplamına koymak posterioru **gereğinden geniş** yapıyor; SBC
+bunu tam olarak böyle görüyor.
+
+**Niçin havuzdan önce önemli.** `AŞIRI TEMKİNLİ` bir posterior "yanlış"
+değil, **gereksiz geniş**: `Y₀` için iddia edebileceğimizden daha az
+iddia ederiz ve `C2` kapısı (bilgilendirici eksen) boşuna düşebilir.
+`dejenere` senaryoda ayrıca **YANLI** çıkıyor — orada kaydırma da var.
+
+**Çare (önerilen, kodlanmadı).** ADR-0051 §2b bu sorunun GP tarafındaki
+karşılığını zaten çözüyor: `gp_varyans_kalibre` (Bachoc 2013) vekil
+varyansını **grup-CV ile ölçülmüş** ölçeğe getiriyor. İkinci derece vekil
+yolunda aynısı yok. İki seçenek: (a) üretimde GP vekili + varyans
+kalibrasyonu kullan (ADR-0051'in zaten önerdiği yol), (b) ikinci derece
+vekilin artığını `grid_posterior_kovaryans` ile **tam kovaryans** olarak
+ver (fonksiyon mevcut, kullanılmıyor). Karar havuzdan önce verilmeli;
+sınavı yine `prova_cikarim.py` olur — **SBC geçmeden havuz koşmamalı**.
+
+**Bulunuş:** hattı havuz öncesi provaya sokmak. Prova olmasaydı bu, `650`
+GPU-saatlik havuzun posterioru çıktıktan **sonra** görülürdü — ya da hiç.
 
 ---
 ### A114 — **Krater gözlemlisi üretim sahnesinde ölçülemiyor ve TEK başına bütün `y` vektörünü (β dahil) düşürüyor** (2026-10-04) — *açık, ÖLÇÜLDÜ, üretimi kilitliyor*
