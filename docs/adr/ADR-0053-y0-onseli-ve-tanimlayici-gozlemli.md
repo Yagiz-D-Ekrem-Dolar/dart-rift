@@ -69,6 +69,23 @@ bilgilendirici saymaz. Havuz koşar, sonuç "`Y₀ ≤ 1 kPa`, önsel kenarı" o
 > `p` küçük olduğu için kaldıraç büyük: `p`'deki `%10` hata `Y₀`'da `~%30`
 > kayma demek. Bu yüzden karar **ölçümle** doğrulanacak → PROTOKOL-DO.
 
+## 2a. Literatür de aynı yere bakıyor (2026-10-04, birincil arama)
+
+L1/L2'nin kurduğu malzeme: matris dayanımı = **kohezyon** (sıfır basınçta
+kayma dayanımı), aralık **`0 – 500 Pa`**; bloklara ayrıca `~10 MPa` çekme
+dayanımı. Raducan ve diğ. 2022b ilk modelleri **kohezyonsuz**
+(`Y₀ = 0 Pa`, iç sürtünme `f = 0,55`) yığınlara koştu.
+
+Bizim `matrix_Y0` bunun **tam karşılığı**. Yani:
+
+> Üretim önselinin alt kenarı (`1e3 Pa`), literatürün Dimorphos için
+> kullandığı **bütün aralığın üstünde**. Önsel, literatürün hiç
+> denemediği bir bölgede yoğunlaşıyor.
+
+Önerilen `[1e0, 1e5] Pa`, literatürün `0 – 500 Pa` aralığını (sıfır hariç,
+log ölçek sıfırı alamaz) ve modelimizin doğrulandığı `1 – 50 Pa`'yı
+**içeriyor**, üstte `2` dekad pay bırakıyor.
+
 ## 2b. Bu karar **önceden kaydedilmişti** (PROTOKOL-U §4, 2026-09-14)
 
 Bu ADR'nin önerisi yeni bir fikir değil; **koşulardan önce yazılmış** bir
