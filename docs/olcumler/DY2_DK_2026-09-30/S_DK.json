@@ -1,0 +1,21 @@
+{
+ "gozlem": {"beta": 3.12, "sigma": 0.34},
+ "kesme": 3.0,
+ "terimler": ["gerceklem_beta", "cozunurluk_uzak", "plato", "carpma_yeri"],
+ "beta": 3.7716451057793057,
+ "beta_km": 3.855427474583588,
+ "M_ejekta": 30693092.295207497,
+ "n": 15049,
+ "sigma_model": 0.293388813552484,
+ "sigma_model_terimleri": {"gerceklem_beta": 0.033, "cozunurluk_uzak": 0.004,
+                           "plato": 0.01, "carpma_yeri": 0.1},
+ "payda": 0.4490846199968712,
+ "I": 1.4510519326710534,
+ "genel": "MODEL GOZLEME ULASIYOR",
+ "dosya": "DK_kure_g1p0.durumlar/nokta_0000_b933202635ed.npz",
+ "sekil": {"t_ref": 600.0, "beta_ref": 3.7716451057793057,
+           "t50": 1.432798005595879, "t90": 12.986330795486554,
+           "s_1s": 0.4756858954803023, "s_10s": 0.84713700809656,
+           "s_100s": 1.0309587312162845},
+ "kol_adi": "DK_kure_g1p0"
+}

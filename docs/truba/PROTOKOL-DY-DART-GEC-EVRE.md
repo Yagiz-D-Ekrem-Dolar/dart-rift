@@ -116,6 +116,18 @@ en büyük terimi olmayı sürdürür ve gerçek şekil modeline (`obj`) geçmek
 gerekir; küçükse (`< 0,05`) küresel sahneler de savunulabilir ve bütçe
 terimi küçülür.
 
+### 6.4 Okuma notu (**koşulardan SONRA**, 2026-10-04 — kural değişmedi)
+
+Ölçüm `σ_şekil = 0,0086` çıktı, yani §6.3'ün kilitli yorumunun "küçük"
+dalı: **küresel sahneler savunulabilir**. Bu yorum olduğu gibi **geçerli
+ve `β` için doğru**. Yanına düşülen not: aynı iki kol `β` dışındaki
+gözlemlilerde ayrılıyor — `M_ejekta` `%56`, koni açısı `%46`, `t50`
+**2,6 kat**. `M_ejekta`'da elipsoit gözleme `1,2σ`, küre `4,9σ` uzakta.
+
+**Sonuç:** "küre savunulabilir" **yalnız `β` için** okunur; `β` dışındaki
+hiçbir gözlemli için okunmaz. Üretim havuzu (zaten planlandığı gibi)
+elipsoit sahnede koşar. Ayrıntı ve gerekçe: KAYIT-072 §3–§4.
+
 ---
 
 ## 7. DM ve DT — bütçenin kalan iki ödünç terimini ölçmek (2026-10-04, **koşulardan ÖNCE**)

@@ -1,0 +1,31 @@
+{
+ "gozlem": {"beta": 3.12, "sigma": 0.34},
+ "kesme": 3.0,
+ "terimler": ["gerceklem_beta", "cozunurluk_uzak", "plato", "carpma_yeri"],
+ "beta": 3.7479718161136306,
+ "beta_km": 3.8215663965455966,
+ "M_ejekta": 19636053.24503668,
+ "n": 15623,
+ "sigma_model": 0.2908829088991738,
+ "sigma_model_terimleri": {"gerceklem_beta": 0.033, "cozunurluk_uzak": 0.004,
+                           "plato": 0.01, "carpma_yeri": 0.1},
+ "payda": 0.4474515244019681,
+ "I": 1.403441002805685,
+ "genel": "MODEL GOZLEME ULASIYOR",
+ "dosya": "DY2_dart_g1p0.durumlar/nokta_0000_b933202635ed.npz",
+ "sekil": {"t_ref": 600.0, "beta_ref": 3.7479718161136306,
+           "t50": 0.5410253806759224, "t90": 13.500457841184796,
+           "s_1s": 0.5536114827201661, "s_10s": 0.8755359301134522,
+           "s_100s": 1.0796580909416522},
+ "kol_adi": "DY2_dart_g1p0",
+ "sekil_olcumu": {
+  "sigma_sekil": 0.008614822585464301,
+  "beta_elipsoit": 3.7479718161136306,
+  "beta_kure": 3.7716451057793057,
+  "b_elipsoit": 2.7479718161136306,
+  "b_kure": 2.7716451057793057,
+  "eski_literatur_terimi": 0.2,
+  "yorum": "sekil terimi KUCUK (< 0,05): kuresel sahne savunulabilir",
+  "genel": "OLCULDU"
+ }
+}

@@ -483,3 +483,47 @@ seçeneği eklenmeli — **yapılacak**.)
 
 **Hâlâ bekleyen dört karar (0 GPU, ana havuzu kilitliyor):** A2 önsel,
 A105 çekme, A109 blok modeli, C1 hedef β.
+
+
+### 12.11 4 Ekim — DY2 okundu: **MODEL GÖZLEME ULAŞIYOR**; A110 kapandı; DM/DT kuyrukta
+
+**Kapanan soru (projenin merkezî sorusu):** geç evre modeli, **gerçek DART
+sahnesinde** gözlemin bandına giriyor mu? **Giriyor.**
+`β = 3,748`, gözlem `3,12 ± 0,34`, `σ_model = 0,291` → `I = 1,40` (kesme `3,0`).
+İkinci gözlemli de tutuyor: `M_ejekta = 1,96e7` vs `1,6 ± 0,3e7` (`1,2σ`).
+U/V'nin `HİÇBİR VARYANT ULAŞMIYOR` dalı kapandı — **üretim havuzu anlamlı**.
+
+Hemen yanına: `β` gözlemin **üstünde** ve payda büyük (`0,447`). "Bant içinde",
+"tutturdu" değil. Tek nokta `Y₀ = 10 Pa`; posterior `Y₀`'yu yukarı itecek.
+
+**İki ödünç bütçe terimi ölçülmüşe döndü** (KAYIT-072 §6 tablosu):
+`hedef_sekli` `0,20` → **`0,009`** (DY2/DK), `plato` `0,01` (kıyas sahnesi) →
+**`0,016`** (DART sahnesi). Ödünç kalan iki terim: `carpma_yeri` (`0,10`, L12)
+ve `carpma_acisi` (`0,05`) — ikisi de **kullanıcı kararı** bekliyor, GPU değil.
+
+**En önemli yan bulgu:** `β` şekle duyarsız (`%0,6`), ama `M_ejekta` `%56`,
+koni `%46`, `t50` **2,6 kat** değişiyor. Yani KAYIT-070 §2'nin "şekil
+betimleyicileri ekleyelim" iddiası **ölçümle doğrulandı**: aynı `β`'yı veren
+iki farklı mekanizma var ve `t50` onları ayırıyor. Üretim havuzu elipsoit
+sahnede koşar; "σ_şekil küçük, küre de olur" okuması **yalnız `β` için**
+geçerli (PROTOKOL-DY §6.4 notu).
+
+**A110 kapandı** — `t_end` uzatılarak değil, **ölçülerek**: DY2'de `1/t`
+uydurması `β∞ = 3,703`, kalan yol `−%1,64`; bütçeye `plato_olculen_DART`
+olarak girdi. Kilitli yargı iki terimle de aynı (`I` `1,4034` → `1,4003`).
+`t_end` uzatmak `β`'yı gözleme **yaklaştırır**, yani havuzu bekletmenin
+bilimsel kazancı yok.
+
+**Kuyrukta:** `1588084` (`DM_DT`, dizi 0–1, `agac_dmdt` @ `7a2a9b0`) —
+PROTOKOL-DY §7'nin iki ölçümü: `σ_mermi` (tek küre vs üç küre) ve
+`σ_gerçeklem(DART)` (ikinci sahne tohumu). Hesapta başka oturumun `rtr_tr2`
+dizisi koştuğu için **PENDING (Priority)**; 2 GPU sınırı içinde.
+
+**Bittiğinde (betik koşudan önce kilitli):**
+```
+python scripts/dy_dart_raporu.py --kok kampanya --ad DY2_dart_g1p0 \
+  --mermi-kol DM_tekkure_g1p0 --tohum-kol DT_tohum2_g1p0 --json kampanya/S_DM_DT.json
+```
+
+**Hâlâ bekleyen dört karar (0 GPU, ana havuzu kilitliyor):** A2 önsel,
+A105 çekme, A109 blok modeli, C1 hedef `β`.

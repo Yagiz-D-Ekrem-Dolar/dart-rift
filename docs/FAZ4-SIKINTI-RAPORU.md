@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-09-29 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 84 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A110 · A70, A84, A91, A92, A94, A96, A106, A111 ve A112 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-10-04 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 84 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113 · A70, A84, A91, A92, A94, A96, A106, A110, A111 ve A112 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5150,6 +5150,62 @@ da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
 
 ---
+### A113 — **Windows Uygulama Denetimi `warp-clang.dll`'i engelliyor: 19 sınav yerelde koşamıyor** (2026-10-04) — *açık, geçici çözüm var*
+
+Yerel sınav takımı `2283 geçti / 19 düştü` verdi. Düşen 19'un **tamamı** tek
+sebepten:
+
+```
+RuntimeError: Failed to load the shared library '...\warp\bin\warp-clang.dll'
+OSError: [WinError 4551] Uygulama Denetimi ilkesi bu dosyayı engelledi
+```
+
+Yani Windows'un Uygulama Denetimi (App Control / WDAC) ilkesi, Warp'ın **CPU
+çekirdek derleyicisini** yüklemeyi engelliyor. Dosya yerinde (`47,6 MB`,
+Temmuz'dan beri) ve dosya izinleri sorunsuz — engel **işletim sistemi
+ilkesinden**.
+
+**Etkilenen beş dosya** (hepsi `pytest.importorskip("warp")` ile warp'ı
+*içe alıp* sonra **CPU çekirdeği başlatıyor**, bu yüzden "atla" değil
+"çök" oluyorlar):
+
+| dosya | düşen |
+|---|---|
+| `test_u_tabani_cekirdegi.py` | 6 |
+| `test_cekme_kirpma.py` | 5 |
+| `test_p1_porosity_refresh.py` | 5 |
+| `test_p1_porosity_eos.py` | 1 |
+| `test_hasar_aktarimi.py` | 1 |
+| ayrıca `importorskip` dışında | `11` sınav geçiyor (çekirdek başlatmıyorlar) |
+
+Warp'a bağlı öteki **27 dosya etkilenmedi** (`96 geçti, 126 atlandı`):
+onlar ya `gpu` imli ya da çekirdek başlatmadan önce zarifçe atlıyor.
+
+**Kod sağlam.** Aynı 5 dosya aynı commit'te (`7a2a9b0`) TRUBA'da (Linux,
+`gpu-2024.0` ortamı, GPU'suz) koşuldu: **30 geçti, 0 düştü**. Yani bu bir
+**ortam** kusuru, bir gerileme değil.
+
+**Geçici çözüm (uygulanan):** warp-CPU sınavları TRUBA'da koşulur:
+
+```
+export PYTHONPATH="$KOK/pylib:$KOK/dart-rift/src"
+python -m pytest tests/test_cekme_kirpma.py tests/test_hasar_aktarimi.py   tests/test_p1_porosity_eos.py tests/test_p1_porosity_refresh.py   tests/test_u_tabani_cekirdegi.py -m "not gpu" -q
+```
+
+**Yapılmayan (bilerek):** işletim sisteminin güvenlik ilkesi
+**değiştirilmedi**. Bir sınav takımını geçirmek için makinenin uygulama
+denetimini gevşetmek doğru takas değil; karar kullanıcının ve bu oturumun
+kapsamı dışında.
+
+**Açık kalan asıl kusur:** bu beş dosya, warp CPU çekirdeği kullanılamadığında
+**atlamıyor, çöküyor**. Öteki 27 dosya zarifçe atlıyor. Düzeltmesi küçük
+(ortak bir `warp_cpu_var_mi` kapısı), ama **sınav altyapısını kusur
+ayıklamanın ortasında değiştirmek** için iyi bir an değil: şimdi
+değiştirilirse, gerçek bir warp gerilemesi de sessizce "atlandı" görünür.
+Önerilen sıra: havuzdan sonra, ayrı bir turda, **hem** kapı eklenir **hem**
+CI'da Linux kolu kurulur.
+
+---
 ### A112 — **İnceltme kabuğu her zaman KÜRE'ydi: elipsoit hedef inceltmeden sonra küreye dönüyordu** (2026-09-29) — **KAPANDI** (DY'nin sahnesini geçersiz kıldı)
 
 `forward.py` merdiven inceltmesinde kabuğu her durumda
@@ -5191,7 +5247,7 @@ sahneyi kur, kütleyi ölç, yoğunluğu oranla. Ölçülen: **`ρ = 2307 kg/m³
 en iyi uyumu olan `2200 kg/m³`'e yakın.
 
 ---
-### A110 — **DART sahnesinde `t_end = 600 s` yetmiyor: `β` hâlâ düşüyor** (2026-09-29) — *açık, ölçüldü*
+### A110 — **DART sahnesinde `t_end = 600 s` yetmiyor: `β` hâlâ düşüyor** (2026-09-29) — **KAPANDI** (2026-10-04, ölçülmüş bütçe terimiyle)
 
 Kıyas sahnesinde `β` 100–200 s'de platoya ulaşıyordu. DART sahnesinde (daha
 büyük cisim, daha yavaş geri toplanma) eğri `8,7 s`'de `5,91` ile tepe yapıp
@@ -5201,6 +5257,30 @@ iniyor ve **600 s'de hâlâ inişte**: `341 s`'de `4,851`, `600 s`'de `4,719`
 asimptotik düzeltme bir model eksikliği terimi olarak yazılmalı. Şu anki
 `plato = 0,01` terimi kıyas sahnesinden geliyor ve DART sahnesi için
 **küçük kalıyor**.
+
+**NOT (2026-10-04, KAYIT-072 §5) — kapanış.** Yukarıdaki sayılar **bozuk
+DY koşusundandır** (A112: sahne küreye dönmüştü); yerinde kalıyorlar ama
+DART sahnesini tarif etmiyorlar. Düzeltilmiş sahnede (DY2) yeniden ölçüldü —
+`β = β∞ + C/t`, `t ≥ 100 s`, 7 nokta:
+
+| kol | tepe | `b`'nin 60→600 s değişimi | `β∞` | 600 s'den sonra kalan yol |
+|---|---|---|---|---|
+| **DY2** (DART, elipsoit) | `4,050 @ 62,9 s` | `−%9,7` | **`3,703`** | **`−%1,64`** |
+| DK (hacim-eşdeğer küre) | `3,867 @ 83,4 s` | `−%2,9` | `3,766` | `−%0,22` |
+| W2 (kıyas küre) | `4,199 @ 83,4 s` | `−%3,3` | `4,042` | `−%0,92` |
+
+Tepe `8,7 s`'de `5,91` değil, **`62,9 s`'de `4,05`**; son on yıldaki düşüş
+`−%2,7` değil, kalan yol `−%1,64`. Kusurun **teşhisi doğruydu** (plato terimi
+kıyas sahnesinden geliyor ve DART için küçük kalıyor), **büyüklüğü yanlıştı**.
+
+**Kapanış biçimi:** `t_end` uzatılmadı; kalan yol **ölçülmüş bütçe terimi**
+olarak yazıldı — `MODEL_EKSIKLIGI_KAYNAKLI["plato_olculen_DART"] = 0,016`
+(eski `plato = 0,01` satırı yerinde). Gerekçe: (a) kilitli DY2 yargısı iki
+terimle de aynı (`I = 1,4034` → `1,4003`, kesme `3,0`), (b) `t_end`'i uzatmak
+`β`'yı `3,748 → ~3,703` **indirir**, yani gözleme **yaklaştırır** — havuzu
+bekletmenin bilimsel kazancı yok, maliyeti var. Sınavlar:
+`test_plato_OLCULEN_DART_terim_eski_satirin_yaninda`,
+`test_DY2_yargisi_olculen_plato_terimine_SAGLAM`.
 
 ---
 ### A109 — **Projede İKİ ayrı blok modeli var; üretimde hangisinin kullanılacağı kilitli değil** (2026-09-28) — *açık, karar bekliyor*

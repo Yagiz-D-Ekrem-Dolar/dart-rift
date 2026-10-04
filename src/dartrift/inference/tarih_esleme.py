@@ -122,6 +122,15 @@ MODEL_EKSIKLIGI_KAYNAKLI = {
     "kod_kiyasi": (_NAN, "uretim t_gecis'inde W2/UG kolundan kod_kiyasi_olc ile; "
                          "0,2 s'de 0,16 (L1'e 0,82-0,87)"),
     "plato": (0.01, "W2 beta(t): 200 -> 600 s %1-3 geri cekme (KAYIT-067 §2b)"),
+    # OLCULDU (2026-10-04, KAYIT-072 §5): ESKI SATIR YERINDE KALIR (kural 6).
+    # Yukaridaki 0,01 KIYAS sahnesinin (W2, kure) beta(t) egrisindendi.
+    # DART sahnesi daha yavas oturuyor: DY2 60 -> 600 s dekadinda b %9,7
+    # geri cekiyor, 1/t uydurmasi (t >= 100 s) beta_sonsuz = 3,703 veriyor
+    # -> 600 s'den sonra KALAN yol b'nin %1,64'u. Kiyas sahnesinde ayni
+    # olcum %0,92 (W2), hacim-esdeger kurede %0,22 (DK): plato terimi
+    # SAHNEYE bagli ve DART sahnesinde en buyugu.
+    "plato_olculen_DART": (0.016, "DY2 1/t ekstrapolasyonu, t_end=600 s "
+                                  "(KAYIT-072 §5; A110)"),
     # OLCULDU (2026-09-28, KAYIT-070): ayni theta, FARKLI sahne tohumu ->
     # blok dizilimi degisiyor. 15 theta cifti (U/V havuzu, iki tohum):
     # beta-1 bagil fark ortanca %4,6 -> sd = |fark|/sqrt(2) ~ %3,3.

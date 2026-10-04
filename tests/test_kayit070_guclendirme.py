@@ -110,3 +110,33 @@ def test_hedef_sekli_OLCULEN_terim_eski_satirin_yaninda():
     assert yeni < eski / 20
     r = H.model_eksikligi_kaynakli(2.75, ["hedef_sekli_olculen", "gerceklem_beta"])
     assert r["sigma"] == pytest.approx(2.75 * np.hypot(0.009, 0.033), rel=1e-9)
+
+
+def test_plato_OLCULEN_DART_terim_eski_satirin_yaninda():
+    """KAYIT-072 §5 (A110): plato terimi DART sahnesinde ölçüldü (`0,016`).
+
+    Eski `0,01` **kıyas** sahnesinin (W2, küre) eğrisindendi ve DART sahnesinin
+    kalan yolunu (`%1,64`) karşılamıyor. Eski satır yerinde kalır.
+    """
+    eski, kaynak_e = H.MODEL_EKSIKLIGI_KAYNAKLI["plato"]
+    yeni, kaynak_y = H.MODEL_EKSIKLIGI_KAYNAKLI["plato_olculen_DART"]
+    assert eski == 0.01 and "W2" in kaynak_e
+    assert yeni == pytest.approx(0.016) and "A110" in kaynak_y
+    assert yeni > eski          # DART sahnesi kiyastan YAVAS oturuyor
+    r = H.model_eksikligi_kaynakli(2.748, ["plato_olculen_DART"])
+    assert r["sigma"] == pytest.approx(2.748 * 0.016, rel=1e-9)
+
+
+def test_DY2_yargisi_olculen_plato_terimine_SAGLAM():
+    """Kilitli DY2 yargısı (`I = 1,40`), plato 0,01 → 0,016 ile DEĞİŞMEZ.
+
+    Kural 6: yargı koşudan önceki terimlerle hesaplandı ve öyle kalır. Bu
+    sınav yalnız **duyarlılığı** gösterir: ölçülen terim yargıyı çevirmiyor.
+    """
+    beta, b = 3.7479718161136306, 2.7479718161136306
+    for plato in ("plato", "plato_olculen_DART"):
+        sm = H.model_eksikligi_kaynakli(
+            b, ["gerceklem_beta", "cozunurluk_uzak", plato, "carpma_yeri"])
+        uygunsuzluk = abs(beta - 3.12) / np.hypot(0.34, sm["sigma"])
+        assert uygunsuzluk < 3.0                 # her iki terimle de ULASIYOR
+        assert uygunsuzluk == pytest.approx(1.40, abs=0.01)
