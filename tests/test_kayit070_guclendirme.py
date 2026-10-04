@@ -98,3 +98,15 @@ def test_gerceklem_terimleri_kayitta_ve_kaynakli():
         assert deger == pytest.approx(beklenen) and "KAYIT-070" in kaynak
     r = H.model_eksikligi_kaynakli(2.67, ["gerceklem_beta"])
     assert r["sigma"] == pytest.approx(2.67 * 0.033, rel=1e-9)
+
+
+def test_hedef_sekli_OLCULEN_terim_eski_satirin_yaninda():
+    """KAYIT-072: σ_şekil ölçüldü (0,009); literatürden ödünç 0,20 yerinde kalır."""
+    eski, kaynak_e = H.MODEL_EKSIKLIGI_KAYNAKLI["hedef_sekli"]
+    yeni, kaynak_y = H.MODEL_EKSIKLIGI_KAYNAKLI["hedef_sekli_olculen"]
+    assert eski == 0.20 and "OLCULMEDI" in kaynak_e
+    assert yeni == pytest.approx(0.009) and "DY2 vs DK" in kaynak_y
+    # olculen terim, odunc terimden 20 kat kucuk
+    assert yeni < eski / 20
+    r = H.model_eksikligi_kaynakli(2.75, ["hedef_sekli_olculen", "gerceklem_beta"])
+    assert r["sigma"] == pytest.approx(2.75 * np.hypot(0.009, 0.033), rel=1e-9)

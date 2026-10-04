@@ -143,3 +143,38 @@ def test_CLI_kure_kol_ile_sekil_olcumu(tmp_path, capsys):
     assert d["kol_adi"] == DY.AD_DY2
     assert d["sekil_olcumu"]["sigma_sekil"] == pytest.approx(0.4 / 3.2)
     assert "sigma_sekil" in capsys.readouterr().out
+
+
+# ------------------------------------------- PROTOKOL-DY §7.3: mermi, tohum
+def test_sigma_mermi_ve_gerceklem_kilitli_formuller(tmp_path):
+    _npz(tmp_path, DY.AD_DY2, 4.20, 600.0)      # b = 3,20
+    _npz(tmp_path, DY.AD_DM, 3.90, 600.0)       # b = 2,90
+    _npz(tmp_path, DY.AD_DT, 4.00, 600.0)       # b = 3,00
+    m = DY.sigma_mermi(DY.oku(tmp_path, DY.AD_DY2), DY.oku(tmp_path, DY.AD_DM))
+    assert m["sigma_mermi"] == pytest.approx(0.30 / 3.20)
+    assert m["eski_literatur_terimi"] == 0.15
+    g = DY.sigma_gerceklem(DY.oku(tmp_path, DY.AD_DY2), DY.oku(tmp_path, DY.AD_DT))
+    assert g["sigma_gerceklem"] == pytest.approx(0.20 / 3.10 / 2 ** 0.5)
+    assert g["eski_eski_model_terimi"] == 0.033
+
+
+def test_sigma_mermi_gerceklem_OKUNMAZ(tmp_path):
+    _npz(tmp_path, DY.AD_DY2, 4.20, 600.0)
+    _npz(tmp_path, DY.AD_DM, 3.90, 300.0)       # 600 s'ye ulasmadi
+    m = DY.sigma_mermi(DY.oku(tmp_path, DY.AD_DY2), DY.oku(tmp_path, DY.AD_DM))
+    assert m["sigma_mermi"] is None and m["genel"].startswith("OKUNMAZ")
+    assert DY.sigma_gerceklem(None, None)["sigma_gerceklem"] is None
+
+
+def test_CLI_uc_olcum_birlikte(tmp_path, capsys):
+    for ad, b in ((DY.AD_DY2, 4.20), (DY.AD_DK, 4.15), (DY.AD_DM, 3.90),
+                  (DY.AD_DT, 4.00)):
+        _npz(tmp_path, ad, b, 600.0)
+    yol = tmp_path / "S.json"
+    assert DY.main(["--kok", str(tmp_path), "--ad", DY.AD_DY2,
+                    "--kure-kol", DY.AD_DK, "--mermi-kol", DY.AD_DM,
+                    "--tohum-kol", DY.AD_DT, "--json", str(yol)]) == 0
+    d = json.loads(yol.read_text(encoding="utf-8"))
+    assert {"sekil_olcumu", "mermi_olcumu", "gerceklem_olcumu"} <= set(d)
+    cikti = capsys.readouterr().out
+    assert "sigma_mermi" in cikti and "sigma_gerceklem" in cikti

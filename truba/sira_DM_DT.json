@@ -1,0 +1,19 @@
+{
+ "aciklama": "PROTOKOL-DY S7 (kilitli): DM = tek kure mermi, DT = ikinci sahne tohumu. DY2 ile ayni sahne; butcenin odunc kalan iki terimini (mermi_geometrisi 0,15 ve gerceklem_beta 0,033) KENDI kodumuzda olcer.",
+ "kok": "/arf/scratch/egitimg16u3/driftclaude",
+ "kok_notu": "YagizTRUBA (egitimg16u3). Kullanici izni: en fazla 2 GPU. Beklenen ~6 + ~6 = 12 GPU-sa.",
+ "adimlar": [
+  {
+   "ad": "DM_DT",
+   "betik": "truba/is_DM_DT.slurm",
+   "gorevler": [
+    0,
+    1
+   ],
+   "gpu": 1,
+   "export": {
+    "AGAC": "/arf/scratch/egitimg16u3/driftclaude/agac_dmdt"
+   }
+  }
+ ]
+}

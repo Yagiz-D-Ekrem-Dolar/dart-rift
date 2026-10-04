@@ -115,3 +115,39 @@ kaynağıyla birlikte).
 en büyük terimi olmayı sürdürür ve gerçek şekil modeline (`obj`) geçmek
 gerekir; küçükse (`< 0,05`) küresel sahneler de savunulabilir ve bütçe
 terimi küçülür.
+
+---
+
+## 7. DM ve DT — bütçenin kalan iki ödünç terimini ölçmek (2026-10-04, **koşulardan ÖNCE**)
+
+### 7.1 Neden
+
+DY2/DK, `hedef_sekli` terimini `0,20`'den **ölçülmüş `0,009`**'a indirdi
+(§6.3, KAYIT-072). NUSAP soy kütüğünde (KAYIT-070 §2) doğrulaması **sıfır**
+kalan iki terim var ve ikisi de DY2 sahnesinde tek koşuyla ölçülebilir:
+
+| terim | şu anki değer | kaynağı |
+|---|---|---|
+| `mermi_geometrisi` | `0,15` | L9 (Owen 2022), **başka kod, başka sahne** |
+| `gerceklem_beta` | `0,033` | U/V havuzu — **eski model**, `0,1–0,2 s` |
+
+### 7.2 Tasarım (iki koşu, DY2 ile aynı her şey)
+
+| kol | değişen tek şey |
+|---|---|
+| **DM** | mermi **tek küre** (üç küre yerine); kütle/hız/yoğunluk aynı |
+| **DT** | sahne tohumu `99991111` (DY2: `20260906`); blok dizilimi değişir |
+
+### 7.3 Kilitli ölçümler
+
+`b = β − 1` (600 s). Her iki kol da `gecerli` ve 600 s'ye ulaşmış olmalı;
+değilse ilgili ölçüm **OKUNMAZ** (terim ödünç değeriyle kalır).
+
+- **`σ_mermi = |b_DY2 − b_DM| / b_DY2`** → `mermi_geometrisi` yerine geçer.
+- **`σ_gerçeklem(DART) = |b_DY2 − b_DT| / (ortalama b) / √2`** →
+  `gerceklem_beta` yerine geçer (iki örnekten sd kestirimi, KAYIT-070 §1
+  ile aynı formül).
+
+**Yorum (koşudan önce):** her iki terim de `< 0,05` çıkarsa bütçenin
+ödünç kalan kısmı biter ve model eksikliği **tamamen ölçülmüş** olur;
+`> 0,15` çıkarsa o terim bütçenin başatı olur ve ayrıca çalışılır.

@@ -26,6 +26,8 @@ import numpy as np
 AD = "DY_dart_g1p0"          # varsayilan kol (ilk kosu; A112 yuzunden OKUNMAZ)
 AD_DY2 = "DY2_dart_g1p0"     # PROTOKOL-DY S6.2 tekrari (elipsoit, duzeltilmis)
 AD_DK = "DK_kure_g1p0"       # PROTOKOL-DY S6.3 hacim-esdeger kure kolu
+AD_DM = "DM_tekkure_g1p0"    # PROTOKOL-DY S7 tek kure mermi kolu
+AD_DT = "DT_tohum2_g1p0"     # PROTOKOL-DY S7 ikinci sahne tohumu
 T_END = 600.0
 BETA_GOZLEM = 3.12            # PROTOKOL-U §1 (kilitli hedef)
 SIGMA_GOZLEM = 0.34
@@ -103,12 +105,55 @@ def sigma_sekil(elips: dict | None, kure: dict | None) -> dict:
             "genel": "OLCULDU"}
 
 
+def _b(k) -> float | None:
+    if k is None or not (k["gecerli"] and k["ulasti"]):
+        return None
+    return k["beta"] - 1.0
+
+
+def sigma_mermi(dy2: dict | None, dm: dict | None) -> dict:
+    """PROTOKOL-DY §7.3 (KİLİTLİ): `σ_mermi = |b_DY2 − b_DM| / b_DY2`.
+
+    `mermi_geometrisi` teriminin (L9'dan ödünç `0,15`, doğrulaması `0`)
+    bizim kodumuzdaki ölçülmüş karşılığı.
+    """
+    a, b = _b(dy2), _b(dm)
+    if a is None or b is None or a == 0.0:
+        return {"genel": "OKUNMAZ (uc kure ya da tek kure kolu gecersiz)",
+                "sigma_mermi": None}
+    return {"sigma_mermi": abs(a - b) / abs(a), "beta_uc_kure": 1.0 + a,
+            "beta_tek_kure": 1.0 + b, "eski_literatur_terimi": 0.15,
+            "genel": "OLCULDU"}
+
+
+def sigma_gerceklem(dy2: dict | None, dt: dict | None) -> dict:
+    """PROTOKOL-DY §7.3 (KİLİTLİ): iki tohumdan gerçeklem saçılması.
+
+    `σ = |b₁ − b₂| / ortalama(b) / √2` — KAYIT-070 §1 ile **aynı** formül,
+    ama bu kez **geç evre modelinde ve DART sahnesinde** (eskisi `0,1–0,2 s`
+    eski modeldendi).
+    """
+    a, b = _b(dy2), _b(dt)
+    if a is None or b is None or (a + b) == 0.0:
+        return {"genel": "OKUNMAZ (tohum kollarindan biri gecersiz)",
+                "sigma_gerceklem": None}
+    ort = 0.5 * (a + b)
+    return {"sigma_gerceklem": abs(a - b) / ort / (2 ** 0.5),
+            "bagil_fark": abs(a - b) / ort, "beta_tohum1": 1.0 + a,
+            "beta_tohum2": 1.0 + b, "eski_eski_model_terimi": 0.033,
+            "genel": "OLCULDU"}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--kok", type=Path, required=True)
     ap.add_argument("--ad", default=AD, help=f"kol adi (varsayilan {AD})")
     ap.add_argument("--kure-kol", default=None,
                     help=f"verilirse sigma_sekil de olculur (ornek: {AD_DK})")
+    ap.add_argument("--mermi-kol", default=None,
+                    help=f"verilirse sigma_mermi olculur (ornek: {AD_DM})")
+    ap.add_argument("--tohum-kol", default=None,
+                    help=f"verilirse sigma_gerceklem olculur (ornek: {AD_DT})")
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args(argv)
     elips = oku(a.kok, a.ad)
@@ -116,6 +161,10 @@ def main(argv=None) -> int:
     out["kol_adi"] = a.ad
     if a.kure_kol:
         out["sekil_olcumu"] = sigma_sekil(elips, oku(a.kok, a.kure_kol))
+    if a.mermi_kol:
+        out["mermi_olcumu"] = sigma_mermi(elips, oku(a.kok, a.mermi_kol))
+    if a.tohum_kol:
+        out["gerceklem_olcumu"] = sigma_gerceklem(elips, oku(a.kok, a.tohum_kol))
     print("=" * 72)
     print("PROTOKOL DY -- DART sahnesi, gec evre modeli (ilk kosu)")
     print("=" * 72)
@@ -134,6 +183,12 @@ def main(argv=None) -> int:
                   f"{so['beta_kure']:.3f}  ->  sigma_sekil = {so['sigma_sekil']:.3f} "
                   f"(literaturden odunc olan 0,20 yerine)")
             print(f"          {so['yorum']}")
+    for anahtar, etiket, alan in (("mermi_olcumu", "mermi", "sigma_mermi"),
+                                  ("gerceklem_olcumu", "gerceklem", "sigma_gerceklem")):
+        if anahtar in out:
+            o = out[anahtar]
+            print(f"  [{etiket}] " + (o["genel"] if o.get(alan) is None else
+                  f"{alan} = {o[alan]:.3f}"))
     print(f"GENEL: {out['genel']}")
     if a.json:
         a.json.write_text(json.dumps(out, indent=1, default=float), encoding="utf-8")

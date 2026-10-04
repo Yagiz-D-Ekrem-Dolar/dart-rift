@@ -134,8 +134,15 @@ MODEL_EKSIKLIGI_KAYNAKLI = {
                           "<= %7,6 degistiriyor -> beta-1'de ~%10 (beta ~3,2)"),
     "mermi_geometrisi": (0.15, "L9 Owen ve dig. 2022: kure mermi %10-20; UC KURE "
                                "mermiyle kalan terim OLCULMEDI (ust sinir)"),
+    # ESKI SATIR YERINDE KALIR (kural 6). Literaturden odunc, dogrulamasi 0:
     "hedef_sekli": (0.20, "L1: elipsoit/kure %15-21; ELIPSOIT sahnede kalan "
-                          "terim OLCULMEDI (ust sinir)"),
+                          "terim OLCULMEDI (ust sinir). YERINE: hedef_sekli_olculen"),
+    # OLCULDU (2026-10-04, KAYIT-072): DY2 (elipsoit 88,5x87x58) ve DK
+    # (hacim-esdeger kure R=76,436), ayni kutle 4,30e9, ayni theta:
+    # beta 3,748 ve 3,772 -> |b_e - b_k| / b_e = 0,009.
+    # Literaturun "%15-21" iddiasi BIZIM sahnemizde dogrulanmadi: beta sekle
+    # neredeyse duyarsiz. (M_ejekta ise %56 degisiyor -- ayri terim.)
+    "hedef_sekli_olculen": (0.009, "DY2 vs DK, PROTOKOL-DY S6.3 (KAYIT-072)"),
     "carpma_acisi": (0.05, "L5, L13, L20; Daly ve dig. 2023: 17 +- 7 derece"),
 }
 
