@@ -148,6 +148,30 @@ dayanıma doğrudan bağlı (daha güçlü matris → daha az malzeme kopuyor).
 `t50`/`t90` daha da duyarlı ama **DART için ölçülmüş karşılıkları yok**:
 posteriora giremezler, yalnız mekanizma tanısı olurlar (KAYIT-072 §3).
 
+## 3b. **Niçin** `M_ejekta` daha iyi — ölçülen sebep (KAYIT-073)
+
+`β`'nın `Y₀`'ya zayıf bağlı olması bir *götürme*:
+
+    β − 1 = K · M_kaçan · v_ort · kos_ort / p_mermi      (K⁻¹ = 0,8347 ± 0,0052)
+
+| çarpan | `Y₀` üssü |
+|---|---|
+| `M_kaçan` | `−0,3221` |
+| `v_ort` | `+0,1866` |
+| `kos_ort` | `+0,0585` |
+| **toplam** | `−0,0769` |
+| `β − 1`'in bağımsız ölçülen üssü | `−0,0760` (`%1,3` uyum) |
+
+Dayanım artınca kaçan kütle `%32`/dekad düşüyor, ama kaçan daha hızlı
+(`+%19`) ve daha toplu (`+%6`); `β` geriye `%8`/dekad bırakıyor.
+`M_ejekta`'nın `6,3` kat kazancı buradan: **götürmeye katılmayan, en dik
+çarpan odur.** Ayrıntı ve sınavlar: KAYIT-073,
+`observables/ejekta_ayrismasi.py`.
+
+Aynı ayrıştırma üçüncü gözlemlinin nerede olduğunu da söylüyor:
+`(β, M_ejekta)` üç çarpandan ikisini sabitler, serbest kalan **yönelim**
+(`kos_ort`) ve o **A95** yüzünden gözlemle kıyaslanamıyor.
+
 ## 4. Karar (öneri)
 
 1. **`Y₀` önseli aşağı taşınır:** `Y₀ ∈ [1e0, 1e5] Pa` (log, 5 dekad).

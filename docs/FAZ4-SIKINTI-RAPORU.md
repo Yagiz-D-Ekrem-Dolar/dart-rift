@@ -5503,7 +5503,7 @@ git worktree'sinden (`AGAC`) koşuyor; `AGAC` zorunlu, temiz ve
 koşuları etkilemeden güncellenebilir. Yeni iş betikleri bu kalıbı izler.
 
 ---
-### A95 — **Ejekta koni açısı çözünürlükle yakınsamıyor ve gözlemle aynı büyüklük değil** (2026-09-19) — *açık, ölçüldü*
+### A95 — **Ejekta koni açısı çözünürlükle yakınsamıyor ve gözlemle aynı büyüklük değil** (2026-09-19) — *açık, **ÇIKARIMI KISITLIYOR*** (2026-10-04, KAYIT-073)
 
 UA'nın üç kolunda `β` `%0,4` içinde kalırken `%90` koni açısı `151 / 174 /
 161°`, `%99` kenar `162 / 194 / 174°` (`180°`'yi aşıyor: küresel
@@ -5513,6 +5513,18 @@ simülasyonda da o anlarda konumdan ölçmüş: `ω ≈ 115–139°`). **Sonucu:
 mevcut `koni_tam_acisi_derece` gözlenebilir olarak kullanılamaz; olabilirliğe
 girmez. Çare: LICIACube anında (`~170 s`) konumdan ölçülen koni + yakınsama
 sınaması (ADR-0051 §4). Bulunuş: UA raporunda kapı olmayan tanılar.
+
+**NOT (2026-10-04, KAYIT-073) — bu kusur ÇIKARIMI KISITLIYOR, yalnız bir
+tanıyı değil.** `β − 1 = K · M_kaçan · v_ort · kos_ort / p` ayrıştırması
+ölçüldü (önçarpan `0,835 ± 0,005`, üsler toplam kuralını `%1,3` içinde
+sağlıyor). `(β, M_ejekta)` çifti üç çarpandan ikisini sabitliyor; serbest
+kalan üçüncü yön **ejektanın yönelimi**. Ölçülen `kos_ort`, `Y₀` `1 → 50 Pa`
+boyunca `0,615 → 0,771` (`%25`) değişiyor — yani orada **gerçek bilgi var**.
+Ama gözlem tarafı (LICIACube konisi) bu kusur yüzünden kıyaslanabilir
+değil. Sonucu: `θ`'nın üç ekseninden en az biri **önsel-baskın** kalır
+(ADR-0051 §2c, `rank(F) ≤ gözlemli sayısı`). A95 kapanmadıkça posterior
+"üç parametreyi çözdük" diyemez. Durum etiketi bu yüzden *açık, ölçüldü*'den
+**açık, ÇIKARIMI KISITLIYOR**'a yükseltildi.
 
 ---
 ### A94 — **Geç evre geçişinden sonra plastik iş tanısı eski kayma modülüyle hesaplanıyordu** (2026-09-18) — **KAPANDI** (kendi hatam; dinamiğe etkisi yok)
