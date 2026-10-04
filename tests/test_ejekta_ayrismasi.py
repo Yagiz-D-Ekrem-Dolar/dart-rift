@@ -120,3 +120,23 @@ def test_toplam_kurali_TUTMUYOR_dalini_de_veriyor():
     bozuk = {1.0: (1.0e7, 1.0, 0.5, 3.0), 10.0: (0.5e7, 1.0, 0.5, 3.0)}
     r = EA.ayrisma_ussleri(bozuk)
     assert r["toplam_kurali"] == "TUTMUYOR"
+
+
+def test_ileri_kosu_ayrismayi_TANI_olarak_yaziyor():
+    """Havuz başlamadan önce bağlandı: her koşu üç çarpanı kaydedecek.
+
+    Yapısal sınav — warp CPU yerelde engelli (A113), bu yüzden gerçek koşu
+    yerine bağlantının kodda olduğu sınanıyor. İlk gerçek koşusu PROTOKOL-DO.
+    """
+    import inspect
+
+    from dartrift.inference import forward as FW
+    kaynak = inspect.getsource(FW)
+    assert 'fizik_tani["ejekta_ayrismasi"]' in kaynak
+    assert "from ..observables.ejekta_ayrismasi import ejekta_bilesenleri" in kaynak
+    # Tani basarisiz olursa kosu DUSMEMELI: hata kayda girer
+    i = kaynak.index('fizik_tani["ejekta_ayrismasi"] = ejekta_bilesenleri')
+    kuyruk = kaynak[i:i + 700]
+    assert "except Exception" in kuyruk and '{"hata"' in kuyruk
+    # KAPI olmadigi yazili
+    assert "KAPI DEGIL" in kaynak[i - 400:i]

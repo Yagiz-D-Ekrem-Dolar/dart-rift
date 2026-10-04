@@ -1030,6 +1030,19 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 fizik_tani["yari_eksenler"] = [float(t) for t in _yari]
             if _gy is not None:
                 fizik_tani["gerinim_yumusama"] = sol.gerinim_tanisi()
+            # KAYIT-073: beta'nin uc carpani (M_kacan, v_ort, kos_ort).
+            # KAPI DEGIL, tani -- ve ek maliyeti YOK (son durumdan okunuyor).
+            # Havuz basladiktan sonra geriye donup olculemez, bu yuzden
+            # SIMDI yaziliyor: alpha_b/f eksenlerinde goturmenin olup
+            # olmadigini yalnizca havuz soyleyebilir.
+            try:
+                from ..observables.ejekta_ayrismasi import ejekta_bilesenleri
+                fizik_tani["ejekta_ayrismasi"] = ejekta_bilesenleri(
+                    st["v"], st["m"], ehat=_ehat, v_esc=_vesc_h,
+                    mermi_kesri=_fk, p_mermi=_p_imp)
+            except Exception as _e:                        # noqa: BLE001
+                # Tani basarisiz olursa kosu DUSMEZ; gerekce kayda girer.
+                fizik_tani["ejekta_ayrismasi"] = {"hata": str(_e)[:200]}
             if av_tanisi_her:
                 # A98: AV isisi ve plastik is -- ikisi de kinetik enerjiyi
                 # isiya ceviriyor; hangisi baskin, gec evrede ayrica.
