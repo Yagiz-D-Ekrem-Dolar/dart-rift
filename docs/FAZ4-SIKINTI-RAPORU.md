@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-10-04 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 84 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113 · A70, A84, A91, A92, A94, A96, A106, A110, A111 ve A112 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-10-04 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 85 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113, A114 · A70, A84, A91, A92, A94, A96, A106, A110, A111 ve A112 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5148,6 +5148,73 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A114 — **Krater gözlemlisi üretim sahnesinde ölçülemiyor ve TEK başına bütün `y` vektörünü (β dahil) düşürüyor** (2026-10-04) — *açık, ÖLÇÜLDÜ, üretimi kilitliyor*
+
+DY2'nin kendi koşu kaydı (`DY2_dart_g1p0.jsonl`) şöyle:
+
+```
+{"i": 0, "y": null, "hata": "carpma ekseni kutusunda 2 parcacik var (en az 5
+ gerekir). Krater TAM ORADA oldugu icin olcum ANLAMSIZ olurdu; `0` dondurmek
+ yaniltici olur. Yuzey parcacigi 8597, n_bins=8."}
+```
+
+Yani **üretim sahnesinin ilk gerçek koşusu, vekile girecek `y` vektörünü hiç
+üretmedi.** DK (küre) aynı ayarla üretti: `y = [3,7716 ; 0,2347 ; 0,0059]`.
+
+> KAYIT-072'nin sayıları etkilenmedi: oradaki `β` ve `M_ejekta`, durum
+> `npz`'sinin `fizik_tani`'sından okunuyor ve **doğru**. Düşen şey
+> **havuzun vekile vereceği kayıt**.
+
+### İki ayrı kusur, biri ötekini öldürücü yapıyor
+
+**(1) Kutu 0 geometrik olarak AÇ — şans değil, tasarım.**
+`KRATER_AYARLARI_DART`: `outer_angle_deg = 12`, `n_bins = 8` → en iç kutu
+`0 – 1,5°`. Bir küre yüzeyinde o kutunun katı açı payı
+`(1 − cos 1,5°)/2 = 1,7e-4`. `8597` yüzey parçacığıyla **beklenen sayı
+`1,5`**; gereken `min_per_bin = 5`. Ölçüldü (DY2/DK son durumları, çarpma yönü
+en çok yer değiştiren yüzey parçacıklarından **kestirildi** — bu yüzden
+derinlikler gösterge, kilitli ölçüm değil):
+
+| `n_bins` | en iç kutu | DY2 (elipsoit) | DK (küre) |
+|---|---|---|---|
+| **8 (üretim)** | `0 – 1,5°` | **3 parçacık → RED** | **4 parçacık → RED** |
+| 6 | `0 – 2,0°` | 5 parçacık → RED (referans kutusu boş) | `12,98 m` |
+| **4** | `0 – 3,0°` | **`4,05 m`** | `9,07 m` |
+| 3 | — | `n_bins ≥ 4` zorunlu | aynı |
+
+`n_bins = 4`'te bile beklenen sayı `5,9` — eşiğin **hemen üstünde**. Yani
+gözlemli bıçak sırtında duruyor; `θ`'ya göre kimi koşu geçer kimi geçmez.
+Bu, 2026-08-09'da ölçülen kusurun (`depth = 0` sessizce dönüyordu) **devamı**:
+o zaman `0` yerine hata atmaya geçildi — doğru karar — ama **kutu 0'ın neden
+boş kaldığı** düzeltilmedi.
+
+**(2) `y` ya hep ya hiç.** `inference/ensemble.py`'de `ileri(th)` içinde
+**herhangi** bir istisna kaydı `y: None` yapıyor. Krater haklı olarak
+"ölçemiyorum" dediğinde, aynı koşunun **ölçülmüş ve kusursuz** `β`'sı ve
+ejekta kesri de **çöpe gidiyor**.
+
+### Maliyeti
+
+Havuz `96` koşu, `~650 GPU-saat`. DK geçti, DY2 düştü: eşik sırtında
+oldukları için **koşuların kabaca yarısı** `y: None` dönebilir — ve düşenler
+rastgele değil, *çarpma ekseni çevresine daha az parçacık düşen* koşular
+olur. Yani kayıp hem büyük hem **yanlı**.
+
+### Ne yapılmalı
+
+[ADR-0055](../adr/ADR-0055-gozlemli-vektoru-ve-krater-kutusu.md) iki parçalı
+öneri getiriyor: (1) zorunlu/isteğe bağlı gözlemli ayrımı — krater
+ölçülemediğinde o **bileşen** `NaN` olur, `β` ve ejekta kesri yaşar;
+(2) en iç kutunun **uyarlanır** olması ya da `n_bins`'in düşürülmesi.
+(1) geçmiş hiçbir sayıyı değiştirmez ve açık **opt-in**'dir; (2) kilitli bir
+gözlemliyi değiştirdiği için kullanıcı kararı bekler.
+
+**Bulunuş:** KAYIT-072 yazılırken blok çözünürlüğü tanısı aranıyordu; `jsonl`
+kaydında `hata` alanı görülünce çıktı. Durum `npz`'si geçerli ve eksiksiz
+olduğu için **hiçbir denetim bunu yakalamamıştı**: `gecerli = True`, momentum
+`5,6e-15`, enerji `−%0,78`, `600 s` tamam. Koşu kusursuzdu; **kaydı** boştu.
 
 ---
 ### A113 — **Windows Uygulama Denetimi `warp-clang.dll`'i engelliyor: 19 sınav yerelde koşamıyor** (2026-10-04) — *açık, geçici çözüm var*

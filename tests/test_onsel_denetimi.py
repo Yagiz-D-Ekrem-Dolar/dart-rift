@@ -192,3 +192,44 @@ def test_tablo_gecersiz_girdiler():
     with pytest.raises(ValueError):          # hic gozlenen yok
         OD.duyarlilik_tablosu([OD.Gozlemli("t50", OD.OLCULEN_Y0_SERILERI["t50"],
                                            0.2, False)])
+
+
+# ------------------------------- ADR-0053 §2c: karar C1'den BAGIMSIZ
+#: Gozlenen `β` icin butun adaylar (ADR-0053 §2c tablosu).
+BETA_ADAYLARI = (3.748, 3.600, 3.320, 3.223, 3.125, 3.120, 3.019, 2.816)
+ONERILEN = (1.0e0, 1.0e5)
+
+
+def test_onerilen_onsel_BUTUN_beta_adaylarini_iceriyor():
+    """Önsel kararı C1'e bağlı değil: sekiz adayın hepsi `[1e0, 1e5]` içinde."""
+    uy = _uy()
+    ys = [OD.y0_coz(uy, b) for b in BETA_ADAYLARI]
+    assert all(ONERILEN[0] <= y <= ONERILEN[1] for y in ys), ys
+    for b in BETA_ADAYLARI:
+        d = OD.onsel_denetle(uy, beta_gozlem=b, sigma_toplam=0.447,
+                             onsel_lo=ONERILEN[0], onsel_hi=ONERILEN[1])
+        assert d["genel"] == "ONSEL GOZLEMI ICERIYOR", (b, d["Y0_gozlem"])
+    # en yakin kenara en az bir dekad bosluk
+    kenar = min(np.log10(min(ys) / ONERILEN[0]), np.log10(ONERILEN[1] / max(ys)))
+    assert kenar > 1.0
+
+
+def test_ESKI_onsel_yalniz_yeniden_sekillenme_dalinda_kurtuluyor():
+    """Eski `[1e3, 1e7]`'yi ancak L16 düzeltmesi (en az yerleşmiş aday) kurtarıyor."""
+    uy = _uy()
+    icinde = {b for b in BETA_ADAYLARI if 1.0e3 <= OD.y0_coz(uy, b) <= 1.0e7}
+    assert icinde == {3.019, 2.816}          # yalniz yeniden sekillenme adaylari
+    # kilitli hedef (3,12) ve yayinlanan (3,6) ikisi de DISINDA
+    for b in (3.120, 3.600):
+        assert OD.onsel_denetle(uy, beta_gozlem=b, sigma_toplam=0.447,
+                                onsel_lo=1.0e3, onsel_hi=1.0e7
+                                )["genel"] == "ONSEL GOZLEMI ICERMIYOR"
+
+
+def test_C1_in_Y0_uzerindeki_kaldiraci_bir_dekaddan_BUYUK():
+    """`3,12` ile yayınlanan `3,6` arasındaki seçim `Y₀`'yı `1,17` dekad kaydırıyor."""
+    uy = _uy()
+    kayma = np.log10(OD.y0_coz(uy, 3.120) / OD.y0_coz(uy, 3.600))
+    assert kayma == pytest.approx(1.17, abs=0.02)
+    # yani C1 kozmetik degil: beta'daki %15 fark Y0'da 15 kat
+    assert OD.y0_coz(uy, 3.120) / OD.y0_coz(uy, 3.600) > 10.0

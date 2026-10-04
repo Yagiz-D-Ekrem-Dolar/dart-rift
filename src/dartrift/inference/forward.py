@@ -36,6 +36,7 @@ import json
 import numpy as np
 
 __all__ = ["sahne_parametreleri", "gozlenebilirleri_cikar", "ileri_kosu",
+           "A114_UYARILARI",
            "ileri_kosu_ikiasama",
            "GOZLENEBILIRLER"]
 
@@ -329,10 +330,21 @@ KRATER_AYARLARI_DART = {"outer_angle_deg": 12.0, "n_bins": 8,
 KRATER_KUTUP_KUTUSU_ESIGI_DEG = 7.0
 
 
+#: A114: `istege_bagli` yüzünden `nan` yazılan her bileşenin gerekçesi.
+#: Koşu kaydı sessiz kalmaz; rapor bunu okuyup kaç koşuda hangi gözlemlinin
+#: ölçülemediğini sayar.
+A114_UYARILARI: list[str] = []
+
+
+def _a114_uyari(mesaj: str) -> None:
+    A114_UYARILARI.append(mesaj)
+
+
 def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,
                            target_radius, is_impactor, impact_direction,
                            x_reference, krater_ayarlari=None,
-                           yari_eksenler=None) -> np.ndarray:
+                           yari_eksenler=None,
+                           istege_bagli: tuple[str, ...] = ()) -> np.ndarray:
     """Son durumdan üç gözlenebilir — `GOZLENEBILIRLER` sırasında.
 
     Patlamış bir koşu **sessizce** sayı döndürmez: `nan` görünürse
@@ -369,12 +381,22 @@ def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,
                            control_radius=2.0 * float(target_radius),
                            speed_threshold=v_kacis)
 
-    kr = crater_profile(
-        st["x"][hedef], center=np.zeros(3),
-        impact_direction=np.asarray(impact_direction, dtype=np.float64),
-        reference_radius=float(target_radius),
-        x_reference=np.asarray(x_reference, dtype=np.float64)[hedef],
-        **(krater_ayarlari or {}))
+    # A114: krater cikarici, carpma ekseni kutusu AC kalirsa haklı olarak
+    # REDDEDER (`0` dondurmek yaniltici olurdu). `istege_bagli` icinde
+    # "krater_derinlik" varsa bu RED yalniz O BILESENI `nan` yapar; `beta` ve
+    # ejekta kesri yasar. Varsayilan BOS: davranis DEGISMEDI.
+    _krater_hatasi = None
+    try:
+        kr_depth = float(crater_profile(
+            st["x"][hedef], center=np.zeros(3),
+            impact_direction=np.asarray(impact_direction, dtype=np.float64),
+            reference_radius=float(target_radius),
+            x_reference=np.asarray(x_reference, dtype=np.float64)[hedef],
+            **(krater_ayarlari or {})).depth)
+    except ValueError as e:
+        if "krater_derinlik" not in istege_bagli:
+            raise
+        kr_depth, _krater_hatasi = float("nan"), str(e)
     # A47: `mt.beta` KONTROL YUZEYI `2R` ve mermiyi de sayiyor.
     # Raporladigim `beta_hedef` ise defterin `R` yuzeyinden ve
     # YALNIZ hedef maddesinden geliyor. Ikisi AYNI SEY DEGIL:
@@ -398,12 +420,17 @@ def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,
         mermi_kesri=np.asarray(is_impactor, dtype=bool).astype(np.float64),
         R=float(target_radius), v_esc=v_kacis, ehat=_ehat / _p_imp,
         p_imp=_p_imp, yari_eksenler=yari_eksenler)
-    y = np.array([float(_def["beta_hedef"]), float(kr.depth),
+    y = np.array([float(_def["beta_hedef"]), kr_depth,
                   float(mt.ejecta_fraction)], dtype=np.float64)
-    if not np.all(np.isfinite(y)):
+    # ZORUNLU bilesenler her zaman sonlu olmali (S4'un dersi: nan sessiz gecmez).
+    zorunlu = [i for i, ad in enumerate(GOZLENEBILIRLER) if ad not in istege_bagli]
+    if not np.all(np.isfinite(y[zorunlu])):
         raise RuntimeError(
-            f"gozlenebilirlerden biri sonlu degil: "
+            f"ZORUNLU gozlenebilirlerden biri sonlu degil: "
             f"{dict(zip(GOZLENEBILIRLER, y, strict=False))}")
+    if _krater_hatasi is not None:
+        # Sessiz gecmiyor: kayit, kaydin kendisinde durur.
+        _a114_uyari(_krater_hatasi)
     return y
 
 

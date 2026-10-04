@@ -119,7 +119,8 @@ def oku_tamamlananlar(yol, root_seed: int | None = None,
 
 def ensemble_kos(tasarim, ileri, yol, root_seed: int,
                  ilerleme=None, yeniden_dene_dusenleri: bool = False,
-                 surum: str | None = None) -> EnsembleDurum:
+                 surum: str | None = None,
+                 nan_izinli: tuple[int, ...] = ()) -> EnsembleDurum:
     """Tasarımı koştur; **zaten tamamlanmış** noktaları atla.
 
     Parameters
@@ -135,6 +136,11 @@ def ensemble_kos(tasarim, ileri, yol, root_seed: int,
         Kod sürümü (commit SHA). Verilirse **başka sürümle** üretilmiş
         satırlar geçersiz sayılır ve o noktalar yeniden koşulur
         (rapor A40).
+    nan_izinli
+        **A114.** `y`'nin bu dizinlerindeki `nan` kaydı **düşürmez**: isteğe
+        bağlı gözlemliler (üretim havuzunda `krater_derinlik`) ölçülemediğinde
+        `β` ve ejekta kesri yaşar. Boş bırakılırsa eski davranış (tek `nan`
+        bütün kaydı düşürür) aynen sürer.
     yeniden_dene_dusenleri
         `False` (varsayılan): düşen nokta **tekrar denenmez** — aynı
         parametre aynı şekilde düşer ve GPU boşa gider. `True` yalnızca
@@ -153,8 +159,17 @@ def ensemble_kos(tasarim, ileri, yol, root_seed: int,
             continue
         try:
             y = np.asarray(ileri(th), dtype=np.float64).ravel()
-            if not np.all(np.isfinite(y)):
-                raise RuntimeError(f"sonlu olmayan cikti: {y}")
+            # A114: `nan_izinli` dizinleri ISTEGE BAGLI gozlemlilerdir
+            # (ör. krater derinligi, cikarima girmiyor). Oradaki `nan`
+            # kaydi dusurmez; geri kalan her bilesen sonlu OLMAK ZORUNDA.
+            # Varsayilan BOS -> davranis DEGISMEDI.
+            zorunlu = np.ones(y.shape, dtype=bool)
+            for j in nan_izinli:
+                if not (0 <= int(j) < y.size):
+                    raise ValueError(f"nan_izinli dizini aralik disi: {j}")
+                zorunlu[int(j)] = False
+            if not np.all(np.isfinite(y[zorunlu])):
+                raise RuntimeError(f"sonlu olmayan ZORUNLU cikti: {y}")
             kayit = {"i": i, "y": [float(v) for v in y],
                      "root_seed": root_seed, "surum": surum}
             durum = "tamam"

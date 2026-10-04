@@ -69,6 +69,57 @@ bilgilendirici saymaz. Havuz koşar, sonuç "`Y₀ ≤ 1 kPa`, önsel kenarı" o
 > `p` küçük olduğu için kaldıraç büyük: `p`'deki `%10` hata `Y₀`'da `~%30`
 > kayma demek. Bu yüzden karar **ölçümle** doğrulanacak → PROTOKOL-DO.
 
+## 2b. Bu karar **önceden kaydedilmişti** (PROTOKOL-U §4, 2026-09-14)
+
+Bu ADR'nin önerisi yeni bir fikir değil; **koşulardan önce yazılmış** bir
+yorum tablosunun uygulanmasıdır. PROTOKOL-U §4, `U1` (`Y₀ = 1e1 Pa`,
+"önsel dışı" diye işaretli) ve `U2` (`1e0 Pa`) varyantları için şu satırı
+taşıyor:
+
+| sonuç | anlamı | sıradaki adım |
+|---|---|---|
+| `U1/U2 ulaşıyor` | `Y₀` önseli (`≥ 1e3 Pa`) gerçek Dimorphos'u dışarıda bırakıyor | **ADR: önsel alt sınırı `1 Pa`'ya**; N/P yeniden |
+
+**Dürüst okuma:** U/V'nin kendi yargısı `HİÇBİR VARYANT ULAŞMIYOR` çıktı
+(KAYIT-064), yani bu satır U/V'de **tetiklenmedi**. Ama o koşular `0,1–0,2 s`'de
+kesilmişti. Geç evre modelinde **aynı `θ`** (`Y₀ = 10 Pa`, yani `U1`'in
+değeri) DART sahnesinde **gözleme ulaşıyor** (DY2, KAYIT-072). Yani satırın
+**koşulu** artık sağlanıyor ve reçetesi — önsel alt sınırı `1 Pa` — bu ADR'nin
+önerisiyle **birebir aynı**. Karar sonradan uydurulmuş değil.
+
+## 2c. Karar **C1'den bağımsız** (en önemli nokta)
+
+Gözlenen `β` olarak hangi sayının kilitleneceği (**C1**) hâlâ açık. Bu ADR'yi
+C1'e bağımlı kılmamak için her aday ayrı ayrı çevrildi
+(W2 serisi, üretim `t_geçiş`):
+
+| gözlenen `β` adayı | kaynak | ima edilen `Y₀` | eski önsel `[1e3, 1e7]` | **önerilen `[1e0, 1e5]`** |
+|---|---|---|---|---|
+| `3,748` | DY2 modelinin kendi değeri (kıyas) | `21 Pa` | **dışında** | içinde |
+| `3,600` | yayınlanan, Cheng ve diğ. 2023 (tam yörünge) | `44 Pa` | **dışında** | içinde |
+| `3,320` | arayüz bandı üst (`ΔT − 1σ`) | `196 Pa` | **dışında** | içinde |
+| `3,223` | arayüzün kendi türettiği (`M = 4,3e9`) | `346 Pa` | **dışında** | içinde |
+| `3,125` | arayüz bandı alt (`ΔT + 1σ`) | `625 Pa` | **dışında** | içinde |
+| **`3,120`** | **PROTOKOL-U'da kilitli hedef** | **`644 Pa`** | **dışında** | içinde |
+| `3,019` | L16 yeniden şekillenme (`125 s`) | `1223 Pa` | içinde | içinde |
+| `2,816` | L16 yeniden şekillenme (`250 s`) | `4951 Pa` | içinde | içinde |
+
+İki sonuç:
+
+1. **Yeniden şekillenme düzeltmesi uygulanmadıkça, hiçbir aday eski önselin
+   içinde değil.** Eski önseli kurtaran tek senaryo, `period_interface`'in
+   kendi notuyla *"arama özeti, tam metin teyidi bekliyor"* diye işaretlediği
+   L16 (Nakano ve diğ. 2024) düzeltmesidir — yani adayların **en az
+   yerleşmiş** olanı.
+2. **Önerilen önsel bütün adayları içeriyor**, en yakın kenara `1,31` dekad
+   boşlukla. Yani **önsel kararı C1 çözülmeden verilebilir** ve C1 sonradan
+   nasıl kapanırsa kapansın önsel yeniden açılmaz. Adayların tamamı
+   `2,37` dekada yayılıyor; `5` dekadlık önsel bunu rahat alır.
+
+> Bu, ADR'nin dairesel olmadığının da kanıtı: önsel, **tek bir** gözlem
+> sayısına göre seçilmiyor; sekiz adayın **hepsini** kapsayacak biçimde ve
+> literatür + modelin doğrulandığı aralık gerekçesiyle seçiliyor.
+
 ## 3. İkinci ölçüm — `Y₀`'yu hangi gözlemli **tanımlıyor**
 
 Aynı üç koşudan, her gözlemli için `v = C · Y₀^p` ve "`1σ`'ya karşılık gelen
