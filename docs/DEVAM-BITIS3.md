@@ -601,3 +601,92 @@ Ayrışma artık **her koşuya tanı olarak yazılıyor** (ek maliyet yok); havu
 - **Kuyrukta:** `1588084` (DM/DT, PROTOKOL-DY §7). Sonra `is_DO.slurm`
   (DO1 `500 Pa`, DO2 `5000 Pa`, `~10 GPU-saat`) — 2 GPU hakkı içinde,
   sırayla.
+
+
+### 12.13 5 Ekim — DM/DT okundu, **4 GPU koşuyor**, posterior tarifi kilitlendi
+
+#### (a) [KAYIT-074](defter/KAYIT-074_2026-10-05_mermi-ve-gerceklem-olculdu.md) — bütçede **ödünç terim kalmadı** (ikisi hariç)
+
+| ölçüm | sonuç | eskisi |
+|---|---|---|
+| `σ_mermi` | **`0,134`** (tek küre `β`'yı `%9,8` yükseltiyor: 3,748 → 4,115) | ödünç `0,15` (L9) — **tuttu** |
+| `σ_gerçeklem(β, DART)` | **`0,013`** | `0,033` (eski model) — **2,5 kat küçüldü** |
+| `σ_gerçeklem(M_ejekta, DART)` | `0,129` | `0,15` — neredeyse aynı |
+| `σ_gerçeklem(t50)` | `0,183` | — (tanı) |
+
+`β` tohumdan tohuma kararlı, **kaçan kütle değil** — KAYIT-073'ün
+ayrışmasıyla tutarlı: `M` ile `v` ters yönde oynuyor, çarpımı sabit
+kalıyor. `β`'nın kararlılığı gerçeklem ekseninde de bir **götürme**.
+
+`σ_mermi` **paydaya girmiyor**: tek küre, gerçeğin alternatifi değil daha
+kaba bir yaklaşım (ADR-0056'nın mantığı). Eklenirse `I` `1,40 → 1,09`,
+yani sınavı **kolaylaştırırdı**.
+
+**A114 canlı doğrulandı:** DM'nin kaydı da `y: null`. DART'ın **üç**
+koşusundan **ikisi** `y` üretmedi — "kabaca yarısı" kestirimi iyimserdi.
+
+#### (b) A115'in teşhisi **düzeltildi** — posterior makinesi temiz
+
+İlk teşhisim yanlıştı. Ölçümle ayrıştırdım (`n_sbc = 200`):
+
+| vekil | `ayrik` | `dejenere` |
+|---|---|---|
+| ikinci derece | `Y₀` AŞIRI TEMKİNLİ | `Y₀` AŞIRI TEMKİNLİ + YANLI |
+| **GP + Bachoc** | **üçü de KALİBRE** | `Y₀` YANLI |
+| **tam model (vekil yok)** | üçü de KALİBRE | **üçü de KALİBRE** |
+
+1. **Posterior makinesi DOĞRU** — tam modelle her iki senaryoda kusursuz.
+2. İlk ölçümün bir kısmı **provanın kendi kurgu hatasıydı**: üretici
+   yalnız gerçeklem gürültüsünü ekliyordu, olabilirlik gözlem
+   belirsizliğini de içeriyordu (`2,24` kat geniş) → PIT zorunlu olarak
+   aşırı temkinli. Düzeltildi ve sınavla kilitlendi.
+3. Kalan **yanlılık** vekilin ortalama hatası; varyans kalibrasyonu onu
+   çözmez, ızgara da değil (`n_grid` `24/40/60` → `D` sabit).
+
+#### (c) [ADR-0058](adr/ADR-0058-uretim-posteriorunun-tarifi.md) — posterior tarifi **koşudan önce** kilitli
+
+GP + Bachoc varyans kalibrasyonu + `grid_posterior_hetero` + **ölçülmüş
+`R`** + **SBC kapısı** (`YANLI` çıkarsa posterior **yayımlanmaz**).
+
+**Beklediğimin tersi çıkan ölçüm:** `β` ile `M_ejekta` aynı ejekta
+alanından türüyor (KAYIT-073), yani `R = I` bir **varsayım**. Bedeli:
+
+| `ρ` | daralma `α_b` | daralma `Y₀` |
+|---|---|---|
+| `0,00` | `+0,372` | `+0,899` |
+| `0,80` | **`+0,708`** | `+0,893` |
+
+`Y₀` etkilenmiyor ama **`α_b`'nin daralması iki kattan fazla artıyor**:
+korelasyon arttıkça iki gözemlinin **farkı** keskinleşiyor ve `α_b` o
+yöne biniyor. Yani `R = I` bilgiyi şişirmiyor, **yanlış yere dağıtıyor**
+— ve `α_b` hakkındaki sonuç `R`'ye bağlı. `R` **ölçülecek**.
+
+#### (d) 4 GPU koşuyor (sınır 4) — hepsi `bf2f05d`/`e87193d` çivili
+
+| iş | kol | ne ölçüyor |
+|---|---|---|
+| `1590670_0` | **DO1** `Y₀ = 500 Pa` | önseli **interpolasyonla** sınar (ADR-0053) |
+| `1590670_1` | **DO2** `Y₀ = 5000 Pa` | aynı; `644 Pa` artık aralığın içinde |
+| `1590671` | **DC** çekme AÇIK | A105'in DART'taki **bedeli** (PROTOKOL-DY §8) |
+| `1590696` | **DN** nişan `25 m` kaçık | **`carpma_yeri`** — kalan en büyük ödünç terim (§9) |
+
+Hepsi `~5 GPU-saat`. Yan ürünler: iki krater ölçüsünün **ilk gerçek yan
+yana karşılaştırması** (A19/A114) ve ejekta ayrışmasının DART sahnesinde
+`10 → 5000 Pa` (`2,7` dekad) boyunca kaydı.
+
+> İlk gönderimde üçü de **kod sürümü kapısında** düştü (ana kopya
+> `7a2a9b0`'daydı, `SABIT_COMMIT` `e87193d`). Kapı görevini yaptı,
+> **GPU harcanmadı**; ana kopya ileri alınıp yeniden gönderildi. A96'nın
+> çivili ağaç düzeni çalışıyor.
+
+#### Bittiğinde
+
+```
+python scripts/do_onsel_raporu.py --kok kampanya --json kampanya/S_DO.json
+python scripts/dy_dart_raporu.py --kok kampanya --ad DY2_dart_g1p0 \
+  --cekme-kol DC_cekme_g1p0 --nisan-kol DN_nisan25_g1p0 --json kampanya/S_DC_DN.json
+```
+
+**Hâlâ bekleyen dört karar (0 GPU):** A2 (ADR-0053, DO sonrası),
+C1 (ADR-0054), A105 (ADR-0056, DC sonrası), A109 (ADR-0057).
+**Yeni:** ADR-0058 (posterior tarifi) da onay bekliyor.
