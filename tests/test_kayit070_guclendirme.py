@@ -140,3 +140,35 @@ def test_DY2_yargisi_olculen_plato_terimine_SAGLAM():
         uygunsuzluk = abs(beta - 3.12) / np.hypot(0.34, sm["sigma"])
         assert uygunsuzluk < 3.0                 # her iki terimle de ULASIYOR
         assert uygunsuzluk == pytest.approx(1.40, abs=0.01)
+
+
+def test_KAYIT074_uc_olculmus_terim_eski_satirlarin_yaninda():
+    """KAYIT-074: `mermi_geometrisi` ve iki `gerçeklem` terimi DART'ta ölçüldü."""
+    cift = (("mermi_geometrisi", 0.15, "mermi_geometrisi_olculen", 0.134),
+            ("gerceklem_beta", 0.033, "gerceklem_beta_DART", 0.013),
+            ("gerceklem_M_ejekta", 0.15, "gerceklem_M_ejekta_DART", 0.129))
+    for eski_ad, eski_v, yeni_ad, yeni_v in cift:
+        e, ke = H.MODEL_EKSIKLIGI_KAYNAKLI[eski_ad]
+        y, ky = H.MODEL_EKSIKLIGI_KAYNAKLI[yeni_ad]
+        assert e == pytest.approx(eski_v)            # ESKI SATIR YERINDE
+        assert y == pytest.approx(yeni_v) and "KAYIT-074" in ky
+        assert "KAYIT-07" in ke or "L9" in ke or "KAYIT-070" in ke
+    # beta'nin gerceklem sacilmasi 2,5 kat kuculdu; M_ejekta'nin kuculmedi
+    assert 0.033 / 0.013 > 2.4
+    assert 0.15 / 0.129 < 1.3
+
+
+def test_mermi_olculen_terimi_PROTOKOL_DY_paydasina_GIRMEZ():
+    """ADR-0056'nın mantığı: daha kaba bir yaklaşım, alternatif gerçek değildir.
+
+    `0,134` bir **üst sınır** ve koşullu duyarlılık olarak raporlanır; kilitli
+    yargının paydasını şişirmek için kullanılmaz.
+    """
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    import dy_dart_raporu as DY
+    assert "mermi_geometrisi" not in DY.TERIMLER
+    assert "mermi_geometrisi_olculen" not in DY.TERIMLER
+    _, kaynak = H.MODEL_EKSIKLIGI_KAYNAKLI["mermi_geometrisi_olculen"]
+    assert "paydaya girmez" in kaynak

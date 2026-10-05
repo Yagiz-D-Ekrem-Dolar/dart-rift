@@ -137,12 +137,32 @@ MODEL_EKSIKLIGI_KAYNAKLI = {
     # GERCEK DART da tek bir gerceklemedir: bu terim, tek gozleme asiri
     # uymayi (overfit) engelleyen TABANDIR, atlanamaz.
     "gerceklem_beta": (0.033, "U/V 15 theta cifti, iki tohum (KAYIT-070)"),
+    # OLCULDU (2026-10-05, KAYIT-074): ayni olcum ama GEC EVRE modelinde ve
+    # DART sahnesinde (DY2 tohum 20260906 vs DT tohum 99991111). Eski deger
+    # 0,033 ESKI modelden ve 0,1-0,2 s'den geliyordu; satir YERINDE kalir.
+    # beta'nin gerceklem sacilmasi 2,5 kat KUCULDU -- gec evre modeli
+    # tohumdan tohuma daha kararli.
+    "gerceklem_beta_DART": (0.013, "DY2 vs DT, PROTOKOL-DY S7 (KAYIT-074)"),
     # Ayni olcum M_ejekta icin: bagil fark ortanca %20,9 -> sd ~ %15.
     "gerceklem_M_ejekta": (0.15, "U/V 15 theta cifti, iki tohum (KAYIT-070)"),
+    # Ayni cift, M_ejekta icin: 1,964e7 vs 2,357e7 -> 0,129. beta'nin aksine
+    # M_ejekta'nin sacilmasi KUCULMEDI (0,15 -> 0,129). Yani gec evre modeli
+    # beta'yi kararli kiliyor ama kacan KUTLE tohuma duyarli kaliyor.
+    "gerceklem_M_ejekta_DART": (0.129, "DY2 vs DT, PROTOKOL-DY S7 (KAYIT-074)"),
     "carpma_yeri": (0.10, "L12 Senel ve dig. 2025 MNRAS: yakin bloklar beta'yi "
                           "<= %7,6 degistiriyor -> beta-1'de ~%10 (beta ~3,2)"),
     "mermi_geometrisi": (0.15, "L9 Owen ve dig. 2022: kure mermi %10-20; UC KURE "
                                "mermiyle kalan terim OLCULMEDI (ust sinir)"),
+    # OLCULDU (2026-10-05, KAYIT-074): DY2 (uc kure) vs DM (tek kure), DART
+    # sahnesinde, baska her sey ayni: beta 3,748 vs 4,115 (tek kure %9,8 YUKSEK)
+    # -> |b_DY2 - b_DM| / b_DY2 = 0,134. L9'un odunc 0,15'i IYI bir ust sinirdi.
+    # DIKKAT: bu terim PROTOKOL-DY'nin TERIMLER listesinde YOK ve oraya
+    # EKLENMEMELI. Tek kure, gercegin bir alternatifi degil DAHA KABA bir
+    # yaklasimdir (ADR-0056'nin mantigi): uc kure ile GERCEK uzay araci
+    # arasindaki kalan belirsizlik bundan KUCUK. 0,134 bir UST SINIR ve
+    # kosullu duyarlilik olarak raporlanir, paydayi sismanlatmak icin degil.
+    "mermi_geometrisi_olculen": (0.134, "DY2 vs DM, PROTOKOL-DY S7 (KAYIT-074); "
+                                       "UST SINIR, paydaya girmez"),
     # ESKI SATIR YERINDE KALIR (kural 6). Literaturden odunc, dogrulamasi 0:
     "hedef_sekli": (0.20, "L1: elipsoit/kure %15-21; ELIPSOIT sahnede kalan "
                           "terim OLCULMEDI (ust sinir). YERINE: hedef_sekli_olculen"),

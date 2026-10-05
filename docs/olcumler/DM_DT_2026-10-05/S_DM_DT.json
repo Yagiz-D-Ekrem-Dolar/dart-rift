@@ -1,0 +1,35 @@
+{
+ "gozlem": {"beta": 3.12, "sigma": 0.34},
+ "kesme": 3.0,
+ "terimler": ["gerceklem_beta", "cozunurluk_uzak", "plato", "carpma_yeri"],
+ "beta": 3.7479718161136306,
+ "beta_km": 3.8215663965455966,
+ "M_ejekta": 19636053.24503668,
+ "n": 15623,
+ "sigma_model": 0.2908829088991738,
+ "sigma_model_terimleri": {"gerceklem_beta": 0.033, "cozunurluk_uzak": 0.004,
+                           "plato": 0.01, "carpma_yeri": 0.1},
+ "payda": 0.4474515244019681,
+ "I": 1.403441002805685,
+ "genel": "MODEL GOZLEME ULASIYOR",
+ "dosya": "DY2_dart_g1p0.durumlar/nokta_0000_b933202635ed.npz",
+ "kol_adi": "DY2_dart_g1p0",
+ "sekil_olcumu": {
+  "sigma_sekil": 0.008614822585464301,
+  "beta_elipsoit": 3.7479718161136306, "beta_kure": 3.7716451057793057,
+  "eski_literatur_terimi": 0.2,
+  "yorum": "sekil terimi KUCUK (< 0,05): kuresel sahne savunulabilir",
+  "genel": "OLCULDU"
+ },
+ "mermi_olcumu": {
+  "sigma_mermi": 0.1336822489214027,
+  "beta_uc_kure": 3.7479718161136306, "beta_tek_kure": 4.115326868464332,
+  "eski_literatur_terimi": 0.15, "genel": "OLCULDU"
+ },
+ "gerceklem_olcumu": {
+  "sigma_gerceklem": 0.013243653063914198,
+  "bagil_fark": 0.018729353778351453,
+  "beta_tohum1": 3.7479718161136306, "beta_tohum2": 3.799926087394116,
+  "eski_eski_model_terimi": 0.033, "genel": "OLCULDU"
+ }
+}
