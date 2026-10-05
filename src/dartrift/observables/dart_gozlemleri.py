@@ -160,6 +160,36 @@ def cheng_beta(yogunluk: float | None = None, *,
     }
 
 
+def uretim_hedef_beta(hedef_kutlesi: float) -> dict:
+    """**C1'in KABUL EDİLMİŞ cevabı** (ADR-0054, 2026-10-05).
+
+    Gözlenen `β`, sabit bir sayı değil **sahnenin kütlesinin fonksiyonudur**:
+    `β = Δv·M/p` olduğundan model ve gözlem aynı `M` ile konuşmak zorunda
+    (A108). Üretim hedefi `cheng_beta(hedef_kutlesi=M_sahne)` ile türetilir.
+
+    | | |
+    |---|---|
+    | kaynak | Cheng ve diğ. 2023, *Nature* 616, 457 (arXiv:2303.03464) |
+    | künye | `β = 3,61 (+0,19 / −0,25)` (1σ), `ρ_ref = 2400 kg/m³` |
+    | üretim sahnesi (`M = 4,2980e9`) | **`β = 3,5418 (+0,188 / −0,247)`** |
+
+    **Yerine geçtiği şey:** PROTOKOL-U §1'in `3,12 ± 0,34`'ü. O sayı
+    **eski küre sahnesinin** kütlesinden (`4,16e9`) türemişti ve üretim
+    sahnesiyle tutarsızdı. **Eski değer silinmez**: onunla hesaplanmış
+    bütün yargılar (W, W2, U/V, DY, DY2, DK, DM, DT) olduğu gibi kalır.
+    Bu hedef **bundan sonraki** protokollerde kullanılır.
+
+    Döner: `cheng_beta`'nın alanları + `sigma_ust`/`sigma_alt` (asimetrik).
+    """
+    d = cheng_beta(hedef_kutlesi=float(hedef_kutlesi))
+    d["sigma_ust"] = d["beta_ust"] - d["beta"]
+    d["sigma_alt"] = d["beta"] - d["beta_alt"]
+    d["yerine_gectigi"] = {"deger": 3.12, "sigma": 0.34,
+                           "kaynak": "PROTOKOL-U S1 (eski kure sahnesi, M=4,16e9)"}
+    d["karar"] = "ADR-0054 KABUL EDILDI (2026-10-05)"
+    return d
+
+
 # --- Sahne ile gozlemin TUTARLILIGI (2026-09-28, KAYIT-070) -----------------
 #: Gozlenen `beta`'nin TURETILDIGI Dimorphos kutlesi (`period_interface`:
 #: `secondary_mass`). `beta = dv M / p` oldugundan gozlenen `beta` bu kutleyle

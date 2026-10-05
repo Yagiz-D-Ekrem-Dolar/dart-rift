@@ -1,6 +1,6 @@
 # ADR-0054 — **C1:** gözlenen `β` olarak hangi sayı kilitlenecek
 
-**Durum:** ÖNERİ (karar kullanıcıda — **C1'in cevabı**) · **Tarih:** 2026-10-04
+**Durum:** **KABUL EDİLDİ** (2026-10-05) · **Karar:** kullanıcı kararı Claude'a devretti (*"kararları sen ver ve düzgün ver"*, 2026-10-05); gerekçe ve geri alma koşulu KAYIT-075'te · **C1'in cevabı** · **Tarih:** 2026-10-04
 **Öncül:** PROTOKOL-U §1 (kilitli `3,12 ± 0,34`),
 `observables/period_interface.dart_beta_budget`,
 `observables/dart_gozlemleri.cheng_beta`, KAYIT-070 §3 (**A108** kütle

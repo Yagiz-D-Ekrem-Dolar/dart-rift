@@ -1,6 +1,9 @@
 # ADR-0053 — `Y₀` önseli gözlemi içermiyor; `Y₀`'yu tanımlayan gözlemli `M_ejekta`
 
-**Durum:** ÖNERİ (karar kullanıcıda — **A2'nin cevabı**) · **Tarih:** 2026-10-04
+**Durum:** **KABUL EDİLDİ** (2026-10-05) · **Karar:** kullanıcı kararı Claude'a devretti (*"kararları sen ver ve düzgün ver"*, 2026-10-05); gerekçe ve geri alma koşulu KAYIT-075'te · **A2'nin cevabı**
+> **Uygulama DO'ya bağlı** (§4.4): PROTOKOL-DO §5.1'in
+> kilitli yargısı ne derse o uygulanır. Bu, kararsızlık değil
+> **ön kayıt**: kuralı koşudan önce yazdık, sonucuna göre değiştirmeyeceğiz. · **Tarih:** 2026-10-04
 **Öncül:** KAYIT-067 (W2 `Y₀` serisi), KAYIT-070 §1–§2 (gerçeklem sd'leri,
 şekil betimleyicileri), KAYIT-072 (DY2 `MODEL GÖZLEME ULAŞIYOR`),
 ADR-0044 (`DART_UZAYI_S3`), `inference/recovery.py` `C2` çakılma kuralı

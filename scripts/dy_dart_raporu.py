@@ -210,6 +210,20 @@ def sigma_carpma_yeri(dy2: dict | None, dn: dict | None) -> dict:
             "genel": genel}
 
 
+#: **A105'in KABUL EDİLMİŞ cevabı** (ADR-0056, 2026-10-05): matris çekme
+#: dayanımı üretimde **KAPALI** (`--matris-cekme-yok`). `−%23`'lük etki
+#: bütçeye **eklenmez** (reddedilen bir model belirsizlik değildir; eklenmesi
+#: paydayı şişirip sınavı kolaylaştırırdı). Yerine **her raporda** duran bir
+#: koşullu duyarlılık cümlesi yazılır.
+KOSULLU_CEKME = (
+    "Bu sonuc matris cekme dayaniminin SIFIR olmasina KOSULLUDUR "
+    "(ADR-0056 KABUL EDILDI). Mohr-Coulomb uc kesmesi (T_m = Y0/mu_f) "
+    "acilirsa kiyas sahnesinde beta %23 dusuyordu; DART sahnesindeki bedeli "
+    "PROTOKOL-DY S8 (DC) ile olculuyor. Secim fizikle ve kosulardan ONCE "
+    "yapildi, sonuca gore degil."
+)
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--kok", type=Path, required=True)
@@ -229,6 +243,7 @@ def main(argv=None) -> int:
     elips = oku(a.kok, a.ad)
     out = yargi(elips)
     out["kol_adi"] = a.ad
+    out["kosullu_cekme"] = KOSULLU_CEKME      # ADR-0056: her raporda
     if a.kure_kol:
         out["sekil_olcumu"] = sigma_sekil(elips, oku(a.kok, a.kure_kol))
     if a.mermi_kol:
@@ -266,6 +281,7 @@ def main(argv=None) -> int:
             o = out[anahtar]
             print(f"  [{etiket}] " + (o["genel"] if o.get(alan) is None else
                   f"{alan} = {o[alan]:.3f}"))
+    print(f"  [kosul] {KOSULLU_CEKME[:72]}...")
     print(f"GENEL: {out['genel']}")
     if a.json:
         a.json.write_text(json.dumps(out, indent=1, default=float), encoding="utf-8")

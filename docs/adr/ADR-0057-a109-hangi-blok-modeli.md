@@ -1,6 +1,6 @@
 # ADR-0057 — **A109:** üretimde hangi blok modeli, ve `θ`'nın anlamı neye bağlı
 
-**Durum:** ÖNERİ (karar kullanıcıda — **A109'un cevabı**) · **Tarih:** 2026-10-04
+**Durum:** **KABUL EDİLDİ** (2026-10-05) · **Karar:** kullanıcı kararı Claude'a devretti (*"kararları sen ver ve düzgün ver"*, 2026-10-05); gerekçe ve geri alma koşulu KAYIT-075'te · **A109'un cevabı** · **Tarih:** 2026-10-04
 **Öncül:** **A109** (iki ayrı blok modeli var), **A89** (U/V'de bloklar
 kütlece `%99,3` çözülmemiş), KAYIT-070 §4, KAYIT-073 §6 (ayrışma `α_b`/`f`
 eksenlerinde ölçülmedi), L2 (Raducan ve diğ. 2024), Daly ve diğ. 2023

@@ -1,6 +1,7 @@
 # ADR-0056 — **A105:** matris çekme dayanımı açık mı kapalı mı
 
-**Durum:** ÖNERİ (karar kullanıcıda — **A105'in cevabı**) · **Tarih:** 2026-10-04
+**Durum:** **KABUL EDİLDİ** (2026-10-05) · **Karar:** kullanıcı kararı Claude'a devretti (*"kararları sen ver ve düzgün ver"*, 2026-10-05); gerekçe ve geri alma koşulu KAYIT-075'te · **A105'in cevabı**
+> DC koşusu bu kararı **değiştirmez** (§4); yalnız bedelini ölçer. · **Tarih:** 2026-10-04
 **Öncül:** **A105** (ölçüldü: `T_m = Y₀/μ_f` açılınca `β` `−%23`),
 PROTOKOL-A105, KAYIT-072 (DY2 `MODEL GÖZLEME ULAŞIYOR`),
 ADR-0054 (hedef `β = 3,5418`), L1/L2

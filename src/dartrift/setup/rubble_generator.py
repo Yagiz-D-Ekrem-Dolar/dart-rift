@@ -138,6 +138,28 @@ class RubblePile:
 # ---------------------------------------------------------------------------
 # 1) Doldurma
 # ---------------------------------------------------------------------------
+#: **A109'un KABUL EDİLMİŞ cevabı** (ADR-0057, 2026-10-05) — üretim blok
+#: topluluğu **sayı olarak** kilitli. Varsayılan türetme (`r_min = 2·spacing`,
+#: `r_max = 8·spacing`) **kullanılmaz**: o türetme `θ`'nın fiziksel anlamını
+#: sayısal aralığa bağlar ve `spacing` bir gün değişirse `f`/`α_b` sessizce
+#: başka bir şeyi ifade eder.
+#:
+#: | | değer | gerekçe |
+#: |---|---|---|
+#: | `r_min` | **`14,0 m`** | `spacing = 7 m`'de çözülüyor (ortanca `231` parçacık) |
+#: | `r_max` | **`56,0 m`** | cismin kısa yarı ekseni `58 m`; üstü sığmaz |
+#: | `q` | **`3,0`** | güç yasası üssü (`dN/dr ~ r^-q`), FAZ 3 üreticisi |
+#:
+#: **Kapsam sınırı (raporlarda yan yana yazılır):** çıkarılan `(α_b, f)`
+#: Dimorphos'un **`≳ 14 m`** ölçeğindeki **iç** blok topluluğunu tanımlar.
+#: Daly ve diğ. 2023'ün ölçtüğü **yüzey** blokları (`0,16 – 6,5 m`) bu
+#: çözünürlüğün **altındadır** ve çıkarımın erişiminde değildir.
+URETIM_BLOK = {"r_min": 14.0, "r_max": 56.0, "q": 3.0,
+               "kapsam": "ic blok toplulugu, r >= 14 m; yuzey bloklari (0,16-6,5 m) "
+                         "cozunurluk ALTINDA ve cikarimin erisiminde DEGIL",
+               "karar": "ADR-0057 KABUL EDILDI (2026-10-05)"}
+
+
 def fill_particles(mesh: TriMesh, spacing: float, packing: str = "fcc",
                    cells: int = 64) -> np.ndarray:
     """Mesh'in icini `spacing` araligiyla doldur -> (N,3).

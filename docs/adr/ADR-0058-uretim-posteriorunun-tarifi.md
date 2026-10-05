@@ -1,6 +1,6 @@
 # ADR-0058 — Üretim posteriorunun tarifi: GP + heteroskedastik olabilirlik + **ölçülmüş** korelasyon + SBC kapısı
 
-**Durum:** ÖNERİ (karar kullanıcıda) · **Tarih:** 2026-10-05
+**Durum:** **KABUL EDİLDİ** (2026-10-05) · **Karar:** kullanıcı kararı Claude'a devretti (*"kararları sen ver ve düzgün ver"*, 2026-10-05); gerekçe ve geri alma koşulu KAYIT-075'te · **Tarih:** 2026-10-05
 **Öncül:** **A115** (teşhis 2026-10-05'te düzeltildi), ADR-0051 §2b/§2c,
 ADR-0053 (`M_ejekta` ikinci gözlemli), ADR-0054 (hedef `β`),
 KAYIT-073 (`β = K·M·v·kos/p`), KAYIT-074 (ölçülmüş gerçeklem terimleri)
