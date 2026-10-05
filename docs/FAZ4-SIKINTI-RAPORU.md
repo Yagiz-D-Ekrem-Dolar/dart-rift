@@ -5185,7 +5185,7 @@ da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
 
 ---
-### A115 — **Vekil hatası posteriora i.i.d. gürültü gibi ekleniyor; SBC posterioru AŞIRI TEMKİNLİ buluyor** (2026-10-04) — *açık, ÖLÇÜLDÜ (prova), havuzdan önce çözülmeli*
+### A115 — **Vekil sadakati dejenere yönde yetersiz: SBC `Y₀` posteriorunu YANLI buluyor (posterior makinesi temiz)** (2026-10-04, teşhis 2026-10-05'te **DÜZELTİLDİ**) — *açık, ÖLÇÜLDÜ, havuzun kendi verisiyle sınanacak*
 
 `scripts/prova_cikarim.py` çıkarım hattını **havuz koşmadan** sentetik veriyle
 uçtan uca koşuyor (0 GPU-saat): tasarım `96` nokta → ikinci derece vekil →
@@ -5224,6 +5224,64 @@ sınavı yine `prova_cikarim.py` olur — **SBC geçmeden havuz koşmamalı**.
 
 **Bulunuş:** hattı havuz öncesi provaya sokmak. Prova olmasaydı bu, `650`
 GPU-saatlik havuzun posterioru çıktıktan **sonra** görülürdü — ya da hiç.
+
+---
+
+**DÜZELTME (2026-10-05) — yukarıdaki TEŞHİS YANLIŞTI; ölçümle ayrıştırıldı.**
+Satırlar yerinde kalıyor (kural 5), ama okunurken bu not geçerlidir.
+
+**(a) İlk ölçümün bir kısmı provanın kendi kurgu hatasıydı.** SBC'nin
+değişmezi: **üretici ile olabilirlik aynı gürültüyü kullanmalı.** İlk
+sürümde üretici yalnız **gerçeklem** gürültüsünü ekliyordu
+(`β` ekseninde `0,0143` log birim), olabilirlik ise gözlem belirsizliğini
+de içeren `σ`'yı kullanıyordu (`0,0356`) — **`2,24` kat geniş**. Böyle bir
+kurguda PIT **zorunlu olarak** `AŞIRI TEMKİNLİ` çıkar; kodun kusuru değil.
+Üretici düzeltildi.
+
+**(b) Düzeltmeden sonra ölçülen (`n_sbc = 200`):**
+
+| senaryo | vekil | `boulder_alpha0` | `Y₀` | `f_boulder` |
+|---|---|---|---|---|
+| `ayrik` | ikinci derece | KALİBRE `0,443` | **AŞIRI TEMKİNLİ** `0,156` | KALİBRE `0,708` |
+| `ayrik` | **GP + Bachoc** | KALİBRE `0,114` | **KALİBRE** `0,247` | KALİBRE `0,861` |
+| `ayrik` | **tam model** | KALİBRE `0,290` | KALİBRE `0,945` | KALİBRE `0,726` |
+| `dejenere` | ikinci derece | KALİBRE `0,666` | **AŞIRI TEMKİNLİ + YANLI** `0,012` | DÜZGÜN DEĞİL `0,027` |
+| `dejenere` | GP + Bachoc | KALİBRE `0,799` | **YANLI** `0,013` | YANLI `0,094` |
+| `dejenere` | **tam model** | KALİBRE `0,792` | **KALİBRE** `0,474` | KALİBRE `0,595` |
+
+(sayılar KS `p`; `tam model` = vekil **yok**, ızgarada gerçek ileri model.)
+
+**(c) Doğru teşhis.**
+
+1. **Posterior makinesi DOĞRU.** Tam modelle SBC her iki senaryoda da
+   kusursuz kalibre. Yani `grid_posterior_hetero`, `pit_degeri`, ızgara
+   özetleri ve kapsama eğrisi temiz. Bu, hattın en pahalı parçasının
+   **sınanmış** olması demek.
+2. **İkinci derece vekil `Y₀`'yu AŞIRI TEMKİNLİ yapıyor; GP yapmıyor.**
+   İlk teşhisin bu kısmı **tuttu** ve çaresi ADR-0051 §2b'nin yolu:
+   GP öngörü varyansı (θ'ya bağlı) + Bachoc grup-CV kalibrasyonu +
+   `grid_posterior_hetero`. Üretim bu yolu kullanmalı.
+   (Ölçülen `varyans_carpani ≈ 1,01`, yani GP'nin varyansı zaten doğruydu;
+   kazanç varyansın **θ'ya bağlı** olmasından geliyor, ölçeğinden değil.)
+3. **Dejenere yönde kalan şey YANLILIK ve onu varyans kalibrasyonu
+   ÇÖZEMEZ.** Vekilin **ortalama** hatası dejenere yön boyunca sistematik;
+   varyans kalibrasyonu ölçeği düzeltir, **kaymayı** düzeltmez. Izgara
+   çözünürlüğü değil: `n_grid` `24 / 40 / 60` için `D = 0,111 / 0,109 /
+   0,110` — **değişmiyor**.
+
+**(d) Havuz için kural (bu kayıttan çıkan).** `96` tasarım noktası,
+yakın-dejenere bir sırt üzerinde `Y₀` posteriorunu **yanlı** yapmaya
+yetiyor. Dolayısıyla:
+
+> **Posterior, gerçek vekille SBC geçmeden yayımlanmaz.** `PIT` `YANLI`
+> derse çare posterioru yayımlamak değil, **tasarımı sıkılaştırmaktır**
+> (sırt boyunca nokta eklemek) ya da tek posterior yerine tarih eşleme
+> (`tarih_esleme`, Vernon) ile eleme yapmaktır. Sınav hazır:
+> `scripts/prova_cikarim.py --vekil gp`.
+
+**Kusurun kendisi kapanmadı** ama **yeri değişti**: "posterior makinesi
+şüpheli" değil, "vekil sadakati dejenere yönde yetersiz". İkincisi
+ölçülebilir ve havuzun kendi verisiyle sınanacak.
 
 ---
 ### A114 — **Krater gözlemlisi üretim sahnesinde ölçülemiyor ve TEK başına bütün `y` vektörünü (β dahil) düşürüyor** (2026-10-04) — *açık, ÖLÇÜLDÜ, üretimi kilitliyor*

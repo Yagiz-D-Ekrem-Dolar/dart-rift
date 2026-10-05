@@ -43,6 +43,12 @@ _BURASI = Path(__file__).resolve().parent
 sys.path.insert(0, str(_BURASI.parent / "src"))
 
 from dartrift.inference.design import DART_UZAYI_S4_ONERI, lhs_design  # noqa: E402
+from dartrift.inference.gp_vekil import (  # noqa: E402
+    gp_grup_loo,
+    gp_uydur,
+    gp_varyans_kalibre,
+)
+from dartrift.inference.posterior import grid_posterior_hetero  # noqa: E402
 
 # --- OLCULEN sabitler (KAYIT-073, KAYIT-070, ADR-0053) ----------------------
 C_BETA, P_BETA = 3.4649, -0.0760
@@ -99,7 +105,8 @@ def _log_sigma(bagil: float) -> float:
 
 
 def prova(senaryo: str, *, n_tasarim: int = 96, n_grid: int = 40,
-          n_sbc: int = 60, tohum: int = 20261004, ucuncu: bool = False) -> dict:
+          n_sbc: int = 60, tohum: int = 20261004, ucuncu: bool = False,
+          vekil_kipi: str = "ikinci") -> dict:
     from dartrift.inference.kalibrasyon import (
         kapsama_egrisi,
         ks_duzgunluk,
@@ -128,9 +135,34 @@ def prova(senaryo: str, *, n_tasarim: int = 96, n_grid: int = 40,
     Y = Y0 + rng.normal(scale=olcek, size=Y0.shape)
 
     # --- 2) vekil (gozlemli basina) + LOO artigi
-    vekiller = [fit_surrogate(uzay, X, Y[:, k]) for k in range(k_gozlemli)]
-    loo = [float(np.std(loo_artiklari(uzay, X, Y[:, k]), ddof=1))
-           for k in range(k_gozlemli)]
+    #
+    # A115: ikinci derece vekil yolunda vekil hatasi i.i.d. gurultu gibi
+    # paydaya eklenir; ama hata theta'nin DUZGUN bir fonksiyonu, yani
+    # korelasyonlu -> posterior gereginden genis cikiyor (SBC ASIRI TEMKINLI).
+    # `gp` kipi ADR-0051 S2b'nin yolunu kullanir: GP ongoru varyansi
+    # (theta'ya BAGLI) + Bachoc grup-CV kalibrasyonu + grid_posterior_hetero.
+    gp_bilgi = None
+    if vekil_kipi == "tam":
+        # TANI KIPI: vekil YOK. Izgarada gercek ileri model kullanilir, yani
+        # PIT'te kalan her sapma POSTERIOR MAKINESININ kusurudur (vekilin degil).
+        vekiller, loo = [], [0.0] * k_gozlemli
+    elif vekil_kipi == "gp":
+        gpler, gp_bilgi = [], []
+        gruplar = np.arange(n_tasarim) % 4          # 4 kat grup-CV
+        for k in range(k_gozlemli):
+            v = gp_uydur(uzay, X, Y[:, k])
+            v, bil = gp_varyans_kalibre(v, Y[:, k], gruplar)
+            gpler.append(v)
+            gp_bilgi.append({"varyans_carpani": float(v.varyans_carpani),
+                             **{a: float(bil[a]) for a in bil
+                                if isinstance(bil[a], (int, float))}})
+        vekiller = gpler
+        loo = [float(np.sqrt(np.mean(gp_grup_loo(gpler[k], Y[:, k], gruplar)[0] ** 2)))
+               for k in range(k_gozlemli)]
+    else:
+        vekiller = [fit_surrogate(uzay, X, Y[:, k]) for k in range(k_gozlemli)]
+        loo = [float(np.std(loo_artiklari(uzay, X, Y[:, k]), ddof=1))
+               for k in range(k_gozlemli)]
 
     # --- 3) gozlem ve toplam sd (log birimde)
     veri = [np.log10(BETA_GOZLEM - 1.0), np.log10(M_GOZLEM)]
@@ -143,7 +175,39 @@ def prova(senaryo: str, *, n_tasarim: int = 96, n_grid: int = 40,
     veri = np.asarray(veri, dtype=np.float64)
     sigma = [float(np.sqrt(sg[k] ** 2 + loo[k] ** 2)) for k in range(k_gozlemli)]
 
-    post = grid_posterior(uzay, vekiller, veri, sigma, n_grid=n_grid)
+    if vekil_kipi == "tam":
+        eksen = np.linspace(0.0, 1.0, n_grid)
+        Ug = np.column_stack([g.ravel() for g in
+                              np.meshgrid(*([eksen] * uzay.ndim), indexing="ij")])
+        ORT = ileri(uzay.from_unit(Ug), kat, ucuncu=ucuncu)
+        VAR = np.tile(np.square(sg), (ORT.shape[0], 1))
+        Rkor = np.eye(k_gozlemli)
+        sigma = [float(v) for v in sg]
+
+        def _post(v):
+            return grid_posterior_hetero(uzay, ORT, VAR, v, Rkor, n_grid)
+    elif vekil_kipi == "gp":
+        # Izgarayi BIR kez degerlendir: SBC dongusunde yalniz `veri` degisir.
+        eksen = np.linspace(0.0, 1.0, n_grid)
+        Ug = np.column_stack([g.ravel() for g in
+                              np.meshgrid(*([eksen] * uzay.ndim), indexing="ij")])
+        ort_g, var_g = [], []
+        for k in range(k_gozlemli):
+            m, v2 = vekiller[k].predict_u(Ug)
+            ort_g.append(np.asarray(m, float).ravel())
+            # Gozlem varyansi theta'dan bagimsiz; GP varyansi theta'ya bagli.
+            var_g.append(np.asarray(v2, float).ravel() + sg[k] ** 2)
+        ORT = np.column_stack(ort_g)
+        VAR = np.column_stack(var_g)
+        Rkor = np.eye(k_gozlemli)
+
+        def _post(v):
+            return grid_posterior_hetero(uzay, ORT, VAR, v, Rkor, n_grid)
+    else:
+        def _post(v):
+            return grid_posterior(uzay, vekiller, v, sigma, n_grid=n_grid)
+
+    post = _post(veri)
     ozet = tanimlanabilirlik_ozeti(post)
 
     # --- 4) Fisher: 2 gozlemli / 3 parametre -> rank en cok 2 (ARITMETIK)
@@ -156,11 +220,16 @@ def prova(senaryo: str, *, n_tasarim: int = 96, n_grid: int = 40,
 
     # --- 5) SBC (ayni gurultu modeli; sapma HATTIN kusuru olur)
     def uret(x, r):
+        # SBC'nin degismezi: URETICI ile OLABILIRLIK ayni gurultuyu kullanmali.
+        # Ilk surumde uretici yalniz GERCEKLEM gurultusunu (`olcek`) ekliyordu,
+        # olabilirlik ise gozlem belirsizligini de iceren `sigma`'yi kullaniyordu
+        # (beta ekseninde 2,24 kat genis) -> PIT zorunlu olarak ASIRI TEMKINLI
+        # cikiyordu. Bu bir hat kusuru DEGILDI, provanin kurgu hatasiydi (A115).
         y = ileri(x[None, :], kat, ucuncu=ucuncu)[0]
-        return y + r.normal(scale=olcek)
+        return y + r.normal(scale=sigma)
 
     def cikarim(v):
-        return grid_posterior(uzay, vekiller, v, sigma, n_grid=n_grid)
+        return _post(v)
 
     sbc = sbc_calistir(uzay, uret, cikarim, n_sbc, tohum=tohum + 1)
     ks = [ks_duzgunluk(sbc.pit[:, j]) for j in range(uzay.ndim)]
@@ -172,6 +241,7 @@ def prova(senaryo: str, *, n_tasarim: int = 96, n_grid: int = 40,
     return {
         "UYARI": "PROVA -- sentetik veri; Dimorphos hakkinda sonuc DEGIL",
         "senaryo": senaryo, "ucuncu_gozlemli": bool(ucuncu),
+        "vekil_kipi": vekil_kipi, "gp_bilgi": gp_bilgi,
         "varsayilan_katsayilar": kat,
         "olculen_sabitler": {"p_beta": P_BETA, "p_M": P_M,
                              "sigma_gerceklem_beta": SIGMA_GERCEKLEM_BETA,
@@ -201,18 +271,23 @@ def main(argv=None) -> int:
     ap.add_argument("--n-tasarim", type=int, default=96)
     ap.add_argument("--n-grid", type=int, default=40)
     ap.add_argument("--n-sbc", type=int, default=60)
+    ap.add_argument("--vekil", default="ikinci", choices=("ikinci", "gp", "tam"),
+                    help="A115: 'gp' -> GP + Bachoc + hetero; 'tam' -> vekil YOK (tani)")
     ap.add_argument("--ucuncu", action="store_true",
                     help="ejekta yonelimini (kos_ort) UCUNCU gozlemli yap "
                          "-- A95 kapanirsa ne kazanilir")
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args(argv)
     out = prova(a.senaryo, n_tasarim=a.n_tasarim, n_grid=a.n_grid,
-                n_sbc=a.n_sbc, ucuncu=a.ucuncu)
+                n_sbc=a.n_sbc, ucuncu=a.ucuncu, vekil_kipi=a.vekil)
     print("=" * 72)
     print(f"CIKARIM HATTI PROVASI -- senaryo: {a.senaryo}"
           f"{'  + UCUNCU GOZLEMLI (A95 kapali varsayimi)' if a.ucuncu else ''}")
     print("  UYARI: sentetik veri. Dimorphos hakkinda SONUC DEGIL.")
     print("=" * 72)
+    print(f"  vekil kipi: {out['vekil_kipi']}"
+          + (f"  varyans carpani {[round(g['varyans_carpani'], 2) for g in out['gp_bilgi']]}"
+             if out["gp_bilgi"] else ""))
     print(f"  vekil LOO sd (log10): {[round(v, 4) for v in out['vekil_loo_sd']]}")
     print(f"  toplam sd (log10):    {[round(v, 4) for v in out['sigma_toplam_log']]}")
     f = out["fisher"]
