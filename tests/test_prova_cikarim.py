@@ -95,3 +95,29 @@ def test_fisher_ucuncu_ozdeger_SIFIR_iki_gozemliyle():
 def test_gecersiz_senaryo():
     with pytest.raises(ValueError, match="senaryo"):
         PR.prova("yok", n_tasarim=20, n_grid=10, n_sbc=10)
+
+
+# ------------------------------------------------- ADR-0058 §3: korelasyon
+def test_korelasyon_matrisi_ve_denetimi():
+    R = PR._korelasyon(2, 0.8)
+    assert R.shape == (2, 2)
+    assert R[0, 0] == 1.0 and R[0, 1] == pytest.approx(0.8)
+    assert np.all(np.linalg.eigvalsh(R) > 0.0)       # pozitif tanimli
+    assert np.allclose(PR._korelasyon(3, 0.0), np.eye(3))
+    for kotu in (1.0, -1.0, 1.5):
+        with pytest.raises(ValueError, match="rho"):
+            PR._korelasyon(2, kotu)
+
+
+def test_rho_arttikca_alpha_b_DARALIYOR_Y0_degismiyor():
+    """ADR-0058 §3'ün ölçümü: `R = I` almak bilgiyi yanlış yere dağıtıyor."""
+    dar = {}
+    for rho in (0.0, 0.8):
+        out = PR.prova("ayrik", n_tasarim=40, n_grid=20, n_sbc=10,
+                       vekil_kipi="tam", rho=rho)
+        dar[rho] = {e["ad"]: e["daralma"] for e in out["eksenler"]}
+        assert out["rho"] == pytest.approx(rho)
+    # alpha_b belirgin sekilde daha cok daraliyor
+    assert dar[0.8]["boulder_alpha0"] > dar[0.0]["boulder_alpha0"] + 0.15
+    # Y0 neredeyse degismiyor (korelasyon oradan bilgi almiyor)
+    assert abs(dar[0.8]["Y0"] - dar[0.0]["Y0"]) < 0.05

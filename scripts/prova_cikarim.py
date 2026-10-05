@@ -99,6 +99,20 @@ def ileri(theta: np.ndarray, kat: dict, *, ucuncu: bool = False) -> np.ndarray:
     return np.column_stack([y1, y2, y3])
 
 
+def _korelasyon(k: int, rho: float) -> np.ndarray:
+    """ADR-0058 §3: gözlemli artıklarının korelasyon matrisi.
+
+    `β` ile `M_ejekta` **aynı** ejekta alanından türüyor (KAYIT-073), yani
+    `ρ = 0` almak bir **varsayım**dır ve `α_b`'nin daralmasını belirliyor.
+    Üretimde `ρ` havuzun vekil artıklarından **ölçülür**.
+    """
+    if not (-0.99 <= float(rho) <= 0.99):
+        raise ValueError(f"rho (-0,99 ; 0,99) araliginda olmali, {rho} geldi")
+    R = np.full((k, k), float(rho))
+    np.fill_diagonal(R, 1.0)
+    return R
+
+
 def _log_sigma(bagil: float) -> float:
     """Bağıl sd → `log10` birimindeki sd (küçük gürültü yaklaşımı)."""
     return float(bagil / np.log(10.0))
@@ -106,7 +120,7 @@ def _log_sigma(bagil: float) -> float:
 
 def prova(senaryo: str, *, n_tasarim: int = 96, n_grid: int = 40,
           n_sbc: int = 60, tohum: int = 20261004, ucuncu: bool = False,
-          vekil_kipi: str = "ikinci") -> dict:
+          vekil_kipi: str = "ikinci", rho: float = 0.0) -> dict:
     from dartrift.inference.kalibrasyon import (
         kapsama_egrisi,
         ks_duzgunluk,
@@ -181,7 +195,7 @@ def prova(senaryo: str, *, n_tasarim: int = 96, n_grid: int = 40,
                               np.meshgrid(*([eksen] * uzay.ndim), indexing="ij")])
         ORT = ileri(uzay.from_unit(Ug), kat, ucuncu=ucuncu)
         VAR = np.tile(np.square(sg), (ORT.shape[0], 1))
-        Rkor = np.eye(k_gozlemli)
+        Rkor = _korelasyon(k_gozlemli, rho)
         sigma = [float(v) for v in sg]
 
         def _post(v):
@@ -199,7 +213,7 @@ def prova(senaryo: str, *, n_tasarim: int = 96, n_grid: int = 40,
             var_g.append(np.asarray(v2, float).ravel() + sg[k] ** 2)
         ORT = np.column_stack(ort_g)
         VAR = np.column_stack(var_g)
-        Rkor = np.eye(k_gozlemli)
+        Rkor = _korelasyon(k_gozlemli, rho)
 
         def _post(v):
             return grid_posterior_hetero(uzay, ORT, VAR, v, Rkor, n_grid)
@@ -241,7 +255,7 @@ def prova(senaryo: str, *, n_tasarim: int = 96, n_grid: int = 40,
     return {
         "UYARI": "PROVA -- sentetik veri; Dimorphos hakkinda sonuc DEGIL",
         "senaryo": senaryo, "ucuncu_gozlemli": bool(ucuncu),
-        "vekil_kipi": vekil_kipi, "gp_bilgi": gp_bilgi,
+        "vekil_kipi": vekil_kipi, "gp_bilgi": gp_bilgi, "rho": float(rho),
         "varsayilan_katsayilar": kat,
         "olculen_sabitler": {"p_beta": P_BETA, "p_M": P_M,
                              "sigma_gerceklem_beta": SIGMA_GERCEKLEM_BETA,
@@ -273,19 +287,22 @@ def main(argv=None) -> int:
     ap.add_argument("--n-sbc", type=int, default=60)
     ap.add_argument("--vekil", default="ikinci", choices=("ikinci", "gp", "tam"),
                     help="A115: 'gp' -> GP + Bachoc + hetero; 'tam' -> vekil YOK (tani)")
+    ap.add_argument("--rho", type=float, default=0.0,
+                    help="ADR-0058 S3: gozemli artiklarinin korelasyonu")
     ap.add_argument("--ucuncu", action="store_true",
                     help="ejekta yonelimini (kos_ort) UCUNCU gozlemli yap "
                          "-- A95 kapanirsa ne kazanilir")
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args(argv)
     out = prova(a.senaryo, n_tasarim=a.n_tasarim, n_grid=a.n_grid,
-                n_sbc=a.n_sbc, ucuncu=a.ucuncu, vekil_kipi=a.vekil)
+                n_sbc=a.n_sbc, ucuncu=a.ucuncu, vekil_kipi=a.vekil,
+                rho=a.rho)
     print("=" * 72)
     print(f"CIKARIM HATTI PROVASI -- senaryo: {a.senaryo}"
           f"{'  + UCUNCU GOZLEMLI (A95 kapali varsayimi)' if a.ucuncu else ''}")
     print("  UYARI: sentetik veri. Dimorphos hakkinda SONUC DEGIL.")
     print("=" * 72)
-    print(f"  vekil kipi: {out['vekil_kipi']}"
+    print(f"  vekil kipi: {out['vekil_kipi']}  rho={out['rho']:.2f}"
           + (f"  varyans carpani {[round(g['varyans_carpani'], 2) for g in out['gp_bilgi']]}"
              if out["gp_bilgi"] else ""))
     print(f"  vekil LOO sd (log10): {[round(v, 4) for v in out['vekil_loo_sd']]}")
