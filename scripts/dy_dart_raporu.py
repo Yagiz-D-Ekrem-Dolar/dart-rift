@@ -29,6 +29,7 @@ AD_DK = "DK_kure_g1p0"       # PROTOKOL-DY S6.3 hacim-esdeger kure kolu
 AD_DM = "DM_tekkure_g1p0"    # PROTOKOL-DY S7 tek kure mermi kolu
 AD_DT = "DT_tohum2_g1p0"     # PROTOKOL-DY S7 ikinci sahne tohumu
 AD_DC = "DC_cekme_g1p0"      # PROTOKOL-DY S8 matris cekmesi ACIK
+AD_DN = "DN_nisan25_g1p0"    # PROTOKOL-DY S9 carpma yeri 25 m kacik
 T_END = 600.0
 BETA_GOZLEM = 3.12            # PROTOKOL-U §1 (kilitli hedef)
 SIGMA_GOZLEM = 0.34
@@ -178,6 +179,37 @@ def sigma_cekme(dy2: dict | None, dc: dict | None) -> dict:
             "kapi_mi": False, "genel": genel}
 
 
+#: PROTOKOL-DY §9.4 (KİLİTLİ) — L12'nin ödünç değeri ve iki eşik.
+SIGMA_YER_L12 = 0.10
+SIGMA_YER_ONEMSIZ = 0.03
+SIGMA_YER_BUYUK = 0.15
+
+
+def sigma_carpma_yeri(dy2: dict | None, dn: dict | None) -> dict:
+    """PROTOKOL-DY §9.4 (KİLİTLİ): `σ_çarpma_yeri = |b_DY2 − b_DN| / b_DY2`.
+
+    `KACIKLIK ONEMSIZ` (`≤ 0,03`) / `L12 ILE UYUMLU` (`≤ 0,15`) /
+    `KACIKLIK L12DEN BUYUK` (`> 0,15`). **Üretim nişanı değişmez** (§9.4);
+    bu ölçüm yalnız kutup nişanı seçiminin bedelini bütçeye yazar.
+    """
+    a, b = _b(dy2), _b(dn)
+    if a is None or b is None or a == 0.0:
+        return {"genel": "OKUNMAZ (DY2 ya da DN kolu gecersiz)",
+                "sigma_carpma_yeri": None}
+    s = abs(a - b) / abs(a)
+    # Esikler KAPSAYICI (PROTOKOL-DY §9.4); kenarda kayan nokta artigi
+    # yargiyi cevirmesin diye 1e-12 pay (sigma_cekme ile ayni kural).
+    if s <= SIGMA_YER_ONEMSIZ + 1e-12:
+        genel = "KACIKLIK ONEMSIZ"
+    elif s <= SIGMA_YER_BUYUK + 1e-12:
+        genel = "L12 ILE UYUMLU"
+    else:
+        genel = "KACIKLIK L12DEN BUYUK"
+    return {"sigma_carpma_yeri": s, "beta_kutup": 1.0 + a, "beta_kacik": 1.0 + b,
+            "odunc_L12": SIGMA_YER_L12, "uretim_nisani_degismez": True,
+            "genel": genel}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--kok", type=Path, required=True)
@@ -190,6 +222,8 @@ def main(argv=None) -> int:
                     help=f"verilirse sigma_gerceklem olculur (ornek: {AD_DT})")
     ap.add_argument("--cekme-kol", default=None,
                     help=f"verilirse sigma_cekme olculur (ornek: {AD_DC})")
+    ap.add_argument("--nisan-kol", default=None,
+                    help=f"verilirse sigma_carpma_yeri olculur (ornek: {AD_DN})")
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args(argv)
     elips = oku(a.kok, a.ad)
@@ -203,6 +237,8 @@ def main(argv=None) -> int:
         out["gerceklem_olcumu"] = sigma_gerceklem(elips, oku(a.kok, a.tohum_kol))
     if a.cekme_kol:
         out["cekme_olcumu"] = sigma_cekme(elips, oku(a.kok, a.cekme_kol))
+    if a.nisan_kol:
+        out["yer_olcumu"] = sigma_carpma_yeri(elips, oku(a.kok, a.nisan_kol))
     print("=" * 72)
     print("PROTOKOL DY -- DART sahnesi, gec evre modeli (ilk kosu)")
     print("=" * 72)
@@ -223,7 +259,9 @@ def main(argv=None) -> int:
             print(f"          {so['yorum']}")
     for anahtar, etiket, alan in (("mermi_olcumu", "mermi", "sigma_mermi"),
                                   ("gerceklem_olcumu", "gerceklem", "sigma_gerceklem"),
-                                  ("cekme_olcumu", "cekme", "sigma_cekme")):
+                                  ("cekme_olcumu", "cekme", "sigma_cekme"),
+                                  ("yer_olcumu", "carpma yeri",
+                                   "sigma_carpma_yeri")):
         if anahtar in out:
             o = out[anahtar]
             print(f"  [{etiket}] " + (o["genel"] if o.get(alan) is None else

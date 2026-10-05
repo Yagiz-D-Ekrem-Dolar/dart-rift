@@ -226,3 +226,36 @@ def test_CLI_cekme_kol(tmp_path, capsys):
     assert d["cekme_olcumu"]["sigma_cekme"] == pytest.approx(
         abs(2.748 - 1.890) / 2.748)
     assert "sigma_cekme" in capsys.readouterr().out
+
+
+# --------------------------------------- PROTOKOL-DY §9.4: sigma_carpma_yeri
+def test_sigma_carpma_yeri_sabitler_ve_uc_yargi(tmp_path):
+    assert (DY.SIGMA_YER_L12, DY.SIGMA_YER_ONEMSIZ, DY.SIGMA_YER_BUYUK) == (
+        0.10, 0.03, 0.15)
+    assert DY.AD_DN == "DN_nisan25_g1p0"
+    b2 = 2.748
+    for hedef, genel in ((0.02, "KACIKLIK ONEMSIZ"),
+                         (0.03, "KACIKLIK ONEMSIZ"),       # kenar KAPSAYICI
+                         (0.09, "L12 ILE UYUMLU"),
+                         (0.15, "L12 ILE UYUMLU"),         # kenar KAPSAYICI
+                         (0.25, "KACIKLIK L12DEN BUYUK")):
+        kok = tmp_path / f"y{hedef}"
+        _npz(kok, DY.AD_DY2, 1.0 + b2, 600.0)
+        _npz(kok, DY.AD_DN, 1.0 + b2 * (1.0 - hedef), 600.0)
+        r = DY.sigma_carpma_yeri(DY.oku(kok, DY.AD_DY2), DY.oku(kok, DY.AD_DN))
+        assert r["sigma_carpma_yeri"] == pytest.approx(hedef, abs=1e-9)
+        assert r["genel"] == genel, (hedef, r["genel"])
+        assert r["uretim_nisani_degismez"] is True       # S9.4: nisan DEGISMEZ
+
+
+def test_sigma_carpma_yeri_OKUNMAZ_ve_CLI(tmp_path, capsys):
+    _npz(tmp_path, DY.AD_DY2, 3.748, 600.0)
+    _npz(tmp_path, DY.AD_DN, 3.50, 300.0)                 # 600 s'ye ulasmadi
+    r = DY.sigma_carpma_yeri(DY.oku(tmp_path, DY.AD_DY2), DY.oku(tmp_path, DY.AD_DN))
+    assert r["sigma_carpma_yeri"] is None and r["genel"].startswith("OKUNMAZ")
+    kok = tmp_path / "cli"
+    _npz(kok, DY.AD_DY2, 3.748, 600.0)
+    _npz(kok, DY.AD_DN, 3.50, 600.0)
+    assert DY.main(["--kok", str(kok), "--ad", DY.AD_DY2,
+                    "--nisan-kol", DY.AD_DN]) == 0
+    assert "sigma_carpma_yeri" in capsys.readouterr().out

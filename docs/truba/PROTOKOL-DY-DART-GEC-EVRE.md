@@ -216,3 +216,72 @@ koşulardan **önce** verildi. DC yalnız **bedelini** ölçer.
 `M_kaçan`/`v_ort`/`kos_ort` hangi yönde değişiyor? Götürme hâlâ var mı?
 Bu, `−%23`'ün *hangi çarpandan* geldiğini söyler.
 
+---
+
+## 9. DN — çarpma yerinin kaçıklığı: bütçenin **kalan en büyük ödünç terimi** (2026-10-05, **koşudan ÖNCE**)
+
+### 9.1 Neden
+
+KAYIT-074'ten sonra model eksikliği bütçesinde **iki** ödünç terim kaldı ve
+büyüğü `carpma_yeri = 0,10`. Kaynağı L12 (Senel ve diğ. 2025 MNRAS): *yakın
+bloklar `β`'yı `≤ %7,6` değiştiriyor* → `β − 1` üzerinden `~%10`. **Başka bir
+kodun, başka bir sahnede ölçtüğü sayı**; NUSAP soy kütüğünde (KAYIT-070 §2)
+doğrulaması **sıfır**.
+
+Üstelik DY2/DK/DM/DT'nin hepsi çarpmayı **kutba** (varsayılan nişan `0 0 1`)
+yaptı. Gerçek DART, şekil merkezinden **`25,0 ± 1,0 m`** uzağa çarptı
+(`CARPMA_KACIKLIGI`, Daly ve diğ. 2023, `teyit = tam_metin`, çarpma yeri
+1σ belirsizliği `68 cm`). PROTOKOL-DY §2 bunu **bilerek kapsam dışı**
+bırakmıştı; DN o boşluğu kapatıyor.
+
+### 9.2 Tasarım (tek koşu)
+
+DY2 ile **birebir aynı** sahne; değişen tek şey **nişan yönü**.
+
+Elipsoit `88,5 × 87 × 58 m` üzerinde, kutuptan **kiriş uzaklığı tam `25,0 m`**
+olan yüzey noktası (`x–z` düzleminde, `+x` yönünde):
+
+| | değer |
+|---|---|
+| parametrik açı | `0,285091 rad = 16,334°` |
+| yüzey noktası | `(24,8901 ; 0 ; 55,6589) m` |
+| kutuptan kiriş | **`25,0000 m`** |
+| yanal kaçıklık | `24,890 m` · `z` düşüşü `2,341 m` |
+| **nişan (birim)** | **`(0,408231 ; 0 ; 0,912879)`** |
+
+`--nisan 24.8901 0 55.6589` (yalnız yön kullanılır).
+
+**Azimut `+x` seçildi** çünkü elipsoidin `a = 88,5` ekseni; `b = 87,0`
+ekseninden ayrımı `%1,7` ve bu koşu azimut duyarlılığını ölçmüyor.
+Seçim **koşudan önce** ve gerekçesiyle yazıldı.
+
+Maliyet kestirimi DY2'den: **`~5 GPU-saat`**.
+
+### 9.3 Geçerlilik
+
+§3 ile aynı. Değilse ölçüm **OKUNMAZ** ve `carpma_yeri` L12'nin ödünç
+`0,10`'uyla kalır.
+
+### 9.4 Kilitli ölçüm ve yargı
+
+`b = β − 1` (600 s). **`σ_çarpma_yeri = |b_DY2 − b_DN| / b_DY2`.**
+
+| yargı | koşul | sonucu |
+|---|---|---|
+| **KACIKLIK ONEMSIZ** | `σ ≤ 0,03` | terim `0,10`'dan **ölçülmüş** küçük değere iner; bütçenin en büyük terimi değişir |
+| **L12 ILE UYUMLU** | `0,03 < σ ≤ 0,15` | ödünç `0,10` **doğrulanmış** sayılır, ölçülmüş değerle değiştirilir |
+| **KACIKLIK L12'DEN BUYUK** | `σ > 0,15` | çarpma yeri bütçenin **başatı** olur ve havuzun her noktasında nişanın sabit tutulması gerekçelenmelidir |
+
+**Üretim nişanı bu ölçümle DEĞİŞMEZ.** Havuz DY2'nin sahnesini (kutup
+nişanı) kullanmayı sürdürür; DN yalnız o seçimin **bedelini** bütçeye
+ölçülmüş olarak yazar. Gerekçe: nişanı `25 m`'ye taşımak bütün kıyas
+zincirini (W2→UY2→DY2→DM/DT) geçersiz kılar ve `~40 GPU-saat`'lik
+ölçümleri çöpe atar. Bu paragraf koşudan **önce** yazıldı.
+
+### 9.5 Kapı olmayan tanılar
+
+§5 ile aynı, artı: **ejekta ayrışması** (KAYIT-073 — kaçıklık `M_kaçan`'ı
+mı, `kos_ort`'u mu değiştiriyor?) ve iki krater ölçüsü yan yana
+(A19/A114 — eğik ve kaçık çarpmada `crater_profile`'ın kutu 0'ı daha da
+aç kalır mı?).
+
