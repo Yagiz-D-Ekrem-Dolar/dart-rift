@@ -63,7 +63,7 @@ echo "HAVUZ dilim $i/$N_DILIM  kod: $AGAC_COMMIT"
 # shellcheck disable=SC2086
 python scripts/faz5_ensemble_merdiven.py --device cuda:0 \
     --t-end 600 --root-seed 20260906 --sahne-tohum 20260906 \
-    --tasarim-dosyasi "$TAS" $ORTAK \
+    $ORTAK \
     --out "$KOK/kampanya/${AD}.jsonl"
 rc=$?
 echo "HAVUZ dilim $i rc=$rc"
