@@ -151,6 +151,14 @@ MODEL_EKSIKLIGI_KAYNAKLI = {
     "gerceklem_M_ejekta_DART": (0.129, "DY2 vs DT, PROTOKOL-DY S7 (KAYIT-074)"),
     "carpma_yeri": (0.10, "L12 Senel ve dig. 2025 MNRAS: yakin bloklar beta'yi "
                           "<= %7,6 degistiriyor -> beta-1'de ~%10 (beta ~3,2)"),
+    # OLCULDU (2026-10-06, KAYIT-076): DN kolu -- DY2 ile ayni sahne, yalniz
+    # nisan kutuptan 25,0 m kirise tasindi (gercek DART kacikligi Daly 2023).
+    # beta 3,748 -> 3,665 => |b_DY2 - b_DN| / b_DY2 = 0,0302. L12'nin odunc
+    # 0,10'u 3,3 KAT BUYUKTU. Esik sirtinda: "ONEMSIZ" dali 0,03'te ve olculen
+    # deger onu 0,0002 ile asiyor -> kilitli yargi "L12 ILE UYUMLU".
+    # NOT: beta neredeyse degismiyor ama koni 85,2 -> 107,7 derece ve
+    # M_ejekta +%18 -- sekil bulgusuyla (KAYIT-072 S3) ayni desen.
+    "carpma_yeri_olculen": (0.030, "DN vs DY2, PROTOKOL-DY S9 (KAYIT-076)"),
     "mermi_geometrisi": (0.15, "L9 Owen ve dig. 2022: kure mermi %10-20; UC KURE "
                                "mermiyle kalan terim OLCULMEDI (ust sinir)"),
     # OLCULDU (2026-10-05, KAYIT-074): DY2 (uc kure) vs DM (tek kure), DART
@@ -172,6 +180,17 @@ MODEL_EKSIKLIGI_KAYNAKLI = {
     # Literaturun "%15-21" iddiasi BIZIM sahnemizde dogrulanmadi: beta sekle
     # neredeyse duyarsiz. (M_ejekta ise %56 degisiyor -- ayri terim.)
     "hedef_sekli_olculen": (0.009, "DY2 vs DK, PROTOKOL-DY S6.3 (KAYIT-072)"),
+    # OLCULDU (2026-10-06, KAYIT-076) ama **BUTCEYE GIRMEZ** (ADR-0056 KABUL):
+    # DC kolu, DY2 ile ayni sahne, yalniz Mohr-Coulomb uc kesmesi ACIK
+    # (T_m = Y0/mu_f ~ 16,7 Pa): beta 3,748 -> 1,081, M_ejekta 1,96e7 -> 278 kg.
+    # sigma = 0,971. Kiyas sahnesinde 0,23 idi; DART sahnesinde 4,2 KAT buyuk.
+    # Reddedilen bir model belirsizlik DEGILDIR: terim yalniz KOSULLU
+    # DUYARLILIK olarak raporlanir (dy_dart_raporu.KOSULLU_CEKME).
+    # BILIMSEL OKUMA: cekme acikken hicbir Y0 gozleme ulasmiyor, yani DART'in
+    # olctugu beta Dimorphos matrisinin ~0 cekme dayanimina sahip olmasini
+    # GEREKTIRIYOR. Bu bir kayit degil, bir SONUC.
+    "matris_cekme_olculen": (0.971, "DC vs DY2, PROTOKOL-DY S8 (KAYIT-076); "
+                                    "paydaya GIRMEZ, kosullu duyarlilik"),
     "carpma_acisi": (0.05, "L5, L13, L20; Daly ve dig. 2023: 17 +- 7 derece"),
 }
 

@@ -640,6 +640,7 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                         gerinim_yumusama: dict | None = None,
                         av_tanisi_her: int = 0,
                         h_orani: float = 2.0,
+                        istege_bagli: tuple[str, ...] = (),
                         ) -> np.ndarray:
     """**Kademeli inceltmeli** ileri model — şoku ızgarada taşıyan.
 
@@ -1153,7 +1154,8 @@ def ileri_kosu_merdiven(x, *, material, device: str, t_end: float,
                 target_mass=rs.target_mass, target_radius=rs.target_radius,
                 is_impactor=rs.is_impactor,
                 impact_direction=rs.impact_direction, x_reference=x0,
-                krater_ayarlari=krater_ayarlari, yari_eksenler=_yari)
+                krater_ayarlari=krater_ayarlari, yari_eksenler=_yari,
+                istege_bagli=istege_bagli)
         except (RuntimeError, ValueError) as e:
             if ilerleme:
                 ilerleme(i, len(x), f"DUSTU: {e}")

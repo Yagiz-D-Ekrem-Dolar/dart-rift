@@ -149,10 +149,16 @@ DART_UZAYI_S3 = ParamSpace(
 )
 
 
-#: ADR-0053 **ÖNERİ** — `Y₀` önseli aşağı taşınmış uzay. **VARSAYILAN DEĞİL:**
-#: karar kilitlenmedi (kural 6). `DART_UZAYI_S3` olduğu gibi yerinde kalır ve
-#: varsayılan odur; bu tanım, karar kabul edilirse tek satırla devreye girsin
-#: diye ve gerileme sınavları koşabilsin diye **yanına** yazıldı.
+#: **ADR-0053 KABUL EDİLDİ** (2026-10-05, KAYIT-075) ve **ölçümle onaylandı**
+#: (2026-10-06, KAYIT-076): PROTOKOL-DO'nun kilitli yargısı
+#: **`ONSEL GOZLEMI ICERMIYOR`** çıktı — DART sahnesinde ölçülen üç nokta
+#: (`10 / 500 / 5000 Pa`) gözlemi `55,5 Pa`'ya (`β = 3,12`) ya da `20,1 Pa`'ya
+#: (`β = 3,5418`, ADR-0054) koyuyor; ikisi de eski önselin alt kenarından
+#: `1,3 – 1,7` dekad aşağıda ve **interpolasyonla** bulundu.
+#: PROTOKOL-HAVUZ §3.1'in kapısı bu yargıyla **bu uzayı** seçti.
+#:
+#: `DART_UZAYI_S3` olduğu gibi **yerinde kalır** (kural 5) ve gerileme
+#: sınavları onunla koşmayı sürdürür.
 #:
 #: Yalnız `Y₀` değişiyor: `[1e3, 1e7] → [1e0, 1e5] Pa` (log, 5 dekad).
 #: Üç bağımsız gerekçe (ADR-0053 §2, §2a, §2b, §2c):
@@ -167,12 +173,17 @@ DART_UZAYI_S3 = ParamSpace(
 #: Karar **ölçümle** kilitlenecek: PROTOKOL-DO (`DO1 = 500 Pa`,
 #: `DO2 = 5000 Pa`) dışdeğerlemeyi interpolasyona çeviriyor. DO okunmadan
 #: varsayılan **değiştirilmez**.
-DART_UZAYI_S4_ONERI = ParamSpace(
+DART_UZAYI_S4 = ParamSpace(
     names=("boulder_alpha0", "Y0", "f_boulder"),
     lo=(1.00, 1.0e0, 0.05),
     hi=(1.30, 1.0e5, 0.50),
     log=(False, True, False),
 )
+
+
+#: Geriye uyum: karar öncesi adı. **Silinmez** (kural 5); aynı nesneyi
+#: gösterir ve sınavlar ikisinin de aynı olduğunu doğrular.
+DART_UZAYI_S4_ONERI = DART_UZAYI_S4
 
 
 def factorial_design(space: ParamSpace, levels: int = 3) -> np.ndarray:

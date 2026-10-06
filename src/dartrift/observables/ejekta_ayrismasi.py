@@ -34,13 +34,24 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["ONCARPAN_K", "ONCARPAN_K_SD", "TOPLAM_KURALI_TOLERANS",
+__all__ = ["ONCARPAN_K", "ONCARPAN_K_SD", "ONCARPAN_K_DART",
+           "ONCARPAN_K_DART_SD", "TOPLAM_KURALI_TOLERANS",
            "OLCULEN_AYRISMA", "ejekta_bilesenleri", "ayrisma_ussleri"]
 
 #: Ölçülen önçarpan `K = (β−1) · p_mermi / (M·v·kos)`'ün tersi:
 #: `M·v·kos/(p·(β−1)) = 0,8347 ± 0,0052` (3 koşu, `Y₀` 1–50 Pa).
 ONCARPAN_K = 0.8347
 ONCARPAN_K_SD = 0.0052
+#: **ÖNÇARPAN SAHNEYE BAĞLI** (ölçüldü 2026-10-06, KAYIT-076). DART sahnesinde
+#: (DO1/DO2/DN kolları, `Y₀` `500`/`5000` Pa ve `25 m` kaçık nişan) kimlik
+#: **tam** çıkıyor: `M·v·kos / (p·b) = 1,000 ± 0,006`. W2 kıyas sahnesindeki
+#: `0,835` o sahneye özgüdür (momentum defterinin `R` yüzeyi `75 m` küreye
+#: göre tanımlı). Yani `b = K_sahne · M·v·kos / p` ve `K_DART⁻¹ = 1,000`.
+#: `ejekta_bilesenleri(..., p_mermi=...)` varsayılan olarak `ONCARPAN_K`
+#: (W2 değeri) kullanır; DART sahnesinde `b_tahmin`'i `0,835`'e **bölmek**
+#: gerekir. Bu yüzden `b_tahmin` bir **tanı**dır, kilitli sayı değil.
+ONCARPAN_K_DART = 1.000
+ONCARPAN_K_DART_SD = 0.006
 #: Toplam kuralı (`Σ üs = β`'nın üssü) bu bağıl farkın altında kalmalı.
 #: Ölçülen `%1,3`; eşik `%10` — kural **anlamlı** ama sayısal türevlerin
 #: gürültüsüne yer bırakıyor.

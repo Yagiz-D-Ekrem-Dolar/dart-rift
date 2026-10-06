@@ -1,0 +1,35 @@
+{
+ "gozlem": {"beta": 3.12, "sigma": 0.34},
+ "onsel": [1000.0, 10000000.0],
+ "esik_artik": 0.15,
+ "noktalar": [
+  {"Y0": 10.0,   "beta": 3.7479718161136306, "M_ejekta": 19636053.24503668},
+  {"Y0": 500.0,  "beta": 2.6246718383025334, "M_ejekta": 3648848.0695895413},
+  {"Y0": 5000.0, "beta": 1.8737929173708863, "M_ejekta": 751627.5685202335}
+ ],
+ "uydurma": "GUC YASASI",
+ "p": -0.17905021705405544,
+ "C": 4.351073340866069,
+ "artik_uc_nokta": 0.11980360384870027,
+ "payda": 0.4073815803396123,
+ "onsel_denetimi": {
+  "Y0_gozlem": 55.46040610741911,
+  "dekad_alt_kenara": -1.2560169546361692,
+  "dekad_ust_kenara": 5.256016954636169,
+  "onsel_dekad": 4.0,
+  "beta_onsel_alt_kenarda": 2.26312331809578,
+  "beta_onsel_ust_kenarda": 1.2427978766469017,
+  "sigma_bagil": 0.19216112280170392,
+  "Y0_carpani_1sigma": 2.6689021941618165,
+  "olcum_araligi": [10.0, 5000.0],
+  "disdegerleme": false, "cok_uzak": false,
+  "genel": "ONSEL GOZLEMI ICERMIYOR"
+ },
+ "genel": "ONSEL GOZLEMI ICERMIYOR",
+ "M_ejekta_kazanci": {
+  "carpan_M": 1.5187895499171302, "carpan_beta": 2.6689021941618165,
+  "kazanc": 1.7572560953605718, "p_M": -0.514952905763713,
+  "sigma_M_bagil": 0.2401171589037318, "esik": 3.0,
+  "genel": "M_EJEKTA TANIMLAYICI"
+ }
+}

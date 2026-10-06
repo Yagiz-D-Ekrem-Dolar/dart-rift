@@ -48,6 +48,7 @@ from faz48_iki_asama import SAHNE, _mat  # noqa: E402
 from dartrift.inference.design import (  # noqa: E402
     DART_UZAYI,
     DART_UZAYI_S3,
+    DART_UZAYI_S4,
     factorial_design,
     lhs_design,
 )
@@ -151,6 +152,10 @@ def main() -> int:
                     help="blok yaricapi ust siniri [m] (SAHNE: 42)")
     ap.add_argument("--sok-kapisi-kapali", action="store_true",
                     help="TANI AMACLI: ADR-0049 kapisini kapat")
+    ap.add_argument("--uzay-s4", action="store_true",
+                   help="ADR-0053 KABUL + PROTOKOL-DO olcumu: Y0 onseli "
+                        "[1e0, 1e5] Pa olan DART_UZAYI_S4. Uretim havuzu "
+                        "BUNU kullanir (PROTOKOL-HAVUZ S3.1).")
     ap.add_argument("--eski-uzay", action="store_true",
                     help="ADR-0044 ONCESI DART_UZAYI kullan "
                          "(yalnizca gerileme/karsilastirma; sonuc S3 "
@@ -252,6 +257,12 @@ def main() -> int:
     g.add_argument("--nisan", type=float, nargs=3, default=None,
                    metavar=("X", "Y", "Z"),
                    help="carpma noktasini belirleyen nisan yonu (varsayilan 0 0 1)")
+    g.add_argument("--istege-bagli-gozlemli", nargs="*", default=(),
+                   metavar="AD",
+                   help="ADR-0055/A114: olculemeyen bu gozlemliler `nan` olur "
+                        "ve KAYIT DUSMEZ (ornek: krater_derinlik). Bos "
+                        "birakilirsa eski davranis: tek `nan` butun kaydi "
+                        "dusurur. Uretim havuzu `krater_derinlik` verir.")
     g.add_argument("--mermi-uc-kure", action="store_true",
                    help="DART uc kure mermisi (%%88 govde + 2 x %%6 panel, "
                         "2,215 m); kure mermi beta'yi %%10-20 fazla veriyor (L9)")
@@ -297,7 +308,10 @@ def main() -> int:
     # DISINDA kaldi. Noktalar fiziken kurulabilir cikti (24/24, matris
     # gozenekligi %17,6-52,7, hicbiri %67 esigini asmiyor) -- yani sonuc
     # cop degil, ama kullanilan ONSEL kabul edilmis onsel DEGIL.
-    UZAY = DART_UZAYI if a.eski_uzay else DART_UZAYI_S3
+    if a.eski_uzay and a.uzay_s4:
+        raise SystemExit("--eski-uzay ve --uzay-s4 birlikte verilemez")
+    UZAY = (DART_UZAYI if a.eski_uzay
+            else DART_UZAYI_S4 if a.uzay_s4 else DART_UZAYI_S3)
     onsel_disi = False
     if a.eski_uzay:
         print("  ! TERK EDILMIS UZAY (ADR-0044): sonuc S3 onseli SAYILMAZ",
@@ -349,7 +363,9 @@ def main() -> int:
     print("FAZ 5 — MERDIVENLI ENSEMBLE", flush=True)
     print("=" * 78, flush=True)
     print(f"  uzay        : {UZAY.names}"
-          f"{'  [TERK EDILMIS]' if a.eski_uzay else ''}", flush=True)
+          f"{'  [TERK EDILMIS]' if a.eski_uzay else ''}"
+          f"{'  [S4: ADR-0053 KABUL]' if a.uzay_s4 else ''}", flush=True)
+    print(f"  Y0 araligi  : {UZAY.lo[1]:.3g} - {UZAY.hi[1]:.3g} Pa", flush=True)
     print(f"  nokta       : {len(tasarim)}  (lhs {a.n_lhs}"
           f"{' + kenarlar' if a.kenarlar else ''})", flush=True)
     print(f"  dilim       : {dilim_bilgi}", flush=True)
@@ -501,6 +517,24 @@ def main() -> int:
               f"beta_km={a.beta_km}  impuls={'log' if a.impuls_log else 'dogrusal'}",
               flush=True)
 
+    # A114 / ADR-0055 (KABUL EDILDI 2026-10-05): istege bagli gozlemliler.
+    # `--istege-bagli-gozlemli krater_derinlik` verilirse krater cikaricisinin
+    # (hakli) reddi YALNIZ o bileseni `nan` yapar; `beta` ve ejekta kesri
+    # yasar. Bos birakilirsa ESKI davranis: tek `nan` butun kaydi dusurur.
+    # Olculdu (KAYIT-074): DART sahnesinin uc kosusundan IKISI boyle dustu.
+    _ISTEGE_BAGLI = tuple(str(t) for t in (a.istege_bagli_gozlemli or ()))
+    _bilinmeyen = set(_ISTEGE_BAGLI) - set(GOZLENEBILIRLER)
+    if _bilinmeyen:
+        raise SystemExit(f"bilinmeyen gozlemli: {sorted(_bilinmeyen)}; "
+                         f"gecerli adlar {GOZLENEBILIRLER}")
+    _NAN_IZINLI = tuple(i for i, ad in enumerate(GOZLENEBILIRLER)
+                        if ad in _ISTEGE_BAGLI)
+    _ZORUNLU = [i for i in range(len(GOZLENEBILIRLER)) if i not in _NAN_IZINLI]
+    if _ISTEGE_BAGLI:
+        print(f"  ADR-0055    : istege bagli gozlemli {_ISTEGE_BAGLI} "
+              f"(dizin {_NAN_IZINLI}) -- bunlarda `nan` kaydi DUSURMEZ",
+              flush=True)
+
     def _ileri(theta):
         gozlemci = None
         if a.patlama_tanisi is not None:
@@ -535,9 +569,12 @@ def main() -> int:
             impuls_zaman="log" if a.impuls_log else "dogrusal",
             av_tanisi_her=int(a.av_tanisi_her),
             **({"h_orani": float(a.h_orani)} if a.h_orani is not None else {}),
+            istege_bagli=_ISTEGE_BAGLI,
             **({"azami_adim": int(a.azami_adim)} if a.azami_adim else {}))[0]
-        if not np.all(np.isfinite(y)):
-            raise RuntimeError(f"nokta okunamadi: {y}")
+        # A114/ADR-0055: ZORUNLU bilesenler sonlu olmali; istege bagli
+        # olanlarda `nan` serbest (kayit dusmez).
+        if not np.all(np.isfinite(y[_ZORUNLU])):
+            raise RuntimeError(f"nokta okunamadi (zorunlu bilesen): {y}")
         return y
 
     # AYRI DOSYA (A31'in ikinci yuzu): ayni dosyaya eszamanli EKLEME
@@ -553,6 +590,7 @@ def main() -> int:
         text=True, check=False).stdout.strip() or None
     print(f"  kod surumu  : {surum or 'BILINMIYOR'}", flush=True)
     durum = ensemble_kos(tasarim, _ileri, yol, root_seed=kok,
+                         nan_izinli=_NAN_IZINLI,
                          ilerleme=_ilerleme, surum=surum)
     print(chr(10) + f"  tamamlanan : {durum.tamamlanan}/{durum.toplam}", flush=True)
     print(f"  dusen      : {durum.dusen}   atlanan: {durum.atlanan}", flush=True)

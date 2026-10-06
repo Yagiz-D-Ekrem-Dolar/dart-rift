@@ -217,10 +217,13 @@ def sigma_carpma_yeri(dy2: dict | None, dn: dict | None) -> dict:
 #: koşullu duyarlılık cümlesi yazılır.
 KOSULLU_CEKME = (
     "Bu sonuc matris cekme dayaniminin SIFIR olmasina KOSULLUDUR "
-    "(ADR-0056 KABUL EDILDI). Mohr-Coulomb uc kesmesi (T_m = Y0/mu_f) "
-    "acilirsa kiyas sahnesinde beta %23 dusuyordu; DART sahnesindeki bedeli "
-    "PROTOKOL-DY S8 (DC) ile olculuyor. Secim fizikle ve kosulardan ONCE "
-    "yapildi, sonuca gore degil."
+    "(ADR-0056 KABUL EDILDI). OLCULDU (DC, PROTOKOL-DY S8, KAYIT-076): "
+    "Mohr-Coulomb uc kesmesi (T_m = Y0/mu_f ~ 16,7 Pa) acilinca DART "
+    "sahnesinde beta 3,748 -> 1,081 (sigma_cekme = 0,971) ve M_ejekta "
+    "1,96e7 -> 278 kg. Kiyas sahnesinde bu etki 0,23 idi; DART sahnesinde "
+    "4,2 KAT buyuk. Secim fizikle ve kosulardan ONCE yapildi. BILIMSEL "
+    "OKUMA: cekme acikken hicbir Y0 gozleme ulasmiyor, yani DART'in olctugu "
+    "beta Dimorphos matrisinin ~0 cekme dayanimina sahip olmasini GEREKTIRIR."
 )
 
 

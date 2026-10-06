@@ -59,7 +59,8 @@ def test_A109_blok_yaricaplari_SAYI_olarak_kilitli():
 def test_A105_kosullu_cumle_HER_raporda():
     import dy_dart_raporu as DY
     assert "KOSULLUDUR" in DY.KOSULLU_CEKME
-    assert "%23" in DY.KOSULLU_CEKME and "ADR-0056" in DY.KOSULLU_CEKME
+    # 2026-10-06: cumle OLCULEN degerle guncellendi (kiyas %23 -> DART 0,971)
+    assert "0,23" in DY.KOSULLU_CEKME and "ADR-0056" in DY.KOSULLU_CEKME
     # cekme terimi butceye GIRMEMIS olmali
     assert "matris_cekme" not in DY.TERIMLER
 
@@ -115,3 +116,42 @@ def test_KAYIT075_her_karar_icin_DUSURECEK_olcumu_yaziyor():
     assert m.count("Bu kararı düşürecek şey") >= 4
     assert "kararları sen ver" in m          # yetkinin devri kayitta
     assert "sonuçlarını görmedim" in m       # DO/DC/DN kosarken verildi
+
+
+# ------------------------------- DO/DC/DN sonuclari (KAYIT-076, 2026-10-06)
+def test_DN_carpma_yeri_olculdu_L12_den_3_kat_kucuk():
+    from dartrift.inference.tarih_esleme import MODEL_EKSIKLIGI_KAYNAKLI as M
+    odunc, k1 = M["carpma_yeri"]
+    olculen, k2 = M["carpma_yeri_olculen"]
+    assert odunc == 0.10 and "L12" in k1          # ESKI SATIR YERINDE
+    assert olculen == pytest.approx(0.030)
+    assert "KAYIT-076" in k2 and "PROTOKOL-DY S9" in k2
+    assert odunc / olculen > 3.0                  # 3,3 kat buyuktu
+
+
+def test_DC_matris_cekmesi_olculdu_ama_PAYDAYA_GIRMEZ():
+    from dartrift.inference.tarih_esleme import MODEL_EKSIKLIGI_KAYNAKLI as M
+    v, kaynak = M["matris_cekme_olculen"]
+    assert v == pytest.approx(0.971)
+    assert "paydaya GIRMEZ" in kaynak and "KAYIT-076" in kaynak
+    # kiyas sahnesinde 0,23 idi -> DART'ta 4,2 kat buyuk
+    assert v / 0.23 == pytest.approx(4.2, abs=0.1)
+    import dy_dart_raporu as DY
+    assert "matris_cekme" not in DY.TERIMLER
+    assert "matris_cekme_olculen" not in DY.TERIMLER
+    # kosullu cumle OLCULEN sayiyi ve bilimsel okumayi tasiyor
+    assert "0,971" in DY.KOSULLU_CEKME and "278 kg" in DY.KOSULLU_CEKME
+    assert "GEREKTIRIR" in DY.KOSULLU_CEKME
+
+
+def test_oncarpan_SAHNEYE_bagli():
+    """KAYIT-076: kimlik DART sahnesinde TAM (`1,000`), W2'de `0,835`."""
+    from dartrift.observables.ejekta_ayrismasi import (
+        ONCARPAN_K,
+        ONCARPAN_K_DART,
+        ONCARPAN_K_DART_SD,
+    )
+    assert ONCARPAN_K == pytest.approx(0.8347)
+    assert ONCARPAN_K_DART == pytest.approx(1.000)
+    assert ONCARPAN_K_DART_SD == pytest.approx(0.006)
+    assert ONCARPAN_K_DART > ONCARPAN_K            # sahne farki gercek

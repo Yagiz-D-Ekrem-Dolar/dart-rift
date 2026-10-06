@@ -1,0 +1,28 @@
+{
+ "gozlem": {"beta": 3.12, "sigma": 0.34},
+ "kesme": 3.0,
+ "terimler": ["gerceklem_beta", "cozunurluk_uzak", "plato", "carpma_yeri"],
+ "beta": 3.7479718161136306,
+ "beta_km": 3.8215663965455966,
+ "M_ejekta": 19636053.24503668,
+ "n": 15623,
+ "sigma_model": 0.2908829088991738,
+ "payda": 0.4474515244019681,
+ "I": 1.403441002805685,
+ "genel": "MODEL GOZLEME ULASIYOR",
+ "kol_adi": "DY2_dart_g1p0",
+ "cekme_olcumu": {
+  "sigma_cekme": 0.9706291583694575,
+  "beta_cekme_yok": 3.7479718161136306,
+  "beta_cekme_acik": 1.0807102450162673,
+  "kiyas_orani": 0.23, "bant": 0.05, "kapi_mi": false,
+  "genel": "CEKME DARTTA DAHA ETKILI"
+ },
+ "yer_olcumu": {
+  "sigma_carpma_yeri": 0.03018624802631005,
+  "beta_kutup": 3.7479718161136306,
+  "beta_kacik": 3.665020857303115,
+  "odunc_L12": 0.1, "uretim_nisani_degismez": true,
+  "genel": "L12 ILE UYUMLU"
+ }
+}
