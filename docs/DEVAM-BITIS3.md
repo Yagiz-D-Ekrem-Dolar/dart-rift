@@ -690,3 +690,85 @@ python scripts/dy_dart_raporu.py --kok kampanya --ad DY2_dart_g1p0 \
 **Hâlâ bekleyen dört karar (0 GPU):** A2 (ADR-0053, DO sonrası),
 C1 (ADR-0054), A105 (ADR-0056, DC sonrası), A109 (ADR-0057).
 **Yeni:** ADR-0058 (posterior tarifi) da onay bekliyor.
+
+
+### 12.14 6 Ekim — üç kilitli yargı okundu, beş karar verildi, havuz hazır (2 GPU)
+
+#### (a) [KAYIT-076](defter/KAYIT-076_2026-10-06_DO-DC-DN-uc-kilitli-yargi.md) — DO/DC/DN
+
+| kol | kilitli yargı | sayı |
+|---|---|---|
+| **DO** | **ÖNSEL GÖZLEMİ İÇERMİYOR** | `Y₀(3,12) = 55,5 Pa`, alt kenara `−1,26` dekad |
+| **DC** | **ÇEKME DART'TA DAHA ETKİLİ** | `σ_çekme = 0,971` (kıyasta `0,23`) |
+| **DN** | **L12 İLE UYUMLU** | `σ_çarpma_yeri = 0,0302` (L12'nin `0,10`'u `3,3` kat büyüktü) |
+
+**İki beklenmedik sonuç:**
+
+1. **`Y₀` sandığımdan `4,6` kat iyi tanımlanabilir.** DART sahnesinde
+   `β(Y₀)` eğimi W2'den **2,4 kat dik** (`p = −0,179` vs `−0,076`), bu yüzden
+   `1σ`'nın bedeli `×12,4` değil **`×2,67`** (`1,09 → 0,43` dekad). ADR-0053'ün
+   `644 Pa`'lık dışdeğerlemesi bu yüzden kaydı — ve PROTOKOL-DO onu
+   **interpolasyona** çevirdiği için yakalandı.
+2. **DC bir bilimsel sonuç verdi.** Çekme açıkken `β 3,748 → 1,081` ve
+   `M_ejekta 1,96e7 → 278 kg`. `Y₀` büyüdükçe `T_m = Y₀/μ_f` de büyüdüğü için
+   **hiçbir `Y₀` gözleme ulaşmıyor** ⇒ **DART'ın ölçtüğü `β`, Dimorphos
+   matrisinin `~0` çekme dayanımına sahip olmasını gerektiriyor.** ADR-0056'nın
+   fizik gerekçesi gözlemle desteklendi (karar DC koşarken verilmişti).
+
+**Bütçede ödünç terim kalmadı.** Paydaya giren altı terim de ölçülmüş →
+`σ_model` `0,291 → 0,181`, yani payda **`%38` küçüldü** ve sınav zorlaştı.
+
+**Yeni açılan iş:** krater `600 s`'de **yok**. `crater_profile` negatif
+derinlik veriyor (`−3 m`) ya da reddediyor; `krater_yerdegistirme` hiç
+reddetmiyor (A114'ün kök nedeni yapısal olarak yok) ama `0,4–0,8 m` veriyor.
+Kazı malzemesi gitmiş, yüzey oturmuş. **PROTOKOL-HT kendi turunu gerektiriyor**
+(`t ~ 10–60 s`, daha yüksek çözünürlük) — ADR-0055 §3'ün `2c` seçeneği artık
+tercih değil, **gereklilik**.
+
+#### (b) [KAYIT-075](defter/KAYIT-075_2026-10-05_bes-karar-verildi.md) — beş karar **verildi**
+
+Kullanıcı yetkiyi devretti; beşi de **KABUL EDİLDİ** ve koda geçti.
+Her kararın altında onu **düşürecek ölçüm** yazılı.
+
+| karar | sonuç | kod |
+|---|---|---|
+| **A2** | `Y₀ ∈ [1e0, 1e5] Pa` | `DART_UZAYI_S4` (artık kabul edilmiş ad) |
+| **C1** | hedef `β` = **sahnenin kütlesinin fonksiyonu** → `3,5418 (+0,188/−0,247)` | `uretim_hedef_beta()` |
+| **A105** | matris çekmesi KAPALI; `0,971` paydaya **girmez** | `KOSULLU_CEKME` |
+| **A109** | bloklar `14–56 m`, `q = 3`, **sayı olarak** | `URETIM_BLOK` |
+| **ADR-0058** | GP + Bachoc + hetero + **ölçülmüş `R`** + **SBC kapısı** | PROTOKOL-HAVUZ §5–6 |
+
+#### (c) [PROTOKOL-HAVUZ](truba/PROTOKOL-HAVUZ-URETIM.md) + `is_HAVUZ.slurm` — **2 GPU'ya göre**
+
+| ne | değer |
+|---|---|
+| nokta | `96` (LHS, `DART_UZAYI_S4`) |
+| dizi | `0-23%2` → **24 dilim × 4 nokta**, en çok **2** eşzamanlı |
+| dilim başına | `~4 × 5 = 20` saat (iş sınırı `24` saat) |
+| toplam | `~480 GPU-saat`; 2 GPU ile duvar süresi **`~10 gün`** |
+| krater | **isteğe bağlı** (`--istege-bagli-gozlemli krater_derinlik`) |
+
+`ensemble_kos` tamamlanan noktaları atlar → iş kesilirse yeniden
+gönderilebilir, kaybolan yalnız son nokta olur.
+
+#### (d) Duman koşuları **iki hata yakaladı** — 480 GPU-saat yerine 38 saniye
+
+1. **`faz5`'te yarım iş**: `_ISTEGE_BAGLI`/`_ZORUNLU`/`_NAN_IZINLI`
+   kullanılıyordu ama **tanımlı değildi** → betik hiç koşmazdı. (Önceki
+   oturumda yarıda kalmıştı; bu turda kapatıldı.)
+2. **`is_HAVUZ.slurm`'da DO'dan kalan satır**: `--tasarim-dosyasi "$TAS"`.
+   İki katmanlı hata — (a) `TAS: unbound variable`, (b) kalsaydı sabit
+   tasarım dosyası **LHS'i ezecekti**, yani havuz `96` nokta yerine `1`
+   nokta koşardı ve bunu ancak sonunda anlardık.
+
+Duman koşusu `1592548` bütün yapılandırmayı doğruladı: uzay `S4`
+(`Y₀ 1 – 1e5 Pa`), `lhs 96`, dilim `0/96`, bloklar `r 14–56`, `ADR-0055`
+isteğe bağlı gözlemli satırı, elipsoit sahne + üç küre mermi + `17°`.
+
+#### Sırada
+
+1. `DUMAN2` (geçiş öne alınmış, gerçek `y` üretiyor) doğrulanınca
+   **havuz gönderilir** (`sbatch --array=0-23%2`).
+2. Havuz dolarken: `R`'nin ölçümü, GP vekili, SBC kapısı (`prova_cikarim.py`
+   mantığı gerçek veriyle).
+3. PROTOKOL-HT yeniden yazılır (krater kendi turundan).
