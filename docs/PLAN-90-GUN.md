@@ -1,5 +1,18 @@
 # 90 günlük plan — havuzdan teslime (2026-10-08 → 2027-01-06)
 
+> **NOT (2026-10-08, planın yazıldığı gün, akşam) — TAKVİM ÇAKIŞMASI.**
+> TÜBİTAK 2204-A (58., 2026-2027) **son başvuru 4 Ocak 2027, 17.30.**
+> Kaynak: BİDEB "Başvuruya Açık Programlar", `2204-A ... 2027/1`,
+> açılış `28/09/2026`, kapanış `04/01/2027`
+> (<https://ebideb.tubitak.gov.tr/basvuruacikprogramlar.htm>).
+> Bu plan **6 Ocak 2027**'de bitiyor: **2 gün geç.** Ayrıca başvuruda
+> teslim edilen şey **proje raporu**dur ve ön değerlendirme puanının
+> **%30'u bölge aşamasına taşınır** (rehber 2027, s. 50).
+> **Sonuç: 12-13. haftanın (savunma provası) başvurudan SONRAYA
+> kayması gerekiyor** — bölge sergisi ~Şubat 2027, final ~Nisan/Mayıs
+> 2027. Raporun **88. günde** bitmesi şart. Yeniden sıralama
+> kullanıcıyla konuşulacak; plan satırları **silinmedi**.
+
 **Yazıldı:** 2026-10-08 · **Durum:** havuz koşuyor (`1592569`), TRUBA erişimi
 kapalı · **Bütçe:** harcanan `418`, havuz `480`, **kalan `602 GPU-saat`** ·
 **Öncül:** [KAYIT-077](defter/KAYIT-077_2026-10-07_havuz-gonderildi-ve-uc-parametre-acildi.md),
