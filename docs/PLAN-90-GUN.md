@@ -118,7 +118,12 @@ istersek kullanılır.
 |---|---|
 | **Mühürlü üç Hera öngörüsü + Zenodo DOI** | 6. hafta |
 | Kalibre posterior + SBC raporu + tanımlanabilirlik | 4. hafta |
-| TÜBİTAK 2204-B raporu + poster | 9. hafta |
+| TÜBİTAK 2204 raporu + poster | 9. hafta |
+
+> **NOT (2026-10-08):** yukarıda önce "2204-B" yazmıştım. Depodaki
+> KAYIT-001…014 yalnız "TÜBİTAK 2204" diyor; harfi ben ekledim ve
+> **doğrulamadım.** Harf (A = lise, B = ortaokul) ISEF yolunu belirlediği
+> için **kullanıcının teyit etmesi gerekir**; teyide kadar "2204".
 | Makale gövdesi (JOSS + PSJ/MNRAS için) | 9. hafta |
 | Savunma provası tamam | 13. hafta |
 
