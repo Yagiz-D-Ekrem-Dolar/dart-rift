@@ -77,6 +77,14 @@ Rapor **beklediğini sayar**: `96` nokta bekler, eksikse adıyla söyler.
 
 ## 5. Posterior — kilitli tarif (ADR-0058)
 
+> **NOT (2026-10-09, havuz koşarken, veri görülmeden):** aşağıdaki tarif
+> [ADR-0059](../adr/ADR-0059-cok-dogruluklu-vekilin-geri-alinmasi.md) ile
+> **tamamlandı**. Bu bölüm `SIGMA` yolunu tanımlıyor ve **aynen
+> geçerli**; yanına iç içe `12` ince nokta (`3,5 m`) ile `CD` yolu
+> eklendi. Manşetin hangisi olacağı ADR-0059 §3.4'teki dört maddelik
+> kapıya bağlı ve o kapı **havuz okunmadan** yazıldı. Aşağıdaki hiçbir
+> satır silinmedi.
+
 1. **Vekil:** gözlemli başına GP (`gp_uydur`) + **Bachoc** varyans
    kalibrasyonu (`gp_varyans_kalibre`, `yalniz_buyut=True`), `θ`-gruplu
    4 kat CV.

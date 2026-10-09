@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-10-04 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 86 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113, A114, A115 · A70, A84, A91, A92, A94, A96, A106, A110, A111 ve A112 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-10-09 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 87 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113, A114, A115, A116 · A70, A84, A91, A92, A94, A96, A106, A110, A111 ve A112 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5183,6 +5183,45 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A116 — **"Yazılmış ama bağlanmamış modül": üç örnekle bir DESEN** (2026-10-09) — *açık, biri düzeltiliyor*
+
+Tek bir hata değil, **tekrarlayan bir kusur sınıfı**. Bu depoda altyapı
+yazılıyor, belgeleniyor, sınavlanıyor — ve **çağrı yerine bağlanmadan**
+bırakılıyor. Sınavlar geçtiği için hiçbir uyarı çıkmıyor; modül
+"var" görünüyor ama üretimde **yok**.
+
+| # | modül | ne yapmalıydı | nasıl bulundu |
+|---|---|---|---|
+| 1 | `krater_yerdegistirme` | A19'un çaresi | A114 incelenirken |
+| 2 | `inference/cok_dogruluk.py` | UY2 + KAYIT-071 s.22 ile kilitli çok doğruluklu vekil | **kullanıcı sezgisiyle** sordu |
+| 3 | `io_hdf5.write_snapshot` / `sparse_snapshot` | ara an kaydı → video, A95 konisi, Hera mührü | video sorusu üzerine |
+
+Üçünün ortak imzası şu komutun **boş** dönmesi:
+
+```bash
+grep -rn "write_snapshot" --include=*.py src scripts | grep -v io_hdf5
+```
+
+**Niçin önemli:** 2 numara posterior tarifinden düşmüştü (ADR-0058),
+yani bir kusur sınıfı **bilimsel karara** sızdı. Sınav yeşil olduğu için
+hiçbir kapı çalmadı. "Sınavlar geçiyor" ile "üretim yolunda" aynı şey
+**değil**.
+
+**Çare (yapılanlar):**
+- 2 numara: [ADR-0059](adr/ADR-0059-cok-dogruluklu-vekilin-geri-alinmasi.md)
+  geri aldı; posterior iki yolla (`SIGMA`/`CD`) hesaplanacak, kapı
+  havuz okunmadan yazıldı.
+- 3 numara: `src/dartrift/anlik_plan.py` + `tests/test_anlik_plan.py`
+  (25 sınav) yazıldı; kare zamanları ve sabit altörnek çözüldü.
+  **Entegrasyon döngüsüne bağlanması TRUBA açılınca** (GPU yolu
+  yerelde A113 yüzünden koşmuyor).
+- 1 numara: hâlâ **bağlı değil**.
+
+**Çare (yapılacak):** `src/` altındaki her genel API'nin en az bir
+üretim çağrısı olduğunu denetleyen bir sınav. Bu yazılana kadar dördüncü
+örnek gelebilir.
 
 ---
 ### A115 — **Vekil sadakati dejenere yönde yetersiz: SBC `Y₀` posteriorunu YANLI buluyor (posterior makinesi temiz)** (2026-10-04, teşhis 2026-10-05'te **DÜZELTİLDİ**) — *açık, ÖLÇÜLDÜ, havuzun kendi verisiyle sınanacak*

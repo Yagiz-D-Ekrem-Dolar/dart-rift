@@ -8,6 +8,18 @@ KAYIT-073 (`β = K·M·v·kos/p`), KAYIT-074 (ölçülmüş gerçeklem terimleri
 `inference/kalibrasyon.py` — **hepsi var, birlikte hiç kullanılmadı**
 **Sınav:** `scripts/prova_cikarim.py`, `tests/test_prova_cikarim.py` (10)
 
+> **NOT (2026-10-09) — EKSİK MADDE, [ADR-0059](ADR-0059-cok-dogruluklu-vekilin-geri-alinmasi.md) ile tamamlandı.**
+> Bu ADR yazılırken **çok doğruluklu vekil** (UY2 + KAYIT-071 satır 22
+> ile kilitli) düşürüldü — aşağıda ne kararlarda ne de reddedilen
+> seçeneklerde geçiyor, yani reddedilmiş değil **unutulmuş**.
+> Çözünürlük farkı burada yalnız `σ_model` **varyans** terimi olarak
+> taşınıyor (`cozunurluk_yakin = 0,053`); oysa PROTOKOL-M/U0 kaba→orta
+> geçişinde `β` için `−%13` ölçmüştü. Varyans bir **kaymayı** yutmaz.
+> ADR-0059 iç içe `12` ince nokta ekliyor ve posterioru **iki yolla**
+> (`SIGMA` = bu ADR, değişmeden · `CD` = düzeltilmiş) hesaplatıp yan
+> yana raporlatıyor. **Aşağıdaki hiçbir satır geçersiz değildir**;
+> `SIGMA` yolu olduğu gibi durur.
+
 ---
 
 ## 1. Niçin havuzdan önce
