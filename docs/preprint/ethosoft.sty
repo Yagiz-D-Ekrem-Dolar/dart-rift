@@ -1,0 +1,59 @@
+% Ethosoft Research technical-report style.
+% Written here rather than downloaded: a third-party .sty is unreviewed
+% code executed at compile time, and this look is a handful of rules.
+% Single column, wide measure, sans headings, serif body -- the format the
+% major AI labs use for their technical reports.
+\ProvidesPackage{ethosoft}[2026/10/09 Ethosoft Research report style]
+\RequirePackage[a4paper,top=28mm,bottom=28mm,left=32mm,right=32mm]{geometry}
+\RequirePackage{graphicx,xcolor,titlesec,caption,booktabs,microtype}
+\RequirePackage[colorlinks=true,allcolors=EthosLink]{hyperref}
+
+\definecolor{EthosInk}{HTML}{18242B}
+\definecolor{EthosLink}{HTML}{A62B1F}
+\definecolor{EthosGrey}{HTML}{6B7A85}
+\color{EthosInk}
+
+% --- headings -----------------------------------------------------------
+\titleformat{\section}{\normalfont\large\bfseries\sffamily\color{EthosInk}}
+            {\thesection}{0.7em}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries\sffamily\color{EthosInk}}
+            {\thesubsection}{0.7em}{}
+\titlespacing*{\section}{0pt}{2.1ex plus .6ex}{1.0ex}
+\titlespacing*{\subsection}{0pt}{1.6ex plus .5ex}{0.7ex}
+
+\captionsetup{font=small, labelfont={bf,sf}, labelsep=period,
+              justification=justified, skip=5pt}
+
+% --- title block --------------------------------------------------------
+\newcommand{\ethoslogo}[1]{\def\@ethoslogo{#1}}
+\ethoslogo{}
+\newcommand{\reportnote}[1]{\def\@reportnote{#1}}
+\reportnote{}
+
+\newcommand{\ethosrule}{\noindent\textcolor{EthosGrey}{\rule{\linewidth}{0.4pt}}}
+\renewcommand{\maketitle}{%
+  \thispagestyle{empty}%
+  \begingroup\sffamily
+  \ifx\@ethoslogo\@empty
+    {\bfseries\large\color{EthosGrey}ETHOSOFT RESEARCH\par}%
+  \else
+    \includegraphics[height=9mm]{\@ethoslogo}\par
+  \fi
+  \vspace{7mm}%
+  {\bfseries\fontsize{20}{24}\selectfont\@title\par}%
+  \vspace{4mm}%
+  {\normalsize\@author\par}%
+  \vspace{2mm}%
+  {\small\color{EthosGrey}\@date\par}%
+  \ifx\@reportnote\@empty\else
+    {\small\color{EthosGrey}\@reportnote\par}%
+  \fi
+  \endgroup
+  \vspace{6mm}\ethosrule\vspace{5mm}%
+}
+
+% --- abstract -----------------------------------------------------------
+\renewenvironment{abstract}{%
+  \begin{list}{}{\setlength{\leftmargin}{8mm}\setlength{\rightmargin}{8mm}}%
+  \item\relax\sffamily\small\noindent\textbf{Abstract.}\ \ignorespaces
+}{\end{list}\vspace{3mm}}
