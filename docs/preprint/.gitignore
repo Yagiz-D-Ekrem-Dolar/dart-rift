@@ -3,4 +3,5 @@
 *.log
 *.out
 *.pdf
+!sekil/github-invertocat.pdf
 *_onizleme.png

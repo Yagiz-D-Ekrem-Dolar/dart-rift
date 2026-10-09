@@ -34,7 +34,6 @@
 \fancypagestyle{first}{\fancyhf{}
   \fancyfoot[L]{\scriptsize\copyright\ 2026 the authors \textbar\ \href{https://creativecommons.org/licenses/by/4.0/}{CC BY 4.0}}
   \fancyfoot[C]{\footnotesize\thepage}
-  \fancyfoot[R]{\scriptsize\href{https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift}{github.com/Yagiz-D-Ekrem-Dolar/dart-rift}}
   \renewcommand{\headrulewidth}{0pt}}
 \newcommand{\Yzero}{Y_0}
 \newcommand{\aB}{\alpha_b}
@@ -48,8 +47,11 @@
 \twocolumn[{
 \begin{minipage}{\textwidth}
 \noindent
-\begin{tabular*}{\textwidth}{@{}l@{\extracolsep{\fill}}r@{}}
+\begin{tabular*}{\textwidth}{@{}l@{\extracolsep{\fill}}c@{\extracolsep{\fill}}r@{}}
 \raisebox{-1mm}{\includegraphics[width=43mm,trim=260bp 270bp 260bp 270bp,clip]{sekil/ethosoft-logo.png}}
+  & \href{https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift}{%
+      \raisebox{-0.6mm}{\includegraphics[height=3.5mm]{sekil/github-invertocat.pdf}}%
+      \hspace{1mm}{\footnotesize\texttt{Yagiz-D-Ekrem-Dolar/dart-rift}}}
   & \textsf{\small PILOT RESULTS \textbar\ 10 OCTOBER 2026}
 \end{tabular*}
 \vspace{3mm}
@@ -119,16 +121,17 @@ this paper and are not presented as blind predictions.
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{sekil/bulgular.pdf}
-\caption{Controlled pilot measurements in the fixed DART scene.
-Filled circles and connecting segments show only the three completed
-cohesion runs; the segments are visual guides, not an inferred curve.
-The open square is the single matrix-tension comparison DC at 10 Pa.
-The gray band in the left panel is the mass-adjusted DART
-$1\sigma$ interval from Equation~\ref{eq:betaobs}; the dashed line
-is its central value. The right panel shows the model-reported
-ejecta statistic, with no observational band because the LICIACube plume
-estimate is not the same quantity. DN is omitted from the
-$\Yzero$ sweep because it changes impact location.}
+\caption{Four-observable atlas for the five completed pilot runs.
+Filled circles and connecting segments show only the three cohesion
+runs (DY2, DO1, DO2); the segments guide the eye and are not an inferred
+response curve. The open square is DC (matrix tension on) and the open
+diamond is DN (25 m impact offset); both retain $\Yzero=10$ Pa but are
+not part of the cohesion sweep. Cone opening and median ejecta time
+$t_{50}$ are model diagnostics. The gray band in panel (a) is the
+mass-adjusted DART $1\sigma$ interval from
+Equation~\ref{eq:betaobs}; its dashed line is the central value.
+Panel (b) has no observational band because the model ejecta statistic
+is not the LICIACube plume estimate.}
 \label{fig:results}
 \end{figure*}
 
@@ -255,7 +258,8 @@ boundary of $0.03000$ by $0.00019$. We retain the registered
 classification rather than moving that boundary after seeing
 the result \repo{docs/defter/KAYIT-076_2026-10-06_DO-DC-DN-uc-kilitli-yargi.md}{[KAYIT-076]}.
 Figure~\ref{fig:offset} compares the four paired responses on
-a common dimensionless scale.
+a common dimensionless scale and places the five runs in joint
+$\beta$--model-ejecta-mass space.
 
 \section{Registered production inference}
 \subsection{Design and validation}
@@ -371,11 +375,13 @@ not a reconstructed interior.
 \centering
 \includegraphics[width=.93\columnwidth]{sekil/kaciklik.pdf}
 \captionsetup{hypcap=false}
-\captionof{figure}{Impact-site sensitivity in the DY2--DN pair.
-Each marker is the 25 m offset result divided by the nominal
-result; the dashed line is unity. The percentages are changes
-relative to DY2, and the quantities are normalized only for
-visual comparison.}
+\captionof{figure}{Two views of pilot sensitivity. (a) Each marker
+is the 25 m offset result divided by the nominal DY2 result;
+the dashed line is unity. (b) The joint $\beta$--model-ejecta
+response of all five runs: filled circles connected only along
+the cohesion sweep, open square for DC, and open diamond for DN.
+Panel (b) is a model-response plot, not a fitted relation or
+an observed ejecta-mass comparison.}
 \label{fig:offset}
 \end{minipage}
 
@@ -402,13 +408,15 @@ reported here.
 \section*{Data and protocol provenance}
 The pilot values and locked decisions are archived at
 \href{https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/tree/a35dab4}{commit \texttt{a35dab4}}.
-Figure~\ref{fig:results} uses the completed runs in
-Table~\ref{tab:runs}; Figure~\ref{fig:design} uses the locked
-design coordinates. Later analyses must retain these dated
+Figures~\ref{fig:results} and~\ref{fig:offset} use the completed
+run diagnostics in Table~\ref{tab:runs} and the
+\repo{docs/defter/KAYIT-076_2026-10-06_DO-DC-DN-uc-kilitli-yargi.md}{[locked pilot record]};
+Figure~\ref{fig:design} uses the locked design coordinates.
+Later analyses must retain these dated
 decision rules. The article text and original figures are
 \copyright\ 2026 the authors, licensed under
 \href{https://creativecommons.org/licenses/by/4.0/}{CC BY 4.0};
-the Ethosoft mark and ORCID iD icon are excluded. Repository
+the Ethosoft mark, ORCID iD icon, and GitHub mark are excluded. Repository
 software remains under the MIT license.
 
 \newpage

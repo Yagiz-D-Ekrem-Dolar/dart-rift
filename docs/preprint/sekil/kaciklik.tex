@@ -1,36 +1,64 @@
-% Impact-site effect: dimensionless paired ratios, not a posterior.
+% Two pilot-sensitivity views in one journal column. Compile from docs/preprint.
+% The joint response panel is a display of model results, not a fit.
 \documentclass[border=4pt]{standalone}
 \usepackage{amsmath}
 \usepackage{pgfplots}
 \usepackage{pgfplotstable}
+\usetikzlibrary{calc}
 \pgfplotsset{compat=1.18}
 \pgfplotstableread{veri/kaciklik.dat}\pairs
+\pgfplotstableread{veri/bulgular_do.dat}\cohesion
 \begin{document}
 \begin{tikzpicture}
 \begin{axis}[
-  width=58mm,height=43mm,scale only axis,
+  name=ratio,width=28mm,height=40mm,scale only axis,
+  title={(a) 25 m offset},title style={font=\scriptsize},
   xmin=.86,xmax=1.78,xtick={1,1.2,1.4,1.6},
   ymin=.5,ymax=4.5,y dir=reverse,
   ytick={1,2,3,4},
-  yticklabels={$\beta$,$M_{\rm ej}$,Cone angle,$t_{50}$},
-  xlabel={Ratio: offset / nominal},
+  yticklabels={$\beta$,$M_{\rm ej}$,Cone,$t_{50}$},
+  xlabel={Offset / nominal},
   tick align=outside,tick style={black,line width=.35pt},
   ytick style={draw=none},
   axis line style={black,line width=.45pt},
   axis x line*=bottom,axis y line*=left,
   every axis y line/.style={draw=none},
-  label style={font=\footnotesize},
-  tick label style={font=\scriptsize},
+  label style={font=\scriptsize},
+  tick label style={font=\tiny},
   yticklabel style={align=right},
   clip=false]
-  \addplot[black!45,densely dashed,line width=.5pt,forget plot]
+  \addplot[black!55,densely dashed,line width=.45pt,forget plot]
     coordinates {(1,.5) (1,4.5)};
-  \addplot[only marks,mark=*,mark size=2.2pt,black]
+  \addplot[only marks,mark=*,mark size=1.8pt,black]
     table[x expr=\thisrow{offset}/\thisrow{baseline},y=row]{\pairs};
-  \node[anchor=east,font=\scriptsize] at (axis cs:1.76,1) {$-2.2\%$};
-  \node[anchor=east,font=\scriptsize] at (axis cs:1.76,2) {$+18.2\%$};
-  \node[anchor=east,font=\scriptsize] at (axis cs:1.76,3) {$+26.4\%$};
-  \node[anchor=east,font=\scriptsize] at (axis cs:1.76,4) {$+56.2\%$};
+  \node[anchor=east,font=\tiny] at (axis cs:1.76,1) {$-2.2\%$};
+  \node[anchor=east,font=\tiny] at (axis cs:1.76,2) {$+18.2\%$};
+  \node[anchor=east,font=\tiny] at (axis cs:1.76,3) {$+26.4\%$};
+  \node[anchor=east,font=\tiny] at (axis cs:1.51,4) {$+56.2\%$};
+\end{axis}
+\begin{axis}[
+  at={($(ratio.east)+(12mm,0)$)},anchor=west,
+  width=29mm,height=40mm,scale only axis,
+  title={(b) Joint response},title style={font=\scriptsize},
+  xmin=.8,xmax=4.1,xtick={1,2,3,4},
+  ymin=1e2,ymax=1e8,ymode=log,
+  ytick={1e2,1e5,1e8},
+  yticklabels={$10^2$,$10^5$,$10^8$},
+  xlabel={$\beta$},ylabel={$M_{\rm ej}$ (kg)},
+  tick align=outside,tick style={black,line width=.35pt},
+  axis line style={black,line width=.45pt},
+  axis x line*=bottom,axis y line*=left,
+  label style={font=\scriptsize},
+  tick label style={font=\tiny},
+  clip=false]
+  \addplot[black,line width=.65pt,mark=*,mark size=1.8pt]
+    table[x=beta,y=Mej_kg]{\cohesion};
+  \addplot[only marks,mark=square,mark size=2.3pt,
+    mark options={draw=black,fill=white,line width=.75pt}]
+    coordinates {(1.0807,277.7)};
+  \addplot[only marks,mark=diamond,mark size=2.7pt,
+    mark options={draw=black,fill=white,line width=.75pt}]
+    coordinates {(3.6650,2.321e7)};
 \end{axis}
 \end{tikzpicture}
 \end{document}

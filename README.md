@@ -4,7 +4,7 @@
 > çıkarımı projesi.
 > Şartname: `DR-RIFT-P0/P1/P2 v1.0` · Ana Plan: `DART-RIFT Ana Proje Planı v1.0`
 
-**Bilimsel ön baskı (10 Ekim 2026):** [Beş doğrulanmış pilot koşunun sonuçları ve önceden belirlenmiş çıkarım protokolü (PDF)](output/pdf/DART-RIFT_Pilot_Results_2026-10-10.pdf). Makale metni ve özgün figürleri [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) lisanslıdır; yazılım için depodaki MIT lisansı geçerlidir. Ethosoft logosu ve ORCID simgesi bu makale lisansının dışındadır. Henüz DOI atanmadı.
+**Bilimsel ön baskı (10 Ekim 2026):** [Beş doğrulanmış pilot koşunun sonuçları ve önceden belirlenmiş çıkarım protokolü (PDF)](output/pdf/DART-RIFT_Pilot_Results_2026-10-10.pdf). Makale metni ve özgün figürleri [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) lisanslıdır; yazılım için depodaki MIT lisansı geçerlidir. Ethosoft logosu, ORCID simgesi ve GitHub işareti bu makale lisansının dışındadır. Henüz DOI atanmadı.
 
 NASA'nın DART aracının Dimorphos'a çarpmasından elde edilen verilerden,
 asteroidin **içinin neye benzediğini olasılıksal olarak** geri hesaplamayı ve

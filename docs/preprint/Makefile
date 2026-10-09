@@ -5,7 +5,7 @@ TEX ?= lualatex --disable-installer -interaction=nonstopmode -halt-on-error
 
 all: main.pdf
 
-main.pdf: main.tex sekil/ethosoft-logo.png sekil/orcid-id.png tasarim.pdf sekil/bulgular.pdf sekil/kaciklik.pdf
+main.pdf: main.tex sekil/ethosoft-logo.png sekil/orcid-id.png sekil/github-invertocat.pdf tasarim.pdf sekil/bulgular.pdf sekil/kaciklik.pdf
 	$(TEX) main.tex
 	$(TEX) main.tex
 
@@ -15,7 +15,7 @@ tasarim.pdf: sekil/tasarim.tex veri/tasarim_kaba.dat veri/tasarim_ince.dat
 sekil/bulgular.pdf: sekil/bulgular.tex veri/bulgular_do.dat
 	$(TEX) -output-directory=sekil sekil/bulgular.tex
 
-sekil/kaciklik.pdf: sekil/kaciklik.tex veri/kaciklik.dat
+sekil/kaciklik.pdf: sekil/kaciklik.tex veri/kaciklik.dat veri/bulgular_do.dat
 	$(TEX) -output-directory=sekil sekil/kaciklik.tex
 
 veri:
