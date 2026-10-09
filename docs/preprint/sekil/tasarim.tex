@@ -1,0 +1,54 @@
+% The locked design: 96 coarse points, 12 of them nested fine points.
+% Compile from `docs/preprint`:  lualatex sekil/tasarim.tex
+\documentclass[border=5pt]{standalone}
+\input{sekil/ortak.tex}
+\pgfplotstableread{veri/tasarim_kaba.dat}\kaba
+\pgfplotstableread{veri/tasarim_ince.dat}\ince
+
+\begin{document}
+\begin{tikzpicture}[font=\footnotesize]
+
+% One neutral, one accent. Open marks for the many, solid for the few.
+\pgfplotsset{
+  kabaiz/.style={only marks, mark=o, mark size=1.15pt,
+                 draw=koyu!32, line width=0.35pt},
+  inceiz/.style={only marks, mark=*, mark size=1.5pt,
+                 draw=koyu, fill=koyu},
+  kucuk/.style={temel, width=42mm, height=38mm},
+}
+
+\begin{axis}[kucuk, name=pa,
+   xlabel={$\alpha_b$}, ylabel={$Y_0$ [Pa]},
+   ymode=log, xmin=0.98, xmax=1.32, ymin=0.55, ymax=1.8e5,
+   xtick={1.0,1.1,1.2,1.3}, ytick={1e0,1e2,1e4},
+  ]
+  \addplot[kabaiz] table[x=alphab, y=Y0] {\kaba};
+  \addplot[inceiz] table[x=alphab, y=Y0] {\ince};
+\end{axis}
+
+\begin{axis}[kucuk, name=pb, at={($(pa.east)+(15mm,0)$)}, anchor=west,
+   xlabel={$\alpha_b$}, ylabel={$f$},
+   xmin=0.98, xmax=1.32, ymin=0.03, ymax=0.52,
+   xtick={1.0,1.1,1.2,1.3}, ytick={0.1,0.3,0.5},
+  ]
+  \addplot[kabaiz] table[x=alphab, y=f] {\kaba};
+  \addplot[inceiz] table[x=alphab, y=f] {\ince};
+\end{axis}
+
+\begin{axis}[kucuk, name=pc, at={($(pb.east)+(15mm,0)$)}, anchor=west,
+   xlabel={$Y_0$ [Pa]}, ylabel={$f$},
+   xmode=log, xmin=0.55, xmax=1.8e5, ymin=0.03, ymax=0.52,
+   xtick={1e0,1e2,1e4}, ytick={0.1,0.3,0.5},
+  ]
+  \addplot[kabaiz] table[x=Y0, y=f] {\kaba};
+  \addplot[inceiz] table[x=Y0, y=f] {\ince};
+\end{axis}
+
+\node[altyazi, text width=146mm] at ($(pa.south west)+(-11mm,-9mm)$)
+  {\textbf{The locked design.} Ninety-six Latin-hypercube points over
+   $\theta=(\alpha_b,Y_0,f)$; the twelve solid ones will be re-run at half
+   the particle spacing. They were fixed by a deterministic rule, and
+   pinned by a test, before any pool output existed.};
+
+\end{tikzpicture}
+\end{document}

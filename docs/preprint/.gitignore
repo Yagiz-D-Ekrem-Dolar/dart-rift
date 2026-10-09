@@ -1,0 +1,6 @@
+# Derleme ciktilari: PDF'ler betikten yeniden uretilir.
+*.aux
+*.log
+*.out
+*.pdf
+*_onizleme.png

@@ -1,0 +1,94 @@
+% The preregistered decision gates. Every threshold on this page was
+% written down, committed and timestamped before the data existed.
+% Compile from `docs/preprint`:  lualatex sekil/kapilar.tex
+\documentclass[border=5pt]{standalone}
+\input{sekil/ortak.tex}
+\usetikzlibrary{shapes.geometric,decorations.pathmorphing}
+
+\begin{document}
+\begin{tikzpicture}[
+    font=\footnotesize,
+    >={Stealth[length=1.9mm,width=1.4mm]},
+    islem/.style={
+      draw=koyu!55, line width=0.45pt, fill=white,
+      rounded corners=1.2pt, align=center, inner sep=3.2pt,
+      text width=27mm, minimum height=10mm, font=\scriptsize},
+    kapi/.style={
+      draw=vurgu, line width=0.7pt, fill=vurgu!7,
+      rounded corners=1.2pt, align=center, inner sep=3.2pt,
+      text width=27mm, minimum height=10mm, font=\scriptsize},
+    muhur/.style={
+      draw=kabuk, line width=0.9pt, fill=kabuk!10,
+      rounded corners=1.2pt, align=center, inner sep=3.2pt,
+      text width=27mm, minimum height=10mm, font=\scriptsize},
+    ok/.style={->, draw=koyu!55, line width=0.5pt},
+    dus/.style={->, draw=vurgu!85, line width=0.5pt, densely dashed},
+    dusyazi/.style={font=\scriptsize, text=vurgu!90, align=center,
+                    inner sep=1.5pt},
+    kaynak/.style={font=\tiny, text=koyu!45, inner sep=1pt},
+  ]
+
+\def\dx{34mm} \def\dy{26mm}
+
+% ===== row 1 ============================================================
+\node[islem] (havuz) at (0,0)
+  {\textbf{Pool}\\$96$ points, $7.0\ \mathrm{m}$\\$480$ GPU\,h};
+\node[kapi, right=\dx-27mm of havuz] (g1)
+  {\textbf{Gate 1}\\lost runs $\leq 20\%$};
+\node[islem, right=\dx-27mm of g1] (vekil)
+  {\textbf{Surrogate}\\GP $+$ Bachoc CV\\$+\,12$ fine points};
+\node[kapi, right=\dx-27mm of vekil] (g2)
+  {\textbf{Gate 2}\\multi-fidelity:\\nested, $\rho$ interior,\\$E_{\rm CD}<E_\Sigma$};
+\node[islem, right=\dx-27mm of g2] (post)
+  {\textbf{Posterior}\\$+$ identifiability\\$n_{\rm dir}\in\{0,1,2,3\}$};
+
+\foreach \a/\b in {havuz/g1, g1/vekil, vekil/g2, g2/post}
+  {\draw[ok] (\a) -- (\b);}
+
+% ===== row 2 (right to left) ===========================================
+\node[kapi, below=\dy-10mm of post] (g3)
+  {\textbf{Gate 3}\\SBC per axis:\\calibrated or\\conservative};
+\node[kapi, left=\dx-27mm of g3] (g4)
+  {\textbf{Gate 4}\\prior shift\\$\leq 0.50$ dex};
+\node[kapi, left=\dx-27mm of g4] (g5)
+  {\textbf{Gate 5}\\history matching\\agrees, $I>3$ cut};
+\node[muhur, left=\dx-27mm of g5] (muhur)
+  {\textbf{Sealed Hera}\\\textbf{prediction}\\crater, spin,\\density, shape};
+
+\draw[ok] (post) -- (g3);
+\foreach \a/\b in {g3/g4, g4/g5, g5/muhur} {\draw[ok] (\a) -- (\b);}
+
+% ===== failure branches =================================================
+\foreach \n/\t in {%
+  g1/{$>20\%$: repeat the pool},
+  g2/{fails: headline stays\\the $\sigma$-inflated path}}
+  {\draw[dus] (\n.north) -- ++(0,5mm);
+   \node[dusyazi, above=5mm of \n.north] {\t};}
+
+\foreach \n/\t in {%
+  g3/{\textsc{biased}: posterior is\\\textbf{not published}},
+  g4/{$>0.50$ dex: no point\\value for $Y_0$},
+  g5/{conflict: publish\\neither region}}
+  {\draw[dus] (\n.south) -- ++(0,-5mm);
+   \node[dusyazi, below=5mm of \n.south] {\t};}
+
+% ===== provenance =======================================================
+\node[kaynak, below=1.5mm of havuz] {PROTOKOL-HAVUZ \S3};
+\node[kaynak, above=1.5mm of vekil] {ADR-0058, ADR-0059};
+\node[kaynak, above=1.5mm of post] {ADR-0051, PROTOKOL-UP \S3};
+\node[kaynak, above=1.5mm of g1.north] {};
+\node[kaynak, below=1.5mm of muhur] {PROTOKOL-HT, PROTOKOL-SI};
+
+\node[altyazi, text width=176mm] at ($(muhur.west)+(0,-26mm)$)
+  {\textbf{The preregistered gates.} Each red box is a condition fixed in a
+   protocol document and committed to the repository \emph{before} the
+   corresponding data existed; the dashed branches are the consequences we
+   bound ourselves to. Two of them stop publication outright. The
+   thresholds are not ours to tune afterwards: the implausibility cutoff
+   $I>3$ follows Vernon and co-workers, the Fisher threshold is fixed in
+   ADR-0051, and widening the likelihood denominator until a biased
+   posterior passes is forbidden in writing. If a gate falls, the weaker
+   result is what gets reported.};
+
+\end{tikzpicture}
+\end{document}

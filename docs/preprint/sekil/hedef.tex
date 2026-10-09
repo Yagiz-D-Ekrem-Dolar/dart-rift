@@ -1,0 +1,131 @@
+% The inference target, cut at the equatorial plane z = 0.
+% Line work only: a wire frame for the lower half, a solid cut face for the
+% interior. Every number is read from `veri/` -- see `scripts/onkayit_veri.py`.
+% Compile from `docs/preprint`:  lualatex sekil/hedef.tex
+\documentclass[border=5pt]{standalone}
+\usepackage{tikz}
+\usepackage{pgfplotstable}
+\usepackage{amsmath}
+\usepackage{tikz-3dplot}
+\usetikzlibrary{arrows.meta,calc,shadings}
+\pgfplotsset{compat=1.18}
+
+\input{veri/carpma.tex}
+\pgfplotstableread{veri/blok_kesit_z0.dat}\blokkesit
+
+\definecolor{yuzey}{HTML}{F4EFE6}   % cut face
+\definecolor{blokdis}{HTML}{A87B55}  % blocks, rim
+\definecolor{blokic}{HTML}{CBA67E}   % blocks, centre
+\definecolor{tel}{HTML}{4A6B80}     % wire frame
+\definecolor{vurgu}{HTML}{A62B1F}   % impact
+\definecolor{kabuk}{HTML}{1F6F78}   % refinement shells
+\definecolor{koyu}{HTML}{18242B}
+
+\tdplotsetmaincoords{64}{28}
+% 88.5 m -> 7 cm, i.e. the 177 m body spans ~14 cm on the page.
+\pgfmathsetmacro{\olcek}{7.0/88.5}
+
+\begin{document}
+\begin{tikzpicture}[font=\footnotesize, >={Stealth[length=2.2mm,width=1.6mm]}]
+\begin{scope}[tdplot_main_coords, scale=\olcek]
+
+\def\A{88.5} \def\B{87.0} \def\C{58.0}
+
+% ---------- 1. wire frame of the lower half (z <= 0) --------------------
+\foreach \v in {15,32,50,70}{%
+  \draw[draw=tel, line width=2.0pt, opacity=0.38]
+    plot[variable=\t, domain=0:360, samples=120, smooth cycle]
+    ({\A*cos(\v)*cos(\t)}, {\B*cos(\v)*sin(\t)}, {-\C*sin(\v)});
+}
+\foreach \u in {0,30,...,330}{%
+  \draw[draw=tel, line width=2.0pt, opacity=0.38]
+    plot[variable=\t, domain=0:90, samples=48, smooth]
+    ({\A*cos(\t)*cos(\u)}, {\B*cos(\t)*sin(\u)}, {-\C*sin(\t)});
+}
+
+% ---------- 2. the cut face, opaque: it hides the frame behind it -------
+\draw[fill=yuzey, draw=koyu, line width=3.0pt]
+  plot[variable=\t, domain=0:360, samples=180, smooth cycle]
+  ({\A*cos(\t)}, {\B*sin(\t)}, 0);
+
+% ---------- 3. blocks intersected by the cut plane ----------------------
+% Shaded, not flat: these are slices through spheres, and a flat fill made
+% them read as pancakes.
+\pgfplotstablegetrowsof{\blokkesit}
+\pgfmathtruncatemacro{\nb}{\pgfplotsretval-1}
+\foreach \i in {0,...,\nb}{%
+  \pgfplotstablegetelem{\i}{x}\of\blokkesit \let\bx\pgfplotsretval
+  \pgfplotstablegetelem{\i}{y}\of\blokkesit \let\by\pgfplotsretval
+  \pgfplotstablegetelem{\i}{r}\of\blokkesit \let\br\pgfplotsretval
+  \shadedraw[inner color=blokic, outer color=blokdis,
+             draw=koyu!65, line width=2.6pt]
+    plot[variable=\t, domain=0:360, samples=90, smooth cycle]
+    ({\bx+\br*cos(\t)}, {\by+\br*sin(\t)}, 0);
+}
+
+% ---------- 4. refinement shells, cut by the same plane -----------------
+\begin{scope}
+  \clip plot[variable=\t, domain=0:360, samples=180, smooth cycle]
+    ({\A*cos(\t)}, {\B*sin(\t)}, 0);
+  \foreach \r in {48,24,12,6,3}{%
+    \draw[draw=kabuk, line width=3.4pt, opacity=0.9]
+      plot[variable=\t, domain=0:360, samples=140, smooth cycle]
+      ({\carpmaX+\r*cos(\t)}, {\r*sin(\t)}, 0);
+  }
+\end{scope}
+
+% ---------- 5. impact --------------------------------------------------
+\coordinate (I) at (\carpmaX, 0, 0);
+\coordinate (D) at ({\carpmaX-62*\yonX}, 0, {-62*\yonZ});
+\coordinate (N) at ({\carpmaX+34}, 0, 0);
+\draw[densely dashed, koyu!55, line width=2.6pt] (I) -- (N);
+\draw[vurgu, line width=6pt, ->, >={Stealth[length=15pt,width=11pt]}]
+      (D) -- (I);
+\fill[vurgu] (I) circle (3.4pt);
+
+\coordinate (ucA) at ({\carpmaX+48}, 0, 0);
+\coordinate (ucB) at ({\carpmaX-48}, 0, 0);
+\end{scope}
+
+% ---------- 6. annotation: labels sit OUTSIDE, on leader lines ----------
+\tikzset{etiket/.style={inner sep=1pt, font=\footnotesize},
+         kilavuz/.style={line width=0.3pt, draw=#1, shorten >=1.5pt,
+                         shorten <=1.5pt}}
+
+% blocks -- leader to the upper-left block
+\node[etiket, anchor=south east, align=right, text=blokdis!75!black]
+     (lblok) at ($(I)+(-12.6,3.1)$)
+     {blocks --- distension $\alpha_b$, volume fraction $f$\\
+      radii $r\in[14,56]\ \mathrm{m}$, $\mathrm{d}N/\mathrm{d}r\propto r^{-3}$};
+\draw[kilavuz=blokdis] (lblok.south east) -- ($(I)+(-10.9,1.55)$);
+
+% matrix -- leader into clear matrix on the left
+\node[etiket, anchor=east, text=koyu!70] (lmat) at ($(I)+(-13.2,0.1)$)
+     {matrix --- cohesive strength $Y_0$};
+\draw[kilavuz=koyu!60] (lmat.east) -- ($(I)+(-11.6,-0.3)$);
+
+% refinement shells -- leader from the right, above the trajectory
+\node[etiket, anchor=west, align=left, text=kabuk] (lkab)
+     at ($(I)+(1.5,1.5)$)
+     {nested refinement shells\\$r=3,\,6,\,12,\,24,\,48\ \mathrm{m}$};
+\draw[kilavuz=kabuk] (lkab.west) -- ($(I)+(-0.75,0.55)$);
+
+% DART -- below the trajectory, clear of the arrow
+\node[etiket, anchor=north west, align=left, text=vurgu]
+     at ($(I)+(3.05,-2.75)$)
+     {\textbf{DART}\\[1pt]
+      $6144.9\ \mathrm{m\,s^{-1}}$, $579.4\ \mathrm{kg}$\\
+      $\aciDeg^{\circ}$ from the surface normal};
+
+\node[anchor=north west, align=left, text=koyu!85, text width=140mm,
+      inner sep=0pt] at ($(I)+(-14.6,-4.3)$)
+  {\textbf{The inference target.} Triaxial ellipsoid,
+   $177.0\times174.0\times116.0\ \mathrm{m}$, cut at the equatorial plane
+   $z=0$; the lower half is drawn as a wire frame. The five interior
+   blocks of the production scene all intersect this plane. DART strikes
+   the rim at $\aciDeg^{\circ}$ from the surface normal, and the particle
+   spacing is halved across each of the five nested shells, from
+   $7.0\ \mathrm{m}$ down to $0.35\ \mathrm{m}$.};
+
+\end{tikzpicture}
+\end{document}

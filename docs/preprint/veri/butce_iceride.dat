@@ -1,0 +1,10 @@
+# measured model-discrepancy terms on beta-1 (tarih_esleme.py)
+# resolution-near is cited as 0.053 by PROTOKOL-HAVUZ S5 but is
+# still nan in the code constant; it is plotted as zero and flagged.
+sira deger etiket
+0 0.013000 realisation
+1 0.004000 resolution-far
+2 0.000000 resolution-near
+3 0.016000 plateau
+4 0.009000 target-shape
+5 0.030000 impact-site

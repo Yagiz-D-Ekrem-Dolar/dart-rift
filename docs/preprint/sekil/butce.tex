@@ -1,0 +1,65 @@
+% The measured model-discrepancy budget entering the likelihood for beta.
+% A dot plot: the terms span two decades, and a bar needs a baseline that a
+% logarithmic axis does not have.
+% Compile from `docs/preprint`:  lualatex sekil/butce.tex
+\documentclass[border=5pt]{standalone}
+\input{sekil/ortak.tex}
+\pgfplotstableread{veri/butce_iceride.dat}\iceride
+\pgfplotstableread{veri/butce_disarida.dat}\disarida
+\input{veri/butce_etiketler.tex}
+
+\begin{document}
+\begin{tikzpicture}[font=\footnotesize]
+
+\begin{axis}[temel,
+    width=72mm, height=42mm,
+    xmode=log, xmin=0.0022, xmax=2.6,
+    ymin=-0.7, ymax=7.7, y dir=reverse,
+    ytick={0,1,2,3,4,5,6,7},
+    yticklabels/.expanded=\butceEtiketler,
+    yticklabel style={font=\scriptsize, text=koyu!80},
+    xlabel={relative discrepancy on $\beta-1$},
+    xtick={0.01,0.1,1}, xticklabels={$0.01$,$0.1$,$1$},
+    xtick pos=bottom, ytick pos=left,
+    y axis line style={draw=none}, ytick style={draw=none},
+    enlarge y limits=false,
+    % The one grid that earns its place: it ties a label on the left to a
+    % dot far to the right.
+    axis on top=false,
+    ymajorgrids, grid style={draw=koyu!12, line width=0.3pt},
+    point meta=rawx,
+    nodes near coords,
+    nodes near coords style={font=\scriptsize, text=koyu!65,
+                             anchor=west, xshift=2.2pt,
+                             /pgf/number format/fixed,
+                             /pgf/number format/precision=3},
+  ]
+
+  % in the denominator: solid
+  \addplot[only marks, mark=*, mark size=1.7pt, draw=koyu, fill=koyu]
+    table[x=deger, y=sira] {\iceride};
+
+  % measured, then deliberately kept out: open
+  \addplot[only marks, mark=o, mark size=1.7pt, draw=koyu!45,
+           line width=0.45pt]
+    table[x=deger, y=sira] {\disarida};
+
+  % Called out, not quietly patched. Must sit inside the axis: `axis cs:`
+  % is gone once the axis closes.
+  \node[anchor=west, text=vurgu, font=\scriptsize, fill=white,
+        inner sep=1.5pt] at (axis cs:0.0026,2) {not wired in code};
+
+\end{axis}
+
+\node[altyazi, text width=128mm]
+     at ($(current axis.south west)+(-17mm,-14mm)$)
+  {\textbf{What the model does not know.} Every term is measured by a
+   controlled pair of our own runs, not borrowed from the literature.
+   Open circles are measured and then kept \emph{out} of the denominator
+   on purpose --- an upper bound, and a branch this scene does not take ---
+   since admitting either would make the test easier to pass. The
+   near-field term is quoted as $0.053$ in the pool protocol but is still
+   \texttt{nan} in the code: a real gap, recorded rather than filled in.};
+
+\end{tikzpicture}
+\end{document}
