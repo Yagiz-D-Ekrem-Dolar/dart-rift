@@ -183,6 +183,28 @@ merdiven listesi (ör. `2` yerine `√2` oranlı, daha çok basamak) ve ölçüm
   posteriorumuz da yalnız β ile kalırsa en iyi ihtimalle `Y₀` üst sınırı verir.
 - **Hera Aralık 2026 sonunda varıyor** (L16): mühürlü öngörü (Protokol HT) bundan
   önce depoya işlenmeli.
+
+  > **GÜNCELLEME (2026-10-09, ESA'dan doğrulandı):** varış **Kasım 2026**'ya
+  > alındı — *"on track to arrive at Didymos in November 2026, a month earlier
+  > than originally planned"*
+  > ([ESA](https://www.esa.int/Space_Safety/Hera/ESA_s_Hera_targets_early_arrival_at_Didymos_asteroids)).
+  > Frenleme yakması **15 Ekim 2026**
+  > ([ESA](https://www.esa.int/Space_Safety/Hera/Brake!_Time_for_ESA_s_Hera_asteroid_mission_to_go_slow)).
+  > ESA gün vermiyor, yalnız ay.
+  >
+  > **Daha önemlisi — öngörülerin saatleri AYRI.** Bu satır bütün Hera
+  > ölçümlerini tek tarihe bağlıyordu; yanlış. Faz sırası:
+  >
+  > | faz | ne ölçüyor | bizim hangi öngörü |
+  > |---|---|---|
+  > | erken karakterizasyon (~6 hafta, 20-30 km) | **şekil, kütle, yoğunluk, dönme** | PROTOKOL-SI §5/§6/§7 |
+  > | yakın gözlem (~6 hafta, 4 km) | **yüksek çözünürlüklü krater** | PROTOKOL-HT |
+  > | CubeSat (Ocak 2027+) | Milani `<0,5 m/piksel` krater | PROTOKOL-HT |
+  >
+  > Yani SI §5/§6/§7 **varışta** sıkışıyor, HT'nin ~6 hafta payı var.
+  > Faz süreleri eski planlama belgelerinden; erken varışla kaymış olabilir.
+  > **Benim hatam:** bu üç öngörüyü (2026-10-08) önerirken Hera'nın onları
+  > ne zaman ölçtüğüne bakmadım ve krater mührüyle aynı saate bağladım.
 - **Özgünlük:** L2, L10, L11, L14 aynı soruyu farklı kodlarla çözdü. Katkımız:
   açık GPU (Warp) kodu, kalibre Bayesçi çıkarım + açık model eksikliği/çözünürlük
   terimi, koşudan önce kilitli protokoller, mühürlü Hera öngörüsü.

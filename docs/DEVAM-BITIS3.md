@@ -385,6 +385,14 @@ Yeni oturum bunları **kullanıcıya yeniden sormadan** bilmeli.
   koni **kenar** açısı + HST/eliptik koni ölçümleri, çözünürlük araştırması
   (LITERATUR §10: literatürün tüm cisim SPH'si de çarpma çevresinde cppr < 1;
   bizim zayıf noktamız **uzak alan**, 3–4× kaba).
+> **TAKVİM DÜZELTMESİ (2026-10-09):** aşağıdaki *"Aralık 2026 sonu"* bayat.
+> ESA varışı **Kasım 2026**'ya aldı; frenleme yakması **15 Ekim 2026**.
+> Ayrıca Hera'nın fazları ayrı saatlerde: **şekil/kütle/yoğunluk/dönme
+> varışta** (erken karakterizasyon), **krater ~6 hafta sonra** (yakın
+> gözlem). Dolayısıyla PROTOKOL-SI §5/§6/§7 öngörüleri PROTOKOL-HT'den
+> **daha sıkışık**. Ayrıntı ve kaynaklar: `LITERATUR-DART-SIMULASYONLARI.md`
+> §"Hera Aralık 2026" güncelleme kutusu. Aşağıdaki satırlar **silinmedi**.
+
 - **Takvim uyarısı (Hera, 2026-09-18):** PROTOKOL-HT eski modelin 0,1 s / 24 ms
   havuzlarına bağlı; geç evre modeliyle **yeniden yazılmalı** (düşük kohezyonda
   krater değil küresel deformasyon olabilir — L2, L11). Hera varışı **Aralık 2026
