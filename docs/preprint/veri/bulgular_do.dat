@@ -1,0 +1,6 @@
+# Controlled DART-scene pilot runs; KAYIT-076, table 1.
+# All have matrix tension disabled. DY2 is the 10 Pa reference.
+Y0 beta Mej_kg
+10 3.7480 1.964e7
+500 2.6247 3.649e6
+5000 1.8738 7.516e5

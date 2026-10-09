@@ -1,38 +1,490 @@
-\documentclass[11pt]{article}
-\usepackage{ethosoft}
-\usepackage{amsmath,amssymb}
-
-% Replace with the Ethosoft logo file when it arrives:
-%   \ethoslogo{sekil/ethosoft-logo.pdf}
-\reportnote{Sealed preregistration, version 1 --- no result is reported here.}
-
-\title{Preregistered Bayesian Inference of the Interior of Dimorphos
-       from the DART Momentum Transfer}
-% `\thanks` needs the standard title machinery, which this style replaces.
-\author{Yagiz Ekrem Dalar (lead) \quad\textbullet\quad Ethosoft Research}
-\date{9 October 2026}
+% DART-RIFT research preprint. Build from this directory with lualatex twice.
+% Deliberately restrained journal layout: two columns, black/gray figures.
+\documentclass[10pt,twocolumn]{article}
+\usepackage[letterpaper,top=0.72in,bottom=0.76in,left=0.72in,right=0.72in,
+            columnsep=0.29in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage[font=small,labelfont=bf,labelsep=period]{caption}
+\usepackage{fancyhdr}
+\usepackage{xurl}
+\usepackage{hyperref}
+\hypersetup{
+  hidelinks,
+  pdftitle={Cohesion, Matrix Tension, and Impact-Site Sensitivities in DART-RIFT Simulations of Dimorphos},
+  pdfauthor={Yağız Ekrem Dalar; Feyzi Arda Salihoğlu; Nedim Mutlu Sezer},
+  pdfsubject={Controlled pilot simulations and a preregistered inference protocol}
+}
+\setlength{\parindent}{1em}
+\setlength{\parskip}{0pt}
+\setlength{\columnsep}{0.29in}
+\raggedbottom
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize\textsc{DART-RIFT}}
+\fancyhead[R]{\footnotesize Dalar et al. \textbar\ 10 October 2026}
+\fancyfoot[C]{\footnotesize\thepage}
+\renewcommand{\headrulewidth}{0.35pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancypagestyle{first}{\fancyhf{}
+  \fancyfoot[L]{\scriptsize\copyright\ 2026 the authors \textbar\ \href{https://creativecommons.org/licenses/by/4.0/}{CC BY 4.0}}
+  \fancyfoot[C]{\footnotesize\thepage}
+  \fancyfoot[R]{\scriptsize\href{https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift}{github.com/Yagiz-D-Ekrem-Dolar/dart-rift}}
+  \renewcommand{\headrulewidth}{0pt}}
+\newcommand{\Yzero}{Y_0}
+\newcommand{\aB}{\alpha_b}
+\newcommand{\Mej}{M_{\mathrm{ej}}}
+\newcommand{\repo}[2]{\href{https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/blob/a35dab4/#1}{#2}}
+\newcommand{\orcidid}[1]{\href{https://orcid.org/#1}{%
+  \raisebox{-0.4mm}{\includegraphics[height=2.8mm]{sekil/orcid-id.png}}%
+  \hspace{0.7mm}{\scriptsize\texttt{#1}}}}
 
 \begin{document}
-\maketitle
+\twocolumn[{
+\begin{minipage}{\textwidth}
+\noindent
+\begin{tabular*}{\textwidth}{@{}l@{\extracolsep{\fill}}r@{}}
+\raisebox{-1mm}{\includegraphics[width=43mm,trim=260bp 270bp 260bp 270bp,clip]{sekil/ethosoft-logo.png}}
+  & \textsf{\small PILOT RESULTS \textbar\ 10 OCTOBER 2026}
+\end{tabular*}
+\vspace{3mm}
+\hrule height 0.5pt
+\vspace{7mm}
 
-\begin{abstract}
-This document fixes, in advance of the data, every rule by which we will
-judge a Bayesian inference of Dimorphos's interior parameters
-$\theta=(\alpha_b,Y_0,f)$ from the DART momentum enhancement. No result is
-reported. What is reported is the model, the experimental design, the
-measured model-discrepancy budget, and five decision gates, two of which
-stop publication outright. The accompanying repository carries the
-protocols, the code and the tests that pin these choices.
-\end{abstract}
+{\centering\fontsize{17}{20}\selectfont\bfseries
+Cohesion, Matrix Tension, and Impact-Site Sensitivities in
+DART-RIFT Simulations of Dimorphos\par}
+\vspace{5mm}
+{\centering
+  {\normalsize\bfseries Ya\u{g}\i z Ekrem Dalar\par}
+  \vspace{0.6mm}
+  {\footnotesize\href{mailto:ekrem@ethosoft.org}{ekrem@ethosoft.org}
+    \quad\orcidid{0009-0009-3522-4403}\par}
+  \vspace{2.3mm}
+  \begin{tabular}{@{}c@{\hspace{16mm}}c@{}}
+  \bfseries Feyzi Arda Saliho\u{g}lu & \bfseries Nedim Mutlu Sezer\\[0.5mm]
+  \footnotesize\href{mailto:feyziarda.salihoglu@ethosoft.org}{feyziarda.salihoglu@ethosoft.org}
+    & \footnotesize\href{mailto:nedim@ethosoft.org}{nedim@ethosoft.org}\\[0.5mm]
+  \orcidid{0009-0006-5841-1664} & \orcidid{0009-0001-3499-6067}
+  \end{tabular}\par
+  \vspace{2.2mm}
+  {\footnotesize GO \.{I}stanbul Giri\c{s}im Ofisi (Bili\c{s}im Vadisi), Sar{\i}yer, \.{I}stanbul\par}
+  {\footnotesize Pertevniyal Lisesi, Aksaray/Fatih, \.{I}stanbul\par}
+}
+\vspace{3mm}
+\noindent\textbf{Abstract.}\enspace
+Five completed, validity-checked SPH pilot simulations were run in a
+fixed DART impact scene to measure model sensitivity before production
+inference. At matrix cohesion $\Yzero=10$, 500, and 5000 Pa, simulated
+momentum enhancement is $\beta=3.7480$, 2.6247, and 1.8738, respectively;
+the corresponding recorded ejecta masses are
+$1.964\times10^7$, $3.649\times10^6$, and $7.516\times10^5$ kg.
+At 10 Pa, enabling the tested matrix-tension law reduces
+$\beta$ to 1.0807, while a 25 m impact offset gives 3.6650 and
+changes model ejecta mass by 18\%. A three-point power law for $\beta-1$
+has slope $-0.1791$ and maximum relative residual 0.1198; its
+scene-conditioned interpolation gives 20.1 Pa at the mass-adjusted
+observed $\beta$. That interpolation is not an interior-strength
+measurement or posterior. We register a 96-point coarse design and 12
+nested fine reruns, and identify unresolved numerical and
+observation-definition checks that prevent a defensible production
+posterior or numerical Hera forecast at present.
+\vspace{3mm}
+\hrule height 0.35pt
+\vspace{5mm}
+\end{minipage}
+}]
+\thispagestyle{first}
 
 \section{Introduction}
-\section{Model}
-\section{Observables and targets}
-\section{Model discrepancy}
-\section{Inference}
-\section{Preregistered decision rules}
-\section{Sealed predictions for Hera}
-\section{What is not claimed}
-\section{Known defects}
+The DART experiment measured a change in Dimorphos's orbit, constraining
+the momentum transferred to the body \cite{daly2023,cheng2023}. Translating
+that response into interior structure requires a forward model whose
+material laws, target geometry, resolution, and observation operators
+are controlled. We use DART-RIFT to study three interior coordinates:
+block distension $\aB$, matrix cohesion $\Yzero$, and block volume
+fraction $f$. A match by one simulated scene is evidence about that
+scene, not an identified three-parameter interior.
 
+This paper reports the completed pilot measurements first. It then
+specifies the production design and claim checks that were fixed
+before reading the production pool. The pilot runs themselves predate
+this paper and are not presented as blind predictions.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{sekil/bulgular.pdf}
+\caption{Controlled pilot measurements in the fixed DART scene.
+Filled circles and connecting segments show only the three completed
+cohesion runs; the segments are visual guides, not an inferred curve.
+The open square is the single matrix-tension comparison DC at 10 Pa.
+The gray band in the left panel is the mass-adjusted DART
+$1\sigma$ interval from Equation~\ref{eq:betaobs}; the dashed line
+is its central value. The right panel shows the model-reported
+ejecta statistic, with no observational band because the LICIACube plume
+estimate is not the same quantity. DN is omitted from the
+$\Yzero$ sweep because it changes impact location.}
+\label{fig:results}
+\end{figure*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{tasarim.pdf}
+\caption{Locked design before production-pool inspection.
+Open circles are the 84 coarse-only points; filled circles
+are the 12 nested fine locations. The three projections show
+coverage of $(\aB,\Yzero,f)$ without suggesting measured
+responses or an inferred interior.}
+\label{fig:design}
+\end{figure*}
+
+\section{Simulation and comparison}
+\subsection{Fixed scene and controlled changes}
+The reference target is a triaxial ellipsoid with semiaxes
+$(88.5,87,58)$ m and calibrated mass
+$4.2980\times10^9$ kg. The three-sphere impactor has mass 579.4 kg,
+speed 6144.9 m\,s$^{-1}$, and nominal incidence $17^\circ$ from the
+surface normal. The pilot cohesion comparison fixes
+$(\aB,f)=(1.15,0.25)$, the random seed 20260906, 7 m particle spacing,
+a 1.0 s transition time, and a 600 s endpoint
+\repo{docs/truba/PROTOKOL-DO-DAYANIM-ONSELI.md}{[pilot protocol]}.
+DO1 and DO2 change only $\Yzero$ from the DY2 reference. DC enables
+one selected matrix-tension law at 10 Pa; DN moves the impact point
+25 m at 10 Pa. The production model keeps that tension law disabled
+\repo{docs/adr/ADR-0056-a105-matris-cekme-dayanimi.md}{[model decision]}.
+
+All four new branches completed and passed the repository's validity
+checks; the reference DY2 also passed. Table~\ref{tab:runs} reports
+their recorded $\beta$ and ejecta mass. The run identifiers, code
+commits, and file hashes are in the
+\repo{docs/olcumler/DO_DC_DN_2026-10-06/KAYNAK.md}{[run source record]}.
+We use \emph{model ejecta mass} for the simulation quantity; it is not
+automatically the same as an observed plume mass.
+
+\begin{table}[t]
+\centering
+\caption{Completed pilot runs at 600 s. Conditions other than the
+listed change are held fixed.}
+\label{tab:runs}
+\footnotesize
+\begin{tabular}{@{}llrr@{}}
+\toprule
+Run & Change & $\beta$ & $\Mej$ (kg)\\
+\midrule
+DY2 & $\Yzero=10$ Pa & 3.7480 & $1.964\,10^7$\\
+DO1 & $\Yzero=500$ Pa & 2.6247 & $3.649\,10^6$\\
+DO2 & $\Yzero=5000$ Pa & 1.8738 & $7.516\,10^5$\\
+DC & Tension on & 1.0807 & $2.777\,10^2$\\
+DN & Offset 25 m & 3.6650 & $2.321\,10^7$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The four new branches have energy deviations between $-0.79\%$
+and $-0.80\%$, mass-consistency deviations between $-0.05\%$
+and $-0.06\%$, and momentum-ledger residuals no greater than
+$9\times10^{-15}$ in the recorded checks
+\repo{docs/defter/KAYIT-076_2026-10-06_DO-DC-DN-uc-kilitli-yargi.md}{[validation record]}.
+These checks support run validity; they do not establish
+resolution convergence.
+
+\subsection{Observational target}
+The mass-adjusted momentum target used for the production scene is
+\begin{equation}
+\beta_{\mathrm{obs}}(M_{\mathrm{scene}})
+=3.5418^{+0.188}_{-0.247}
+\quad(M_{\mathrm{scene}}=4.2980\,10^9\ {\rm kg}).
+\label{eq:betaobs}
+\end{equation}
+The asymmetric interval is retained when constructing the likelihood
+\repo{docs/adr/ADR-0054-c1-gozlenen-beta-hangi-sayi.md}{[mass adjustment]}.
+It is shown in Figure~\ref{fig:results} only as an observational
+reference; it is not a posterior interval.
+
+\section{Measured pilot results}
+\subsection{Cohesion sweep}
+Across the tested $10$--$5000$ Pa span, $\beta$ falls from 3.7480 to
+1.8738 while model ejecta mass falls by a factor of 26.1
+(Figure~\ref{fig:results}). The predeclared three-point fit
+$\beta-1=C\Yzero^p$ gives $p=-0.1791$ and a maximum relative
+residual of 0.1198, below the fixed 0.15 fit-quality threshold
+\repo{docs/truba/PROTOKOL-DO-DAYANIM-ONSELI.md}{[DO protocol]}.
+At the central target in Equation~\ref{eq:betaobs}, this fit
+interpolates to $\Yzero\simeq20.1$ Pa. The value is conditional on the
+fixed scene, $\aB$, $f$, material law, and fit form; it is not a
+posterior estimate of Dimorphos's strength. The older production
+cohesion domain $[10^3,10^7]$ Pa does not contain this conditional
+interpolation, motivating the prospectively selected
+$[1,10^5]$ Pa domain.
+
+\subsection{Matrix tension}
+At $\Yzero=10$ Pa, enabling the tested tension law changes
+$\beta$ from 3.7480 to 1.0807. The contrast in excess momentum
+$b=\beta-1$ is
+\begin{equation}
+\frac{|b_{\mathrm{DY2}}-b_{\mathrm{DC}}|}{b_{\mathrm{DY2}}}
+=\frac{|2.7480-0.0807|}{2.7480}=0.9706.
+\label{eq:tension}
+\end{equation}
+Recorded model ejecta mass changes from
+$1.964\times10^7$ kg to $2.777\times10^2$ kg, a factor of
+about $7.1\times10^4$. This is a strong sensitivity to one
+constitutive-model choice. Because DC is one toggle at one
+parameter location, it does not establish the real body's
+tensile strength or rule out all alternative tension laws.
+The production model choice remains explicit, and the DC contrast
+is reported outside the small-discrepancy denominator
+\repo{docs/defter/KAYIT-076_2026-10-06_DO-DC-DN-uc-kilitli-yargi.md}{[locked pilot judgments]}.
+
+\subsection{Impact-site offset}
+Moving the impact point 25 m changes $\beta$ from 3.7480 to 3.6650
+(2.2\%), but changes model ejecta mass from
+$1.964\times10^7$ to $2.321\times10^7$ kg (18\%).
+The recorded cone opening changes from $85.2^\circ$ to
+$107.7^\circ$, and median ejecta time $t_{50}$ from 0.541 to
+0.845 s. A near-stable $\beta$ therefore coexists with a
+materially different ejecta field in this controlled pair.
+The corresponding impact-location discrepancy on $b$ is
+$0.03019$; it exceeds the preregistered \emph{negligible}
+boundary of $0.03000$ by $0.00019$. We retain the registered
+classification rather than moving that boundary after seeing
+the result \repo{docs/defter/KAYIT-076_2026-10-06_DO-DC-DN-uc-kilitli-yargi.md}{[KAYIT-076]}.
+Figure~\ref{fig:offset} compares the four paired responses on
+a common dimensionless scale.
+
+\section{Registered production inference}
+\subsection{Design and validation}
+The production coordinates are
+$\theta=(\aB,\Yzero,f)$, with
+$\aB\in[1.00,1.30]$, $\Yzero\in[1,10^5]$ Pa,
+and $f\in[0.05,0.50]$. The design has 96 Latin-hypercube
+coarse points at 7 m spacing and 12 predetermined nested
+reruns at 3.5 m spacing
+\repo{docs/adr/ADR-0059-cok-dogruluklu-vekilin-geri-alinmasi.md}{[nested-design decision]}.
+Figure~\ref{fig:design} shows coverage; it is a design plot,
+not a fitted posterior. The 12 indices are
+$\{11,20,33,44,45,57,58,62,74,78,87,92\}$.
+Every readable run must be valid, reach 600 s, and meet the
+5\% mass-consistency limit. A loss above 20\% invalidates
+the pool and triggers its repetition
+\repo{docs/truba/PROTOKOL-HAVUZ-URETIM.md}{[pool protocol]}.
+
+The registered surrogate is a Gaussian process validated
+in four groups by $\theta$, with predictive variance enlarged
+when held-out residuals require it. The residual-correlation
+matrix $R$ is measured from those residuals and compared with
+$R=I$. The alternative resolution paths are a coarse
+surrogate plus measured discrepancy (SIGMA), and an
+autoregressive nested coarse/fine surrogate (CD). CD leads
+only if the nested design is intact, the fitted coupling
+is interior, and held-out fine error is lower than for
+SIGMA. Both results are disclosed if they differ materially
+\repo{docs/adr/ADR-0058-uretim-posteriorunun-tarifi.md}{[posterior definition]}.
+For eligible observation vector $z$ and surrogate mean
+$g(\theta)$, the registered heteroskedastic likelihood is
+\begin{equation}
+\mathcal{L}(\theta)\propto
+|S(\theta)|^{-1/2}
+\exp\!\left[-\tfrac12
+(g-z)^{T}S(\theta)^{-1}(g-z)\right].
+\label{eq:likelihood}
+\end{equation}
+The covariance $S(\theta)$ combines predictive, observation,
+and admitted model uncertainty with the measured residual
+correlation. The determinant term is retained; no production
+posterior is evaluated in this report.
+
+\subsection{Observation mapping and model error}
+A LICIACube analysis reports an extrapolated plume mass
+$(1.6\pm0.3)\times10^7$ kg as a plausible upper limit
+for mass within the camera field of view
+\cite{lolachi2025}. The model quantity in Table~\ref{tab:runs}
+is the reported ejecta statistic at 600 s; the run record
+also tracks a separate escaping-mass diagnostic. Neither is definitionally
+identical to the observed plume mass. A quantitative ejecta-mass likelihood is
+conditional on an observation operator that reconciles them.
+The present model $\beta$ is projected along impactor momentum,
+whereas the orbital observation concerns Dimorphos's orbital
+velocity direction. Both projections must be computed with
+verified orbital constants before physical posterior
+interpretation
+\repo{docs/truba/PROTOKOL-SI-SON-ISLEME.md}{[post-processing protocol]}.
+
+The predeclared relative discrepancy terms on $b=\beta-1$
+are 0.013 (realisation), 0.004 (far-field resolution),
+0.053 (near-field resolution), 0.016 (late-time plateau),
+0.009 (target shape), and 0.030 (impact location).
+The near-field value is documented but its executable
+constant is still \texttt{nan}; the code rejects that
+configuration. We therefore do not quote a complete
+operational denominator. The 0.134 impactor-geometry and
+0.971 matrix-tension contrasts are alternative-model
+sensitivities, not Gaussian noise terms
+\repo{docs/truba/PROTOKOL-HAVUZ-URETIM.md}{[discrepancy protocol]}.
+
+\subsection{Checks before a posterior claim}
+Simulation-based calibration uses at least 200 replicates
+with the actual surrogate and error model; a biased rank
+distribution blocks posterior publication \cite{talts2018}.
+Local Fisher information is evaluated at no fewer than five
+parameter locations. Eigenvalues above 36 count learned
+directions, and the smallest count over the registered
+correlation sensitivities governs the claim
+\repo{docs/truba/PROTOKOL-UP-POSTERIOR.md}{[identifiability protocol]}.
+Only two quantitative observation groups are currently locked,
+so local rank cannot exceed two. The third candidate,
+ejecta-speed distribution, has no locked DART value and
+uncertainty.
+
+A shift of more than 0.50 dex in the $\Yzero$ mode under
+the declared prior alternatives prevents a single
+$\Yzero$ estimate. Independent history matching excludes
+points with implausibility $I>3$ \cite{vernon2014}.
+The preregistered overlap and volume gates decide whether
+a posterior, a broader matching region, or neither is
+publishable. These gates are not adjusted after inspection
+of the production pool. If less than 90\% of the 68\%
+posterior mass lies in the compatible region, both
+inferential regions are withheld.
+
+\clearpage
+\section{Discussion and conclusions}
+The pilot set supports three controlled findings.
+\textbf{First}, simulated momentum enhancement and ejecta mass
+decrease across the tested cohesion values in one fixed
+DART scene. \textbf{Second}, the selected matrix-tension
+toggle changes excess momentum by 97.1\% and reduces
+the model-reported ejecta statistic by about $7.1\times10^4$
+in that scene.
+\textbf{Third}, a 25 m impact offset changes $\beta$ by
+only 2.2\% while changing ejecta mass, opening angle,
+and median ejecta time more. These are model sensitivities,
+not a reconstructed interior.
+
+\par\vspace{3mm}\noindent
+\begin{minipage}{\columnwidth}
+\centering
+\includegraphics[width=.93\columnwidth]{sekil/kaciklik.pdf}
+\captionsetup{hypcap=false}
+\captionof{figure}{Impact-site sensitivity in the DY2--DN pair.
+Each marker is the 25 m offset result divided by the nominal
+result; the dashed line is unity. The percentages are changes
+relative to DY2, and the quantities are normalized only for
+visual comparison.}
+\label{fig:offset}
+\end{minipage}
+
+The principal limits are structural. The three-point
+cohesion fit is conditional on the pilot scene. The
+near-field discrepancy has not been connected in code.
+The plume and model-ejecta definitions differ, as do
+the observed and simulated momentum-projection axes.
+Crater depth at the present 600 s endpoint is invalid or
+physically mismatched to a final settled crater in the
+pilot diagnostics
+\repo{docs/defter/KAYIT-076_2026-10-06_DO-DC-DN-uc-kilitli-yargi.md}{[crater diagnosis]}.
+A single earlier resolution step measured 5.34\%
+on $\beta-1$ in a different scene; it is not a convergence
+proof \repo{docs/defter/KAYIT-071_2026-09-29_UY2-azaliyor-DY-okunmaz-A112.md}{[resolution record]}.
+
+The Hera protocol defines quantile and hash-sealing
+procedures, but the required posterior and validated
+crater/shape post-processing are not yet available
+\repo{docs/truba/PROTOKOL-HT-HERA-TAHMIN.md}{[Hera protocol]}.
+No numerical Hera forecast or production posterior is
+reported here.
+
+\section*{Data and protocol provenance}
+The pilot values and locked decisions are archived at
+\href{https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/tree/a35dab4}{commit \texttt{a35dab4}}.
+Figure~\ref{fig:results} uses the completed runs in
+Table~\ref{tab:runs}; Figure~\ref{fig:design} uses the locked
+design coordinates. Later analyses must retain these dated
+decision rules. The article text and original figures are
+\copyright\ 2026 the authors, licensed under
+\href{https://creativecommons.org/licenses/by/4.0/}{CC BY 4.0};
+the Ethosoft mark and ORCID iD icon are excluded. Repository
+software remains under the MIT license.
+
+\newpage
+\section*{Prospective Hera comparison}
+Hera will measure Dimorphos's mass, map its crater and surface,
+and investigate its interior \cite{esaHera}.
+Table~\ref{tab:hera} separates pilot evidence from future checks.
+
+\noindent\begin{minipage}{\columnwidth}
+\centering
+\captionsetup{hypcap=false}
+\captionof{table}{Pilot claims and possible Hera checks.
+No numerical forecast is sealed yet.}
+\label{tab:hera}
+\footnotesize
+\renewcommand{\arraystretch}{1.16}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{19mm}>{\raggedright\arraybackslash}p{59mm}@{}}
+\toprule
+Question & Evidence and independent check\\
+\midrule
+Cohesion & $\beta$ falls $3.7480\to1.8738$ and $\Mej$
+falls $26.1\times$ over 10--5000 Pa. Hera's mass measurement
+refines $\beta_{\rm obs}$; crater and shape can test later
+predictions. The 20.1 Pa fit is scene-conditional.\\
+\addlinespace[2pt]
+Matrix tension & The tested toggle changes $\beta$
+$3.7480\to1.0807$. Hera's interior and surface data can
+constrain competing models; one toggle cannot prove zero
+real tensile strength.\\
+\addlinespace[2pt]
+Impact site & A 25 m offset changes $\beta$ by $-2.2\%$
+and $\Mej$ by $+18.2\%$. Hera can map the crater and site,
+but cannot remeasure the past ejecta time $t_{50}$.\\
+\bottomrule
+\end{tabular}
+\end{minipage}
+
+\section*{Two planned DOI records}
+\textbf{DOI 1 (planned; this paper).} Five validated pilot runs,
+quantitative sensitivities, and registered inference rules.
+
+\par\smallskip\noindent
+\textbf{DOI 2 (planned).} The detailed production posterior or
+matching region, uncertainty analysis, and numerical Hera
+predictions, if the claim gates pass. Neither DOI is assigned
+here. A discriminating Hera comparison requires time-stamped
+predictions and judgment rules before the relevant measurements
+are inspected.
+
+\begin{thebibliography}{9}
+\raggedright
+\bibitem{daly2023}
+T.~R. Daly et al., Successful kinetic impact into an asteroid
+for planetary defence, \emph{Nature} \textbf{616},
+443--447 (2023). \href{https://doi.org/10.1038/s41586-023-05810-5}{doi:10.1038/s41586-023-05810-5}.
+\bibitem{cheng2023}
+A.~F. Cheng et al., Momentum transfer from the DART mission
+kinetic impact on asteroid Dimorphos, \emph{Nature} \textbf{616},
+457--460 (2023). \href{https://doi.org/10.1038/s41586-023-05878-z}{doi:10.1038/s41586-023-05878-z}.
+\bibitem{lolachi2025}
+R. Lolachi et al., Ejecta Mass Estimates from the DART Impact
+Plume Inferred from LICIACube Images, \emph{Planetary Science
+Journal} \textbf{6}, 199 (2025).
+\href{https://doi.org/10.3847/PSJ/adec6b}{doi:10.3847/PSJ/adec6b}.
+\bibitem{talts2018}
+S. Talts et al., Validating Bayesian Inference with
+Simulation-Based Calibration,
+\href{https://arxiv.org/abs/1804.06788}{arXiv:1804.06788} (2018).
+\bibitem{vernon2014}
+I. Vernon, M. Goldstein, and R.~G. Bower,
+Galaxy Formation: Bayesian History Matching for the
+Observable Universe, \emph{Statistical Science}
+\textbf{29}, 81--90 (2014).
+\href{https://doi.org/10.1214/12-STS412}{doi:10.1214/12-STS412}.
+\bibitem{esaHera}
+European Space Agency, \emph{Hera's Science} (accessed
+10 October 2026). \href{https://www.esa.int/Space_Safety/Hera/Hera_s_Science}{esa.int}.
+\end{thebibliography}
 \end{document}

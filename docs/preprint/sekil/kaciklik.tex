@@ -1,0 +1,36 @@
+% Impact-site effect: dimensionless paired ratios, not a posterior.
+\documentclass[border=4pt]{standalone}
+\usepackage{amsmath}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\pgfplotsset{compat=1.18}
+\pgfplotstableread{veri/kaciklik.dat}\pairs
+\begin{document}
+\begin{tikzpicture}
+\begin{axis}[
+  width=58mm,height=43mm,scale only axis,
+  xmin=.86,xmax=1.78,xtick={1,1.2,1.4,1.6},
+  ymin=.5,ymax=4.5,y dir=reverse,
+  ytick={1,2,3,4},
+  yticklabels={$\beta$,$M_{\rm ej}$,Cone angle,$t_{50}$},
+  xlabel={Ratio: offset / nominal},
+  tick align=outside,tick style={black,line width=.35pt},
+  ytick style={draw=none},
+  axis line style={black,line width=.45pt},
+  axis x line*=bottom,axis y line*=left,
+  every axis y line/.style={draw=none},
+  label style={font=\footnotesize},
+  tick label style={font=\scriptsize},
+  yticklabel style={align=right},
+  clip=false]
+  \addplot[black!45,densely dashed,line width=.5pt,forget plot]
+    coordinates {(1,.5) (1,4.5)};
+  \addplot[only marks,mark=*,mark size=2.2pt,black]
+    table[x expr=\thisrow{offset}/\thisrow{baseline},y=row]{\pairs};
+  \node[anchor=east,font=\scriptsize] at (axis cs:1.76,1) {$-2.2\%$};
+  \node[anchor=east,font=\scriptsize] at (axis cs:1.76,2) {$+18.2\%$};
+  \node[anchor=east,font=\scriptsize] at (axis cs:1.76,3) {$+26.4\%$};
+  \node[anchor=east,font=\scriptsize] at (axis cs:1.76,4) {$+56.2\%$};
+\end{axis}
+\end{tikzpicture}
+\end{document}

@@ -1,21 +1,24 @@
-# Figures for the sealed preregistration.
-#   make          -> rebuild every figure
-#   make veri     -> regenerate the data tables from the code
-# lualatex, not pdflatex: the particle-scale figures exhaust pdflatex's
-# fixed main memory.
+# Build the research preprint and its three vector figures.
+# Run from docs/preprint. MiKTeX may need --disable-installer in offline mode.
 PY  ?= ../../.venv/Scripts/python.exe
-TEX ?= lualatex -interaction=nonstopmode -halt-on-error
-SEKILLER = hedef tasarim kapilar butce
+TEX ?= lualatex --disable-installer -interaction=nonstopmode -halt-on-error
 
-all: $(addsuffix .pdf,$(SEKILLER))
+all: main.pdf
 
-%.pdf: sekil/%.tex sekil/ortak.tex
-	$(TEX) $<
+main.pdf: main.tex sekil/ethosoft-logo.png sekil/orcid-id.png tasarim.pdf sekil/bulgular.pdf sekil/kaciklik.pdf
+	$(TEX) main.tex
+	$(TEX) main.tex
+
+tasarim.pdf: sekil/tasarim.tex veri/tasarim_kaba.dat veri/tasarim_ince.dat
+	$(TEX) sekil/tasarim.tex
+
+sekil/bulgular.pdf: sekil/bulgular.tex veri/bulgular_do.dat
+	$(TEX) -output-directory=sekil sekil/bulgular.tex
+
+sekil/kaciklik.pdf: sekil/kaciklik.tex veri/kaciklik.dat
+	$(TEX) -output-directory=sekil sekil/kaciklik.tex
 
 veri:
 	cd ../.. && $(PY) scripts/onkayit_veri.py
 
-temiz:
-	rm -f *.aux *.log *.out *.pdf *_onizleme.png
-
-.PHONY: all veri temiz
+.PHONY: all veri

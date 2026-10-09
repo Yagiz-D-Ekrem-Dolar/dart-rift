@@ -1,0 +1,64 @@
+% Journal figure: completed pilot measurements only. Compile from docs/preprint.
+\documentclass[border=5pt]{standalone}
+\usepackage{amsmath}
+\usepackage{pgfplots}
+\usetikzlibrary{calc}
+\pgfplotsset{compat=1.18}
+\pgfplotstableread{veri/bulgular_do.dat}\cohesion
+\begin{document}
+\begin{tikzpicture}
+\begin{axis}[
+  name=beta,width=78mm,height=60mm,scale only axis,
+  xmode=log,xmin=1,xmax=1e5,
+  xtick={1,1e2,1e4},xticklabels={$1$,$10^2$,$10^4$},
+  xlabel={Matrix cohesion $Y_0$ (Pa)},
+  ymin=.8,ymax=4.1,ytick={1,2,3,4},
+  ylabel={Momentum enhancement $\beta$},
+  tick align=outside,tick style={black,line width=.35pt},
+  axis line style={black,line width=.45pt},
+  axis x line*=bottom,axis y line*=left,
+  label style={font=\footnotesize},
+  tick label style={font=\scriptsize},
+  clip=true]
+  \node[anchor=north west,font=\footnotesize\bfseries]
+    at (rel axis cs:0.025,0.98) {(a)};
+  % Mass-adjusted DART target: observational interval, not posterior.
+  \path[fill=black!9] (axis cs:1,3.2948) rectangle (axis cs:1e5,3.7298);
+  \addplot[black!55,densely dashed,line width=.55pt,forget plot]
+    coordinates {(1,3.5418) (1e5,3.5418)};
+  \addplot[black,line width=.7pt,mark=*,mark size=2.15pt]
+    table[x=Y0,y=beta]{\cohesion};
+  \addplot[only marks,mark=square,mark size=2.6pt,
+           mark options={draw=black,fill=white,line width=.8pt}]
+    coordinates {(10,1.0807)};
+  \node[anchor=west,font=\scriptsize,fill=white,inner sep=1pt]
+    at (axis cs:13,1.0807) {DC};
+\end{axis}
+\begin{axis}[
+  name=mass,width=78mm,height=60mm,scale only axis,
+  at={($(beta.east)+(17mm,0)$)},anchor=west,
+  xmode=log,xmin=1,xmax=1e5,
+  xtick={1,1e2,1e4},xticklabels={$1$,$10^2$,$10^4$},
+  xlabel={Matrix cohesion $Y_0$ (Pa)},
+  ymode=log,ymin=1e2,ymax=1e8,
+  ylabel={Model ejecta statistic $M_{\rm ej}$ (kg)},
+  ytick={1e2,1e4,1e6,1e8},
+  yticklabels={$10^2$,$10^4$,$10^6$,$10^8$},
+  tick align=outside,tick style={black,line width=.35pt},
+  axis line style={black,line width=.45pt},
+  axis x line*=bottom,axis y line*=left,
+  label style={font=\footnotesize},
+  tick label style={font=\scriptsize},
+  clip=true]
+  \node[anchor=north west,font=\footnotesize\bfseries]
+    at (rel axis cs:0.025,0.98) {(b)};
+  \addplot[black,line width=.7pt,mark=*,mark size=2.15pt]
+    table[x=Y0,y=Mej_kg]{\cohesion};
+  \addplot[only marks,mark=square,mark size=2.6pt,
+           mark options={draw=black,fill=white,line width=.8pt}]
+    coordinates {(10,277.7)};
+  \node[anchor=south west,font=\scriptsize,fill=white,inner sep=1pt]
+    at (axis cs:13,277.7) {DC};
+\end{axis}
+\end{tikzpicture}
+\end{document}
