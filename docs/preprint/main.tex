@@ -146,11 +146,25 @@ responses or an inferred interior.}
 \label{fig:design}
 \end{figure*}
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{hedef.pdf}
+\caption{The fixed pilot and production scene, cut at the equatorial
+plane $z=0$ and drawn from the scene builder's own output rather than
+sketched. The lower half is a wire frame; the cut face carries the five
+interior blocks that the production block generator places at
+$f=0.25$. The cut plane was chosen because all five blocks intersect it,
+whereas the meridional plane $y=0$ intersects only one. Shell radii mark
+the nested spacing ladder about the impact point.}
+\label{fig:scene}
+\end{figure*}
+
 \section{Simulation and comparison}
 \subsection{Fixed scene and controlled changes}
 The reference target is a triaxial ellipsoid with semiaxes
 $(88.5,87,58)$ m and calibrated mass
-$4.2980\times10^9$ kg. The three-sphere impactor has mass 579.4 kg,
+$4.2980\times10^9$ kg (Figure~\ref{fig:scene}).
+The three-sphere impactor has mass 579.4 kg,
 speed 6144.9 m\,s$^{-1}$, and nominal incidence $17^\circ$ from the
 surface normal. The pilot cohesion comparison fixes
 $(\aB,f)=(1.15,0.25)$, the random seed 20260906, 7 m particle spacing,
@@ -385,9 +399,43 @@ an observed ejecta-mass comparison.}
 \label{fig:offset}
 \end{minipage}
 
+\subsection*{Relation to published interior studies}
+Two recent studies bound what a single $\beta$ can say about an
+interior. Raducan and colleagues ran forward simulations across assumed
+material sets and interior structures and compared them with the
+observations, favouring a low bulk density and a modest near-surface
+boulder fraction \cite{raducan2024}. Senel and colleagues then reported
+that several distinct interiors reproduce the reference $\beta$: a
+homogeneous target with cohesion in the 20--80 Pa range, a
+double-layered interior, and a three-layered interior with boulders
+clustered at the impact site \cite{senel2025}. That is a degeneracy
+statement, and it is the reason the production step here is organised
+around how many directions in $(\aB,\Yzero,f)$ the observation actually
+constrains rather than around a point estimate.
+
+Our scene-conditional interpolation, 20.1 Pa, falls at the lower edge
+of the 20--80 Pa homogeneous range of \cite{senel2025}. We do not treat
+that as corroboration. The two calculations differ in code, in target
+geometry, in dimensionality, and --- importantly --- in internal
+friction, which \cite{senel2025} reports as a strong lever on $\beta$:
+their homogeneous range is quoted at friction 0.5, whereas every run in
+Table~\ref{tab:runs} uses 0.6. Agreement between two numbers obtained at
+different friction may be coincidental. We have not measured our own
+sensitivity to that coefficient, and until we do, the comparison is a
+consistency note and nothing more.
+
 The principal limits are structural. The three-point
 cohesion fit is conditional on the pilot scene. The
-near-field discrepancy has not been connected in code.
+near-field discrepancy has not been connected in code,
+and that omission is not isolated: the repository's defect
+log now records three modules that were written, documented
+and unit-tested but never called from the production path,
+one of which had been dropped from the posterior definition
+before being reinstated
+\repo{docs/FAZ4-SIKINTI-RAPORU.md}{[defect A116]}.
+A passing test suite and a wired production path are not
+the same property, and we have no automated check for the
+second.
 The plume and model-ejecta definitions differ, as do
 the observed and simulated momentum-projection axes.
 Crater depth at the present 600 s endpoint is invalid or
@@ -422,7 +470,14 @@ software remains under the MIT license.
 \newpage
 \section*{Prospective Hera comparison}
 Hera will measure Dimorphos's mass, map its crater and surface,
-and investigate its interior \cite{esaHera}.
+and investigate its interior \cite{esaHera}. The agency reports
+arrival in November 2026, a month earlier than originally planned
+\cite{esaArrival}. The phases are staggered: shape, mass and rotation
+are characterised first, from a distance of tens of kilometres, and
+high-resolution crater imaging follows roughly six weeks later. A
+sealed prediction is therefore on a different clock for each quantity,
+and the shape and mass quantities are the tighter deadline. That is a
+scheduling constraint on this project, not a scientific result.
 Table~\ref{tab:hera} separates pilot evidence from future checks.
 
 \noindent\begin{minipage}{\columnwidth}
@@ -481,6 +536,16 @@ R. Lolachi et al., Ejecta Mass Estimates from the DART Impact
 Plume Inferred from LICIACube Images, \emph{Planetary Science
 Journal} \textbf{6}, 199 (2025).
 \href{https://doi.org/10.3847/PSJ/adec6b}{doi:10.3847/PSJ/adec6b}.
+\bibitem{raducan2024}
+S.~D. Raducan et al., Physical properties of asteroid Dimorphos as
+derived from the DART impact, \emph{Nature Astronomy} \textbf{8},
+445--455 (2024).
+\href{https://doi.org/10.1038/s41550-024-02200-3}{doi:10.1038/s41550-024-02200-3}.
+\bibitem{senel2025}
+C. Senel et al., DART-scale Impacts into a Complex Low-strength Target:
+Insights into Asteroid Dimorphos's Interior from Simulations,
+\emph{Planetary Science Journal} \textbf{6}, 157 (2025).
+\href{https://doi.org/10.3847/PSJ/addf31}{doi:10.3847/PSJ/addf31}.
 \bibitem{talts2018}
 S. Talts et al., Validating Bayesian Inference with
 Simulation-Based Calibration,
@@ -494,5 +559,9 @@ Observable Universe, \emph{Statistical Science}
 \bibitem{esaHera}
 European Space Agency, \emph{Hera's Science} (accessed
 10 October 2026). \href{https://www.esa.int/Space_Safety/Hera/Hera_s_Science}{esa.int}.
+\bibitem{esaArrival}
+European Space Agency, \emph{ESA's Hera targets early arrival at
+Didymos asteroids} (accessed 10 October 2026).
+\href{https://www.esa.int/Space_Safety/Hera/ESA_s_Hera_targets_early_arrival_at_Didymos_asteroids}{esa.int}.
 \end{thebibliography}
 \end{document}
