@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-10-09 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 87 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113, A114, A115, A116 · A70, A84, A91, A92, A94, A96, A106, A110, A111 ve A112 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-10-10 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 87 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113, A114, A115, A116 · A70, A84, A91, A92, A94, A96, A106, A110, A111, A112 ve A117 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5183,6 +5183,44 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A117 — **Yerel GPU'da üretim yapılandırması `529 ms/adım`: `t_end = 3 s` bile `~33 saat`** (2026-10-10) — **KAPANDI** (ölçüldü; bilgi kaydı olarak duruyor)
+
+Dizüstü RTX 3050'de (`4 GiB`, `cuda:0`) üretim kod yolu koşuldu:
+`--spacing 14.0 --kademeler kaba --t-end 3.0`, yani üretimden **daha
+kaba** taban ve `600 s` yerine `3 s`. Ölçülen:
+
+| | |
+|---|---|
+| `19,1` saatte | **`130 000` adım**, `t = 0,5752 s` |
+| adım başına | **`529 ms`** |
+| `dt` | **`4,435e-06 s`, SABİT** (65k→130k arası hiç değişmedi) |
+| donmuş parçacık | `36` |
+| `t_geçiş = 1,0 s`'ye kalan | `95 777` adım = **`14,1` saat** |
+| `t_end = 3 s` tamamı | **`~33` saat** + geç evre kuyruğu |
+
+**Koşu sağlıklıydı.** `dt` çökmedi, patlama yok, `--azami-adim 2000000`
+tavanının yalnız `%6,5`'indeydi.
+
+**Benim hatam (Claude):** "sağlıklı koşu `0,5–2` saat sürer" dedim. O
+rakam `15–60 ms/adım` varsayımına dayanıyordu ve o varsayımı hiçbir
+ölçüme dayandırmamıştım — H100 üretim sayısından kafadan ölçekledim.
+Gerçek `529 ms`, yani **`14×` yanlış**. Sonra `19` saati "demek ki `dt`
+çöktü, tavana yürüyor" diye okudum; bu da yanlıştı. Kullanıcıya
+"muhtemelen zaten bozuk" dedim, koşu bu yüzden öldürüldü ve `19` saat
+gitti. Tahmin ölçüm değildir; bu kayıt onun için duruyor.
+
+**İkinci kurulum hatası:** `python` yerine `python -u` kullanmadım.
+stdout tamponlandı, `--adim-bildir 5000` satırları ancak süreç
+öldürülünce boşaldı. 19 saat boyunca ilerleme **görünmezdi**; görünür
+olsaydı ilk iki satırdan adım/saniye çıkar ve hiçbiri yaşanmazdı.
+`--patlama-tanisi` de açılmamıştı.
+
+**Çare / kural:**
+- Yerel koşu **her zaman** `python -u` ile ve `--patlama-tanisi` açık
+- Yerelde üretim yapılandırması koşulmaz; yalnız küçük sahneler
+- Bu makinede süre kestirimi artık ölçülü: `adım × 0,529 s`
 
 ---
 ### A116 — **"Yazılmış ama bağlanmamış modül": üç örnekle bir DESEN** (2026-10-09) — *açık, biri düzeltiliyor*
