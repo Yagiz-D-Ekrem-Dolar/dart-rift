@@ -1,101 +1,99 @@
 % Where the five pilot runs sit in the cohesion--momentum landscape.
-% Style after the particle-physics "lifetime atlas" idiom: logarithmic
-% axes, shaded regime bands, ball-shaded markers, contoured labels.
+% Deliberately sparse: the earlier version carried a shaded prior box, a
+% collapse arrow and six labels, and they overlapped each other and the
+% fit line. Only annotations that carry a number survive.
 % Compile from `docs/preprint`:  lualatex sekil/atlas.tex
 \documentclass[border=3pt,tikz]{standalone}
 \usepackage{pgfplots}
 \usepackage{amsmath}
 \usepackage[outline]{contour}
+\usetikzlibrary{calc}
 \pgfplotsset{compat=1.18}
-\contourlength{1.0pt}
+\contourlength{1.1pt}
 \tikzset{>=latex}
 
-% Redraw the axis in front of the filled bands.
-\makeatletter\newcommand{\pgfplotsdrawaxis}{\pgfplots@draw@axis}\makeatother
-\pgfplotsset{axis line on top/.style={
-  after end axis/.append code={\pgfplotsdrawaxis}}}
-
-\colorlet{sweepcol}{blue!55!cyan!80!black}
-\colorlet{tenscol}{red!80!black}
+\colorlet{ink}{black!82}
+\colorlet{sweepcol}{blue!55!cyan!78!black}
+\colorlet{tenscol}{red!75!black}
 \colorlet{offcol}{orange!90!black}
 \colorlet{obscol}{green!45!black}
-\colorlet{litcol}{violet!60!black}
-\colorlet{ink}{black!80}
+\colorlet{litcol}{violet!55!black}
 
-\tikzstyle{mytick}=[ink,line width=0.5]
-\tikzstyle{run}=[draw=none,ball color=#1,postaction={fill=#1,
-  fill opacity=0.35,draw=#1!60!black,line width=0.12}]
-\tikzset{run/.default=sweepcol}
-\def\r{2.6pt}
-\def\pilot[#1](#2,#3)#4{%
-  \draw[run=#1] (axis cs:#2,#3) circle(\r) node#4;}
+\def\r{2.7pt}
+\tikzset{run/.style={draw=none, ball color=#1, postaction={fill=#1,
+  fill opacity=0.32, draw=#1!55!black, line width=0.13}}}
 
 \begin{document}
-\begin{tikzpicture}
-% Least-squares power law through the three sweep points, reproduced
-% here from the data: b = C Y0^p with C = 4.3511, p = -0.17905.
+\begin{tikzpicture}[font=\footnotesize]
+% Least-squares power law through the three sweep points, refitted from
+% the tabulated values: b = C Y0^p, C = 4.3511, p = -0.17905.
 \pgfmathsetmacro{\C}{4.3511}
 \pgfmathsetmacro{\p}{-0.17905}
 
-\begin{loglogaxis}[
-  width=92mm, height=66mm,
-  xmin=0.6, xmax=2.2e5, ymin=0.042, ymax=11,
-  xlabel={Matrix cohesion $Y_0$\:[Pa]},
-  ylabel={Excess momentum $b=\beta-1$},
-  axis line style={mytick}, tick style={mytick},
-  ticklabel style={scale=0.8, text=ink},
-  label style={scale=0.9, text=ink},
+\begin{axis}[
+  width=76mm, height=54mm,
+  xmode=log, ymode=log,
+  xmin=4, xmax=1.4e4, ymin=0.055, ymax=5.2,
+  xlabel={matrix cohesion $Y_0$\:[Pa]},
+  ylabel={excess momentum $b=\beta-1$},
+  xtick={10,100,1000,10000},
+  xticklabels={$10$,$10^2$,$10^3$,$10^4$},
+  ytick={0.1,1}, yticklabels={$0.1$,$1$},
+  axis line style={draw=ink!65}, tick style={draw=ink!65},
+  ticklabel style={scale=0.85, text=ink!80},
+  label style={scale=0.92, text=ink},
   xlabel style={below=-2pt}, ylabel style={above=-4pt},
-  axis line on top,
+  axis on top=false,
 ]
 
-  % --- registered prior domain -----------------------------------------
-  \fill[ink!5] (axis cs:1,0.042) rectangle (axis cs:1e5,11);
-  \draw[densely dashed,ink!45] (axis cs:1,0.042) -- (axis cs:1,11);
-  \draw[densely dashed,ink!45] (axis cs:1e5,0.042) -- (axis cs:1e5,11);
-  \node[scale=0.68,text=ink!65,above] at (axis cs:300,6.1)
-       {\contour{ink!5}{registered prior $Y_0\in[1,10^5]$ Pa}};
-
-  % --- published homogeneous range -------------------------------------
-  \fill[litcol!11] (axis cs:20,0.042) rectangle (axis cs:80,11);
-  \node[scale=0.66,text=litcol,anchor=south] at (axis cs:40,4.4)
-       {\contour{ink!5}{Senel 20--80 Pa}};
+  % --- published homogeneous range, for orientation only ---------------
+  \fill[litcol!10] (axis cs:20,0.055) rectangle (axis cs:80,5.2);
+  \node[scale=0.76, text=litcol, rotate=90, anchor=south] at (axis cs:32,0.30)
+       {\contour{white}{Senel 20--80 Pa}};
 
   % --- mass-adjusted DART target ---------------------------------------
-  \fill[obscol!13] (axis cs:0.6,2.2948) rectangle (axis cs:2.2e5,2.7298);
-  \draw[densely dashed,obscol!75] (axis cs:0.6,2.5418) -- (axis cs:2.2e5,2.5418);
-  \node[scale=0.68,text=obscol,anchor=west] at (axis cs:1.6e3,2.33)
-       {\contour{ink!5}{DART target, $1\sigma$}};
+  \fill[obscol!14] (axis cs:4,2.2948) rectangle (axis cs:1.4e4,2.7298);
+  \draw[densely dashed, obscol!80, line width=0.5pt]
+       (axis cs:4,2.5418) -- (axis cs:1.4e4,2.5418);
+  \node[scale=0.76, text=obscol!85!black, anchor=south east]
+       at (axis cs:1.25e4,2.76) {DART target};
 
   % --- fitted power law -------------------------------------------------
-  \addplot[domain=1:1e5,samples=60,sweepcol!70,line width=0.7pt,
-           densely dotted,forget plot] {\C*x^\p};
-  \node[scale=0.68,text=sweepcol!75,rotate=-9,anchor=south] at (axis cs:2.4e4,0.72)
-       {$b=4.35\,Y_0^{-0.179}$};
+  \addplot[domain=6:1.2e4, samples=50, sweepcol!60, line width=0.7pt,
+           densely dotted, forget plot] {\C*x^\p};
 
   % --- the conditional interpolation ------------------------------------
-  \draw[sweepcol!70,line width=0.5pt] (axis cs:20.13,0.042) -- (axis cs:20.13,2.5418);
-  \node[scale=0.68,text=sweepcol!80,anchor=west] at (axis cs:24,0.055)
-       {\contour{ink!5}{$20.1$ Pa, scene-conditional}};
+  \draw[sweepcol!65, line width=0.5pt]
+       (axis cs:20.13,0.055) -- (axis cs:20.13,2.5418);
 
   % --- the five completed runs ------------------------------------------
-  \pilot[sweepcol](10,2.7480){[anchor=150,scale=0.78,text=sweepcol!55!black,
-        inner sep=3pt]{\contour{white}{DY2}}}
-  \pilot[sweepcol](500,1.6247){[anchor=-100,scale=0.78,text=sweepcol!55!black,
-        inner sep=3.5pt]{DO1}}
-  \pilot[sweepcol](5000,0.8738){[anchor=-100,scale=0.78,text=sweepcol!55!black,
-        inner sep=3.5pt]{DO2}}
-  \pilot[offcol](10,2.6650){[anchor=-20,scale=0.78,text=offcol!60!black,
-        inner sep=3.5pt]{DN, $+25$ m}}
-  \pilot[tenscol](10,0.0807){[anchor=-175,scale=0.78,text=tenscol!70!black,
-        inner sep=3.5pt]{DC, tension on}}
+  \draw[run=sweepcol] (axis cs:10,2.7480) circle (\r);
+  \draw[run=sweepcol] (axis cs:500,1.6247) circle (\r);
+  \draw[run=sweepcol] (axis cs:5000,0.8738) circle (\r);
+  \draw[run=offcol]   (axis cs:10,2.6650) circle (\r);
+  \draw[run=tenscol]  (axis cs:10,0.0807) circle (\r);
 
-  % --- the collapse the tension toggle produces -------------------------
-  \draw[->,tenscol!70,line width=0.6pt,densely dashed]
-        (axis cs:7.0,2.45) -- (axis cs:7.0,0.095);
-  \node[scale=0.66,text=tenscol!80,rotate=90,anchor=south]
-        at (axis cs:6.4,0.33) {$\times\,34$ in $b$};
+  \node[scale=0.82, text=sweepcol!55!black, anchor=south west]
+       at (axis cs:11.6,3.00) {\contour{white}{DY2}};
+  \node[scale=0.82, text=sweepcol!55!black, anchor=north west]
+       at (axis cs:560,1.50) {DO1};
+  \node[scale=0.82, text=sweepcol!55!black, anchor=north west]
+       at (axis cs:5600,0.81) {DO2};
+  % DN sits almost on top of DY2 on a log axis; a short leader keeps
+  % its label off both the marker and the observation band.
+  \draw[offcol!65, line width=0.4pt]
+       (axis cs:11.0,2.50) -- (axis cs:14.5,1.80);
+  \node[scale=0.82, text=offcol!60!black, anchor=north west]
+       at (axis cs:13.8,1.82) {DN, $+25$ m};
+  \node[scale=0.82, text=tenscol!70!black, anchor=west]
+       at (axis cs:11.8,0.0807) {DC, tension on};
 
-\end{loglogaxis}
+\end{axis}
+
+% --- the two numbers worth stating, placed clear of the data -----------
+\node[scale=0.80, text=sweepcol!70!black, anchor=north west, align=left,
+      inner sep=2pt] at ($(current axis.south west)+(7mm,-6.5mm)$)
+     {$b=4.35\,Y_0^{-0.179}$, crossing the target at $20.1$ Pa};
+
 \end{tikzpicture}
 \end{document}

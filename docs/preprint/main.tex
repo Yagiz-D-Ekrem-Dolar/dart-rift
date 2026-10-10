@@ -25,6 +25,13 @@
 \setlength{\parskip}{0pt}
 \setlength{\columnsep}{0.29in}
 \raggedbottom
+% Keep floats on pages that also carry text.
+\renewcommand{\topfraction}{0.86}
+\renewcommand{\bottomfraction}{0.70}
+\renewcommand{\textfraction}{0.12}
+\renewcommand{\floatpagefraction}{0.80}
+\setcounter{topnumber}{2}
+\setcounter{totalnumber}{3}
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\footnotesize\textsc{DART-RIFT}}
@@ -136,16 +143,18 @@ is not the LICIACube plume estimate.}
 \label{fig:results}
 \end{figure*}
 
-\begin{figure*}[t]
+\begin{figure}[t]
 \centering
-\includegraphics[width=\textwidth]{tasarim.pdf}
-\caption{Locked design before production-pool inspection.
-Open circles are the 84 coarse-only points; filled circles
-are the 12 nested fine locations. The three projections show
-coverage of $(\aB,\Yzero,f)$ without suggesting measured
-responses or an inferred interior.}
+\includegraphics[width=\columnwidth]{tasarim.pdf}
+\caption{Locked design before production-pool inspection, shown in the
+$(\aB,\Yzero)$ face; $f$ is sampled on the same hypercube over
+$[0.05,0.50]$. Open circles are the 84 coarse-only points and filled
+circles the 12 nested fine locations, which were fixed by a
+deterministic rule and pinned by a test before any pool output existed.
+This is a design plot: it carries no measured response and no inferred
+interior.}
 \label{fig:design}
-\end{figure*}
+\end{figure}
 
 \begin{figure*}[t]
 \centering
@@ -304,9 +313,8 @@ $0.03019$; it exceeds the preregistered \emph{negligible}
 boundary of $0.03000$ by $0.00019$. We retain the registered
 classification rather than moving that boundary after seeing
 the result \repo{docs/defter/KAYIT-076_2026-10-06_DO-DC-DN-uc-kilitli-yargi.md}{[KAYIT-076]}.
-Figure~\ref{fig:offset} compares the four paired responses on
-a common dimensionless scale and places the five runs in joint
-$\beta$--model-ejecta-mass space.
+The same pair is one row of the lever ranking in
+Figure~\ref{fig:levers}.
 
 \section{Registered production inference}
 \subsection{Design and validation}
@@ -357,23 +365,13 @@ for mass within the camera field of view
 \cite{lolachi2025}. The model quantity in Table~\ref{tab:runs}
 is the reported ejecta statistic at 600 s; the run record
 also tracks a separate escaping-mass diagnostic. Neither is definitionally
-identical to the observed plume mass, and neither resolves the second
-threshold in Figure~\ref{fig:escape}: material fast enough to leave
-Dimorphos may still be bound to the binary and return.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{kacis.pdf}
-\caption{Leaving Dimorphos is not leaving the binary. The lower
-threshold is the body's own escape speed, which follows from the scene's
-own mass and effective radius and is therefore known exactly for our
-runs. The upper one is escape from the Didymos system, which depends on
-the primary's mass and the separation; we have not verified those
-against a primary source, so no number is given. Parcels between the two
-are counted as ejecta by a body-only criterion while remaining bound,
-and can re-impact long after the 600 s endpoint.}
-\label{fig:escape}
-\end{figure} A quantitative ejecta-mass likelihood is
+identical to the observed plume mass. Neither resolves a second
+threshold either: the body's own escape speed follows from the scene's
+mass and effective radius, $0.0865$ m\,s$^{-1}$, but escape from the
+Didymos system depends on the primary's mass and the separation, which
+we have not verified against a primary source. Material fast enough to
+leave Dimorphos may still be bound to the binary and return.
+ A quantitative ejecta-mass likelihood is
 conditional on an observation operator that reconciles them.
 The present model $\beta$ is projected along impactor momentum,
 whereas the orbital observation concerns Dimorphos's orbital
@@ -406,23 +404,13 @@ The near-field value is documented but its executable
 constant is still \texttt{nan}; the code rejects that
 configuration. We therefore do not quote a complete
 operational denominator. The omission is not a rounding
-detail: on the declared values that single term carries
-two thirds of the variance of the denominator
-(Figure~\ref{fig:paylar}).
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{paylar.pdf}
-\caption{Variance partition of the declared discrepancy budget on
-$b=\beta-1$. Because $\sigma_{\rm model}^2$ is a sum of squared terms,
-these shares are a genuine partition rather than a presentational
-choice. The term that is documented but never written into the code
-constant is also the largest, so quoting a denominator without it would
-not be a small approximation: it would tighten the comparison by a
-factor of 1.72. The exploded wedge is why this paper reports no
-operational denominator at all.}
-\label{fig:paylar}
-\end{figure} The 0.134 impactor-geometry and
+detail. Since $\sigma_{\rm model}^2$ is a sum of squared
+terms, the declared values make that one term $66.4\%$ of
+the variance: $\sigma_{\rm model}$ would read $0.0377$
+without it against $0.0650$ with it, so a denominator
+quoted in its absence would tighten the comparison by a
+factor of $1.72$.
+ The 0.134 impactor-geometry and
 0.971 matrix-tension contrasts are alternative-model
 sensitivities, not Gaussian noise terms
 \repo{docs/truba/PROTOKOL-HAVUZ-URETIM.md}{[discrepancy protocol]}.
@@ -495,20 +483,6 @@ sensitivity there; they are not global derivatives.}
 \label{fig:levers}
 \end{figure}
 
-\par\vspace{3mm}\noindent
-\begin{minipage}{\columnwidth}
-\centering
-\includegraphics[width=.93\columnwidth]{sekil/kaciklik.pdf}
-\captionsetup{hypcap=false}
-\captionof{figure}{Two views of pilot sensitivity. (a) Each marker
-is the 25 m offset result divided by the nominal DY2 result;
-the dashed line is unity. (b) The joint $\beta$--model-ejecta
-response of all five runs: filled circles connected only along
-the cohesion sweep, open square for DC, and open diamond for DN.
-Panel (b) is a model-response plot, not a fitted relation or
-an observed ejecta-mass comparison.}
-\label{fig:offset}
-\end{minipage}
 
 \subsection*{Relation to published interior studies}
 Two recent studies bound what a single $\beta$ can say about an
@@ -567,7 +541,7 @@ reported here.
 \section*{Data and protocol provenance}
 The pilot values and locked decisions are archived at
 \href{https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/tree/a35dab4}{commit \texttt{a35dab4}}.
-Figures~\ref{fig:results} and~\ref{fig:offset} use the completed
+Figures~\ref{fig:results} and~\ref{fig:levers} use the completed
 run diagnostics in Table~\ref{tab:runs} and the
 \repo{docs/defter/KAYIT-076_2026-10-06_DO-DC-DN-uc-kilitli-yargi.md}{[locked pilot record]};
 Figure~\ref{fig:design} uses the locked design coordinates.
@@ -583,12 +557,18 @@ software remains under the MIT license.
 Hera will measure Dimorphos's mass, map its crater and surface,
 and investigate its interior \cite{esaHera}. The agency reports
 arrival in November 2026, a month earlier than originally planned
-\cite{esaArrival}. The phases are staggered: shape, mass and rotation
-are characterised first, from a distance of tens of kilometres, and
-high-resolution crater imaging follows roughly six weeks later. A
-sealed prediction is therefore on a different clock for each quantity,
-and the shape and mass quantities are the tighter deadline. That is a
-scheduling constraint on this project, not a scientific result.
+\cite{esaArrival}. Arrival is not measurement, and measurement is not a
+published number. The characterisation phases are staggered over
+months, the CubeSats are released later still, and the comparison that
+matters here needs reduced, peer-reviewed quantities rather than a
+first image. DART itself is the available calibration: the impact was
+in September 2022, the orbital-period result was announced about two
+weeks later, and the momentum-transfer papers appeared roughly five
+months after that \cite{cheng2023}. A sealed prediction is therefore on
+a different clock for each quantity, and all of those clocks run longer
+than the arrival date suggests. That is a scheduling constraint on this
+project, not a scientific result, and we do not rely on a particular
+date in what follows.
 Table~\ref{tab:hera} separates pilot evidence from future checks.
 
 \noindent\begin{minipage}{\columnwidth}

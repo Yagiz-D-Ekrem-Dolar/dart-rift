@@ -1,58 +1,52 @@
-% Locked production design; symbols encode coarse-only versus nested fine.
-\documentclass[border=4pt]{standalone}
-\usepackage{amsmath}
+% The locked design. One panel, not three: the three projections of a
+% Latin hypercube all say the same thing, which is that a hypercube
+% fills its box. What is worth showing is the nested subset.
+% Compile from `docs/preprint`:  lualatex sekil/tasarim.tex
+\documentclass[border=3pt,tikz]{standalone}
 \usepackage{pgfplots}
-\usepgfplotslibrary{groupplots}
+\usepackage{pgfplotstable}
+\usepackage{amsmath}
+\usetikzlibrary{calc}
 \pgfplotsset{compat=1.18}
-\pgfplotstableread{veri/tasarim_kaba.dat}\coarse
-\pgfplotstableread{veri/tasarim_ince.dat}\fine
+
+\colorlet{ink}{black!82}
+\colorlet{finecol}{red!72!black}
+
+\pgfplotstableread{veri/tasarim_kaba.dat}\kaba
+\pgfplotstableread{veri/tasarim_ince.dat}\ince
+
 \begin{document}
-\begin{tikzpicture}
-\pgfplotsset{designaxis/.style={
-  width=47mm,height=51mm,scale only axis,
-  tick align=outside,tick style={black,line width=.3pt},
-  axis line style={black,line width=.4pt},
-  axis x line*=bottom,axis y line*=left,
-  label style={font=\footnotesize},
-  tick label style={font=\scriptsize},
-  xlabel near ticks,ylabel near ticks,
-  clip=false,
-}}
-\begin{groupplot}[
-  group style={group size=3 by 1,horizontal sep=15mm},
-  designaxis]
-\nextgroupplot[xlabel={$\alpha_b$},ylabel={$Y_0$ (Pa)},
-  xmin=.98,xmax=1.32,ymode=log,ymin=.8,ymax=1.5e5,
-  xtick={1,1.1,1.2,1.3},ytick={1,1e2,1e4},
-  yticklabels={$1$,$10^2$,$10^4$}]
-  \node[anchor=south west,font=\footnotesize\bfseries]
-    at (rel axis cs:0.015,1.02) {(a)};
-  \addplot[only marks,mark=o,mark size=1.25pt,draw=black!50,
-           line width=.35pt]
-    table[x=alphab,y=Y0]{\coarse};
-  \addplot[only marks,mark=*,mark size=2pt,black]
-    table[x=alphab,y=Y0]{\fine};
-\nextgroupplot[xlabel={$\alpha_b$},ylabel={$f$},
-  xmin=.98,xmax=1.32,ymin=.04,ymax=.51,
-  xtick={1,1.1,1.2,1.3},ytick={.1,.3,.5}]
-  \node[anchor=south west,font=\footnotesize\bfseries]
-    at (rel axis cs:0.015,1.02) {(b)};
-  \addplot[only marks,mark=o,mark size=1.25pt,draw=black!50,
-           line width=.35pt]
-    table[x=alphab,y=f]{\coarse};
-  \addplot[only marks,mark=*,mark size=2pt,black]
-    table[x=alphab,y=f]{\fine};
-\nextgroupplot[xlabel={$Y_0$ (Pa)},ylabel={$f$},
-  xmode=log,xmin=.8,xmax=1.5e5,ymin=.04,ymax=.51,
-  xtick={1,1e2,1e4},xticklabels={$1$,$10^2$,$10^4$},
-  ytick={.1,.3,.5}]
-  \node[anchor=south west,font=\footnotesize\bfseries]
-    at (rel axis cs:0.015,1.02) {(c)};
-  \addplot[only marks,mark=o,mark size=1.25pt,draw=black!50,
-           line width=.35pt]
-    table[x=Y0,y=f]{\coarse};
-  \addplot[only marks,mark=*,mark size=2pt,black]
-    table[x=Y0,y=f]{\fine};
-\end{groupplot}
+\begin{tikzpicture}[font=\footnotesize]
+\begin{axis}[
+  width=62mm, height=46mm,
+  ymode=log,
+  xmin=0.985, xmax=1.315, ymin=0.6, ymax=1.7e5,
+  xlabel={block distension $\alpha_b$},
+  ylabel={matrix cohesion $Y_0$\:[Pa]},
+  xtick={1.0,1.1,1.2,1.3},
+  ytick={1,100,10000}, yticklabels={$1$,$10^2$,$10^4$},
+  axis line style={draw=ink!65}, tick style={draw=ink!65},
+  ticklabel style={scale=0.85, text=ink!80},
+  label style={scale=0.92, text=ink},
+  xlabel style={below=-2pt}, ylabel style={above=-4pt},
+  axis on top=false,
+]
+  \addplot[only marks, mark=o, mark size=1.2pt,
+           draw=ink!35, line width=0.35pt]
+    table[x=alphab, y=Y0] {\kaba};
+  \addplot[only marks, mark=*, mark size=1.7pt,
+           draw=finecol, fill=finecol]
+    table[x=alphab, y=Y0] {\ince};
+\end{axis}
+
+\begin{scope}[shift={($(current axis.north west)+(1mm,5.5mm)$)}]
+  \draw[ink!35, line width=0.35pt] (0,0) circle (1.2pt);
+  \node[anchor=west, text=ink, font=\scriptsize, inner sep=3pt] at (1.6mm,0)
+       {84 coarse only};
+  \fill[finecol] (26mm,0) circle (1.7pt);
+  \node[anchor=west, text=ink, font=\scriptsize, inner sep=3pt] at (27.6mm,0)
+       {12 nested fine};
+\end{scope}
+
 \end{tikzpicture}
 \end{document}

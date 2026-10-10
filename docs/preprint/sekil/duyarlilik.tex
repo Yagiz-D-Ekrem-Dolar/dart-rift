@@ -42,8 +42,10 @@
   label style={text=ink},
   enlarge y limits=false,
   ymajorgrids, grid style={draw=ink!12, line width=0.3pt},
+  % `axis line on top` redraws the whole axis -- grid included -- after
+  % the plots, so the guide lines were cutting through the markers.
+  % The frame is not worth that, so the axis stays underneath.
   axis on top=false,
-  axis line on top,
 ]
 
   % --- the observation's own 1-sigma, as a floor ------------------------
