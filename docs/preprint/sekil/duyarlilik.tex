@@ -1,0 +1,82 @@
+% Closing synthesis: every measured lever on b = beta - 1, on one scale,
+% against the observation's own uncertainty.
+% Compile from `docs/preprint`:  lualatex sekil/duyarlilik.tex
+\documentclass[border=3pt,tikz]{standalone}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{amsmath}
+\usepackage[outline]{contour}
+\usetikzlibrary{calc}
+\pgfplotsset{compat=1.18}
+\contourlength{1.0pt}
+\tikzset{>=latex}
+
+\makeatletter\newcommand{\pgfplotsdrawaxis}{\pgfplots@draw@axis}\makeatother
+\pgfplotsset{axis line on top/.style={
+  after end axis/.append code={\pgfplotsdrawaxis}}}
+
+\colorlet{ink}{black!82}
+\colorlet{infercol}{blue!55!cyan!75!black}  % what we want to learn
+\colorlet{fixcol}{red!70!black}             % what we fixed by decision
+\colorlet{obscol}{green!42!black}
+
+% A macro expanded by  blows the input stack when
+% it carries math; the list is written out instead.
+
+\begin{document}
+\begin{tikzpicture}[font=\footnotesize]
+\begin{axis}[
+  width=68mm, height=50mm,
+  xmode=log, xmin=0.0024, xmax=2.6,
+  ymin=-0.7, ymax=8.7,
+  ytick={0,1,...,8},
+  yticklabels={matrix-tension law,cohesion $10$--$5000$ Pa,cohesion $10$--$500$ Pa,impactor geometry,near-field resolution,impact site $25$ m,realisation (two seeds),target shape,far-field resolution},
+  y dir=reverse,
+  yticklabel style={font=\scriptsize, text=ink!85},
+  xlabel={relative shift produced on $b=\beta-1$},
+  xtick={0.01,0.1,1}, xticklabels={$0.01$,$0.1$,$1$},
+  xtick pos=bottom, ytick pos=left,
+  y axis line style={draw=none}, ytick style={draw=none},
+  axis line style={draw=ink!65}, tick style={draw=ink!65},
+  ticklabel style={text=ink!80},
+  label style={text=ink},
+  enlarge y limits=false,
+  ymajorgrids, grid style={draw=ink!12, line width=0.3pt},
+  axis on top=false,
+  axis line on top,
+]
+
+  % --- the observation's own 1-sigma, as a floor ------------------------
+  \fill[obscol!14] (axis cs:0.0740,-0.7) rectangle (axis cs:0.0972,8.7);
+  \node[scale=0.72, text=obscol!85!black, rotate=90, anchor=north]
+       at (axis cs:0.086,8.55)
+       {\contour{obscol!14}{DART $1\sigma$ on $b$}};
+
+  % --- what we fixed by decision ---------------------------------------
+  \addplot[only marks, mark=*, mark size=1.8pt, draw=fixcol, fill=fixcol]
+    coordinates {(0.0040,8) (0.0090,7) (0.0130,6) (0.0302,5)
+                 (0.0530,4) (0.1340,3) (0.9706,0)};
+
+  % --- the coordinate we are trying to infer ---------------------------
+  \addplot[only marks, mark=*, mark size=1.8pt,
+           draw=infercol, fill=infercol]
+    coordinates {(0.4088,2) (0.6820,1)};
+
+  \node[scale=0.78, text=fixcol!85!black, anchor=east, inner sep=4pt]
+       at (axis cs:0.9706,0) {\contour{white}{$0.971$}};
+  \node[scale=0.78, text=infercol!85!black, anchor=east, inner sep=4pt]
+       at (axis cs:0.6820,1) {\contour{white}{$0.682$}};
+
+\end{axis}
+
+\begin{scope}[shift={($(current axis.north west)+(1mm,6.5mm)$)}]
+  \fill[infercol] (0,0) circle (1.8pt);
+  \node[anchor=west, text=ink, font=\scriptsize, inner sep=3pt] at (2mm,0)
+       {a coordinate we infer};
+  \fill[fixcol] (33mm,0) circle (1.8pt);
+  \node[anchor=west, text=ink, font=\scriptsize, inner sep=3pt] at (35mm,0)
+       {a choice we fixed};
+\end{scope}
+
+\end{tikzpicture}
+\end{document}

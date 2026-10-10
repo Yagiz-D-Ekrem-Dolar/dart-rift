@@ -6,7 +6,7 @@
 # cascade figure takes decades rather than seconds as its argument.
 PY  ?= ../../.venv/Scripts/python.exe
 TEX ?= lualatex -interaction=nonstopmode -halt-on-error
-SEKILLER = hedef tasarim kapilar butce atlas projeksiyon kacis kaskad paylar
+SEKILLER = hedef tasarim kapilar butce atlas projeksiyon kacis kaskad paylar duyarlilik
 PDFLER   = $(addsuffix .pdf,$(SEKILLER))
 
 all: main.pdf

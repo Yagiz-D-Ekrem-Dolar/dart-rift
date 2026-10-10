@@ -1,0 +1,15 @@
+# Measured relative shift on b = beta - 1 produced by each change, all
+# from completed runs or recorded contrasts (KAYIT-076, KAYIT-074,
+# KAYIT-067, PROTOKOL-UY2). `tur`: 1 = coordinate we are trying to
+# infer, 0 = choice we fixed by decision.
+# sira is the plotting row, largest first.
+sira kayma tur etiket
+0 0.9706 0 matrix-tension-law
+1 0.6820 1 cohesion-10-to-5000-Pa
+2 0.4088 1 cohesion-10-to-500-Pa
+3 0.1340 0 impactor-geometry
+4 0.0530 0 near-field-resolution
+5 0.0302 0 impact-site-25-m
+6 0.0130 0 realisation-two-seeds
+7 0.0090 0 target-shape
+8 0.0040 0 far-field-resolution
