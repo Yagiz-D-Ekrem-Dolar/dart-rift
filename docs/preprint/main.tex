@@ -11,6 +11,7 @@
 \usepackage{amsmath}
 \usepackage{array}
 \usepackage[font=small,labelfont=bf,labelsep=period]{caption}
+\usepackage{placeins}
 \usepackage{fancyhdr}
 \usepackage{xurl}
 \usepackage{hyperref}
@@ -232,12 +233,29 @@ $\beta-1=C\Yzero^p$ gives $p=-0.1791$ and a maximum relative
 residual of 0.1198, below the fixed 0.15 fit-quality threshold
 \repo{docs/truba/PROTOKOL-DO-DAYANIM-ONSELI.md}{[DO protocol]}.
 At the central target in Equation~\ref{eq:betaobs}, this fit
-interpolates to $\Yzero\simeq20.1$ Pa. The value is conditional on the
+interpolates to $\Yzero\simeq20.1$ Pa (Figure~\ref{fig:atlas}). The value is conditional on the
 fixed scene, $\aB$, $f$, material law, and fit form; it is not a
 posterior estimate of Dimorphos's strength. The older production
 cohesion domain $[10^3,10^7]$ Pa does not contain this conditional
 interpolation, motivating the prospectively selected
 $[1,10^5]$ Pa domain.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{atlas.pdf}
+\caption{Where the five completed runs sit in the cohesion--momentum
+landscape. The dotted line is the predeclared three-point power law,
+refitted here from the tabulated values alone
+($b=4.35\,\Yzero^{-0.179}$, maximum relative residual 0.1198); the
+vertical line marks where it crosses the mass-adjusted DART target.
+That crossing is an interpolation inside one fixed scene, not a
+measurement of Dimorphos's strength. The shaded column is the
+homogeneous cohesion range reported by \cite{senel2025}, shown for
+orientation only: it was obtained with a different code and a different
+internal friction. DC and DN share $\Yzero=10$ Pa with DY2 and are
+displaced only by the change each one makes.}
+\label{fig:atlas}
+\end{figure}
 
 \subsection{Matrix tension}
 At $\Yzero=10$ Pa, enabling the tested tension law changes
@@ -328,10 +346,26 @@ identical to the observed plume mass. A quantitative ejecta-mass likelihood is
 conditional on an observation operator that reconciles them.
 The present model $\beta$ is projected along impactor momentum,
 whereas the orbital observation concerns Dimorphos's orbital
-velocity direction. Both projections must be computed with
-verified orbital constants before physical posterior
+velocity direction (Figure~\ref{fig:proj}). Both projections must be
+computed with verified orbital constants before physical posterior
 interpretation
 \repo{docs/truba/PROTOKOL-SI-SON-ISLEME.md}{[post-processing protocol]}.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{projeksiyon.pdf}
+\caption{The simulated and the observed momentum enhancement are not the
+same projection. Each escaping parcel contributes its component along
+the impactor momentum $\hat{\mathbf e}_p$ to the quantity our runs
+report, and its component along Dimorphos's orbital velocity
+$\hat{\mathbf v}_{\rm orb}$ to the quantity the period change
+constrains. The two differ by the angle $\psi$ between those
+directions. We do not quote $\psi$: it follows from orbital constants
+we have not yet checked against a primary source, and the inset only
+fixes which direction $\hat{\mathbf v}_{\rm orb}$ is, not its
+magnitude.}
+\label{fig:proj}
+\end{figure}
 
 The predeclared relative discrepancy terms on $b=\beta-1$
 are 0.013 (realisation), 0.004 (far-field resolution),
@@ -370,7 +404,10 @@ of the production pool. If less than 90\% of the 68\%
 posterior mass lies in the compatible region, both
 inferential regions are withheld.
 
-\clearpage
+% A forced page break here flushed every pending float and left a
+% half-empty page once an extra figure entered the stream. A float
+% barrier keeps the ordering without breaking the column.
+\FloatBarrier
 \section{Discussion and conclusions}
 The pilot set supports three controlled findings.
 \textbf{First}, simulated momentum enhancement and ejecta mass
@@ -467,7 +504,7 @@ decision rules. The article text and original figures are
 the Ethosoft mark, ORCID iD icon, and GitHub mark are excluded. Repository
 software remains under the MIT license.
 
-\newpage
+\FloatBarrier
 \section*{Prospective Hera comparison}
 Hera will measure Dimorphos's mass, map its crater and surface,
 and investigate its interior \cite{esaHera}. The agency reports

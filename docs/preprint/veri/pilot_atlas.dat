@@ -1,0 +1,9 @@
+# All five completed pilot runs; KAYIT-076 table 1. `tur`: 1 = cohesion
+# sweep, 2 = matrix-tension toggle, 3 = impact-site offset.
+# `b` is beta-1, the excess momentum actually carried by the ejecta.
+Y0 beta b tur ad
+10 3.7480 2.7480 1 DY2
+500 2.6247 1.6247 1 DO1
+5000 1.8738 0.8738 1 DO2
+10 1.0807 0.0807 2 DC
+10 3.6650 2.6650 3 DN
