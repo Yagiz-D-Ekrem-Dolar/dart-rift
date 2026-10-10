@@ -1,9 +1,20 @@
 cff-version: 1.2.0
-message: "Bu yazilimi kullanirsaniz lutfen asagidaki bilgilerle atif yapin."
+message: "Bu depoyu kullanirsaniz asagidaki yazilima atif yapin; makaleye atif icin `preferred-citation` bolumunu kullanin."
 title: "DART-RIFT: GPU-accelerated SPH shock-physics engine for Dimorphos and Bayesian interior inference"
 type: software
 authors:
-  - name: "DART-RIFT Team"
+  - family-names: "Dalar"
+    given-names: "Yağız Ekrem"
+    orcid: "https://orcid.org/0009-0009-3522-4403"
+    affiliation: "Ethosoft Research"
+  - family-names: "Salihoğlu"
+    given-names: "Feyzi Arda"
+    orcid: "https://orcid.org/0009-0006-5841-1664"
+    affiliation: "Ethosoft Research"
+  - family-names: "Sezer"
+    given-names: "Nedim Mutlu"
+    orcid: "https://orcid.org/0009-0001-3499-6067"
+    affiliation: "Ethosoft Research"
 version: 0.4.0
 date-released: 2026-08-18
 repository-code: "https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift"
@@ -21,3 +32,30 @@ keywords:
   - bayesian-inference
   - reproducibility
 license: MIT
+
+# Paper I of the series. Cite this for the text, methods and reported
+# numbers. The version DOI below points at that exact text; the concept
+# DOI 10.5281/zenodo.23284192 resolves to the newest version instead.
+preferred-citation:
+  type: article
+  title: "DART-RIFT. I. Cohesion, Matrix Tension, and Impact-Site Sensitivities in Simulations of Dimorphos"
+  authors:
+    - family-names: "Dalar"
+      given-names: "Yağız Ekrem"
+      orcid: "https://orcid.org/0009-0009-3522-4403"
+      affiliation: "Ethosoft Research"
+    - family-names: "Salihoğlu"
+      given-names: "Feyzi Arda"
+      orcid: "https://orcid.org/0009-0006-5841-1664"
+      affiliation: "Ethosoft Research"
+    - family-names: "Sezer"
+      given-names: "Nedim Mutlu"
+      orcid: "https://orcid.org/0009-0001-3499-6067"
+      affiliation: "Ethosoft Research"
+  year: 2026
+  month: 10
+  doi: "10.5281/zenodo.23284193"
+  url: "https://doi.org/10.5281/zenodo.23284193"
+  publisher:
+    name: "Zenodo"
+  license: CC-BY-4.0
