@@ -160,6 +160,19 @@ the nested spacing ladder about the impact point.}
 \label{fig:scene}
 \end{figure*}
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{kaskad.pdf}
+\caption{What a run covers, and where it stops. The shock is carried on
+the refined grid, the excavation flow develops through the transition
+time fixed at 1.0 s, and the ejecta cone is read at the 600 s endpoint.
+Everything to the right of that endpoint is outside the simulation:
+whether a parcel leaves the system, stays aloft, or returns to the
+surface is decided on timescales we do not integrate. The horizontal
+axis is logarithmic in time; vertical position is schematic.}
+\label{fig:cascade}
+\end{figure*}
+
 \section{Simulation and comparison}
 \subsection{Fixed scene and controlled changes}
 The reference target is a triaxial ellipsoid with semiaxes
@@ -171,6 +184,8 @@ surface normal. The pilot cohesion comparison fixes
 $(\aB,f)=(1.15,0.25)$, the random seed 20260906, 7 m particle spacing,
 a 1.0 s transition time, and a 600 s endpoint
 \repo{docs/truba/PROTOKOL-DO-DAYANIM-ONSELI.md}{[pilot protocol]}.
+Figure~\ref{fig:cascade} places those two fixed times inside the
+sequence a run actually integrates.
 DO1 and DO2 change only $\Yzero$ from the DY2 reference. DC enables
 one selected matrix-tension law at 10 Pa; DN moves the impact point
 25 m at 10 Pa. The production model keeps that tension law disabled
@@ -342,7 +357,23 @@ for mass within the camera field of view
 \cite{lolachi2025}. The model quantity in Table~\ref{tab:runs}
 is the reported ejecta statistic at 600 s; the run record
 also tracks a separate escaping-mass diagnostic. Neither is definitionally
-identical to the observed plume mass. A quantitative ejecta-mass likelihood is
+identical to the observed plume mass, and neither resolves the second
+threshold in Figure~\ref{fig:escape}: material fast enough to leave
+Dimorphos may still be bound to the binary and return.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{kacis.pdf}
+\caption{Leaving Dimorphos is not leaving the binary. The lower
+threshold is the body's own escape speed, which follows from the scene's
+own mass and effective radius and is therefore known exactly for our
+runs. The upper one is escape from the Didymos system, which depends on
+the primary's mass and the separation; we have not verified those
+against a primary source, so no number is given. Parcels between the two
+are counted as ejecta by a body-only criterion while remaining bound,
+and can re-impact long after the 600 s endpoint.}
+\label{fig:escape}
+\end{figure} A quantitative ejecta-mass likelihood is
 conditional on an observation operator that reconciles them.
 The present model $\beta$ is projected along impactor momentum,
 whereas the orbital observation concerns Dimorphos's orbital
@@ -374,7 +405,24 @@ are 0.013 (realisation), 0.004 (far-field resolution),
 The near-field value is documented but its executable
 constant is still \texttt{nan}; the code rejects that
 configuration. We therefore do not quote a complete
-operational denominator. The 0.134 impactor-geometry and
+operational denominator. The omission is not a rounding
+detail: on the declared values that single term carries
+two thirds of the variance of the denominator
+(Figure~\ref{fig:paylar}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{paylar.pdf}
+\caption{Variance partition of the declared discrepancy budget on
+$b=\beta-1$. Because $\sigma_{\rm model}^2$ is a sum of squared terms,
+these shares are a genuine partition rather than a presentational
+choice. The term that is documented but never written into the code
+constant is also the largest, so quoting a denominator without it would
+not be a small approximation: it would tighten the comparison by a
+factor of 1.72. The exploded wedge is why this paper reports no
+operational denominator at all.}
+\label{fig:paylar}
+\end{figure} The 0.134 impactor-geometry and
 0.971 matrix-tension contrasts are alternative-model
 sensitivities, not Gaussian noise terms
 \repo{docs/truba/PROTOKOL-HAVUZ-URETIM.md}{[discrepancy protocol]}.
