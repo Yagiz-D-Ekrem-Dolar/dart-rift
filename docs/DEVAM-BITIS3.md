@@ -780,3 +780,46 @@ isteğe bağlı gözlemli satırı, elipsoit sahne + üç küre mermi + `17°`.
 2. Havuz dolarken: `R`'nin ölçümü, GP vekili, SBC kapısı (`prova_cikarim.py`
    mantığı gerçek veriyle).
 3. PROTOKOL-HT yeniden yazılır (krater kendi turundan).
+
+---
+
+### 2026-10-12 — havuz yarılandı, kısıt %2 → %4
+
+TRUBA ~7 Ekim'den beri ulaşılamıyordu; bugün geri geldi. Dizi `1592569`
+kesilmemiş, kaldığı yerden sürüyor.
+
+| | |
+|---|---|
+| tamamlanan dilim | **14/24** (0–13) |
+| tamamlanan nokta | **56/96 (%58,3)** |
+| düşen / atlanan / bozuk satır | **0 / 0 / 0** |
+| Kapı 1 (kayıp ≤ %20) | kayıp **%0,00** — şu ana kadar geçiyor |
+| dilim başına duvar süresi | ~20,8 saat (ör. dilim 13: 74 843 s) |
+| koşan | `_14` (kolyoz17), `_15` (kolyoz57) |
+| kuyrukta | `16–23` |
+
+Her görev **1 node + 1 GPU** (`TresPerNode=gres:gpu:1`, 16 çekirdek,
+224 GB). Dizi 24 görev, görev başına 4 nokta.
+
+**Karar — `ArrayTaskThrottle` 2 → 4.** Kullanıcı 2026-10-12'de "1 node
+kullanma hakkın var, 4 GPU total" dedi. Görev başına 1 GPU olduğundan
+kısıt 4, aynı anda 4 GPU demektir:
+
+```
+scontrol update JobId=1592569 ArrayTaskThrottle=4
+```
+
+Uygulandıktan sonra bekleme sebebi `JobArrayTaskLimit` → `Resources`
+oldu, yani artık kendi kısıtımız değil düğüm doluluğu bekletiyor.
+
+> **Açık nokta:** "1 node" ifadesi kelimesi kelimesine alınırsa kısıt 1
+> olmalıydı; ama o zaman mevcut 2'den yavaşlardı ve kullanıcı "çalış iş
+> yap" dedi. "4 GPU total" sayısal sınır olarak alındı. Kullanıcı aynı
+> anda **tek** düğüm demek istediyse kısıt 1'e indirilmeli.
+
+Kalan 10 dilim, kısıt 4 ve ~21 saat/dilim ile **~50 saat** (düğüm
+beklemesi hariç). Havuz dolunca sıradaki iş değişmedi: `R` ölçümü, GP
+vekili, SBC kapısı.
+
+**Not:** `mu_f = 0,6` dilim özetlerinden doğrulandı (`malzeme_ek`), config
+varsayılanı 0,8'in koşulara geçmediği bir kez daha teyit edildi.
