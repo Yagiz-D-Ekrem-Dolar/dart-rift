@@ -1,0 +1,113 @@
+% SPH'nin çalışma ilkesi: ağırlık fonksiyonu ve komşuluk.
+% (a) Wendland C2 çekirdeği ve türevi — veri kodun kendi formülünden
+%     (scripts/rapor2204_veri.py -> veri/cekirdek.dat).
+% (b) Bir parçacığın destek yarıçapı içindeki komşuları, çekirdek
+%     ağırlığına göre koyuluk.
+% `docs/rapor2204` içinden derle:  lualatex sekil/cekirdek.tex
+\documentclass[border=4pt,tikz]{standalone}
+\input{sekil/ortak.tex}
+\usepackage[outline]{contour}
+\contourlength{1.0pt}
+\tikzset{>=latex}
+
+\colorlet{ink}{black!82}
+\colorlet{wcol}{kabuk}
+\colorlet{dwcol}{vurgu}
+
+\pgfplotstableread{veri/cekirdek.dat}\cek
+
+\begin{document}
+\begin{tikzpicture}[font=\footnotesize]
+
+% ===================== (a) çekirdek ve türevi =========================
+\begin{axis}[
+  name=panA,
+  width=62mm, height=46mm,
+  xmin=0, xmax=2.10, ymin=0, ymax=0.52,
+  xlabel={boyutsuz uzaklık $q=r/h$},
+  ylabel={$h^{3}W$\ \ ve\ \ $-h^{3}\mathrm{d}W/\mathrm{d}q$},
+  xtick={0,0.5,1,1.5,2},
+  xticklabels={$0$,$0{,}5$,$1$,$1{,}5$,$2$},
+  ytick={0,0.1,0.2,0.3,0.4,0.5},
+  yticklabels={$0$,$0{,}1$,$0{,}2$,$0{,}3$,$0{,}4$,$0{,}5$},
+  axis line style={draw=ink!65}, tick style={draw=ink!65},
+  ticklabel style={scale=0.88, text=ink!80},
+  label style={scale=0.9, text=ink},
+  ylabel style={yshift=-3pt},
+  title={(a) ağırlık fonksiyonu},
+  title style={scale=0.95, text=ink, yshift=2pt},
+  axis on top=false,
+]
+  % destek yarıçapı: bu noktadan sonra katkı tam sıfır
+  % Destek sınırı yalnız çizgiyle işaretlendi; döndürülmüş etiket gösterge
+  % kutusunun altında kalıyordu, açıklaması altyazıya taşındı.
+  \draw[densely dashed, ink!45, line width=0.45pt]
+       (axis cs:2,0) -- (axis cs:2,0.40);
+
+  \addplot[wcol, line width=0.9pt] table[x=q, y=W] {\cek};
+  \addplot[dwcol, line width=0.9pt, densely dashed]
+    table[x=q, y=mdWdq] {\cek};
+
+  % türevin tepesi: parçacıklar arası kuvvetin en güçlü olduğu uzaklık
+  \fill[dwcol] (axis cs:0.5,0.44069) circle (1.3pt);
+
+  % Etiketler eğrilerin üstüne binmesin diye köşede toplandı.
+  \node[anchor=north east, inner sep=3pt, scale=0.84, align=left,
+        fill=white, fill opacity=0.84, text opacity=1]
+       at (axis cs:2.06,0.515)
+       {\textcolor{wcol}{\rule[0.6ex]{4mm}{0.9pt}}~$W(q)$\\[1pt]
+        \textcolor{dwcol}{\rule[0.6ex]{1.4mm}{0.9pt}\,\rule[0.6ex]{1.4mm}{0.9pt}}%
+        ~$-\mathrm{d}W/\mathrm{d}q$, tepe $q=0{,}5$};
+\end{axis}
+
+% ===================== (b) komşuluk ====================================
+% Ölçek: 1 birim = 1 h = 1 cm. Kapsam ±2 birim (±20 mm); panel (a)'nın
+% ekseni ±23 mm, yani iki panel düşeyde hizalı.
+\begin{scope}[shift={($(panA.east)+(27mm,0)$)}]
+
+  % destek diski
+  \fill[wcol!6] (0,0) circle (2);
+  \draw[densely dashed, ink!50, line width=0.45pt] (0,0) circle (2);
+  \draw[ink!30, line width=0.35pt] (0,0) circle (1);
+
+  % Komşular: sabit (rastgele değil) yerleşim — şekil her derlemede aynı.
+  \foreach \x/\y in {%
+    0.62/0.18, -0.55/0.42, 0.10/-0.66, -0.70/-0.30, 0.78/-0.52,
+    1.22/0.46, -1.15/0.72, 0.36/1.18, -0.28/-1.24, 1.05/-1.02,
+    -1.30/-0.80, 1.52/-0.18, -1.58/0.18, 0.08/1.72, -0.72/1.52,
+    1.42/1.06, -1.44/-1.26, 0.70/-1.68, 1.80/0.60, -0.18/-1.86}{
+    % q = r/h; koyuluk W(q)/W(0) ile orantılı
+    \pgfmathsetmacro{\q}{sqrt(\x*\x+\y*\y)}
+    \pgfmathsetmacro{\agir}{(\q<2) ? ((1-\q/2)^4*(2*\q+1)) : 0}
+    \pgfmathsetmacro{\yuzde}{max(5,100*\agir)}
+    \draw[kilavuz=ink!20] (0,0) -- (\x,\y);
+    \draw[fill=wcol!\yuzde!white, draw=ink!45, line width=0.3pt]
+         (\x,\y) circle (0.165);
+  }
+
+  % merkez parçacık
+  \shadedraw[inner color=vurgu!30, outer color=vurgu!70,
+             draw=koyu, line width=0.5pt] (0,0) circle (0.20);
+
+  % h ve 2h ölçüleri
+  \draw[ink!55, line width=0.4pt, ->] (0,0) -- (0.707,0.707);
+  \node[scale=0.8, text=ink!75, anchor=south west, inner sep=1pt]
+       at (0.26,0.26) {\contour{wcol!6}{$h$}};
+  \draw[|<->|, ink!70, line width=0.45pt] (0,-2.17) -- (2,-2.17);
+  \node[scale=0.82, text=ink, anchor=north, inner sep=2pt]
+       at (1.0,-2.17) {$2h$};
+
+  \node[scale=0.95, text=ink, anchor=south] at (0,2.15)
+       {(b) bir parçacığın komşuluğu};
+\end{scope}
+
+% ===================== açıklama =======================================
+\node[anchor=north west, scale=0.84, text=ink, align=left, inner sep=0pt,
+      text width=148mm]
+  at ($(panA.south west)+(0,-10mm)$)
+  {Komşuların koyuluğu çekirdek ağırlığıyla orantılıdır. $q=2$'de katkı
+   tam sıfır olduğundan, her toplam sonlu sayıda komşu üzerinden alınır;
+   SPH'yi GPU'da verimli kılan özellik budur.};
+
+\end{tikzpicture}
+\end{document}

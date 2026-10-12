@@ -1,24 +1,16 @@
-% TÜBİTAK 2204-A Proje Raporu — DART-RIFT.
-% `docs/rapor2204` içinden iki kez derle (çapraz başvurular için):
+% TÜBİTAK 2204-A Proje Raporu — 2026-2027 resmî şablonuna göre.
+%
+% Bölüm adları ve sıraları `proje_yazma_sablonu_2026-2027.docx`ten birebir
+% alınmıştır. Biçim kuralı da şablondan: Times New Roman 12 punto, her
+% yandan 2,5 cm, tek satır aralığı, iki yana yaslı, en fazla 20 sayfa,
+% kapak sayfası ve kimlik bilgisi YOK.
+%
+% `docs/rapor2204` içinden İKİ KEZ derle (çapraz başvurular için):
 %     lualatex rapor.tex
 % pdflatex DEĞİL: parçacık ölçekli şekiller pdflatex'in sabit ana belleğini
-% tüketiyor. Şekiller `make` ile ayrıca üretilir.
-\documentclass[11pt,a4paper]{article}
+% tüketiyor. Şekiller ayrıca derlenir, bkz. README.md.
+\documentclass[12pt,a4paper]{article}
 \usepackage{tubitak}
-
-% Kimlik bilgisi varsayılan olarak GİZLİ (bkz. tubitak.sty). Kılavuz
-% kimlikli sürüm isterse aşağıdaki satırın başındaki % kaldırılır.
-% \kimlikliyazdirtrue
-
-\projealani{Fizik \textbullet\ Astronomi ve Astrofizik}
-\projekodu{TÜBİTAK 2204-A Lise Öğrencileri Araştırma Projeleri Yarışması}
-\ekip{Yağız Ekrem Dalar \quad Feyzi Arda Salihoğlu \quad Nedim Mutlu Sezer}
-\kurum{Pertevniyal Lisesi, Fatih/İstanbul}
-\ustbilgi{Proje Raporu \textbar\ 12 Ekim 2026}
-
-\title{Dimorphos'un İç Yapısının DART Momentum Aktarımından\\
-       GPU Tabanlı SPH Benzetimleriyle Çıkarımı}
-\date{12 Ekim 2026}
 
 \hypersetup{
   pdftitle={Dimorphos'un İç Yapısının DART Momentum Aktarımından GPU
@@ -27,172 +19,368 @@
 }
 
 \begin{document}
-\maketitle
 
-\begin{abstract}
-NASA'nın DART görevi 2022'de Dimorphos asteroidine çarparak yörünge
-dönemini ölçülebilir biçimde değiştirdi ve cisme aktarılan momentumu
-$\beta$ katsayısıyla sınırladı. Bu tek sayıdan cismin \emph{iç yapısını}
-geri okumak doğrudan bir ters problem değildir: yakın tarihli çalışmalar
-birbirinden farklı iç yapıların aynı $\beta$ değerini ürettiğini
-göstermiştir. Bu projede, çarpmayı GPU üzerinde düzgünleştirilmiş
-parçacık hidrodinamiği (SPH) ile modelleyen bir motor yazıldı ve üç iç
-yapı koordinatının --- blok gözenekliliği $\alpha_b$, matris bağdaşım
-dayanımı $Y_0$, blok hacim kesri $f$ --- gözlemden ne kadarının
-öğrenilebildiği sorusu, bir \emph{nokta tahmini} yerine
-\emph{tanımlanabilirlik} sorusu olarak kuruldu. Sabit bir DART sahnesinde
-geçerliliği denetlenmiş beş benzetim tamamlandı. Bağdaşım 10 Pa'dan
-5000 Pa'ya çıkarıldığında $\beta$ 3,7480'den 1,8738'e düşmekte, fırlatılan
-kütle 26,1 kat azalmaktadır. Denenen matris çekme yasasının açılması
-fazla momentumu \%97,1 değiştirmekte; çarpma noktasının 25 m kaydırılması
-ise $\beta$'yı yalnız \%2,2 değiştirirken fırlatı kütlesini \%18
-değiştirmektedir. Ölçülen tüm kaldıraçlar tek ölçekte sıralandığında en
-büyük etki, çıkarmaya çalıştığımız koordinatlardan değil, kararla
-sabitlediğimiz bir model seçiminden gelmektedir. Üretim çıkarımının 96
-noktalık tasarımı, olabilirlik tanımı ve beş karar kapısı veriye
-bakılmadan önce yazılıp tarih damgasıyla kayda alınmıştır; bu rapor o
-kayıtları ve pilot ölçümleri sunar, üretim posterioru ya da sayısal Hera
-öngörüsü sunmaz.
-\end{abstract}
+% =======================================================================
+% ŞABLONUN ÜST ALANLARI
+% =======================================================================
+\sablonalan{Proje Ana Alanı}{Fizik}
+\sablonalan{Proje Tematik Alanı}{Astronomi ve Astrofizik}
+\projebasligi{Dimorphos'un İç Yapısının DART Momentum Aktarımından GPU
+  Tabanlı SPH Benzetimleriyle Çıkarımı}
+
+\section*{Yapay Zeka Araçları Kullanım Beyanı}
+
+\noindent\textbf{Kullanılan araçlar:} Claude (Anthropic), Claude Code
+arayüzü; Temmuz 2026 -- Ekim 2026.
+
+\noindent\textbf{Kullanım amacı:} Benzetim kodunun yazımı ve gözden
+geçirilmesi, çözümleme betikleri, rapor şekillerinin üretimi, literatür
+taraması, Türkçe metnin taslaklanması ve İngilizce ön baskının çevirisi.
+
+\noindent\textbf{Kullanım kapsamı:} Yöntem ve Bulgular bölümlerinde
+kodlama ve metin taslağı düzeyinde; Giriş bölümünde literatür taraması
+amacıyla. Fiziksel modelleme kararları, sayısal eşikler ve karar kuralları
+proje ekibi tarafından belirlenmiş ve veri üretilmeden önce kilitli
+protokol belgelerine yazılmıştır
+(\texttt{docs/truba/PROTOKOL-*.md}); yapay zekâ bu kararları
+\emph{uygulayan} kodu ve metni üretmiştir, kararların kendisini değil.
+
+\noindent\textbf{İnsan müdahalesi:} Raporda yer alan her sayısal değer,
+benzetimin kendi çıktı dosyalarından ve depodaki tarihli ölçüm
+kayıtlarından bağımsız olarak doğrulanmıştır. Tüm kaynaklar birincil
+yayından kontrol edilmiştir. Üretilen kod, 2100'ü aşkın otomatik sınavdan
+ve bağımsız bir kusur arama kampanyasından geçirilmiş; bulunan kusurlar
+\texttt{docs/FAZ4-SIKINTI-RAPORU.md} kütüğüne kaydedilmiştir.
+
+% =======================================================================
+\section*{Özet}
+
+Amerika Birleşik Devletleri Ulusal Havacılık ve Uzay Dairesi'nin (NASA)
+DART görevi 2022'de Dimorphos asteroidine çarparak yörünge dönemini
+ölçülebilir biçimde değiştirmiş ve cisme aktarılan momentumu $\beta$
+katsayısıyla sınırlamıştır. Bu tek sayıdan cismin iç yapısını geri okumak
+doğrudan bir ters problem değildir: yakın tarihli çalışmalar birbirinden
+farklı iç yapıların aynı $\beta$ değerini ürettiğini göstermiştir. Bu
+projede çarpma, grafik işlem birimi (GPU) üzerinde düzgünleştirilmiş
+parçacık hidrodinamiği ile modellenmiş ve üç iç yapı koordinatının ---
+blok gözenekliliği, matris bağdaşım dayanımı ve blok hacim kesri ---
+gözlemden ne kadarının öğrenilebildiği sorusu, bir nokta tahmini yerine
+tanımlanabilirlik sorusu olarak kurulmuştur. Sabit bir çarpma sahnesinde
+geçerliliği denetlenmiş beş benzetim tamamlanmıştır. Bağdaşım dayanımı
+10 Pa'dan 5000 Pa'ya çıkarıldığında $\beta$ 3,7480'den 1,8738'e düşmekte,
+fırlatılan kütle 26,1 kat azalmaktadır. Denenen matris çekme yasasının
+açılması fazla momentumu \%97,1 değiştirmekte; çarpma noktasının 25 m
+kaydırılması ise $\beta$'yı yalnız \%2,2 değiştirirken fırlatı kütlesini
+\%18 değiştirmektedir. Ölçülen tüm etkiler tek ölçekte sıralandığında en
+büyüğü, çıkarılmak istenen koordinatlardan değil, kararla sabitlenen bir
+model seçiminden gelmektedir. Üretim çıkarımının tasarımı, olabilirlik
+tanımı ve beş karar kapısı veriye bakılmadan önce yazılıp tarih damgasıyla
+kayda alınmıştır.
 
 \anahtarkelimeler{gezegen savunması, çarpma fiziği, düzgünleştirilmiş
 parçacık hidrodinamiği, Bayesçi çıkarım, Dimorphos}
 
 % =======================================================================
+\section{Amaç}
+
+Projenin amacı, bir asteroidin \emph{iç yapısının} tek bir uzay
+görevinden elde edilen tek bir sayıdan ne ölçüde çıkarılabileceğini
+nicel olarak belirlemek ve bu çıkarımı, sonucu görmeden önce yazılmış
+karar kurallarıyla savunulabilir hâle getirmektir.
+
+Somut hedefler şunlardır:
+
+\begin{enumerate}[leftmargin=9mm,itemsep=1pt,topsep=2pt]
+\item DART çarpışmasını, malzeme yasaları ve gözlem işleçleri denetim
+      altında olan bir ileri modelle GPU üzerinde yeniden üretmek;
+\item üç iç yapı koordinatı $\theta=(\alpha_b, Y_0, f)$ için modelin
+      duyarlılığını \emph{denetimli} deneylerle ölçmek;
+\item gözlemin $\theta$ uzayında kaç bağımsız yönü kısıtladığını ---
+      yani kaç parametrenin gerçekten öğrenilebildiğini --- ölçmek;
+\item bütün karar kurallarını veri üretilmeden önce yazıp kilitlemek ve
+      sonucun bu kurallara göre raporlanmasını güvence altına almak.
+\end{enumerate}
+
+\noindent\textbf{Ar-Ge içeriği.} Proje kapsamında, parçacık etkileşim
+çekirdekleri öğrenci tarafından yazılmış, FP64 aritmetikle çalışan ve
+TÜBİTAK ULAKBİM TRUBA altyapısındaki NVIDIA H100 GPU'larda yürütülen bir
+çarpma fiziği motoru geliştirilmiştir. Motorun doğrulaması, korunum
+yasalarının adım adım denetimi ve çözümsel ölçütlerle karşılaştırma
+üzerine kuruludur.
+
+\noindent\textbf{Giderilmesi hedeflenen eksiklik.} Literatürde DART
+gözlemiyle uyumlu \emph{birden fazla} iç yapı bildirilmiştir. Buna
+rağmen tekil nokta tahminleri yaygındır. Bu projenin doldurmayı
+hedeflediği boşluk, tahmin üretmek değil, \emph{tahminin ne kadarının
+veriden geldiğini} ölçen ve önceden kilitlenmiş bir yordam kurmaktır.
+
+% =======================================================================
 \section{Giriş}
 
-\subsection{Problem durumu}
+\subsection{Araştırmanın bağlamı}
+
 26 Eylül 2022'de NASA'nın DART (\emph{Double Asteroid Redirection Test})
 uzay aracı, Didymos ikili asteroit sisteminin uydusu Dimorphos'a saniyede
-yaklaşık 6,1 km hızla çarptı. Çarpma, Dimorphos'un Didymos çevresindeki
-yörünge dönemini ölçülebilir biçimde kısalttı
+yaklaşık 6,1 km hızla çarpmıştır. Çarpma, Dimorphos'un Didymos
+çevresindeki yörünge dönemini ölçülebilir biçimde kısaltmıştır
 \citep{daly2023}. Bu ölçüm, cisme aktarılan momentumun çarpıcının kendi
-momentumunun kaç katı olduğunu veren \emph{momentum artırma katsayısı}
-$\beta$'yı sınırladı \citep{cheng2023}. $\beta>1$ olması, fırlatılan
-malzemenin geri tepmesinin çarpıcının kendi momentumuna eklendiği anlamına
-gelir; yani $\beta$, doğrudan ne kadar malzemenin ne hızla atıldığına,
-o da cismin \emph{iç yapısına} bağlıdır.
+momentumuna oranını veren \emph{momentum artırma katsayısı} $\beta$'yı
+sınırlamıştır \citep{cheng2023}.
 
-Gezegen savunması açısından bu bağ kritiktir: bir asteroidi saptırmak için
-ne kadar enerji gerektiği, cismin içinin sıkı bir kaya mı yoksa gevşek bir
-moloz yığını mı olduğuna göre kat kat değişir. Dolayısıyla DART'ın asıl
-bilimsel kazancı, $\beta$'nın kendisi değil, $\beta$'nın iç yapı hakkında
-ne söylediğidir.
+$\beta$ şöyle tanımlanır: çarpıcının momentumu $m_{\text{ç}}
+\mathbf{v}_{\text{ç}}$ ve fırlatılan malzemenin geri tepmesi birlikte
+hedefe aktarılır,
+\begin{equation}
+\beta = 1 + \frac{|\mathbf{p}_{\text{fır}}|}
+                 {m_{\text{ç}}\,|\mathbf{v}_{\text{ç}}|},
+\label{esit:beta}
+\end{equation}
+burada $\mathbf{p}_{\text{fır}}$ cisimden kaçan malzemenin çarpıcı
+momentumu doğrultusundaki toplam momentumudur. $\beta>1$ olması,
+fırlatılan malzemenin bir roket gibi geri tepme sağladığı anlamına gelir.
+Dolayısıyla $\beta$, ne kadar malzemenin ne hızla atıldığına; o da cismin
+\emph{iç yapısına} bağlıdır.
+
+Gezegen savunması açısından bu bağ belirleyicidir: bir asteroidi
+saptırmak için gereken enerji, cismin içinin sıkı bir kaya mı yoksa gevşek
+bir moloz yığını mı olduğuna göre kat kat değişir.
 
 \subsection{Literatürdeki boşluk}
-Sorun şudur: $\beta$ tek bir sayıdır, iç yapı ise çok boyutludur.
+
+Sorun şudur: $\beta$ tek bir skalerdir, iç yapı ise çok boyutludur.
 \citet{raducan2024} farklı malzeme kümeleri ve iç yapılar için ileri
-benzetimler koşturup gözlemle karşılaştırmış ve düşük yığın yoğunluğunu,
-yüzeye yakın ılımlı bir blok kesrini desteklemiştir. Hemen ardından
-\citet{senel2025}, \emph{birbirinden farklı} iç yapıların aynı referans
-$\beta$ değerini ürettiğini bildirmiştir: bağdaşımı 20--80 Pa aralığında
-türdeş bir hedef, çift katmanlı bir iç yapı ve blokların çarpma
-noktasında kümelendiği üç katmanlı bir iç yapı.
+benzetimler koşturup gözlemle karşılaştırmış, düşük yığın yoğunluğunu ve
+yüzeye yakın ılımlı bir blok kesrini desteklemiştir. \citet{senel2025}
+ise \emph{birbirinden farklı} iç yapıların aynı referans $\beta$ değerini
+ürettiğini bildirmiştir: bağdaşımı 20--80 Pa aralığında türdeş bir hedef,
+çift katmanlı bir iç yapı ve blokların çarpma noktasında kümelendiği üç
+katmanlı bir iç yapı.
 
-Bu bir \emph{dejenerasyon} ifadesidir ve projenin çıkış noktasıdır. Eğer
-birden fazla iç yapı aynı gözlemi üretiyorsa, "Dimorphos'un bağdaşım
-dayanımı şudur" biçiminde bir nokta tahmini vermek, verinin
-taşımadığı bir kesinliği iddia etmek olur. Literatürde eksik olan şey bir
-tahmin daha değil, şu sorunun nicel cevabıdır:
+Bu bir \emph{dejenerasyon} ifadesidir ve projenin çıkış noktasıdır. Tek
+bir skalerin ters görüntüsü, üç boyutlu parametre uzayında genel olarak
+bir \emph{yüzeydir}; bir nokta değil. Şekil~\ref{sek:dejenerasyon}'de
+görüldüğü üzere, gözlemle uyumlu küme parametre düzleminde uzanan dar bir
+koridordur ve bu koridor boyunca ilerlemek gözlemi değiştirmez.
 
-\begin{sinir}
-\textbf{Araştırma sorusu.} $(\alpha_b, Y_0, f)$ üç boyutlu iç yapı
-uzayında, DART gözlemi kaç bağımsız \emph{yönü} gerçekten
-kısıtlamaktadır --- ve geri kalan yönler için ne söylenemeyeceği nasıl
-kayda geçirilir?
-\end{sinir}
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.84\linewidth]{dejenerasyon.pdf}
+\caption{Tek bir skaler gözlemin parametre uzayında seçtiği küme. Gri
+ince eğriler eş-$\beta$ düzey eğrileridir; kalın kırmızı eğri gözlenen
+$\beta$ değerine, açık kırmızı koridor ise onun $1\sigma$ aralığına
+karşılık gelir. Elips, koridorun yerel doğrusallaştırmasıdır (Fisher
+bilgisi): uzun ekseni boyunca ilerlemek $\beta$'yı ölçülebilir ölçüde
+değiştirmez, kısa ekseni boyunca ilerlemek değiştirir.
+\citet{senel2025}'in bildirdiği üç farklı iç yapı bu koridorun üzerinde
+yer alır. \textbf{Eğrilerin konumu şematiktir, ölçüm değildir:} elimizde
+yalnız sabit $(\alpha_b, f)$ noktasında üç bağdaşım koşusu vardır ve
+$\alpha_b$ ile $f$ yönlerinde ölçülmüş bir yanıt yoktur. Eksen aralıkları
+ise kayıtlı üretim tasarımının gerçek aralıklarıdır. Üçüncü koordinat $f$
+bu kesitte gösterilmemiştir.}
+\label{sek:dejenerasyon}
+\end{figure}
 
-\subsection{Amaç ve hipotez}
-Projenin amacı, bu soruyu cevaplayabilecek bir ileri model ile ön kayıtlı
-bir çıkarım yordamını birlikte kurmaktır. Üç iç yapı koordinatı
-seçilmiştir:
+\subsection{Araştırma sorusu ve hipotez}
 
-\begin{itemize}[leftmargin=7mm,itemsep=1pt,topsep=2pt]
-  \item $\alpha_b$ --- \textbf{blok gözenekliliği} (distansiyon): cismin
-        içindeki iri blokların ne kadar boşluklu olduğu;
-  \item $Y_0$ --- \textbf{matris bağdaşım dayanımı}: blokları saran ince
-        malzemenin kendini bir arada tutma gücü [Pa];
-  \item $f$ --- \textbf{blok hacim kesri}: hacmin ne kadarının iri
-        bloklardan oluştuğu.
-\end{itemize}
+\noindent\textbf{Araştırma sorusu.} $(\alpha_b, Y_0, f)$ üç boyutlu iç
+yapı uzayında, DART gözlemi kaç bağımsız yönü gerçekten kısıtlamaktadır
+ve geri kalan yönler için ne söylenemeyeceği nasıl kayda geçirilir?
 
-\noindent\textbf{Hipotez.} DART'ın tek skaler gözlemi bu üç koordinatın
-\emph{hepsini} ayırt etmeye yetmez; ölçülebilir yön sayısı üçten küçüktür.
-Dahası, modelin $\beta$'ya duyarlılığı, çıkarılmak istenen koordinatlar
-kadar, araştırmacının kararla sabitlediği model seçimlerine de bağlıdır
---- ve bu seçimlerin etkisi nicel olarak ölçülebilir.
+\noindent\textbf{Hipotez 1.} DART'ın tek skaler gözlemi bu üç
+koordinatın hepsini ayırt etmeye yetmez; ölçülebilir yön sayısı üçten
+küçüktür.
 
-İkinci hipotez, projenin yöntem tarafını belirler: eğer bir model seçimi
-gözlemin kendi belirsizliğinden daha büyük bir kayma üretiyorsa, o seçim
-sonucun bir parçasıdır ve raporlanmak zorundadır.
+\noindent\textbf{Hipotez 2.} Modelin $\beta$'ya duyarlılığı, çıkarılmak
+istenen koordinatlar kadar, araştırmacının kararla sabitlediği model
+seçimlerine de bağlıdır; bu seçimlerin etkisi nicel olarak ölçülebilir ve
+en az bir tanesi gözlemin kendi belirsizliğinden büyüktür.
+
+\noindent\textbf{Sınırlılıklar.} Çalışma tek bir sabit çarpma sahnesiyle
+yürütülmüştür. Cismin dönmesi, gerçek yüzey topografyası ve çarpma
+anındaki ikili yörünge evresi modele girmemektedir. Çözünürlük
+yakınsaması kanıtlanmamıştır.
+
+\noindent\textbf{Tanımlar.} \emph{Distansiyon} $\alpha=\rho_s/\rho$, katı
+malzeme yoğunluğunun gözenekli malzeme yoğunluğuna oranıdır;
+$\alpha=1$ gözeneksiz demektir. \emph{Bağdaşım dayanımı} $Y_0$,
+basıncın sıfır olduğu sınırda malzemenin kesmeye karşı direncidir.
+\emph{Blok hacim kesri} $f$, toplam hacmin iri bloklara ayrılan oranıdır.
 
 % =======================================================================
 \section{Yöntem}
 
-\subsection{Hesaplama altyapısı}
+\subsection{Araştırma deseni}
+
+Çalışma, \emph{denetimli bilgisayar deneyi} desenindedir. Her koşuda tek
+bir değişken değiştirilir, geri kalan her şey --- sahne geometrisi,
+rastgele tohum, parçacık aralığı, geçiş süresi, bitiş zamanı --- bit
+düzeyinde sabit tutulur. Böylece ölçülen fark yalnız o değişkene
+atfedilebilir.
+
+Veri toplama aracı, proje kapsamında yazılan benzetim motorudur; veriler
+motorun kendi çıktı dosyalarından okunur. Çözümleme, depodaki tarihli
+betiklerle yapılır ve her sayısal yargı, onu üreten kaynak dosyaya
+bağlanır.
+
+\subsection{Düzgünleştirilmiş parçacık hidrodinamiği}
+
 Çarpma, düzgünleştirilmiş parçacık hidrodinamiği (SPH;
 \citealp{monaghan1992}) ile modellenmiştir. SPH, sürekli ortamı ağ yerine
-hareketli parçacıklarla temsil ettiği için, çarpma sonrası ortaya çıkan
+hareketli parçacıklarla temsil ettiği için çarpma sonrası ortaya çıkan
 büyük şekil değişimlerini ve serbest yüzeyleri doğal biçimde taşır.
 
-Fizik çekirdekleri proje kapsamında yazılmış, GPU'da çalıştırmak için
-NVIDIA Warp \citep{macklin2022} kullanılmıştır; Warp yalnızca derleme ve
-çekirdek yürütmesini üstlenir, fizik ifadeleri bize aittir. Koşular
-TÜBİTAK ULAKBİM TRUBA ulusal hesaplama altyapısındaki NVIDIA H100
-GPU'larda yürütülmüştür. Tüm aritmetik FP64'tür. Bileşenler:
+Bir alan niceliği $A$, komşu parçacıklar üzerinden ağırlıklı toplamla
+kestirilir:
+\begin{equation}
+A(\mathbf{r}_i) \simeq \sum_j \frac{m_j}{\rho_j}\,A_j\,
+  W\!\left(|\mathbf{r}_i-\mathbf{r}_j|, h\right),
+\label{esit:sph}
+\end{equation}
+burada $h$ düzgünleştirme uzunluğu, $W$ ise çekirdek fonksiyonudur.
+Yoğunluğun kendisi aynı toplamdan gelir:
+$\rho_i=\sum_j m_j W(|\mathbf{r}_i-\mathbf{r}_j|,h)$.
 
-\begin{itemize}[leftmargin=7mm,itemsep=1pt,topsep=2pt]
-  \item \textbf{Çekirdek fonksiyonu:} Wendland C2 \citep{wendland1995};
-  \item \textbf{Durum denklemi:} Tillotson \citep{tillotson1962};
-  \item \textbf{Gözeneklilik:} $P$--$\alpha$ gözenek çökmesi
-        \citep{carroll1972, jutzi2008};
-  \item \textbf{Dayanım:} sürtünmeli Lundborg akma yüzeyi
-        \citep{lundborg1968}, içsel sürtünme katsayısı $\mu_f=0{,}6$;
-  \item \textbf{Hasar:} Grady--Kipp kırılgan hasar modeli
-        \citep{gradykipp1980, benz1995};
-  \item \textbf{Öz çekim:} ağaç tabanlı $N$-cisim toplaması.
-\end{itemize}
+Bu projede Wendland C2 çekirdeği kullanılmıştır
+\citep{wendland1995}. $q=r/h$ olmak üzere üç boyutta
+\begin{equation}
+W(q)=\frac{21}{16\pi h^{3}}\left(1-\frac{q}{2}\right)^{4}(2q+1),
+\qquad 0 \leq q < 2,
+\label{esit:wendland}
+\end{equation}
+ve $q\geq2$ için $W=0$'dır. Şekil~\ref{sek:cekirdek}'te görüldüğü üzere
+çekirdek $q=2$'de tam olarak sıfırlanır; bu, her toplamın sonlu sayıda
+komşu üzerinden alınmasını sağlar ve yöntemi GPU'da verimli kılar.
+Hareket denklemi, basınç ve sapma gerilmesi $\mathbf{S}$ cinsinden
+\begin{equation}
+\frac{\mathrm{d}\mathbf{v}_i}{\mathrm{d}t}
+ = -\sum_j m_j\left(
+   \frac{P_i-\mathbf{S}_i}{\rho_i^{2}}+\frac{P_j-\mathbf{S}_j}{\rho_j^{2}}
+   +\Pi_{ij}\right)\cdot\nabla_i W_{ij}
+   \;+\;\mathbf{g}_i,
+\label{esit:momentum}
+\end{equation}
+biçimindedir; $\Pi_{ij}$ şok cephesini taşıyan yapay viskozite,
+$\mathbf{g}_i$ ise ağaç tabanlı toplamayla hesaplanan öz çekimdir.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.94\linewidth]{cekirdek.pdf}
+\caption{Yöntemin çalışma ilkesi. (a) Wendland C2 çekirdeği ve türevi;
+eğriler Denklem~\eqref{esit:wendland}'in kendisinden üretilmiştir. Türev
+$q=0{,}5$'te tepe yapar, yani parçacıklar arası kuvvet en çok bu uzaklıkta
+güçlüdür. Destek yarıçapı $q=2$'dir ve bu noktadan sonra katkı tam olarak
+sıfırdır. (b) Bir parçacığın destek yarıçapı içindeki komşuları;
+koyuluk çekirdek ağırlığıyla orantılıdır.}
+\label{sek:cekirdek}
+\end{figure}
+
+\subsection{Malzeme modeli ve çıkarım koordinatları}
+
+Basınç, Tillotson durum denkleminden gelir \citep{tillotson1962}.
+$\eta=\rho/\rho_0$ ve $\mu=\eta-1$ olmak üzere sıkışmış dalda
+\begin{equation}
+P=\left(a+\frac{b}{1+u/(u_0\eta^{2})}\right)\rho u
+  + A\mu + B\mu^{2},
+\label{esit:tillotson}
+\end{equation}
+burada $u$ iç enerji, $A$ ve $B$ hacim modülü katsayılarıdır.
+
+Gözeneklilik, $P$--$\alpha$ gözenek çökmesi modeliyle taşınır
+\citep{carroll1972, jutzi2008}. Distansiyon $\alpha=\rho_s/\rho$ yalnız
+azalabilir ve yükleme eğrisi
+\begin{equation}
+\alpha(P)=
+\begin{cases}
+\alpha_0, & P \leq P_e,\\[3pt]
+1+(\alpha_0-1)\left(\dfrac{P_s-P}{P_s-P_e}\right)^{n}, & P_e<P<P_s,\\[8pt]
+1, & P \geq P_s,
+\end{cases}
+\label{esit:palpha}
+\end{equation}
+biçimindedir; $P_e=10^{6}$ Pa elastik eşik, $P_s=10^{8}$ Pa tam sıkışma
+basıncı ve $n=2$'dir. Çıkarım koordinatlarından \textbf{blok
+gözenekliliği} $\alpha_b$, bloklara verilen $\alpha_0$ değeridir ve
+fiziğe tam olarak bu denklemden girer.
+
+Dayanım, sürtünmeli Lundborg akma yüzeyiyle verilir
+\citep{lundborg1968}:
+\begin{equation}
+Y(P)=Y_0+\frac{\mu_f P}{1+\dfrac{\mu_f P}{Y_M-Y_0}},
+\label{esit:lundborg}
+\end{equation}
+burada $\mu_f=0{,}6$ içsel sürtünme katsayısı ve
+$Y_M=1{,}5\times10^{9}$ Pa yüksek basınç sınırıdır. İkinci çıkarım
+koordinatı olan \textbf{matris bağdaşım dayanımı} $Y_0$, bu denklemde
+$P\to0$ sınırındaki değerdir.
+
+Şekil~\ref{sek:malzeme}, iki koordinatın da fiziğe nereden girdiğini bir
+arada gösterir ve projenin en öğretici gözlemlerinden birini ortaya
+koyar: Denklem~\eqref{esit:lundborg}'deki üç $Y_0$ değeri $P=100$ Pa'da
+birbirinden 72 kat ayrışırken, $P=10^{6}$ Pa'da aradaki fark \%1'in
+altına iner. Yani bağdaşım dayanımı yalnız \emph{düşük basınçlı, geç}
+akışta iş görür; şok evresinde etkisizdir. $\beta$'nın bağdaşıma
+duyarlılığı bu yüzden yavaş fırlatı üzerinden gelir.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{malzeme.pdf}
+\caption{Çıkarım koordinatlarının fiziğe giriş noktaları. (a)
+Denklem~\eqref{esit:lundborg}'deki akma yüzeyi, pilot taramanın üç $Y_0$
+değeri için. Eğriler $10^{5}$ Pa'nın üstünde ayırt edilemez hâle gelir;
+bağdaşım yalnız düşük basınçta belirleyicidir. (b)
+Denklem~\eqref{esit:palpha}'deki ezilme eğrisi; blok gözenekliliği
+$\alpha_b$'nin üretim aralığının uçları ve ortası ile matris için
+malzeme varsayılanı. Her iki panelin verisi de kodun kendi
+formüllerinden üretilmiştir.}
+\label{sek:malzeme}
+\end{figure}
+
+Hasar, Grady--Kipp kırılgan hasar modeliyle taşınır
+\citep{gradykipp1980, benz1995}: bir parçacıktaki hasar $D$, aktive olan
+çatlak yoğunluğundan gelir ve gerilme, $(1-D)$ çarpanıyla azaltılır.
 
 \subsection{Sabit sahne}
-Bütün koşular tek bir sabit sahnede yapılır (Şekil~\ref{sek:hedef}).
-Hedef, yarı eksenleri $(88{,}5;\ 87{,}0;\ 58{,}0)$ m olan üç eksenli bir
-elipsoittir; kalibre edilmiş kütlesi $4{,}2980\times10^{9}$ kg'dır. İç
-yapı, matris içine gömülü kürelerle kurulur; yarıçaplar
-$r\in[14,56]$ m aralığında ve $\mathrm{d}N/\mathrm{d}r\propto r^{-3}$
-dağılımındadır. Çarpıcı üç küreden oluşur: kütlesi 579,4 kg, hızı
-6144,9 m\,s$^{-1}$, yüzey normaliyle açısı $17^{\circ}$'dir.
 
-Çözünürlük, çarpma noktası çevresinde iç içe kabuklarla artırılır:
-$r=48,\ 24,\ 12,\ 6,\ 3$ m yarıçaplı kabuklarda parçacık aralığı sırasıyla
-kabalıktan inceliğe gider. Pilot ve üretim koşularında dış aralık
+Bütün koşular tek bir sabit sahnede yapılır
+(Şekil~\ref{sek:hedef}). Hedef, yarı eksenleri $(88{,}5;\ 87{,}0;\
+58{,}0)$ m olan üç eksenli bir elipsoittir; kalibre edilmiş kütlesi
+$4{,}2980\times10^{9}$ kg'dır. İç yapı, matris içine gömülü kürelerle
+kurulur; yarıçaplar $r\in[14,56]$ m aralığında ve
+$\mathrm{d}N/\mathrm{d}r\propto r^{-3}$ dağılımındadır. Yığın yoğunluğu,
+blok ve matris gözenekliliklerinden türetilir:
+\begin{equation}
+\rho_{\text{yığın}}
+ = f\,\frac{\rho_0}{\alpha_b} + (1-f)\,\frac{\rho_0}{\alpha_m},
+\label{esit:yigin}
+\end{equation}
+böylece üçüncü çıkarım koordinatı olan \textbf{blok hacim kesri} $f$,
+sahnenin kütlesini doğrudan belirler. Çarpıcı üç küreden oluşur:
+kütlesi 579,4 kg, hızı 6144,9 m\,s$^{-1}$, yüzey normaliyle açısı
+$17^{\circ}$'dir. Çözünürlük, çarpma noktası çevresinde $r=48,\ 24,\
+12,\ 6,\ 3$ m yarıçaplı iç içe kabuklarla artırılır; dış parçacık aralığı
 7,0 m'dir.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{hedef.pdf}
 \caption{Sabit pilot ve üretim sahnesi, ekvator düzleminde ($z=0$)
-kesilmiş ve \emph{çizilmemiş} --- geometri doğrudan sahne kurucusunun
-kendi çıktısından okunmuştur. Alt yarı tel kafes, kesit yüzü ise $f=0{,}25$
-değerinde üretim blok üreticisinin yerleştirdiği beş bloğu taşır. Kesit
-düzlemi olarak $z=0$ seçilmiştir, çünkü beş bloğun tamamı bu düzlemi
-keser; meridyen düzlemi $y=0$ yalnız bir tanesini keser. Teal halkalar,
-çarpma noktası çevresindeki iç içe incelme kabuklarıdır.}
+kesilmiş. Geometri çizilmemiş, doğrudan sahne kurucusunun kendi
+çıktısından okunmuştur. Alt yarı tel kafes, kesit yüzü ise $f=0{,}25$
+değerinde blok üreticisinin yerleştirdiği beş bloğu taşır. Kesit düzlemi
+olarak $z=0$ seçilmiştir, çünkü beş bloğun tamamı bu düzlemi keser.
+Teal halkalar iç içe incelme kabuklarıdır.}
 \label{sek:hedef}
 \end{figure}
 
 \subsection{Benzetimin kapsadığı zaman aralığı}
-Bir çarpma olayı, mikrosaniyelik şok cephesinden günler süren fırlatı
-yörüngelerine kadar uzanır; hiçbir benzetim bu aralığın tamamını
-taşıyamaz. Hangi kısmın taşındığı, hangi kısmın taşınmadığı bu nedenle
-bir sonuç kadar önemlidir (Şekil~\ref{sek:kaskad}).
 
-Şok, incelmiş ızgarada taşınır. Kazı akışı, $t_{\mathrm{geçiş}}=1{,}0$ s
-olarak sabitlenen \emph{geç evre geçişinde} gelişmesini tamamlar; bu
-noktadan sonra hızlı entegrasyon şemasına geçilir. Fırlatı konisi
-$t_{\mathrm{son}}=600$ s bitiş noktasında okunur. Bu bitişten sonrası
-benzetimin dışındadır: bir parçanın sistemi terk edip etmediği, havada
-kalıp kalmadığı ya da yüzeye geri düşüp düşmediği, entegre etmediğimiz
-zaman ölçeklerinde belirlenir.
+Bir çarpma olayı mikrosaniyelik şok cephesinden günler süren fırlatı
+yörüngelerine uzanır; hiçbir benzetim bu aralığın tamamını taşıyamaz.
+Hangi kısmın taşındığı bu nedenle bir sonuç kadar önemlidir
+(Şekil~\ref{sek:kaskad}). Şok, incelmiş ızgarada taşınır. Kazı akışı,
+$t_{\text{geç}}=1{,}0$ s olarak sabitlenen geç evre geçişinde
+gelişmesini tamamlar; bu noktadan sonra hızlı entegrasyon şemasına
+geçilir. Fırlatı konisi $t_{\mathrm{son}}=600$ s bitiş noktasında okunur.
 
 \begin{figure}[t]
 \centering
@@ -205,138 +393,196 @@ rapor hiçbirini sayısal olarak iddia etmez.}
 \label{sek:kaskad}
 \end{figure}
 
-\subsection{Denetimli deneyler}
-Pilot aşamada, tek değişkenin değiştiği beş koşu tamamlanmıştır. Bağdaşım
-taraması $(\alpha_b, f)=(1{,}15;\ 0{,}25)$, rastgele tohum 20260906,
-parçacık aralığı 7 m, geçiş süresi 1,0 s ve bitiş 600 s sabit tutularak
-yapılır. DO1 ve DO2, DY2 referansından yalnız $Y_0$ bakımından ayrılır. DC
-koşusu 10 Pa'da seçilmiş bir matris çekme yasasını açar; DN koşusu 10
-Pa'da çarpma noktasını 25 m kaydırır. Üretim modeli söz konusu çekme
+\subsection{Denetimli deneyler ve geçerlilik denetimleri}
+
+Pilot aşamada beş koşu tamamlanmıştır. Bağdaşım taraması
+$(\alpha_b, f)=(1{,}15;\ 0{,}25)$, rastgele tohum 20260906, parçacık
+aralığı 7 m, geçiş süresi 1,0 s ve bitiş 600 s sabit tutularak yapılır.
+DO1 ve DO2 koşuları DY2 referansından yalnız $Y_0$ bakımından ayrılır.
+DC koşusu 10 Pa'da bir matris çekme yasasını açar; bu yasa, Mohr--Coulomb
+uç kesmesi $T_m=Y_0/\mu_f\simeq16{,}7$ Pa biçimindedir. DN koşusu
+10 Pa'da çarpma noktasını 25 m kaydırır. Üretim modeli söz konusu çekme
 yasasını \emph{kapalı} tutar; bu bir karardır ve açıkça yazılmıştır.
 
-\subsection{Geçerlilik denetimleri}
-Hiçbir koşu, depodaki geçerlilik denetimlerinden geçmeden okunmaz. Dört
-yeni dal ve referans DY2 bu denetimleri geçmiştir: enerji sapmaları
-$-\%0{,}79$ ile $-\%0{,}80$ arasında, kütle tutarlılık sapmaları
-$-\%0{,}05$ ile $-\%0{,}06$ arasında, momentum defteri artıkları ise
-$9\times10^{-15}$'ten büyük değildir.
+Hiçbir koşu, geçerlilik denetimlerinden geçmeden okunmaz. Beş koşu da bu
+denetimleri geçmiştir: enerji sapmaları $-\%0{,}79$ ile $-\%0{,}80$,
+kütle tutarlılık sapmaları $-\%0{,}05$ ile $-\%0{,}06$ arasında,
+momentum defteri artıkları ise $9\times10^{-15}$'ten büyük değildir.
 
 \begin{sinir}
 Bu denetimler koşunun \emph{geçerliliğini} destekler;
-\emph{çözünürlük yakınsamasını} kanıtlamaz. İkisi farklı şeylerdir ve
+\emph{çözünürlük yakınsamasını} kanıtlamaz. İkisi farklı özelliklerdir ve
 raporun hiçbir yerinde yakınsama iddia edilmemektedir.
 \end{sinir}
 
 \subsection{Gözlem hedefi}
+
 Benzetim sahnesinin kütlesi, gerçek Dimorphos için bildirilen kütleyle
-birebir aynı olmadığından, gözlenen $\beta$ sahne kütlesine göre
+birebir aynı olmadığından gözlenen $\beta$ sahne kütlesine göre
 düzeltilir. Üretim sahnesi için kullanılan hedef
 \begin{equation}
-\beta_{\mathrm{göz}}(M_{\mathrm{sahne}})
+\beta_{\text{göz}}(M_{\mathrm{sahne}})
   = 3{,}5418^{+0{,}188}_{-0{,}247},
   \qquad M_{\mathrm{sahne}} = 4{,}2980\times10^{9}\ \mathrm{kg}
 \label{esit:betagoz}
 \end{equation}
 biçimindedir. Aralığın asimetrisi olabilirlik kurulurken korunur.
 
-\subsection{Üretim tasarımı ve ön kayıt}
+\subsection{Üretim tasarımı ve vekil model}
+
 Üretim koordinat uzayı $\alpha_b\in[1{,}00;\ 1{,}30]$,
 $Y_0\in[1;\ 10^{5}]$ Pa ve $f\in[0{,}05;\ 0{,}50]$'dir. Tasarım, 7,0 m
 aralıkta 96 noktalı bir Latin hiperküp ile, bunun içinden önceden
 belirlenmiş 12 noktanın 3,5 m aralıkta yinelenmesinden oluşur
-(Şekil~\ref{sek:tasarim}). İç içe 12 nokta, deterministik bir kuralla
+(Şekil~\ref{sek:tasarim}). İç içe 12 nokta deterministik bir kuralla
 seçilmiş ve havuzdan tek bir çıktı var olmadan önce bir sınavla
 sabitlenmiştir; indisleri $\{11, 20, 33, 44, 45, 57, 58, 62, 74, 78, 87,
 92\}$'dir.
 
 \begin{figure}[t]
 \centering
-% Genişlikler şekillerin DOĞAL boyutuna göre seçildi: büyütme oranı
-% ~1,2'yi aşınca şeklin yazıları gövde metninin yanında orantısız duruyor.
-\includegraphics[width=0.68\linewidth]{tasarim.pdf}
-\caption{Üretim havuzuna bakılmadan kilitlenmiş tasarım,
-$(\alpha_b, Y_0)$ yüzünde gösterilmiştir; $f$ aynı hiperküp üzerinde
+\includegraphics[width=0.70\linewidth]{tasarim.pdf}
+\caption{Üretim havuzuna bakılmadan kilitlenmiş tasarım, $(\alpha_b,
+Y_0)$ yüzünde gösterilmiştir; $f$ aynı hiperküp üzerinde
 $[0{,}05;\ 0{,}50]$ aralığında örneklenir. Bu bir \emph{tasarım}
-grafiğidir: ölçülmüş hiçbir yanıt ve çıkarılmış hiçbir iç yapı
-taşımaz.}
+grafiğidir: ölçülmüş hiçbir yanıt ve çıkarılmış hiçbir iç yapı taşımaz.}
 \label{sek:tasarim}
 \end{figure}
 
-96 noktalık havuz, 7,0 m aralıkta yaklaşık 480 GPU$\cdot$saat bütçeyle
-planlanmıştır. Kaba ve ince çözünürlükler, çok doğruluklu bir vekil model
-ile birleştirilir: Kennedy--O'Hagan AR(1) kurgusunda
-$y_{\text{orta}}(x) = \rho\, f_{\text{kaba}}(x) + \delta(x)$ yazılır
-\citep{kennedy2000}; tasarımın iç içe olması $\delta$'yı tam olarak
-hesaplanabilir kılar. Vekil, $\theta$'ya göre dört gruba ayrılmış çapraz
-doğrulamayla sınanır ve dışarıda bırakılan artıklar gerektirdiğinde
-öngörü varyansı büyütülür \citep{bachoc2013}.
+Kaba ve ince çözünürlükler, çok doğruluklu bir vekil modelle birleştirilir.
+Kennedy--O'Hagan AR(1) kurgusunda \citep{kennedy2000}
+\begin{equation}
+y_{\mathrm{orta}}(x)=\rho\, f_{\mathrm{kaba}}(x)+\delta(x)
+\label{esit:ko}
+\end{equation}
+yazılır; tasarımın iç içe olması $\delta$'yı tam olarak hesaplanabilir
+kılar. Vekil, $\theta$'ya göre dört gruba ayrılmış çapraz doğrulamayla
+sınanır ve dışarıda bırakılan artıklar gerektirdiğinde öngörü varyansı
+büyütülür \citep{bachoc2013}.
 
 Uygun gözlem vektörü $z$ ve vekil ortalaması $g(\theta)$ için ön kayıtlı
 olabilirlik
 \begin{equation}
-\mathcal{L}(\theta) \propto |S(\theta)|^{-1/2}
-  \exp\!\left[-\tfrac12 (g-z)^{\mathsf T} S(\theta)^{-1} (g-z)\right]
+\mathcal{L}(\theta)\propto |S(\theta)|^{-1/2}
+  \exp\!\left[-\tfrac12 (g-z)^{\mathsf T} S(\theta)^{-1}(g-z)\right]
 \label{esit:olabilirlik}
 \end{equation}
 biçimindedir; $S(\theta)$ öngörü, gözlem ve kabul edilmiş model
-belirsizliğini ölçülen artık korelasyonuyla birleştirir.
+belirsizliğini ölçülen artık korelasyonuyla birleştirir. Model
+belirsizliği, bağımsız kabul edilen terimlerin karelerinin toplamıdır:
+\begin{equation}
+\sigma_{\mathrm{model}}^{2}=\sum_k \sigma_k^{2}.
+\label{esit:sigma}
+\end{equation}
 
-\subsubsection*{Karar kapıları}
+\subsection{Tanımlanabilirlik ve karar kapıları}
+
+Gözlemin kaç yönü kısıtladığı, yerel Fisher bilgi matrisinin öz
+değerlerinden sayılır:
+\begin{equation}
+\mathcal{I}_{kl}(\theta)=
+  \left(\frac{\partial g}{\partial \theta_k}\right)^{\!\mathsf T}
+  S^{-1}
+  \left(\frac{\partial g}{\partial \theta_l}\right),
+\qquad
+n_{\text{yön}}=\#\{\lambda_i > 36\}.
+\label{esit:fisher}
+\end{equation}
+Eşik 36, veri görülmeden ADR-0051'de sabitlenmiştir.
+Şekil~\ref{sek:dejenerasyon}'deki elips tam olarak bu matrisin
+görselleştirmesidir: büyük öz değer kısa eksene, küçük öz değer uzun
+eksene karşılık gelir.
+
+Bağımsız bir denetim olarak tarih eşleme kullanılır; olasılıksızlık
+\begin{equation}
+I(\theta)=\frac{|g(\theta)-z|}
+  {\sqrt{\sigma_{\mathrm{vekil}}^{2}+\sigma_{\text{göz}}^{2}
+        +\sigma_{\mathrm{model}}^{2}}}
+\label{esit:ihm}
+\end{equation}
+olmak üzere $I>3$ olan noktalar dışlanır \citep{vernon2014}.
+
 Projenin yöntemsel omurgası, sonucun ne olacağına veriye bakmadan karar
 vermektir. Beş karar kapısının tamamı, ilgili veri daha üretilmemişken
 yazılmış, depoya işlenmiş ve tarih damgası almıştır
-(Şekil~\ref{sek:kapilar}). Eşikler sonradan ayarlanamaz; iki kapı
-yayımlamayı tümüyle durdurur.
+(Şekil~\ref{sek:kapilar}). Posterior yayımlanmadan önce benzetim tabanlı
+kalibrasyon en az 200 yinelemeyle yapılır; yanlı bir sıra dağılımı
+yayımlamayı engeller \citep{talts2018}.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{kapilar.pdf}
 \caption{Ön kayıtlı karar kapıları. Her kırmızı kutu, ilgili veri var
 olmadan \emph{önce} bir protokol belgesinde sabitlenmiş bir koşuldur;
-kesikli dallar kendimizi bağladığımız sonuçlardır. Eşikler bize ait
-değildir: olasılıksızlık kesmesi $I>3$ \citet{vernon2014}'ün ölçütüdür,
-Fisher eşiği ADR-0051'de sabittir ve yanlı bir posterior geçene kadar
+kesikli dallar bağlanılan sonuçlardır. Eşikler sonradan ayarlanamaz:
+olasılıksızlık kesmesi $I>3$ \citet{vernon2014}'ün ölçütüdür, Fisher
+eşiği ADR-0051'de sabittir ve yanlı bir posterior geçene kadar
 olabilirlik paydasını genişletmek yazılı olarak yasaktır. Bir kapı
-düşerse, raporlanan şey \emph{daha zayıf} olan sonuçtur.}
+düşerse raporlanan şey \emph{daha zayıf} olan sonuçtur.}
 \label{sek:kapilar}
 \end{figure}
 
-Posterior yayımlanmadan önce geçilmesi gereken denetimler şunlardır:
-benzetim tabanlı kalibrasyon (SBC) en az 200 yinelemeyle, gerçek vekil ve
-hata modeli kullanılarak yapılır; yanlı bir sıra dağılımı yayımlamayı
-engeller \citep{talts2018}. Yerel Fisher bilgisi en az beş parametre
-konumunda değerlendirilir; 36'dan büyük öz değerler öğrenilmiş yönleri
-sayar ve kayıtlı korelasyon duyarlılıkları üzerindeki \emph{en küçük}
-sayı iddiayı belirler. Öncel seçeneği altında $Y_0$ kipinde 0,50 dekattan
-büyük bir kayma, tek bir $Y_0$ tahmini verilmesini engeller. Bağımsız
-tarih eşleme $I>3$ olan noktaları dışlar \citep{vernon2014}.
+% =======================================================================
+\section{Proje İş-Zaman Çizelgesi}
+
+Tablo~\ref{tab:iszaman}'de projenin iş-zaman çizelgesi verilmiştir. Dolu
+kutular tamamlanmış, açık kutular planlanmış ancak henüz
+yürütülmemiş işleri gösterir.
+
+\begin{table}[h]
+\centering
+\caption{Proje iş-zaman çizelgesi. \tamam
+tamamlandı, \planli planlandı.}
+\label{tab:iszaman}
+\small
+\setlength{\tabcolsep}{4.5pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}l*{7}{c}@{}}
+\toprule
+\textbf{İşin Adı} & \textbf{Tem} & \textbf{Ağu} & \textbf{Eyl}
+  & \textbf{Eki} & \textbf{Kas} & \textbf{Ara} & \textbf{Oca}\\
+\midrule
+Literatür taraması              & \tamam & \tamam & \tamam & \tamam &  &  & \\
+Benzetim motorunun geliştirilmesi & \tamam & \tamam & \tamam &  &  &  & \\
+Doğrulama ve kusur arama        &  & \tamam & \tamam & \tamam &  &  & \\
+Protokollerin yazılması (ön kayıt) &  & \tamam & \tamam & \tamam &  &  & \\
+Pilot koşular ve geçerlilik     &  &  & \tamam & \tamam &  &  & \\
+Üretim havuzu (96 nokta)        &  &  &  & \planli & \planli &  & \\
+Posterior ve tanımlanabilirlik  &  &  &  &  & \planli & \planli & \\
+Mühürlü Hera öngörüsü           &  &  &  &  &  & \planli & \planli\\
+Proje raporu yazımı             &  &  &  & \tamam & \planli & \planli & \planli\\
+\bottomrule
+\end{tabular}
+\end{table}
 
 % =======================================================================
 \section{Bulgular}
 
 \subsection{Tamamlanan koşular}
-Tamamlanmış ve geçerliliği denetlenmiş beş koşunun 600 s'deki değerleri
-Tablo~\ref{ciz:kosular}'de, dört gözlenebilir üzerindeki yanıt
-Şekil~\ref{sek:bulgular}'de verilmiştir. Benzetimin ürettiği fırlatı
-kütlesi için $M_{\mathrm{fır}}$ yazılmaktadır; bu büyüklük, gözlenen
-toz bulutu kütlesiyle \emph{tanımı gereği} aynı şey değildir.
 
-\begin{table}[t]
+Tamamlanmış ve geçerliliği denetlenmiş beş koşunun 600 s'deki değerleri
+Tablo~\ref{tab:kosular}'de, dört gözlenebilir üzerindeki yanıt
+Şekil~\ref{sek:bulgular}'de verilmiştir. Benzetimin ürettiği fırlatı
+kütlesi için $M_{\text{fır}}$ yazılmaktadır; bu büyüklük, gözlenen toz
+bulutu kütlesiyle tanımı gereği aynı şey değildir.
+
+\begin{table}[h]
 \centering
-\caption{600 s'de tamamlanan pilot koşular. Belirtilen değişiklik dışındaki
-tüm koşullar sabit tutulmuştur. DY2, 10 Pa referans koşusudur.}
-\label{ciz:kosular}
+\caption{600 s'de tamamlanan pilot koşular. Belirtilen değişiklik
+dışındaki tüm koşullar sabit tutulmuştur. DY2, 10 Pa referans koşusudur.}
+\label{tab:kosular}
 \small
 \begin{tabular}{@{}llrrrr@{}}
 \toprule
-Koşu & Değişiklik & $\beta$ & $M_{\mathrm{fır}}$ (kg)
-     & Koni ($^\circ$) & $t_{50}$ (s)\\
+\textbf{Koşu} & \textbf{Değişiklik} & $\boldsymbol{\beta}$
+  & $\boldsymbol{M_{\text{fır}}}$ \textbf{(kg)}
+  & \textbf{Koni} ($^\circ$) & $\boldsymbol{t_{50}}$ \textbf{(s)}\\
 \midrule
-DY2 & $Y_0=10$ Pa           & 3,7480 & $1{,}964\times10^{7}$ & 85,2 & 0,541\\
-DO1 & $Y_0=500$ Pa          & 2,6247 & $3{,}649\times10^{6}$ & 77,1 & 0,107\\
-DO2 & $Y_0=5000$ Pa         & 1,8738 & $7{,}516\times10^{5}$ & 83,8 & 0,015\\
-DC  & Çekme açık            & 1,0807 & $2{,}777\times10^{2}$ & 47,9 & 0,001\\
-DN  & Çarpma yeri $+25$ m   & 3,6650 & $2{,}321\times10^{7}$ & 107,7 & 0,845\\
+DY2 & $Y_0=10$ Pa          & 3,7480 & $1{,}964\times10^{7}$ & 85,2 & 0,541\\
+DO1 & $Y_0=500$ Pa         & 2,6247 & $3{,}649\times10^{6}$ & 77,1 & 0,107\\
+DO2 & $Y_0=5000$ Pa        & 1,8738 & $7{,}516\times10^{5}$ & 83,8 & 0,015\\
+DC  & Çekme açık           & 1,0807 & $2{,}777\times10^{2}$ & 47,9 & 0,001\\
+DN  & Çarpma yeri $+25$ m  & 3,6650 & $2{,}321\times10^{7}$ & 107,7 & 0,845\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -345,39 +591,40 @@ DN  & Çarpma yeri $+25$ m   & 3,6650 & $2{,}321\times10^{7}$ & 107,7 & 0,845\\
 \centering
 \includegraphics[width=\linewidth]{bulgular.pdf}
 \caption{Beş tamamlanmış pilot koşu için dört gözlenebilir atlası. Dolu
-daireler ve onları birleştiren doğrular \emph{yalnız} üç bağdaşım
-koşusunu (DY2, DO1, DO2) gösterir; doğrular gözü yönlendirmek içindir,
-çıkarılmış bir yanıt eğrisi değildir. Kare DC (matris çekmesi açık),
-baklava DN (çarpma yeri 25 m kaydırılmış) koşusudur; ikisi de
-$Y_0=10$ Pa'da kalır ve bağdaşım taramasının parçası değildir. Koni açısı
-ve ortanca fırlatı zamanı $t_{50}$ model tanılarıdır. (a) panelindeki gri
-şerit, Denklem~\eqref{esit:betagoz}'in kütleye göre düzeltilmiş DART
+daireler ve onları birleştiren doğrular yalnız üç bağdaşım koşusunu
+gösterir; doğrular gözü yönlendirmek içindir, çıkarılmış bir yanıt
+eğrisi değildir. Kare DC, baklava DN koşusudur; ikisi de $Y_0=10$ Pa'da
+kalır. (a) panelindeki gri şerit Denklem~\eqref{esit:betagoz}'in DART
 $1\sigma$ aralığıdır; posterior aralık değildir. (b) panelinde gözlem
 şeridi yoktur, çünkü model fırlatı istatistiği LICIACube toz bulutu
 kestirimiyle aynı büyüklük değildir.}
 \label{sek:bulgular}
 \end{figure}
 
-\subsection{Bağdaşım taraması}
+\subsection{Bağdaşım dayanımının etkisi}
+
 Denenen 10--5000 Pa aralığında $\beta$ 3,7480'den 1,8738'e düşerken,
 model fırlatı kütlesi 26,1 kat azalmaktadır. Önceden ilan edilmiş üç
-noktalı uyum $\beta-1 = C\,Y_0^{\,p}$ için $p=-0{,}1791$ ve en büyük
-bağıl artık 0,1198 bulunmuştur; bu, protokolde sabitlenmiş 0,15'lik uyum
-kalitesi eşiğinin altındadır. Denklem~\eqref{esit:betagoz}'deki merkezî
-hedefte bu uyum $Y_0\simeq20{,}1$ Pa'ya karşılık gelir
-(Şekil~\ref{sek:atlas}).
+noktalı uyum
+\begin{equation}
+\beta-1 = C\,Y_0^{\,p}
+\label{esit:uyum}
+\end{equation}
+için $C=4{,}3511$ ve $p=-0{,}1791$ bulunmuş; en büyük bağıl artık 0,1198
+olup protokolde sabitlenmiş 0,15'lik uyum kalitesi eşiğinin altındadır.
+Denklem~\eqref{esit:betagoz}'deki merkezî hedefte bu uyum
+$Y_0\simeq20{,}1$ Pa'ya karşılık gelir (Şekil~\ref{sek:atlas}).
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.79\linewidth]{atlas.pdf}
+\includegraphics[width=0.80\linewidth]{atlas.pdf}
 \caption{Beş tamamlanmış koşunun bağdaşım--momentum manzarasındaki yeri.
-Noktalı eğri, önceden ilan edilmiş üç noktalı kuvvet yasasının çizelgedeki
-değerlerden yeniden uydurulmuş hâlidir; düşey çizgi, bu eğrinin kütleye
-göre düzeltilmiş DART hedefini kestiği yeri işaretler. Mor şerit
-\citet{senel2025}'in bildirdiği türdeş bağdaşım aralığıdır ve
-\emph{yalnız yön bulmak için} gösterilmiştir: farklı bir kodla ve farklı
-bir içsel sürtünmeyle elde edilmiştir. DC ve DN, DY2 ile aynı
-$Y_0=10$ Pa'dadır ve yalnız kendi yaptıkları değişiklik kadar kaymıştır.}
+Noktalı eğri, Denklem~\eqref{esit:uyum}'in çizelgedeki değerlerden
+yeniden uydurulmuş hâlidir; düşey çizgi, bu eğrinin kütleye göre
+düzeltilmiş DART hedefini kestiği yeri işaretler. Mor şerit
+\citet{senel2025}'in bildirdiği türdeş bağdaşım aralığıdır ve yalnız yön
+bulmak için gösterilmiştir: farklı bir kodla ve farklı bir içsel
+sürtünmeyle elde edilmiştir.}
 \label{sek:atlas}
 \end{figure}
 
@@ -385,233 +632,260 @@ $Y_0=10$ Pa'dadır ve yalnız kendi yaptıkları değişiklik kadar kaymıştır
 \textbf{20,1 Pa bir ölçüm değildir.} Bu değer; sabit sahneye, sabit
 $\alpha_b$ ve $f$'ye, seçilen malzeme yasasına ve uyum biçimine koşullu
 bir \emph{aradeğerlemedir}. Dimorphos'un dayanımının posterior tahmini
-değildir ve bu raporda öyle kullanılmamaktadır. Tek faydası, eski üretim
-alanı $[10^{3}, 10^{7}]$ Pa'nın bu değeri \emph{içermediğini} gösterip
-ileriye dönük olarak $[1, 10^{5}]$ Pa alanının seçilmesini
-gerekçelendirmesidir.
+değildir. Tek işlevi, eski üretim alanı $[10^{3}, 10^{7}]$ Pa'nın bu
+değeri \emph{içermediğini} gösterip ileriye dönük olarak
+$[1;\ 10^{5}]$ Pa alanının seçilmesini gerekçelendirmesidir.
 \end{sinir}
 
-\subsection{Matris çekme dayanımı}
+\subsection{Matris çekme dayanımının etkisi}
+
 $Y_0=10$ Pa'da, denenen çekme yasasının açılması $\beta$'yı 3,7480'den
 1,0807'ye indirir. Fazla momentum $b=\beta-1$ üzerindeki karşıtlık
 \begin{equation}
-\frac{|b_{\mathrm{DY2}} - b_{\mathrm{DC}}|}{b_{\mathrm{DY2}}}
-  = \frac{|2{,}7480 - 0{,}0807|}{2{,}7480} = 0{,}9706
+\frac{|b_{\mathrm{DY2}}-b_{\mathrm{DC}}|}{b_{\mathrm{DY2}}}
+ = \frac{|2{,}7480-0{,}0807|}{2{,}7480}=0{,}9706
 \label{esit:cekme}
 \end{equation}
-olur. Kayda geçen model fırlatı kütlesi $1{,}964\times10^{7}$ kg'dan
-$2{,}777\times10^{2}$ kg'a, yani yaklaşık $7{,}1\times10^{4}$ kat
-düşer. Bu, \emph{tek bir bünye modeli seçimine} karşı çok güçlü bir
-duyarlılıktır. DC tek bir parametre konumunda tek bir anahtar olduğundan,
-gerçek cismin çekme dayanımını belirlemez ve diğer tüm çekme yasalarını
-dışlamaz.
+olur. Model fırlatı kütlesi $1{,}964\times10^{7}$ kg'dan
+$2{,}777\times10^{2}$ kg'a, yani yaklaşık $7{,}1\times10^{4}$ kat düşer.
+Bu, tek bir bünye modeli seçimine karşı çok güçlü bir duyarlılıktır. DC
+tek bir parametre konumunda tek bir anahtar olduğundan, gerçek cismin
+çekme dayanımını belirlemez ve diğer çekme yasalarını dışlamaz.
 
-\subsection{Çarpma yeri kayması}
+\subsection{Çarpma yeri kaymasının etkisi}
+
 Çarpma noktasının 25 m kaydırılması $\beta$'yı 3,7480'den 3,6650'ye
-(\%2,2) değiştirirken, model fırlatı kütlesini
-$1{,}964\times10^{7}$ kg'dan $2{,}321\times10^{7}$ kg'a (\%18) taşır. Koni
-açısı $85{,}2^{\circ}$'den $107{,}7^{\circ}$'ye, ortanca fırlatı zamanı
-$t_{50}$ 0,541 s'den 0,845 s'ye çıkar.
+(\%2,2) değiştirirken, model fırlatı kütlesini $1{,}964\times10^{7}$
+kg'dan $2{,}321\times10^{7}$ kg'a (\%18) taşır. Koni açısı
+$85{,}2^{\circ}$'den $107{,}7^{\circ}$'ye, ortanca fırlatı zamanı
+$t_{50}$ 0,541 s'den 0,845 s'ye çıkar. Yani neredeyse sabit bir $\beta$,
+bu denetimli çiftte belirgin biçimde farklı bir fırlatı alanıyla bir
+arada bulunabilmektedir.
 
-Yani \emph{neredeyse sabit bir} $\beta$, bu denetimli çiftte
-\emph{belirgin biçimde farklı} bir fırlatı alanıyla bir arada
-bulunabilmektedir. Bu, raporun en öğretici gözlemlerinden biridir: $\beta$
-tek başına fırlatı alanını belirlemez.
-
-$b$ üzerindeki karşılık gelen çarpma-yeri farkı 0,03019'dur; ön kayıtlı
+$b$ üzerindeki karşılık gelen çarpma yeri farkı 0,03019'dur; ön kayıtlı
 \emph{ihmal edilebilir} sınırı olan 0,03000'i 0,00019 aşmaktadır.
 
 \begin{sinir}
-Sınırı sonradan 0,031'e çekmek sonucu "ihmal edilebilir" yapardı. Kilitli
-protokol kuralı gereği eşik \emph{değiştirilmemiş}, sonuç kayıtlı
+Sınırı sonradan 0,031'e çekmek sonucu ``ihmal edilebilir'' yapardı.
+Kilitli protokol kuralı gereği eşik \emph{değiştirilmemiş}, sonuç kayıtlı
 sınıflandırmayla --- yani sınırı aşmış olarak --- raporlanmıştır. Kuralı
 sonuca göre ayarlamamak, bu projenin tek maddelik yöntem sözüdür.
 \end{sinir}
 
-\subsection{Ölçülen kaldıraçların sıralaması}
-Projenin en bilgilendirici tek grafiği, ölçülmüş bütün kaldıraçları $b$
-üzerinde tek bir logaritmik ölçeğe koyan Şekil~\ref{sek:duyarlilik}'tir.
+\subsection{Ölçülen etkilerin sıralaması}
+
+Ön kayıtlı bağıl fark terimleri Tablo~\ref{tab:fark}'ta verilmiştir.
+Şekil~\ref{sek:duyarlilik}, ölçülmüş bütün etkileri $b=\beta-1$ üzerinde
+tek bir logaritmik ölçeğe koyar.
+
+\begin{table}[h]
+\centering
+\caption{Ön kayıtlı bağıl fark terimleri ve seçenek model
+duyarlılıkları. Son iki satır Gauss gürültüsü değil, model seçimi
+karşıtlığıdır.}
+\label{tab:fark}
+\small
+\begin{tabular}{@{}lrl@{}}
+\toprule
+\textbf{Terim} & \textbf{Değer} & \textbf{Tür}\\
+\midrule
+Uzak alan çözünürlüğü     & 0,004 & fark terimi\\
+Hedef şekli               & 0,009 & fark terimi\\
+Gerçekleme (iki tohum)    & 0,013 & fark terimi\\
+Geç zaman platosu         & 0,016 & fark terimi\\
+Çarpma yeri               & 0,030 & fark terimi\\
+Yakın alan çözünürlüğü    & 0,053 & fark terimi (\emph{koda bağlanmamış})\\
+\addlinespace[2pt]
+Çarpıcı geometrisi        & 0,134 & seçenek model\\
+Matris çekme yasası       & 0,971 & seçenek model\\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.94\linewidth]{duyarlilik.pdf}
-\caption{$b=\beta-1$ üzerinde ölçülen her kaldıraç, tek logaritmik
-ölçekte, büyükten küçüğe. Mavi, çıkarımın öğrenmesi gereken bir
-koordinatı; kırmızı, bizim kararla sabitlediğimiz bir model seçimini
-gösterir. Yeşil şerit gözlemin $b$ üzerindeki kendi $1\sigma$
-genişliğidir; solunda kalan noktalar $\beta$'yı ölçümün ayırt
-edebileceğinden daha az oynatır. En büyük iki giriş, tek bir parametre
-konumundaki tek denetimli çiftlerden gelir: oradaki duyarlılığı
-sınırlarlar, küresel türev değildirler.}
+\caption{$b=\beta-1$ üzerinde ölçülen her etki, tek logaritmik ölçekte,
+büyükten küçüğe. Mavi, çıkarımın öğrenmesi gereken bir koordinatı;
+kırmızı, kararla sabitlenen bir model seçimini gösterir. Yeşil şerit
+gözlemin $b$ üzerindeki kendi $1\sigma$ genişliğidir; solunda kalan
+noktalar $\beta$'yı ölçümün ayırt edebileceğinden daha az oynatır. En
+büyük iki giriş tek parametre konumundaki tek denetimli çiftlerden gelir:
+oradaki duyarlılığı sınırlarlar, küresel türev değildirler.}
 \label{sek:duyarlilik}
 \end{figure}
-
-Ön kayıtlı bağıl fark terimleri şunlardır: 0,013 (gerçekleme), 0,004
-(uzak alan çözünürlüğü), 0,053 (yakın alan çözünürlüğü), 0,016 (geç zaman
-platosu), 0,009 (hedef şekli) ve 0,030 (çarpma yeri). Buna ek olarak
-0,134 (çarpıcı geometrisi) ve 0,971 (matris çekmesi), Gauss gürültüsü
-değil \emph{seçenek model} duyarlılıklarıdır.
 
 % =======================================================================
 \section{Sonuç ve Tartışma}
 
 \subsection{Üç denetimli bulgu}
-\textbf{Birincisi,} sabit bir DART sahnesinde, denenen bağdaşım
-değerleri boyunca hem momentum artırma katsayısı hem fırlatı kütlesi
-azalmaktadır. \textbf{İkincisi,} seçilen matris çekme anahtarı fazla
-momentumu \%97,1, model fırlatı istatistiğini ise yaklaşık
-$7{,}1\times10^{4}$ kat değiştirmektedir. \textbf{Üçüncüsü,} 25 m'lik bir
-çarpma yeri kayması $\beta$'yı yalnız \%2,2 değiştirirken fırlatı
-kütlesini, koni açısını ve ortanca fırlatı zamanını daha fazla
-değiştirmektedir. Bunlar model duyarlılıklarıdır; yeniden kurulmuş bir iç
-yapı değildir.
 
-\subsection{Rahatsız edici sıralama}
+\textbf{Birincisi,} sabit bir DART sahnesinde, denenen bağdaşım değerleri
+boyunca hem momentum artırma katsayısı hem fırlatı kütlesi azalmaktadır.
+Bu, Hipotez~2'nin ölçülebilirlik tarafını destekler.
+
+\textbf{İkincisi,} seçilen matris çekme anahtarı fazla momentumu \%97,1,
+model fırlatı istatistiğini ise yaklaşık $7{,}1\times10^{4}$ kat
+değiştirmektedir.
+
+\textbf{Üçüncüsü,} 25 m'lik bir çarpma yeri kayması $\beta$'yı yalnız
+\%2,2 değiştirirken fırlatı kütlesini, koni açısını ve ortanca fırlatı
+zamanını daha fazla değiştirmektedir. Bu, $\beta$'nın fırlatı alanını tek
+başına belirlemediğini gösterir.
+
+Bunlar model duyarlılıklarıdır; yeniden kurulmuş bir iç yapı değildir.
+
+\subsection{Sıralamanın anlamı}
+
 Şekil~\ref{sek:duyarlilik}'teki sıralama bu raporun en rahatsız edici
 kısmıdır ve bu yüzden gizlenmemiştir. $b$ üzerindeki \emph{en büyük}
 ölçülmüş etki, çıkarmaya çalıştığımız koordinatlardan biri değildir:
-0,971 ile matris çekme yasasıdır --- yani kararla sabitlediğimiz bir bünye
+0,971 ile matris çekme yasasıdır, yani kararla sabitlenen bir bünye
 seçimi. Bu değer, çıkarımın ayırt etmesi beklenen 10--5000 Pa'lık bütün
 bağdaşım açıklığını (0,682) aşmaktadır. Çarpıcı geometrisi de 0,134 ile
 gözlemin $b$ üzerindeki kendi $1\sigma$ genişliğinin üstündedir. Geri
 kalan dört seçim bu genişliğin altında kalır ve eldeki kanıta göre
 tartışmaya değmez.
 
-Bunun doğrudan sonucu şudur: $(\alpha_b, Y_0, f)$ üzerindeki bir
-posterior, ancak üstünde duran sabit seçimler kadar anlamlıdır. Rapor bu
-nedenle bir posterior sunmak yerine o seçimleri kayda geçirmektedir.
+Bu, Hipotez~2'yi doğrular: en az bir model seçiminin etkisi gözlemin
+belirsizliğinden büyüktür. Doğrudan sonucu şudur: $(\alpha_b, Y_0, f)$
+üzerindeki bir posterior, ancak üstünde duran sabit seçimler kadar
+anlamlıdır. Rapor bu nedenle bir posterior sunmak yerine o seçimleri
+kayda geçirmektedir.
 
-\subsection{Literatürle ilişki}
+\subsection{Literatürle karşılaştırma}
+
 Sahneye koşullu aradeğerlememiz olan 20,1 Pa, \citet{senel2025}'in
 türdeş 20--80 Pa aralığının alt kenarına düşmektedir. Bunu bir
 \emph{doğrulama} saymıyoruz. İki hesap koda, hedef geometrisine, boyut
 sayısına ve --- önemlisi --- içsel sürtünmeye göre farklıdır:
-\citet{senel2025} sürtünmeyi $\beta$ üzerinde güçlü bir kaldıraç olarak
+\citet{senel2025} sürtünmeyi $\beta$ üzerinde güçlü bir etken olarak
 bildirmekte ve türdeş aralığını $\mu_f=0{,}5$'te vermektedir; oysa
-Tablo~\ref{ciz:kosular}'deki her koşu $\mu_f=0{,}6$ kullanmaktadır.
-Farklı sürtünmelerde elde edilmiş iki sayının uyuşması rastlantı olabilir.
-Kendi sürtünme duyarlılığımızı henüz ölçmediğimiz için bu karşılaştırma
-bir \emph{tutarlılık notundan} ibarettir.
+Tablo~\ref{tab:kosular}'deki her koşu $\mu_f=0{,}6$ kullanmaktadır.
+Farklı sürtünmelerde elde edilmiş iki sayının uyuşması rastlantı
+olabilir. Kendi sürtünme duyarlılığımızı henüz ölçmediğimiz için bu
+karşılaştırma bir \emph{tutarlılık notundan} ibarettir.
 
 \citet{raducan2024}'un düşük yığın yoğunluğu ve ılımlı blok kesri
 sonucuyla sahnemizin kurulumu çelişmemektedir; ancak bu rapor cismin
 yoğunluğu üzerine bağımsız bir ölçüm sunmadığından, karşılaştırma yine
 yön bulma amaçlıdır.
 
-\subsection{Sınırlar ve iddia etmediklerimiz}
+\subsection{Geçerlilik sınırları}
+
 Projenin sınırları yapısaldır ve burada eksiksiz sayılmaktadır.
 
-\begin{enumerate}[leftmargin=7mm,itemsep=2pt,topsep=3pt]
+\begin{enumerate}[leftmargin=9mm,itemsep=2pt,topsep=3pt]
 \item \textbf{Üç noktalı uyum sahneye koşulludur.} Tek bir sabit sahnede
       üç noktadan geçirilmiştir ve dışına genellenemez.
 
 \item \textbf{Yakın alan fark terimi koda bağlanmamıştır.} Değer (0,053)
-      belgelidir, ama çalıştırılabilir sabiti hâlâ \texttt{nan}'dır ve kod
-      bu yapılandırmayı reddetmektedir. Bu bir yuvarlama ayrıntısı
-      değildir: $\sigma_{\text{model}}^2$ kareli terimlerin toplamı
+      belgelidir, ama çalıştırılabilir sabiti hâlâ \texttt{nan}'dır ve
+      kod bu yapılandırmayı reddetmektedir. Bu bir yuvarlama ayrıntısı
+      değildir: Denklem~\eqref{esit:sigma} kareli terimlerin toplamı
       olduğundan, ilan edilen değerler bu tek terimi varyansın
-      \%66,4'ü yapar. Terim olmadan $\sigma_{\text{model}}$ 0,0377,
-      varken 0,0650 okunur; yani onsuz verilen bir payda karşılaştırmayı
-      1,72 kat daraltırdı. Bu nedenle tam bir işletilebilir payda
+      \%66,4'ü yapar. Terim olmadan $\sigma_{\mathrm{model}}$ 0,0377,
+      varken 0,0650 okunur; onsuz verilen bir payda karşılaştırmayı 1,72
+      kat daraltırdı. Bu nedenle tam bir işletilebilir payda
       \emph{verilmemektedir}.
 
-\item \textbf{Yazılmış ama çağrılmamış modüller vardır.} Depo kusur kütüğü,
-      yazılmış, belgelenmiş ve birim sınavlarından geçmiş olduğu hâlde
-      üretim yolundan hiç çağrılmayan üç modül kaydetmektedir. Geçen bir
-      sınav takımı ile bağlanmış bir üretim yolu aynı özellik değildir ve
-      ikincisi için otomatik denetimimiz yoktur.
+\item \textbf{Yazılmış ama çağrılmamış modüller vardır.} Depo kusur
+      kütüğü, yazılmış, belgelenmiş ve birim sınavlarından geçmiş olduğu
+      hâlde üretim yolundan hiç çağrılmayan üç modül kaydetmektedir.
+      Geçen bir sınav takımı ile bağlanmış bir üretim yolu aynı özellik
+      değildir ve ikincisi için otomatik denetimimiz yoktur.
 
 \item \textbf{Gözlem eşleştirmesi tamamlanmamıştır.} LICIACube
       görüntülerinden kestirilen toz bulutu kütlesi
-      $(1{,}6\pm0{,}3)\times10^{7}$ kg, kamera görüş alanındaki kütle için
-      makul bir \emph{üst sınır} olarak bildirilmiştir \citep{lolachi2025};
-      bizim 600 s'deki model istatistiğimiz tanımı gereği aynı büyüklük
-      değildir. Ayrıca mevcut model $\beta$'sı çarpıcı momentumu boyunca
-      izdüşürülmekte, yörünge gözlemi ise Dimorphos'un yörünge hız
-      doğrultusunu ilgilendirmektedir. İki izdüşüm arasındaki açıyı
-      \emph{vermiyoruz}: birincil kaynaktan doğrulamadığımız yörünge
-      sabitlerinden çıkar.
+      $(1{,}6\pm0{,}3)\times10^{7}$ kg, kamera görüş alanındaki kütle
+      için makul bir \emph{üst sınır} olarak bildirilmiştir
+      \citep{lolachi2025}; 600 s'deki model istatistiğimiz tanımı gereği
+      aynı büyüklük değildir. Ayrıca mevcut model $\beta$'sı çarpıcı
+      momentumu boyunca izdüşürülmekte, yörünge gözlemi ise Dimorphos'un
+      yörünge hız doğrultusunu ilgilendirmektedir. İki izdüşüm
+      arasındaki açıyı \emph{vermiyoruz}: birincil kaynaktan
+      doğrulamadığımız yörünge sabitlerinden çıkar.
 
 \item \textbf{Kaçış eşiği ikiye ayrılmıştır.} Sahnenin kendi kütlesi ve
       etkin yarıçapından cismin kaçış hızı 0,0865 m\,s$^{-1}$ olarak
-      hesaplanmaktadır; ancak Didymos \emph{sisteminden} kaçış, ana
+      hesaplanmaktadır; ancak Didymos \emph{sisteminden} kaçış ana
       cismin kütlesine ve ayrıklığa bağlıdır ve bunlar birincil kaynaktan
-      doğrulanmamıştır. Dimorphos'tan kaçacak kadar hızlı malzeme ikiliye
-      bağlı kalıp geri dönebilir.
+      doğrulanmamıştır.
 
-\item \textbf{Krater tanısı geçersizdir.} Mevcut 600 s bitiş noktasındaki
-      krater derinliği, oturmuş bir son kratere fiziksel olarak
-      karşılık gelmemektedir.
+\item \textbf{Krater tanısı geçersizdir.} Mevcut 600 s bitiş
+      noktasındaki krater derinliği, oturmuş bir son kratere fiziksel
+      olarak karşılık gelmemektedir.
 
 \item \textbf{Yakınsama kanıtı yoktur.} Daha önceki tek bir çözünürlük
-      adımı farklı bir sahnede $\beta-1$ üzerinde \%5,34 ölçmüştür; bu bir
-      yakınsama kanıtı değildir.
+      adımı farklı bir sahnede $\beta-1$ üzerinde \%5,34 ölçmüştür; bu
+      bir yakınsama kanıtı değildir.
 \end{enumerate}
 
-\begin{sinir}
-\textbf{Bu raporda bulunmayanlar.} Üretim posterioru, $(\alpha_b, Y_0, f)$
-için herhangi bir nokta tahmini ya da güven aralığı, tanımlanabilir yön
-sayısının ölçülmüş değeri ve Hera için sayısal bir öngörü. Bunların
-hiçbiri sunulmamaktadır, çünkü Şekil~\ref{sek:kapilar}'deki kapılar henüz
-çalıştırılmamıştır. Kapılar veriden önce yazıldığı için, sonuç ne çıkarsa
-çıksın kuralı değiştirme imkânımız yoktur --- raporun bu bölümünün
-varlık sebebi budur.
-\end{sinir}
+\subsection{Amaca ne kadar ulaşıldı}
+
+Amaç bölümünde sayılan dört hedeften birinci, ikinci ve dördüncüsü
+tamamlanmıştır: ileri model kurulmuş ve doğrulanmış, denetimli
+duyarlılıklar ölçülmüş, karar kuralları veriden önce kilitlenmiştir.
+Üçüncü hedef --- gözlemin kaç yönü kısıtladığının ölçülmesi --- üretim
+havuzunun tamamlanmasını beklemektedir.
+
+\begin{bekleyen}
+\textbf{Bu raporda henüz bulunmayanlar.} Üretim posterioru,
+$(\alpha_b, Y_0, f)$ için herhangi bir nokta tahmini ya da güven aralığı,
+tanımlanabilir yön sayısı $n_{\text{yön}}$'ün ölçülmüş değeri ve Hera
+görevi için sayısal bir öngörü. Bunların hiçbiri sunulmamaktadır, çünkü
+Şekil~\ref{sek:kapilar}'deki kapılar henüz çalıştırılmamıştır. Kapılar
+veriden önce yazıldığı için, sonuç ne çıkarsa çıksın kuralı değiştirme
+imkânı yoktur; raporun bu bölümünün varlık sebebi budur.
+\end{bekleyen}
 
 % =======================================================================
 \section{Öneriler}
 
-Aşağıdaki adımlar, raporda sayılan sınırları doğrudan hedefler ve öncelik
-sırasıyla verilmiştir.
+Benzer çalışmalar yapacak olanlara ve bu projenin devamına yol göstermek
+üzere, öncelik sırasıyla:
 
-\begin{enumerate}[leftmargin=7mm,itemsep=2pt,topsep=3pt]
-\item \textbf{Sürtünme duyarlılığı ölçülmelidir.} $\mu_f=0{,}5$ ve
+\begin{enumerate}[leftmargin=9mm,itemsep=2pt,topsep=3pt]
+\item \textbf{Karar kurallarını veriden önce yazın.} Bu projenin en
+      yararlı tek uygulaması budur. Eşik sonuçtan sonra ayarlanabildiği
+      anda, sonuç artık veriden değil araştırmacıdan gelir.
+      Tablo~\ref{tab:kosular}'deki çarpma yeri farkının sınırı 0,00019
+      aşması, kuralın işlediğinin somut kanıtıdır.
+
+\item \textbf{Sürtünme duyarlılığını ölçün.} $\mu_f=0{,}5$ ve
       $\mu_f=0{,}6$ arasında denetimli bir çift koşu,
       \citet{senel2025} ile karşılaştırmanın şu anki en zayıf halkasını
-      ölçülebilir hâle getirir. Bu, tek bir denetimli çiftle kapatılabilen
-      en büyük boşluktur.
+      ölçülebilir hâle getirir. Tek bir denetimli çiftle kapatılabilen en
+      büyük boşluk budur.
 
-\item \textbf{Yakın alan fark terimi koda bağlanmalıdır.} \texttt{nan}
-      sabiti, kaynağı belgelenmiş bir değerle değiştirilmeden işletilebilir
-      bir olabilirlik paydası verilemez.
+\item \textbf{Model seçimlerini de duyarlılık listesine koyun.}
+      Şekil~\ref{sek:duyarlilik}, en büyük etkinin çıkarılan bir
+      parametre değil sabitlenen bir seçim olabileceğini göstermektedir.
+      Yalnız parametre duyarlılığı raporlayan bir çalışma bunu görmez.
 
-\item \textbf{Yörünge sabitleri birincil kaynaktan doğrulanmalıdır.}
-      Didymos kütlesi, yörünge yarıçapı ve dönem doğrulanmadan ne izdüşüm
-      açısı ne de sistemden kaçış ölçütü hesaplanabilir.
+\item \textbf{Geçen sınav takımını bağlanmış kod sanmayın.} Bu projede
+      üç modül yazılmış, belgelenmiş ve sınanmış olduğu hâlde üretim
+      yolundan hiç çağrılmamıştır. Birim sınavı bir çağrı denetimi
+      değildir.
 
-\item \textbf{Çözünürlük, sınırlı bütçeli bir levha yamasıyla
-      sınanmalıdır.} Tam cisimde yakınsama taraması bütçeye sığmadığından,
-      analitik levha testiyle kapılanmış ayrı bir çözünürlük çalışması
-      planlanmıştır; bu çalışmanın yazılı yasağı, sonucunun tam cisme
-      aktarıldığını iddia etmemektir.
+\item \textbf{Birincil kaynak doğrulaması yapılmadan türetilmiş sabit
+      kullanmayın.} Yörünge sabitleri doğrulanmadan ne izdüşüm açısı ne
+      de sistemden kaçış ölçütü hesaplanabilir.
 
-\item \textbf{Üretim havuzu okunmalı ve kapılar sırayla çalıştırılmalıdır.}
-      Havuz tamamlandığında, bu rapordaki hiçbir eşik değiştirilmeden
-      Şekil~\ref{sek:kapilar}'deki sıra izlenecek ve sonuç --- posterior,
-      daha geniş bir eşleşme bölgesi, ya da hiçbiri --- olduğu gibi
-      yazılacaktır.
-
-\item \textbf{Hera karşılaştırması zamana göre planlanmalıdır.} Avrupa
-      Uzay Ajansı Hera'nın Didymos sistemine Kasım 2026'da varacağını
-      bildirmektedir \citep{esaArrival}. Ancak varış ölçüm, ölçüm de
+\item \textbf{Hera karşılaştırmasını takvime göre planlayın.} Avrupa
+      Uzay Ajansı, Hera'nın Didymos sistemine Kasım 2026'da varacağını
+      bildirmektedir \citep{esaHera}. Ancak varış ölçüm, ölçüm de
       yayımlanmış bir sayı demek değildir: DART'ın kendisi, çarpmadan
       yaklaşık iki hafta sonra yörünge dönemi sonucunu, momentum aktarım
       makalelerini ise bundan yaklaşık beş ay sonra vermiştir
       \citep{cheng2023}. Mühürlü bir öngörünün saati her büyüklük için
-      ayrı işler ve hepsi varış tarihinden uzundur.
+      ayrı işler.
 \end{enumerate}
 
 % =======================================================================
-\section*{Teşekkür}
-Hesaplamalar, TÜBİTAK ULAKBİM Yüksek Başarımlı ve Grid Hesaplama Merkezi
-(TRUBA) kaynaklarında yürütülmüştür.
-
-% =======================================================================
-\begin{singlespace}
-\small
 \begin{thebibliography}{99}
 \raggedright
-\setlength{\itemsep}{1.5pt}
+\setlength{\itemsep}{2pt}
 
 \bibitem[Bachoc(2013)]{bachoc2013}
 Bachoc, F. (2013). Cross validation and maximum likelihood estimations of
@@ -625,22 +899,21 @@ particle hydrodynamics. \emph{Computer Physics Communications}, 87(1--2),
 
 \bibitem[Carroll ve Holt(1972)]{carroll1972}
 Carroll, M. M. ve Holt, A. C. (1972). Static and dynamic pore-collapse
-relations for ductile porous materials. \emph{Journal of Applied Physics},
-43(4), 1626--1636.
+relations for ductile porous materials. \emph{Journal of Applied
+Physics}, 43(4), 1626--1636.
 
 \bibitem[Cheng ve ark.(2023)]{cheng2023}
-Cheng, A. F. ve ark. (2023). Momentum transfer from the DART mission
-kinetic impact on asteroid Dimorphos. \emph{Nature}, 616, 457--460.
-\url{https://doi.org/10.1038/s41586-023-05878-z}
+Cheng, A. F., Agrusa, H. F., Barbee, B. W. ve ark. (2023). Momentum
+transfer from the DART mission kinetic impact on asteroid Dimorphos.
+\emph{Nature}, 616, 457--460.
 
 \bibitem[Daly ve ark.(2023)]{daly2023}
-Daly, R. T. ve ark. (2023). Successful kinetic impact into an asteroid for
-planetary defence. \emph{Nature}, 616, 443--447.
-\url{https://doi.org/10.1038/s41586-023-05810-5}
+Daly, R. T., Ernst, C. M., Barnouin, O. S. ve ark. (2023). Successful
+kinetic impact into an asteroid for planetary defence. \emph{Nature},
+616, 443--447.
 
-\bibitem[ESA(2026)]{esaArrival}
-Avrupa Uzay Ajansı (2026). \emph{ESA's Hera targets early arrival at
-Didymos asteroids}. Erişim: 10 Ekim 2026.
+\bibitem[ESA(2026)]{esaHera}
+Avrupa Uzay Ajansı (2026). \emph{Hera}. Erişim tarihi: 10.10.2026,
 \url{https://www.esa.int/Space_Safety/Hera}
 
 \bibitem[Grady ve Kipp(1980)]{gradykipp1980}
@@ -649,43 +922,39 @@ fracture in oil shale. \emph{International Journal of Rock Mechanics and
 Mining Sciences}, 17(3), 147--157.
 
 \bibitem[Jutzi ve ark.(2008)]{jutzi2008}
-Jutzi, M., Benz, W. ve Michel, P. (2008). Numerical simulations of impacts
-involving porous bodies I. Implementing sub-resolution porosity in a 3D
-SPH hydrocode. \emph{Icarus}, 198(1), 242--255.
+Jutzi, M., Benz, W. ve Michel, P. (2008). Numerical simulations of
+impacts involving porous bodies I. Implementing sub-resolution porosity
+in a 3D SPH hydrocode. \emph{Icarus}, 198(1), 242--255.
 
 \bibitem[Kennedy ve O'Hagan(2000)]{kennedy2000}
-Kennedy, M. C. ve O'Hagan, A. (2000). Predicting the output from a complex
-computer code when fast approximations are available. \emph{Biometrika},
-87(1), 1--13.
+Kennedy, M. C. ve O'Hagan, A. (2000). Predicting the output from a
+complex computer code when fast approximations are available.
+\emph{Biometrika}, 87(1), 1--13.
 
 \bibitem[Lolachi ve ark.(2025)]{lolachi2025}
-Lolachi, R. ve ark. (2025). Ejecta mass estimates from the DART impact
-plume inferred from LICIACube images. \emph{The Planetary Science
-Journal}, 6, 199. \url{https://doi.org/10.3847/PSJ/adec6b}
+Lolachi, R., Glenar, D. A., Stubbs, T. J. ve ark. (2025). Ejecta mass
+estimates from the DART impact plume inferred from LICIACube images.
+\emph{The Planetary Science Journal}, 6, 199.
 
 \bibitem[Lundborg(1968)]{lundborg1968}
 Lundborg, N. (1968). Strength of rock-like materials.
 \emph{International Journal of Rock Mechanics and Mining Sciences}, 5(5),
 427--454.
 
-\bibitem[Macklin(2022)]{macklin2022}
-Macklin, M. (2022). \emph{Warp: A high-performance Python framework for
-GPU simulation and graphics}. NVIDIA.
-
 \bibitem[Monaghan(1992)]{monaghan1992}
 Monaghan, J. J. (1992). Smoothed particle hydrodynamics. \emph{Annual
 Review of Astronomy and Astrophysics}, 30, 543--574.
 
 \bibitem[Raducan ve ark.(2024)]{raducan2024}
-Raducan, S. D. ve ark. (2024). Physical properties of asteroid Dimorphos
-as derived from the DART impact. \emph{Nature Astronomy}, 8, 445--455.
-\url{https://doi.org/10.1038/s41550-024-02200-3}
+Raducan, S. D., Jutzi, M., Cheng, A. F. ve ark. (2024). Physical
+properties of asteroid Dimorphos as derived from the DART impact.
+\emph{Nature Astronomy}, 8, 445--455.
 
 \bibitem[Senel ve ark.(2025)]{senel2025}
-Senel, C. ve ark. (2025). DART-scale impacts into a complex low-strength
-target: Insights into asteroid Dimorphos's interior from simulations.
-\emph{The Planetary Science Journal}, 6, 157.
-\url{https://doi.org/10.3847/PSJ/addf31}
+Senel, C. B., Kegerreis, J. A., Temel, O. ve ark. (2025). DART-scale
+impacts into a complex low-strength target: Insights into asteroid
+Dimorphos's interior from simulations. \emph{The Planetary Science
+Journal}, 6, 157.
 
 \bibitem[Talts ve ark.(2018)]{talts2018}
 Talts, S., Betancourt, M., Simpson, D., Vehtari, A. ve Gelman, A. (2018).
@@ -694,7 +963,7 @@ arXiv:1804.06788.
 
 \bibitem[Tillotson(1962)]{tillotson1962}
 Tillotson, J. H. (1962). \emph{Metallic equations of state for
-hypervelocity impact} (Rapor No. GA-3216). General Atomic.
+hypervelocity impact} (Rapor No. GA-3216). General Atomic, San Diego.
 
 \bibitem[Vernon ve ark.(2014)]{vernon2014}
 Vernon, I., Goldstein, M. ve Bower, R. G. (2014). Galaxy formation:
@@ -702,11 +971,27 @@ Bayesian history matching for the observable universe. \emph{Statistical
 Science}, 29(1), 81--90.
 
 \bibitem[Wendland(1995)]{wendland1995}
-Wendland, H. (1995). Piecewise polynomial, positive definite and compactly
-supported radial functions of minimal degree. \emph{Advances in
+Wendland, H. (1995). Piecewise polynomial, positive definite and
+compactly supported radial functions of minimal degree. \emph{Advances in
 Computational Mathematics}, 4(1), 389--396.
 
 \end{thebibliography}
-\end{singlespace}
+
+% =======================================================================
+\section*{Ekler}
+
+\noindent\textbf{Ek 1. Kaynak kod ve ölçüm kayıtları.} Benzetim motoru,
+kilitli protokol belgeleri, karar kayıtları ve bu raporda geçen her
+sayısal değerin üretildiği ölçüm dosyaları açık depoda yer almaktadır:
+\url{https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift}
+
+\noindent\textbf{Ek 2. Şekillerin üretimi.} Raporun bütün şekilleri vektör
+olarak, veriden doğrudan üretilmiştir; hiçbir şekil elle çizilmemiştir.
+Malzeme modeli eğrileri (Şekil~\ref{sek:cekirdek} ve
+Şekil~\ref{sek:malzeme}) benzetim kodunun kendi formüllerinden
+hesaplanmıştır.
+
+\noindent\textbf{Ek 3. Hesaplama altyapısı.} Koşular TÜBİTAK ULAKBİM
+TRUBA kaynaklarındaki NVIDIA H100 GPU'larda yürütülmüştür.
 
 \end{document}

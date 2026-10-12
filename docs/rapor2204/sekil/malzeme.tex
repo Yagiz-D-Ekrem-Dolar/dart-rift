@@ -1,0 +1,137 @@
+% Çıkarım koordinatları fiziğe NEREDEN giriyor?
+% (a) Lundborg akma yüzeyi: Y0 yalnız DÜŞÜK basınçta ayırt edilebiliyor.
+% (b) P-alpha ezilme eğrisi: alpha_b bloğun ne kadar sıkışabileceğini
+%     belirliyor.
+% Eğriler elle çizilmedi; veri kodun kendi formülünden üretildi
+% (scripts/rapor2204_veri.py -> veri/lundborg.dat, veri/crush.dat).
+% `docs/rapor2204` içinden derle:  lualatex sekil/malzeme.tex
+\documentclass[border=4pt,tikz]{standalone}
+\input{sekil/ortak.tex}
+\usepackage[outline]{contour}
+\contourlength{1.1pt}
+\tikzset{>=latex}
+
+\colorlet{ink}{black!82}
+\colorlet{dusuk}{blue!55!cyan!78!black}   % Y0 = 10 Pa
+\colorlet{orta}{violet!60!black}          % Y0 = 500 Pa
+\colorlet{yuksek}{vurgu}                  % Y0 = 5000 Pa
+\colorlet{matriscol}{koyu!55}
+
+\pgfplotstableread{veri/lundborg.dat}\lund
+\pgfplotstableread{veri/crush.dat}\crush
+
+\begin{document}
+\begin{tikzpicture}[font=\footnotesize]
+
+% ===================== (a) akma yüzeyi =================================
+\begin{axis}[
+  name=panA,
+  width=66mm, height=50mm,
+  xmode=log, ymode=log,
+  xmin=1e1, xmax=1e11, ymin=5, ymax=2e10,
+  xlabel={basınç $P$\:[Pa]},
+  ylabel={akma dayanımı $Y$\:[Pa]},
+  xtick={1e2,1e5,1e8,1e11},
+  xticklabels={$10^{2}$,$10^{5}$,$10^{8}$,$10^{11}$},
+  ytick={1e1,1e3,1e5,1e7,1e9},
+  yticklabels={$10$,$10^{3}$,$10^{5}$,$10^{7}$,$10^{9}$},
+  axis line style={draw=ink!65}, tick style={draw=ink!65},
+  ticklabel style={scale=0.86, text=ink!80},
+  label style={scale=0.9, text=ink},
+  title={(a) akma yüzeyi: $Y_0$ nereye giriyor},
+  title style={scale=0.95, text=ink, yshift=2pt},
+  axis on top=false,
+]
+  % Üç eğrinin pratikte ayrışamaz hâle geldiği bölge.
+  \fill[ink!7] (axis cs:1e5,5) rectangle (axis cs:1e11,2e10);
+  \node[scale=0.76, text=ink!60, anchor=south east, align=right, inner sep=3pt]
+       at (axis cs:0.9e11,8)
+       {\contour{ink!7}{üç eğri ayrışamaz}\\[-1pt]
+        \contour{ink!7}{(fark $<\%1$)}};
+
+  % YM doygunluk tavanı
+  \draw[densely dashed, ink!45, line width=0.45pt]
+       (axis cs:1e1,1.5e9) -- (axis cs:1e11,1.5e9);
+  % Sağa alındı: sol üst köşede eksen çerçevesine giriyordu.
+  \node[scale=0.76, text=ink!65, anchor=south west, inner sep=2pt]
+       at (axis cs:2e1,1.75e9) {doygunluk $Y_M=1{,}5\times10^{9}$ Pa};
+
+  \addplot[yuksek, line width=0.9pt] table[x=P, y=Y5000] {\lund};
+  \addplot[orta,   line width=0.9pt] table[x=P, y=Y500]  {\lund};
+  \addplot[dusuk,  line width=0.9pt] table[x=P, y=Y10]   {\lund};
+
+  % P -> 0 sınırında Y = Y0: çıkarımın tuttuğu yer tam burası.
+  % Üçü elle yazıldı: \foreach döngü değişkeni renk seçeneği olarak
+  % geçirilince pgfkeys onu anahtar adı sanıyor. Ayrıca \c döngü değişkeni
+  % olarak KULLANILAMAZ — LaTeX'in sedilla komutudur, Türkçe "ç" patlar.
+  \fill[yuksek] (axis cs:1e1,5000) circle (1.4pt);
+  \fill[orta]   (axis cs:1e1,500)  circle (1.4pt);
+  \fill[dusuk]  (axis cs:1e1,10)   circle (1.4pt);
+  % Etiketler eğrilerin üstüne düştüğü için beyaz konturlu.
+  \node[scale=0.8, text=yuksek, anchor=west, inner sep=3pt]
+       at (axis cs:1.5e1,6400) {\contour{white}{$Y_0=5000$ Pa}};
+  \node[scale=0.8, text=orta, anchor=west, inner sep=3pt]
+       at (axis cs:1.5e1,520) {\contour{white}{$500$}};
+  \node[scale=0.8, text=dusuk, anchor=west, inner sep=3pt]
+       at (axis cs:1.5e1,9) {\contour{white}{$10$}};
+
+  % Eğim etiketi. Açı ölçekten: 10 ondalık 66 mm'ye, 9,6 ondalık 50 mm'ye
+  % düşüyor; log-log'da 1 eğimli doğru atan(5,2/6,6) = 38 derece görünür.
+  \node[scale=0.78, text=ink!70, anchor=south west, inner sep=2pt,
+        rotate=38] at (axis cs:1.2e5,1.1e5)
+       {\contour{white}{eğim $\mu_f=0{,}6$}};
+\end{axis}
+
+% ===================== (b) ezilme eğrisi ===============================
+\begin{axis}[
+  name=panB,
+  at={($(panA.east)+(21mm,0)$)}, anchor=west,
+  width=66mm, height=50mm,
+  xmode=log,
+  xmin=1e4, xmax=1e9, ymin=0.97, ymax=1.62,
+  xlabel={basınç $P$\:[Pa]},
+  ylabel={distansiyon $\alpha=\rho_s/\rho$},
+  xtick={1e4,1e5,1e6,1e7,1e8,1e9},
+  xticklabels={$10^{4}$,,$10^{6}$,,$10^{8}$,},
+  ytick={1.0,1.1,1.2,1.3,1.4,1.5,1.6},
+  yticklabels={$1{,}0$,$1{,}1$,$1{,}2$,$1{,}3$,$1{,}4$,$1{,}5$,},
+  axis line style={draw=ink!65}, tick style={draw=ink!65},
+  ticklabel style={scale=0.86, text=ink!80},
+  label style={scale=0.9, text=ink},
+  title={(b) ezilme eğrisi: $\alpha_b$ nereye giriyor},
+  title style={scale=0.95, text=ink, yshift=2pt},
+  axis on top=false,
+]
+  % Pe ve Ps eşikleri
+  \draw[densely dashed, ink!45, line width=0.45pt]
+       (axis cs:1e6,0.97) -- (axis cs:1e6,1.62);
+  \draw[densely dashed, ink!45, line width=0.45pt]
+       (axis cs:1e8,0.97) -- (axis cs:1e8,1.62);
+  \node[scale=0.76, text=ink!65, anchor=south, inner sep=2pt]
+       at (axis cs:1e6,1.555) {\contour{white}{$P_e$}};
+  \node[scale=0.76, text=ink!65, anchor=south, inner sep=2pt]
+       at (axis cs:1e8,1.555) {\contour{white}{$P_s$}};
+
+  \addplot[matriscol, line width=0.9pt, densely dashdotted]
+    table[x=P, y=matris] {\crush};
+  \addplot[yuksek, line width=0.9pt] table[x=P, y=ab130] {\crush};
+  \addplot[orta,   line width=0.9pt] table[x=P, y=ab115] {\crush};
+  \addplot[dusuk,  line width=0.9pt] table[x=P, y=ab100] {\crush};
+
+  \node[scale=0.8, text=matriscol, anchor=west, inner sep=3pt]
+       at (axis cs:1.3e4,1.52) {matris, $\alpha_0=1{,}5$};
+  \node[scale=0.8, text=yuksek, anchor=west, inner sep=3pt]
+       at (axis cs:1.3e4,1.325) {$\alpha_b=1{,}30$};
+  \node[scale=0.8, text=orta, anchor=west, inner sep=3pt]
+       at (axis cs:1.3e4,1.175) {$1{,}15$};
+  \node[scale=0.8, text=dusuk, anchor=west, inner sep=3pt]
+       at (axis cs:1.3e4,1.025) {$1{,}00$ (gözeneksiz)};
+
+  \node[scale=0.76, text=ink!65, anchor=north east, align=right, inner sep=3pt]
+       at (axis cs:0.9e9,1.60)
+       {\contour{white}{$P_s$ üstünde boşluk}\\[-1pt]
+        \contour{white}{tümüyle kapanır}};
+\end{axis}
+
+\end{tikzpicture}
+\end{document}

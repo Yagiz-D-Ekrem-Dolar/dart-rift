@@ -8,6 +8,13 @@
 % sessizce ayrışması demek olurdu.
 \newcommand{\VERI}{../preprint/veri}
 
+% Şekil yazısı GÖVDE METNİYLE aynı olmalı: rapor Times (newtxtext), şekiller
+% Computer Modern kalırsa sayfada iki ayrı yazı tipi görünür ve şekil
+% "dışarıdan yapıştırılmış" durur. Dergi şekillerini amatör çizimden ayıran
+% ilk şey budur.
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+
 \usepackage{tikz}
 \usepackage{pgfplots}
 \usepackage{pgfplotstable}
