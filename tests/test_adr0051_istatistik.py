@@ -3,6 +3,7 @@ kaynaklı model eksikliği, Daly 2023 sabitleri."""
 from __future__ import annotations
 
 from dataclasses import dataclass
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -215,8 +216,25 @@ def test_yerel_jakobyen_ic_ve_sinir():
 
 # ------------------------------------------------ kaynaklı model eksikliği
 def test_kaynakli_eksiklik_OLCULMEMIS_terimde_HATA():
-    with pytest.raises(ValueError, match="OLCULMEDI"):
-        H.model_eksikligi_kaynakli(2.0, ["cozunurluk_yakin"])
+    # 2026-10-13: bu sinav ornek olarak `cozunurluk_yakin` kullaniyordu.
+    # O terim UY2 arsivinden baglaninca (0,053438) sinav DUSTU -- amaci
+    # dogruydu, ORNEGI bayatlamisti. Artik ornek SABIT YAZILMAZ: tabloda
+    # o an `nan` olan bir terim bulunur. Boylece her yeni olcum
+    # baglandiginda sinav kendiliginde guncel kalir ve bir daha
+    # "yanlis sebeple kirmizi" olmaz.
+    olculmemis = [ad for ad, (s, _) in H.MODEL_EKSIKLIGI_KAYNAKLI.items()
+                  if not np.isfinite(s)]
+    if olculmemis:
+        with pytest.raises(ValueError, match="OLCULMEDI"):
+            H.model_eksikligi_kaynakli(2.0, [olculmemis[0]])
+    else:
+        # Her terim olculduyse koruma yine de calismali: gecici bir
+        # `nan` girdiyle sinanir, tablo degistirilmez.
+        tablo = dict(H.MODEL_EKSIKLIGI_KAYNAKLI)
+        tablo["_sinav_nan"] = (float("nan"), "yalniz sinav icin")
+        with mock.patch.object(H, "MODEL_EKSIKLIGI_KAYNAKLI", tablo), \
+                pytest.raises(ValueError, match="OLCULMEDI"):
+            H.model_eksikligi_kaynakli(2.0, ["_sinav_nan"])
     with pytest.raises(ValueError):
         H.model_eksikligi_kaynakli(2.0, [])
     r = H.model_eksikligi_kaynakli(2.0, ["cozunurluk_uzak", "carpma_yeri"])

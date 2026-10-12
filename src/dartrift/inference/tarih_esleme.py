@@ -117,7 +117,21 @@ _NAN = float("nan")
 
 MODEL_EKSIKLIGI_KAYNAKLI = {
     "cozunurluk_uzak": (0.004, "UA: Delta(3,5 m; 7 m), S_UA.json (KAYIT-067)"),
-    "cozunurluk_yakin": (_NAN, "PROTOKOL-UY kosuyor (1569287_0/1)"),
+    # OLCULDU (2026-09-29, KAYIT-071): eski satir "PROTOKOL-UY kosuyor
+    # (1569287_0/1)" idi ve `_NAN` tutuyordu. Kosu 19-20 Eylul'de BITTI,
+    # indirgeme 29 Eylul'de yapildi, deger arsivlendi -- ama koda hic
+    # BAGLANMADI (A116 deseni). PROTOKOL-HAVUZ §106 uretim paydasinda bu
+    # terimi ILAN ETTIGI icin, uretim posterioru ilk cagrida
+    # `ValueError: cozunurluk_yakin henuz OLCULMEDI` ile duserdi.
+    #
+    # Deger UY2 KESISIM olcumunun `delta_kesisim` alanidir:
+    # Delta(orta; kaba), URETIM gecis aninda (t_gecis = 1,0 s), t_kiyas
+    # 300 s. UY'nin 0,098'i t_gecis = 0,2 s'teydi ve uretim ayari degil.
+    # Yargi "AZALIYOR" -> uretim merdiveni "kaba + cok dogruluklu".
+    "cozunurluk_yakin": (0.053438,
+                         "UY2 kesisim: Delta(orta; kaba), t_gecis=1,0 s; "
+                         "docs/olcumler/UY2_DY_2026-09-29/S_UY2.json "
+                         "delta_kesisim (KAYIT-071)"),
     "gecis_ani": (_NAN, "PROTOKOL-UG kosuyor (1569287_2/3); W2'de 0,2 -> 1,0 s +%9-15"),
     "kod_kiyasi": (_NAN, "uretim t_gecis'inde W2/UG kolundan kod_kiyasi_olc ile; "
                          "0,2 s'de 0,16 (L1'e 0,82-0,87)"),
