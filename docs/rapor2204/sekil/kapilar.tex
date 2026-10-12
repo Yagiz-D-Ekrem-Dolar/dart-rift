@@ -1,0 +1,85 @@
+% Ön kayıtlı karar kapıları. Bu sayfadaki her eşik, ilgili veri daha
+% ortada yokken yazıldı, depoya işlendi ve tarih damgası aldı.
+% `docs/rapor2204` içinden derle:  lualatex sekil/kapilar.tex
+%
+% Gömülü altyazı bilerek kaldırıldı: rapor içinde altyazıyı LaTeX veriyor,
+% ikisi birden olunca altyazı iki kez yazılmış gibi görünüyor.
+\documentclass[border=5pt]{standalone}
+\input{sekil/ortak.tex}
+\usetikzlibrary{shapes.geometric,decorations.pathmorphing}
+
+\begin{document}
+\begin{tikzpicture}[
+    font=\footnotesize,
+    >={Stealth[length=1.9mm,width=1.4mm]},
+    islem/.style={
+      draw=koyu!55, line width=0.45pt, fill=white,
+      rounded corners=1.2pt, align=center, inner sep=3.2pt,
+      text width=27mm, minimum height=10mm, font=\scriptsize},
+    kapi/.style={
+      draw=vurgu, line width=0.7pt, fill=vurgu!7,
+      rounded corners=1.2pt, align=center, inner sep=3.2pt,
+      text width=27mm, minimum height=10mm, font=\scriptsize},
+    muhur/.style={
+      draw=kabuk, line width=0.9pt, fill=kabuk!10,
+      rounded corners=1.2pt, align=center, inner sep=3.2pt,
+      text width=27mm, minimum height=10mm, font=\scriptsize},
+    ok/.style={->, draw=koyu!55, line width=0.5pt},
+    dus/.style={->, draw=vurgu!85, line width=0.5pt, densely dashed},
+    dusyazi/.style={font=\scriptsize, text=vurgu!90, align=center,
+                    inner sep=1.5pt},
+    kaynak/.style={font=\tiny, text=koyu!45, inner sep=1pt},
+  ]
+
+\def\dx{34mm} \def\dy{26mm}
+
+% ===== 1. sıra ==========================================================
+\node[islem] (havuz) at (0,0)
+  {\textbf{Havuz}\\$96$ nokta, $7{,}0$ m\\$480$ GPU$\cdot$sa};
+\node[kapi, right=\dx-27mm of havuz] (g1)
+  {\textbf{Kapı 1}\\kayıp koşu $\leq \%20$};
+\node[islem, right=\dx-27mm of g1] (vekil)
+  {\textbf{Vekil}\\GP $+$ Bachoc ÇD\\$+\,12$ ince nokta};
+\node[kapi, right=\dx-27mm of vekil] (g2)
+  {\textbf{Kapı 2}\\çok doğruluk:\\iç içe, $\rho$ içeride,\\$E_{\rm CD}<E_\Sigma$};
+\node[islem, right=\dx-27mm of g2] (post)
+  {\textbf{Posterior}\\$+$ tanımlanabilirlik\\$n_{\rm yön}\in\{0,1,2,3\}$};
+
+\foreach \a/\b in {havuz/g1, g1/vekil, vekil/g2, g2/post}
+  {\draw[ok] (\a) -- (\b);}
+
+% ===== 2. sıra (sağdan sola) ===========================================
+\node[kapi, below=\dy-10mm of post] (g3)
+  {\textbf{Kapı 3}\\eksen başına SBC:\\kalibre ya da\\tutucu};
+\node[kapi, left=\dx-27mm of g3] (g4)
+  {\textbf{Kapı 4}\\öncel kayması\\$\leq 0{,}50$ dek};
+\node[kapi, left=\dx-27mm of g4] (g5)
+  {\textbf{Kapı 5}\\tarih eşleme\\uyuyor, $I>3$ kesme};
+\node[muhur, left=\dx-27mm of g5] (muhur)
+  {\textbf{Mühürlü Hera}\\\textbf{öngörüsü}\\krater, dönme,\\yoğunluk, şekil};
+
+\draw[ok] (post) -- (g3);
+\foreach \a/\b in {g3/g4, g4/g5, g5/muhur} {\draw[ok] (\a) -- (\b);}
+
+% ===== düşme dalları ====================================================
+\foreach \n/\t in {%
+  g1/{$>\%20$: havuz yinelenir},
+  g2/{düşerse: başlık sonuç\\$\sigma$ şişirmeli yolda kalır}}
+  {\draw[dus] (\n.north) -- ++(0,5mm);
+   \node[dusyazi, above=5mm of \n.north] {\t};}
+
+\foreach \n/\t in {%
+  g3/{\textsc{yanlı}: posterior\\\textbf{yayımlanmaz}},
+  g4/{$>0{,}50$ dek: $Y_0$ için\\nokta değer verilmez},
+  g5/{çelişki: iki bölge de\\yayımlanmaz}}
+  {\draw[dus] (\n.south) -- ++(0,-5mm);
+   \node[dusyazi, below=5mm of \n.south] {\t};}
+
+% ===== kaynak ===========================================================
+\node[kaynak, below=1.5mm of havuz] {PROTOKOL-HAVUZ \S3};
+\node[kaynak, above=1.5mm of vekil] {ADR-0058, ADR-0059};
+\node[kaynak, above=1.5mm of post] {ADR-0051, PROTOKOL-UP \S3};
+\node[kaynak, below=1.5mm of muhur] {PROTOKOL-HT, PROTOKOL-SI};
+
+\end{tikzpicture}
+\end{document}

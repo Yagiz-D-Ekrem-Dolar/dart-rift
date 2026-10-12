@@ -1,0 +1,115 @@
+% Çıkarım hedefi, ekvator düzleminde (z = 0) kesilmiş.
+% Yalnız çizgi işi: alt yarı için tel kafes, iç yapı için dolu kesit yüzü.
+% Her sayı `../preprint/veri/`den okunur — bkz. scripts/onkayit_veri.py.
+% `docs/rapor2204` içinden derle:  lualatex sekil/hedef.tex
+\documentclass[border=5pt]{standalone}
+\input{sekil/ortak.tex}
+\usepackage{tikz-3dplot}
+
+\input{\VERI/carpma.tex}
+\pgfplotstableread{\VERI/blok_kesit_z0.dat}\blokkesit
+
+% `etiket` biçemi ortak.tex'te \footnotesize sabitliyor ve resim düzeyindeki
+% font ayarını eziyor; bu şekle özel olarak büyütülür (yukarıdaki gerekçe).
+\tikzset{etiket/.style={inner sep=1pt, font=\Large}}
+
+\tdplotsetmaincoords{64}{28}
+% 88,5 m -> 7 cm, yani 177 m'lik cisim sayfada ~14 cm yer kaplar.
+\pgfmathsetmacro{\olcek}{7.0/88.5}
+
+\begin{document}
+% Yazı tipi ön baskıdakinden büyük (\footnotesize -> \Large): bu şekil
+% doğal olarak 244 mm genişliğinde ve A4 tek kolonda 0,64 kat KÜÇÜLTÜLEREK
+% basılıyor, o oranda \footnotesize gövde metninin yanında ~5 pt'ye düşüyordu.
+\begin{tikzpicture}[font=\Large, >={Stealth[length=2.2mm,width=1.6mm]}]
+\begin{scope}[tdplot_main_coords, scale=\olcek]
+
+\def\A{88.5} \def\B{87.0} \def\C{58.0}
+
+% ---------- 1. alt yarının tel kafesi (z <= 0) --------------------------
+\foreach \v in {15,32,50,70}{%
+  \draw[draw=tel, line width=2.0pt, opacity=0.38]
+    plot[variable=\t, domain=0:360, samples=120, smooth cycle]
+    ({\A*cos(\v)*cos(\t)}, {\B*cos(\v)*sin(\t)}, {-\C*sin(\v)});
+}
+\foreach \u in {0,30,...,330}{%
+  \draw[draw=tel, line width=2.0pt, opacity=0.38]
+    plot[variable=\t, domain=0:90, samples=48, smooth]
+    ({\A*cos(\t)*cos(\u)}, {\B*cos(\t)*sin(\u)}, {-\C*sin(\t)});
+}
+
+% ---------- 2. kesit yüzü, opak: arkasındaki kafesi gizler -------------
+\draw[fill=yuzey, draw=koyu, line width=3.0pt]
+  plot[variable=\t, domain=0:360, samples=180, smooth cycle]
+  ({\A*cos(\t)}, {\B*sin(\t)}, 0);
+
+% ---------- 3. kesit düzleminin kestiği bloklar ------------------------
+% Gölgeli, yassı değil: bunlar kürelerden alınmış dilimler ve düz dolgu
+% onları gözleme gibi gösteriyordu.
+\pgfplotstablegetrowsof{\blokkesit}
+\pgfmathtruncatemacro{\nb}{\pgfplotsretval-1}
+\foreach \i in {0,...,\nb}{%
+  \pgfplotstablegetelem{\i}{x}\of\blokkesit \let\bx\pgfplotsretval
+  \pgfplotstablegetelem{\i}{y}\of\blokkesit \let\by\pgfplotsretval
+  \pgfplotstablegetelem{\i}{r}\of\blokkesit \let\br\pgfplotsretval
+  \shadedraw[inner color=blokic, outer color=blokdis,
+             draw=koyu!65, line width=2.6pt]
+    plot[variable=\t, domain=0:360, samples=90, smooth cycle]
+    ({\bx+\br*cos(\t)}, {\by+\br*sin(\t)}, 0);
+}
+
+% ---------- 4. incelme kabukları, aynı düzlemle kesilmiş ---------------
+\begin{scope}
+  \clip plot[variable=\t, domain=0:360, samples=180, smooth cycle]
+    ({\A*cos(\t)}, {\B*sin(\t)}, 0);
+  \foreach \r in {48,24,12,6,3}{%
+    \draw[draw=kabuk, line width=3.4pt, opacity=0.9]
+      plot[variable=\t, domain=0:360, samples=140, smooth cycle]
+      ({\carpmaX+\r*cos(\t)}, {\r*sin(\t)}, 0);
+  }
+\end{scope}
+
+% ---------- 5. çarpma --------------------------------------------------
+\coordinate (I) at (\carpmaX, 0, 0);
+\coordinate (D) at ({\carpmaX-62*\yonX}, 0, {-62*\yonZ});
+\coordinate (N) at ({\carpmaX+34}, 0, 0);
+\draw[densely dashed, koyu!55, line width=2.6pt] (I) -- (N);
+\draw[vurgu, line width=6pt, ->, >={Stealth[length=15pt,width=11pt]}]
+      (D) -- (I);
+\fill[vurgu] (I) circle (3.4pt);
+
+\coordinate (ucA) at ({\carpmaX+48}, 0, 0);
+\coordinate (ucB) at ({\carpmaX-48}, 0, 0);
+\end{scope}
+
+% ---------- 6. etiketler DIŞARIDA, kılavuz çizgilerin ucunda -----------
+% bloklar — sol üstteki bloğa kılavuz
+\node[etiket, anchor=south east, align=right, text=blokdis!75!black]
+     (lblok) at ($(I)+(-12.6,3.1)$)
+     {bloklar --- gözeneklilik $\alpha_b$, hacim kesri $f$\\
+      yarıçaplar $r\in[14,56]\ \mathrm{m}$,
+      $\mathrm{d}N/\mathrm{d}r\propto r^{-3}$};
+\draw[kilavuz=blokdis] (lblok.south east) -- ($(I)+(-10.9,1.55)$);
+
+% matris — soldaki boş matrise kılavuz
+\node[etiket, anchor=east, text=koyu!70] (lmat) at ($(I)+(-13.2,0.1)$)
+     {matris --- bağdaşım dayanımı $Y_0$};
+\draw[kilavuz=koyu!60] (lmat.east) -- ($(I)+(-11.6,-0.3)$);
+
+% incelme kabukları — sağdan, yörüngenin üstünden
+\node[etiket, anchor=west, align=left, text=kabuk] (lkab)
+     at ($(I)+(1.5,1.5)$)
+     {iç içe incelme kabukları\\$r=3{,}\,6{,}\,12{,}\,24{,}\,48\ \mathrm{m}$};
+\draw[kilavuz=kabuk] (lkab.west) -- ($(I)+(-0.75,0.55)$);
+
+% DART — yörüngenin altında, oktan uzakta
+\node[etiket, anchor=north west, align=left, text=vurgu]
+     at ($(I)+(3.05,-2.75)$)
+     {\textbf{DART}\\[1pt]
+      $6144{,}9\ \mathrm{m\,s^{-1}}$, $579{,}4\ \mathrm{kg}$\\
+      yüzey normalinden $\aciDeg^{\circ}$};
+
+% Şeklin içine gömülü altyazı yok: rapor içinde altyazıyı LaTeX verir,
+% ikisi birden olunca altyazı iki kez yazılmış gibi görünüyordu.
+\end{tikzpicture}
+\end{document}

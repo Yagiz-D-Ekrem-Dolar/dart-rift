@@ -1,0 +1,166 @@
+% TÜBİTAK 2204 proje raporu stili — Türkçe, tek kolon, A4.
+%
+% Neden ayrı bir stil: ön baskı (docs/preprint) iki kolonlu dergi düzeni ve
+% İngilizce; 2204 raporu tek kolon, Türkçe ve numaralı bölüm başlıklı olmak
+% zorunda. Ön baskının `ethosoft.sty`'si ya da `main.tex`'i DEĞİŞTİRİLMEDİ:
+% o metin DOI 10.5281/zenodo.23284193 ile yayımlandı ve yatırılan dosyayla
+% bayt bayt aynı tutuluyor.
+%
+% Üçüncü parti bir .sty indirilmedi: derleme anında çalışan denetlenmemiş
+% koddur ve bu görünüm bir tutam kuraldan ibaret.
+\ProvidesPackage{tubitak}[2026/10/12 TÜBİTAK 2204 Türkçe proje raporu]
+
+% --- dil ----------------------------------------------------------------
+% shorthands=off ZORUNLU: babel-turkish `:` ve `=` karakterlerini etkin
+% hale getirir, bu da TikZ/pgfplots seçenek listelerini (`width=56mm`,
+% `axis cs:`) derleme sırasında bozar. Kapatınca heceleme ve Türkçe
+% otomatik adlar ("Şekil", "Çizelge", "Kaynaklar") korunur.
+\RequirePackage[shorthands=off,main=turkish]{babel}
+
+% --- sayfa --------------------------------------------------------------
+\RequirePackage[a4paper,top=25mm,bottom=25mm,left=28mm,right=25mm,
+                headsep=7mm,footskip=12mm]{geometry}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{newtxtext,newtxmath}
+\RequirePackage{microtype}
+\RequirePackage{setspace}
+\RequirePackage{graphicx,xcolor}
+\RequirePackage{amsmath}
+\RequirePackage{booktabs,array,multirow}
+\RequirePackage{titlesec}
+\RequirePackage{fancyhdr}
+\RequirePackage{placeins}
+\RequirePackage{enumitem}
+\RequirePackage[font={small,singlespacing},labelfont={bf},labelsep=period,
+                justification=justified]{caption}
+\RequirePackage{xurl}
+% Yazar-yıl atıf: TÜBİTAK raporlarında APA beklenir, numaralı atıf değil.
+% \citet{senel2025} -> Senel ve ark. (2025);  \citep{...} -> (Senel ve ark., 2025)
+\RequirePackage[authoryear,round]{natbib}
+\RequirePackage[unicode,colorlinks=true,allcolors=RaporBag,
+                breaklinks=true]{hyperref}
+% Kaynakça başlığını babel-turkish zaten "Kaynaklar" yapar (\refname);
+% natbib de \bibsection'ı ondan türetir, elle ayar gerekmiyor.
+
+\definecolor{RaporMurekkep}{HTML}{18242B}
+\definecolor{RaporBag}{HTML}{A62B1F}
+\definecolor{RaporGri}{HTML}{6B7A85}
+\color{RaporMurekkep}
+
+% --- gövde yerleşimi ----------------------------------------------------
+\onehalfspacing
+\setlength{\parindent}{1.2em}
+\setlength{\parskip}{1pt plus 1pt}
+\raggedbottom
+% Şekiller metinle aynı sayfada kalsın; tek kolonda varsayılanlar yarım
+% boş şekil sayfaları üretiyor.
+\renewcommand{\topfraction}{0.88}
+\renewcommand{\bottomfraction}{0.72}
+\renewcommand{\textfraction}{0.10}
+\renewcommand{\floatpagefraction}{0.78}
+\setcounter{topnumber}{2}
+\setcounter{totalnumber}{3}
+
+% --- başlıklar ----------------------------------------------------------
+\titleformat{\section}
+  {\normalfont\large\bfseries\color{RaporMurekkep}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries\color{RaporMurekkep}}{\thesubsection.}{0.6em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\itshape\color{RaporMurekkep}}{\thesubsubsection.}{0.6em}{}
+\titlespacing*{\section}{0pt}{2.4ex plus .7ex}{1.1ex}
+\titlespacing*{\subsection}{0pt}{1.9ex plus .5ex}{0.8ex}
+\titlespacing*{\subsubsection}{0pt}{1.5ex plus .4ex}{0.6ex}
+
+% --- üst/alt bilgi ------------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize\textsc{DART-RIFT}}
+\fancyhead[R]{\footnotesize\color{RaporGri}\raporustbilgi}
+\fancyfoot[C]{\footnotesize\thepage}
+\renewcommand{\headrulewidth}{0.35pt}
+\renewcommand{\footrulewidth}{0pt}
+\newcommand{\raporustbilgi}{}
+\newcommand{\ustbilgi}[1]{\renewcommand{\raporustbilgi}{#1}}
+
+% --- kimlik gizleme ----------------------------------------------------
+% TÜBİTAK ön değerlendirmesi rapor üzerinden yapılır ve başvuru kılavuzu
+% rapor metninde öğrenci/danışman/okul adı istemez. Varsayılan GİZLİ.
+% Kimlikli sürüm için ana belgede \kimlikliyazdirtrue yaz.
+\newif\ifkimlikliyazdir
+\kimlikliyazdirfalse
+
+\newcommand{\projealani}[1]{\def\@projealani{#1}}  \projealani{}
+\newcommand{\projekodu}[1]{\def\@projekodu{#1}}    \projekodu{}
+\newcommand{\ekip}[1]{\def\@ekip{#1}}              \ekip{}
+\newcommand{\kurum}[1]{\def\@kurum{#1}}            \kurum{}
+
+\newcommand{\raporcizgi}{%
+  \noindent\textcolor{RaporGri}{\rule{\linewidth}{0.4pt}}}
+
+\renewcommand{\maketitle}{%
+  \thispagestyle{plain}%
+  \begin{singlespace}
+  \begingroup\centering
+  {\footnotesize\color{RaporGri}\MakeUppercase{\@projealani}\par}
+  \vspace{6mm}
+  {\bfseries\fontsize{17}{21}\selectfont\@title\par}
+  \vspace{5mm}
+  \ifkimlikliyazdir
+    {\normalsize\@ekip\par}\vspace{1.5mm}
+    {\small\color{RaporGri}\@kurum\par}
+  \else
+    {\small\color{RaporGri}\@projekodu\par}
+  \fi
+  \vspace{2mm}
+  {\small\color{RaporGri}\@date\par}
+  \endgroup
+  \end{singlespace}
+  \vspace{5mm}\raporcizgi\vspace{4mm}%
+}
+
+% --- özet ve anahtar kelimeler -----------------------------------------
+\renewenvironment{abstract}{%
+  \begin{singlespace}%
+  \begin{list}{}{\setlength{\leftmargin}{6mm}\setlength{\rightmargin}{6mm}}%
+  \item\relax\small\noindent\textbf{Özet.}\ \ignorespaces
+}{\end{list}\end{singlespace}\vspace{1.5mm}}
+
+\newcommand{\anahtarkelimeler}[1]{%
+  \begin{singlespace}%
+  \begin{list}{}{\setlength{\leftmargin}{6mm}\setlength{\rightmargin}{6mm}}%
+  \item\relax\small\noindent\textbf{Anahtar kelimeler:}\ #1
+  \end{list}\end{singlespace}\vspace{2mm}\raporcizgi\vspace{3mm}}
+
+% --- depodaki kaynağa bağ ----------------------------------------------
+% Her sayısal yargının izlenebilir olması projenin kuralı; rapordaki
+% köşeli bağlar depodaki tarihli dosyaya gider.
+\newcommand{\depocommit}{a35dab4}
+\newcommand{\depo}[2]{%
+  \href{https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/blob/\depocommit/#1}%
+       {\textsf{\footnotesize[#2]}}}
+
+% --- Türkçe ondalık ayracı ---------------------------------------------
+% TDK ve TÜBİTAK yazımında ondalık ayracı virgüldür. Metin kipinde düz
+% virgül yazılır (3,7480). Matematik kipinde düz virgül liste ayracı
+% sayılıp arkasına fazladan boşluk koyar; orada {,} yazılır: $3{,}7480$.
+
+% --- uyarı kutusu ------------------------------------------------------
+% Raporun "henüz iddia etmiyoruz" cümleleri göz ardı edilemeyecek
+% biçimde ayrılsın.
+% \colorbox'ın açtığı süslü parantez \newenvironment'ın "başlangıç"
+% parçasında kapanmadığı için doğrudan yazılamaz (her parça kendi içinde
+% dengeli olmalı). Standart çözüm: içerik önce bir lrbox'a toplanır,
+% kutu sonda bir kerede boyanır.
+\newsavebox{\sinirkutusu}
+\newenvironment{sinir}{%
+  \par\vspace{1.8mm}%
+  \begin{singlespace}%
+  \begin{lrbox}{\sinirkutusu}%
+  \begin{minipage}{\dimexpr\linewidth-6mm\relax}\small
+}{%
+  \end{minipage}%
+  \end{lrbox}%
+  \noindent{\setlength{\fboxsep}{3mm}%
+    \colorbox{RaporGri!8}{\usebox{\sinirkutusu}}}%
+  \end{singlespace}\par\vspace{2.2mm}}

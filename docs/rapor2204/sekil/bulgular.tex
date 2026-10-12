@@ -1,0 +1,100 @@
+% Dört gözlenebilir üzerinden pilot yanıt atlası.
+% Yalnız DO serisi (bağdaşım taraması) birleştirildi; DC ve DN tek
+% seferlik denetimli değişiklikler, bir yanıt eğrisinin parçası değil.
+% `docs/rapor2204` içinden derle:  lualatex sekil/bulgular.tex
+\documentclass[border=5pt]{standalone}
+\usepackage{amsmath}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{calc,shapes.geometric}
+\pgfplotsset{compat=1.18}
+\pgfplotstableread{../preprint/veri/bulgular_do.dat}\cohesion
+\begin{document}
+\begin{tikzpicture}
+\pgfplotsset{atlasaxis/.style={
+  width=34mm,height=49mm,scale only axis,
+  xmode=log,xmin=1,xmax=1e5,
+  xtick={10,1e3,1e5},xticklabels={$10$,$10^3$,$10^5$},
+  xlabel={$Y_0$ (Pa)},
+  tick align=outside,tick style={black,line width=.3pt},
+  axis line style={black,line width=.45pt},
+  axis x line*=bottom,axis y line*=left,
+  label style={font=\scriptsize},
+  tick label style={font=\scriptsize},
+  title style={font=\footnotesize},
+  clip=true,
+}}
+\begin{groupplot}[
+  group style={group size=4 by 1,horizontal sep=9mm},
+  atlasaxis]
+\nextgroupplot[title={(a) $\beta$},ymin=.75,ymax=4.2,
+  ytick={1,2,3,4}]
+  % Kütleye göre düzeltilmiş DART hedefi; posterior aralık DEĞİL.
+  \path[fill=black!10] (axis cs:1,3.2948) rectangle
+    (axis cs:1e5,3.7298);
+  \addplot[black!60,densely dashed,line width=.45pt,forget plot]
+    coordinates {(1,3.5418) (1e5,3.5418)};
+  \addplot[black,line width=.7pt,mark=*,mark size=2pt]
+    table[x=Y0,y=beta]{\cohesion};
+  \addplot[only marks,mark=square,mark size=2.9pt,
+    mark options={draw=black,fill=white,line width=.8pt}]
+    coordinates {(10,1.0807)};
+  \addplot[only marks,mark=diamond,mark size=3.3pt,
+    mark options={draw=black,fill=white,line width=.8pt}]
+    coordinates {(10,3.6650)};
+\nextgroupplot[title={(b) $M_{\rm fır}$ (kg)},
+  ymode=log,ymin=1e2,ymax=1e8,
+  ytick={1e2,1e5,1e8},
+  yticklabels={$10^2$,$10^5$,$10^8$}]
+  \addplot[black,line width=.7pt,mark=*,mark size=2pt]
+    table[x=Y0,y=Mej_kg]{\cohesion};
+  \addplot[only marks,mark=square,mark size=2.9pt,
+    mark options={draw=black,fill=white,line width=.8pt}]
+    coordinates {(10,277.7)};
+  \addplot[only marks,mark=diamond,mark size=3.3pt,
+    mark options={draw=black,fill=white,line width=.8pt}]
+    coordinates {(10,2.321e7)};
+\nextgroupplot[title={(c) Koni açısı ($^\circ$)},
+  ymin=35,ymax=120,ytick={40,80,120}]
+  \addplot[black,line width=.7pt,mark=*,mark size=2pt]
+    table[x=Y0,y=cone_deg]{\cohesion};
+  \addplot[only marks,mark=square,mark size=2.9pt,
+    mark options={draw=black,fill=white,line width=.8pt}]
+    coordinates {(10,47.9)};
+  \addplot[only marks,mark=diamond,mark size=3.3pt,
+    mark options={draw=black,fill=white,line width=.8pt}]
+    coordinates {(10,107.7)};
+\nextgroupplot[title={(d) $t_{50}$ (s)},
+  ymode=log,ymin=7e-4,ymax=1.2,
+  ytick={1e-3,1e-2,1e-1,1},
+  yticklabels={$10^{-3}$,$10^{-2}$,$10^{-1}$,$1$}]
+  \addplot[black,line width=.7pt,mark=*,mark size=2pt]
+    table[x=Y0,y=t50_s]{\cohesion};
+  \addplot[only marks,mark=square,mark size=2.9pt,
+    mark options={draw=black,fill=white,line width=.8pt}]
+    coordinates {(10,0.001)};
+  \addplot[only marks,mark=diamond,mark size=3.3pt,
+    mark options={draw=black,fill=white,line width=.8pt}]
+    coordinates {(10,0.845)};
+\end{groupplot}
+
+% Gösterge: dolu daire ve birleştirici doğru YALNIZ bağdaşım taramasına
+% ait. Panel başlıklarının üstüne konunca onları kesiyordu; x etiketlerinin
+% altı hem boş hem de okuma sırasının sonu.
+\node[anchor=north west, font=\scriptsize, align=left, inner sep=0pt]
+  at ($(group c1r1.south west)+(0mm,-11mm)$)
+  {\tikz[baseline=-0.6ex]{\draw[black,line width=.7pt] (0,0) -- (4mm,0);
+         \fill[black] (2mm,0) circle (1.3pt);}~bağdaşım taraması
+          (DY2, DO1, DO2)\quad
+   \tikz[baseline=-0.6ex]{\draw[black,line width=.8pt,fill=white]
+         (0,-0.9mm) rectangle (1.8mm,0.9mm);}~DC, çekme açık\quad
+   \tikz[baseline=-0.6ex]{\node[diamond,draw=black,line width=.8pt,
+         fill=white,inner sep=.75pt,minimum size=1.1mm]{};}~DN, çarpma
+          yeri $+25$ m\quad
+   \tikz[baseline=-0.6ex]{\fill[black!10] (0,-1.1mm) rectangle (4mm,1.1mm);
+         \draw[black!60,densely dashed,line width=.45pt]
+         (0,0) -- (4mm,0);}~DART hedefi (yalnız (a))};
+
+\end{tikzpicture}
+\end{document}

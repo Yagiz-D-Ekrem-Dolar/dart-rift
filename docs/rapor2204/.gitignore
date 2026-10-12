@@ -1,0 +1,5 @@
+# Derleme çıktıları: PDF'ler `make` ile yeniden üretilir.
+*.aux
+*.log
+*.out
+*.pdf

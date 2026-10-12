@@ -1,0 +1,52 @@
+% Kilitli üretim tasarımı. Üç panel değil bir panel: bir Latin hiperküpün
+% üç izdüşümü de aynı şeyi söyler, o da hiperküpün kutusunu doldurduğudur.
+% Gösterilmeye değen şey, iç içe geçmiş alt kümedir.
+% `docs/rapor2204` içinden derle:  lualatex sekil/tasarim.tex
+\documentclass[border=3pt,tikz]{standalone}
+\input{sekil/ortak.tex}
+
+\colorlet{ink}{black!82}
+\colorlet{incecol}{red!72!black}
+
+\pgfplotstableread{\VERI/tasarim_kaba.dat}\kaba
+\pgfplotstableread{\VERI/tasarim_ince.dat}\ince
+
+\begin{document}
+\begin{tikzpicture}[font=\footnotesize]
+% Eksen, ön baskıdakinden (62x46 mm) büyük: rapor tek kolon olduğu için
+% şekil sayfada ~2 kat büyütülüyordu ve yazılar gövde metnine göre
+% orantısız kalıyordu. Doğal boyut büyüyünce büyütme oranı ~1,2'ye düşer.
+\begin{axis}[
+  width=92mm, height=66mm,
+  ymode=log,
+  xmin=0.985, xmax=1.315, ymin=0.6, ymax=1.7e5,
+  xlabel={blok gözenekliliği $\alpha_b$},
+  ylabel={matris dayanımı $Y_0$\:[Pa]},
+  xtick={1.0,1.1,1.2,1.3},
+  xticklabels={$1{,}0$,$1{,}1$,$1{,}2$,$1{,}3$},
+  ytick={1,100,10000}, yticklabels={$1$,$10^2$,$10^4$},
+  axis line style={draw=ink!65}, tick style={draw=ink!65},
+  ticklabel style={scale=0.85, text=ink!80},
+  label style={scale=0.92, text=ink},
+  xlabel style={below=-2pt}, ylabel style={above=-4pt},
+  axis on top=false,
+]
+  \addplot[only marks, mark=o, mark size=1.2pt,
+           draw=ink!35, line width=0.35pt]
+    table[x=alphab, y=Y0] {\kaba};
+  \addplot[only marks, mark=*, mark size=1.7pt,
+           draw=incecol, fill=incecol]
+    table[x=alphab, y=Y0] {\ince};
+\end{axis}
+
+\begin{scope}[shift={($(current axis.north west)+(1mm,5.5mm)$)}]
+  \draw[ink!35, line width=0.35pt] (0,0) circle (1.2pt);
+  \node[anchor=west, text=ink, font=\scriptsize, inner sep=3pt] at (1.6mm,0)
+       {84 yalnız kaba};
+  \fill[incecol] (40mm,0) circle (1.7pt);
+  \node[anchor=west, text=ink, font=\scriptsize, inner sep=3pt] at (41.6mm,0)
+       {12 iç içe ince};
+\end{scope}
+
+\end{tikzpicture}
+\end{document}

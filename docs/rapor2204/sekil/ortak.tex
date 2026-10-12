@@ -1,0 +1,66 @@
+% 2204 raporu şekilleri için ortak preamble. Palet ve çizgi kalınlıkları
+% ön baskıdakiyle AYNI tutuldu: rapor ile ön baskı aynı işin iki dili
+% olarak okunmalı, iki ayrı proje gibi değil.
+%
+% Veri tek kaynaktan gelir: `docs/preprint/veri/*.dat`, hepsi
+% `scripts/onkayit_veri.py` ile sahne kurucusunun kendi çıktısından
+% üretilir. Burada kopyası tutulmuyor — kopya, iki sayı kümesinin
+% sessizce ayrışması demek olurdu.
+\newcommand{\VERI}{../preprint/veri}
+
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{amsmath}
+\usetikzlibrary{arrows.meta,calc,shadings,positioning,fit,backgrounds}
+\pgfplotsset{compat=1.18}
+
+% --- palet --------------------------------------------------------------
+% Malzeme için sıcak nötrler, yöntem için tek bir teal, çarpma ve
+% düşebilecek her şey için tek bir kırmızı. Hiçbir yerde kırmızı/yeşil
+% çifti yok (renk körlüğü).
+\definecolor{yuzey}{HTML}{F4EFE6}
+\definecolor{blokdis}{HTML}{A87B55}
+\definecolor{blokic}{HTML}{CBA67E}
+\definecolor{tel}{HTML}{4A6B80}
+\definecolor{vurgu}{HTML}{A62B1F}
+\definecolor{kabuk}{HTML}{1F6F78}
+\definecolor{koyu}{HTML}{18242B}
+\definecolor{acik}{HTML}{8FA6B5}
+
+% --- ortak biçemler -----------------------------------------------------
+\tikzset{
+  etiket/.style={inner sep=1pt, font=\footnotesize},
+  kilavuz/.style={line width=0.3pt, draw=#1,
+                  shorten >=1.5pt, shorten <=1.5pt},
+  altyazi/.style={anchor=north west, align=left, text=koyu!85,
+                  inner sep=0pt, font=\footnotesize},
+}
+
+% Satır süzgeci: #1 sütunu #2'ye eşit olan satırları çiz. PGFPlots'ta
+% hazır anahtar yok; deyim, istenmeyen satırı `inf`'e göndermek.
+\pgfplotsset{
+  discard if not/.style 2 args={
+    x filter/.code={%
+      \edef\satirdeger{\thisrow{#1}}%
+      \edef\istenen{#2}%
+      \ifx\satirdeger\istenen\else\def\pgfmathresult{inf}\fi
+    }
+  },
+}
+
+\pgfplotsset{
+  temel/.style={
+    width=56mm, height=50mm,
+    scale only axis,
+    axis line style={draw=koyu!60, line width=0.4pt},
+    tick style={draw=koyu!60, line width=0.4pt},
+    tick align=outside,
+    every axis label/.style={font=\footnotesize, text=koyu},
+    tick label style={font=\scriptsize, text=koyu!80},
+    label style={font=\footnotesize},
+    title style={font=\footnotesize, text=koyu, yshift=1pt},
+    axis on top,
+    % ızgara yok: bilgi taşımayan ızgara çizgisi gürültüdür
+  },
+}
