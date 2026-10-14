@@ -1,514 +1,303 @@
 # DART-RIFT
 
-> Dimorphos için GPU hızlandırmalı SPH şok-fiziği motoru ve Bayesçi iç-yapı
-> çıkarımı projesi.
-> Şartname: `DR-RIFT-P0/P1/P2 v1.0` · Ana Plan: `DART-RIFT Ana Proje Planı v1.0`
+**DART'ın bıraktığı tek sayıdan Dimorphos'un içini geri okumak — ve bu
+tahmini Hera oraya varmadan mühürlemek.**
 
-**Bilimsel ön baskı (10 Ekim 2026):** [Beş doğrulanmış pilot koşunun sonuçları ve önceden belirlenmiş çıkarım protokolü (PDF)](output/pdf/DART-RIFT_Pilot_Results_2026-10-10.pdf). Makale metni ve özgün figürleri [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) lisanslıdır; yazılım için depodaki MIT lisansı geçerlidir. Ethosoft logosu, ORCID simgesi ve GitHub işareti bu makale lisansının dışındadır. Henüz DOI atanmadı.
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23284193.svg)](https://doi.org/10.5281/zenodo.23284193)
+[![Lisans: MIT](https://img.shields.io/badge/lisans-MIT-blue.svg)](LICENSE)
 
-NASA'nın DART aracının Dimorphos'a çarpmasından elde edilen verilerden,
-asteroidin **içinin neye benzediğini olasılıksal olarak** geri hesaplamayı ve
-bu tahmini ESA'nın Hera aracı oraya varıp ölçmeden **önce** kilitlemeyi
-hedefliyoruz.
+> **In English.** DART-RIFT infers the interior of asteroid Dimorphos —
+> boulder porosity, matrix strength, boulder volume fraction — from
+> DART's measured momentum enhancement β, using GPU SPH (NVIDIA Warp), a
+> Gaussian-process surrogate and a **pre-registered** Bayesian posterior.
+> The central question is not *"what is the interior?"* but *"how many
+> directions of it can one scalar actually constrain?"* Preprint:
+> [10.5281/zenodo.23284193](https://doi.org/10.5281/zenodo.23284193).
+> The repository language is Turkish.
 
-Bu depo, o çıkarımın dayanacağı **motoru** içerir: deterministik altyapı
-(FAZ 0), SPH şok-fiziği çekirdeği (FAZ 1), gerçek malzeme fiziği — dayanım,
-gözeneklilik, öz-yerçekimi (FAZ 2), çarpma sahnesi (FAZ 3) ve iki aşamalı
-çözünürlük + Bayesçi çıkarım hattı (FAZ 4).
+---
 
-> ### Yeni bir oturuma mı başladın?
->
-> **[`docs/BULGULAR.md`](docs/BULGULAR.md)** projenin ne kanıtladığını
-> ve neyi kanıtlamadığını tek yerde toplar. Oturuma devam için
-> **[DEVAM.md](DEVAM.md)** en üstteki bölümü, hiçbir önceki
-> bağlam olmadan işe devam edebilmek için yazıldı: nerede çalışıldığı
-> (yerel + **yeni** TRUBA alanı), `β` sonucunun kanıt zinciri, **tekrar
-> koşulmaması gereken** elemeler, bulunan kusurlar ve bekleyen kararlar.
+## Soru
 
-## Kapı durumu
+2022'de NASA'nın DART aracı Dimorphos'a çarptı ve geriye **tek bir sayı**
+bıraktı: momentum artırma katsayısı `β`. Bu sayı asteroidin içine bağlı —
+gevşek bir moloz yığını ile taşlı bir gövde çarpmaya aynı tepkiyi
+vermez. O yüzden akla gelen ilk iş `β`'dan içeriye gitmektir.
 
-Her faz, şartnamedeki kabul ölçütlerini **kanıtla** geçmeden bir sonrakine
-geçilmez. Kanıtlar TRUBA/ARF-ACC üzerinde, temiz git ağacıyla üretilir.
+Gelgelelim üç bilinmeyen var: **blok gözenekliliği `α_b`**, **matris
+dayanımı `Y₀`** ve **blok hacim kesri `f`**. Bir skaleri üç bilinmeyene
+çevirmek tanım gereği mümkün değil. Bu projenin asıl sorusu bu yüzden
+şudur:
 
-## İki ayrı tablo — ve neden ayrı
+> **Tek skaler gözlem, üç boyutlu iç yapı uzayında kaç yönü
+> kısıtlıyor?**
 
-Aşağıdaki `G` kapıları **mühendislik doğrulamasıdır**: çözücü doğru
-denklemleri doğru çözüyor mu. Hepsi geçti ve kanıtları duruyor.
+Cevabı tahmin etmek yerine **ölçüyoruz**: yüzlerce GPU çarpma
+benzetimiyle ileri modeli kuruyor, üzerine bir vekil oturtuyor,
+ardından karar kurallarını **veriyi görmeden** kilitleyip posterior'un
+Fisher öz değerlerini sayıyoruz.
 
-> **Bunların hiçbiri şunu kanıtlamaz:** *"Bu model DART–Dimorphos
-> çarpışmasındaki momentum aktarımını doğru modelliyor."* İki tabloyu
-> ayırmak zorunlu; yoksa yeşil kapılar sırasını okuyan biri fiziğin
-> doğrulandığını sanır.
+## Şu ana kadarki cevap
 
-### 1. MÜHENDİSLİK DOĞRULAMASI
+Üretim havuzu 96 kilitli tasarım noktasından oluşuyor; 2026-10-14
+itibarıyla **90'ı tamamlandı** (TRUBA/H100, **kayıp koşu yok** — Kapı 1
+ölçütü %20, ölçülen %0,00). Aşağıdaki sıra korelasyonları havuz 88
+noktadayken ölçüldü:
 
-| Kapı | Kapsam | Sonuç | Karar |
+| gözlenebilir | `α_b` | `log Y₀` | `f` |
 |---|---|---|---|
-| **G0** | Zemin sağlam (altyapı) | **GEÇTİ** | FAZ 1 başlayabilir |
-| **G1** | Şok motoru çalışıyor (Sod, Sedov) | **GEÇTİ** | FAZ 2 başlayabilir |
-| **G2** | Gerçek malzeme fiziği (Tillotson, Hugoniot) | **GEÇTİ** | FAZ 3 başlayabilir |
-| **G3** | Sahne kurulumu | **GEÇTİ** 7/7 | FAZ 5 değil — önce G4 |
-| **G4** | Çözünürlük + çıkarım **altyapısı** | **GEÇTİ** 10/10 | ([kapanış](docs/FAZ4-KAPANIS.md)) |
+| **`β`** (momentum artırma) | −0,061 | **−0,983** | +0,055 |
+| **`ω`** (kazanılan spin) | −0,316 | −0,111 | **+0,459** |
 
-### 2. BİLİMSEL DOĞRULAMA
+İki satır bu projenin özeti:
 
-Hedef problemin kendisi. Durum `2026-09-06` itibarıyla ölçülmüş
-değerlerle; **uzman yanıtından (2026-09-11) sonra iki cümle koşula
-bağlandı** (tablonun altındaki not). Tam döküm:
-**[`docs/BULGULAR.md`](docs/BULGULAR.md)**.
+1. **`β` pratikte tek bir koordinat taşıyor.** `Y₀` ile neredeyse tam
+   tekdüze, diğer iki eksenle korelasyonu sıfıra yakın. Yani DART'ın
+   tek sayısı üç boyutlu uzayda **bir yön** görüyor — dejenerasyon
+   ölçülmüş bir olgu, varsayım değil.
+2. **Çarpmanın kazandırdığı spin, `β`'nın kör olduğu yerleri görüyor.**
+   İki gözlenebilir neredeyse dik (`r(β,ω) = +0,131`) ve `ω` en çok
+   `f`'ye duyarlı. Dejenerasyonu kırmanın yolu daha iyi bir `β` ölçümü
+   değil, **başka bir eksene bakan ikinci bir gözlenebilir**.
 
-| # | ölçüt | durum | ölçülen |
-|---|---|---|---|
-| **S1** | DART koşullarında şok kuruluyor mu | **GEÇTİ** | zirve `%69,2`, `t = 8,61e-05 s`; öngörü `6,0e-05 s` |
-| **S2** | Şok ızgarada taşınıyor mu | **GEÇTİ** | kaba seviyede şoklu `0 → 2 983` (A25) |
-| **S3** | Momentum defteri kapanıyor mu | **GEÇTİ** | artık `1,15e-14` (A29) |
-| **S4** | Krater oluşuyor mu | **GEÇTİ** | `0,08 – 0,43 m`, `θ` ile değişiyor |
-| **S5** | Kazı akışını **ne durduruyor** | **GEÇTİ** | matris çekmesi; kontrollü deney, `Δβ` `7,7×` |
-| **S6** | Ejekta dağılımı ölçekleme yasasına uyuyor mu | **GEÇTİ** | `μ = 0,463 ± 0,016`; H&H `0,40 – 0,55` |
-| **S7** | Gözlenebilir iç yapıyı **ayırt ediyor** mu | **GEÇTİ** | `F = 1006`; `Y₀` ile `ρ = −0,94` (`p < 1e-4`) |
-| **S8** | Vekil + posterior zinciri kapanıyor mu | **GEÇTİ** | sigmoid `R² = 0,941`; LOO `RMSE = 0,026 m` |
-| **S9** | `β` gözlenebilir olarak kullanılabilir mi | **DÜŞTÜ** | her ölçekte ayrıklaştırma tabanında |
-| **S10** | Uzamsal yakınsama (üç nokta) | **YAPILAMADI** | A52: `R3` için `224` saat, sınır `48` |
-| **S11** | Niceliksel kalibrasyon (`Y₀ = f(d)`) | **DÜŞTÜ** | `%72` çözünürlük kayması (A69) |
-| **S12** | Üretim modelinde kazı akışı | **DÜŞTÜ** | granüler çekme modeli yok |
+İkinci bulgu projenin özgün katkısıdır: dejenerasyonun yalnız *var
+olduğunu* değil, **hangi yönde** olduğunu ve hangi gözlenebilirin onu
+kesebileceğini veriyor. `ω` bu projede ölçülen bir gözlenebilirdir
+([PROTOKOL-SI](docs/truba/PROTOKOL-SI-SON-ISLEME.md) §5: bağlı
+malzemenin açısal momentumu / eylemsizlik tensörü), ek bir koşu
+gerektirmez — aynı durum dosyalarından çıkar.
 
-> **Bugünkü savunulabilir bilimsel cümleler:**
->
-> 1. Gözenekli hedefli SPH çarpma simülasyonunda matrisin **sahte
->    çekme dayanımı** — akma dayanımı `Y₀`'ın Tillotson çekme dalını
->    sınırlamamasından doğuyor (`−15,19 MPa`, sekiz mertebede sabit) —
->    kazı akışını **tamamen bastırıyor**.
-> 2. Çekme kaldırıldığında ejekta kütle–hız dağılımı
->    `M(>v) ∝ v^(−3μ)`, **`μ = 0,47 ± 0,03`**, `R² > 0,99` ile
->    Housen–Holsapple'ın `0,40 – 0,55` aralığına oturuyor.
-> 3. Krater derinliği matris kohezyonu `Y₀` hakkında **bilgi
->    taşıyor** (`F = 1006`, `ρ = −0,94`); blok yapısı hakkında
->    **taşımıyor**.
->
-> **Ve neyi söyleyemiyoruz:** niceliksel eşleme yakınsamıyor
-> (`%72`), yani hesaplanan posterior bir **yöntem gösterimi**dir,
-> fiziksel öngörü değil.
+> Yukarıdaki sayılar **kısmi havuzdandır** ve havuz dolduğunda
+> yenilenecektir. Asıl yargı — kaç yön öğrenildiğinin **mühürlü**
+> ölçümü — Fisher öz değerleriyle verilir ve tam havuzu, kalibre
+> edilmiş vekili ve ölçülmüş artık korelasyonunu gerektirir
+> ([PROTOKOL-UP](docs/truba/PROTOKOL-UP-POSTERIOR.md),
+> [ADR-0058](docs/adr/ADR-0058-uretim-posteriorunun-tarifi.md)). O ölçüm
+> havuzdan **önce** yazıldı ve sonucuna göre değiştirilmeyecek.
 
-> **Uzman yanıtından sonra (2026-09-11) — yukarıdaki cümlelerin iki koşulu:**
->
-> - **A72:** kuvvet, akma sınırını **aşan** gerilmeyi görüyor. Üretim
->   koşusunda zayıf matriste hedef kütlesinin `%27–42`'si `q/Y ~ 10⁴–10⁵`;
->   kuvvetin gördüğü gerilme `Y₀`'dan bağımsız `~5e8 Pa`. Cümle 3'teki
->   `Y₀` sinyalinin bir kısmı sayısal olabilir — **Protokol J** sınıyor.
-> - **A73/A74:** krater ölçüsü bir yüzey değildi; blok kesri ekseni
->   sahnede `0,10 – 0,37`'ye sıkışmıştı. *"Blok yapısı hakkında
->   taşımıyor"* bu yüzden **henüz sınanmadı** sayılmalı — **Protokol L**
->   (üç eksenli duyarlılık pilotu) sınıyor.
+## Neyi iddia etmiyoruz
 
-Açık kusurlar: [`FAZ4-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md) — **62**.
-### G4 geçti — ve neyin karşılığında
+Bu bölüm README'nin en önemli kısmıdır.
 
-| # | ölçüt | ölçülen |
-|---|---|---|
-| A1 | mermi çapı / aralık | `2,03906` |
-| A2 | `r_ince / R_mermi` | `66,5573` |
-| A3 | ek yerinde kütle sapması | `3,48e-4` |
-| B1 | ardışık çözünürlükte `β` farkı | `8,43e-4` |
-| B2 | `β` durulmuş | `1` |
-| B3 | A′ ince kola yakın | `1` |
-| B4 | enerji sapması eğimi | `−2,39e-3` |
-| C1 | parametre kapsaması | `1` |
-| **C2** | en dar bant / önsel | **`0,221`** |
-| C3 | gürültüyle genişleme | `1` |
+- **`(α_b, Y₀, f)` için nokta tahmini ya da güven aralığı vermiyoruz.**
+  Dejenerasyon ölçülmüş; bir nokta tahmini onu gizlemek olurdu.
+- **Hera için sayısal bir öngörü henüz mühürlü değil.** Protokol yazılı
+  ([PROTOKOL-HT](docs/truba/PROTOKOL-HT-HERA-TAHMIN.md)), sayı yok.
+- **Çözünürlük yakınsaması sağlanmadı.** Protokol M yargısı
+  **YAKINSAMIYOR**: farklar inceldikçe büyüyor. Bu yüzden mutlak
+  değerler değil, çözünürlüğe dayanıklı olduğu ayrıca ölçülmüş
+  **kontrastlar** kullanılıyor.
+- **Hedef gerçek PDS şekil modeli değil.** PDS paketi
+  (`urn:nasa:pds:dart_shapemodel::1.0`) çekildi ve 10/10 ürün resmî
+  MD5'iyle doğrulandı ([`data_manifest/`](data_manifest/README.md)), ama
+  üretim sahnesi Dimorphos'un ölçülerine oturtulmuş üç eksenli bir
+  **elipsoittir** (88,5 × 87,0 × 58,0 m, kütle 4,2980e9 kg).
+- **Kapıların geçmesi fiziğin doğrulandığını göstermez.** Mühendislik
+  doğrulaması (çözücü doğru denklemleri doğru çözüyor mu) ile bilimsel
+  doğrulama (bu model DART çarpışmasını doğru modelliyor mu) ayrı
+  tutulur; ikincisi açık.
 
-`C2`'yi geçiren şey bir eşik gevşetmesi **değil**: çıkarım uzayı üç
-parametreden **bire** indirildi ([ADR-0046](docs/adr/ADR-0046-cikarim-uzayi-olculebilir-olana-indirilir.md)).
-Bedeli açıkça kayıtlı:
+Tam döküm: [`docs/BULGULAR.md`](docs/BULGULAR.md) — ne kanıtlandı, ne
+kanıtlanmadı, hangi iddia hangi ölçümle daraltıldı.
 
-> **İddia daraldı:** *"iç yapıyı çıkardık"* → **"matris gözenekliliğini
-> çıkardık"**. `f_boulder` artık serbest değil — ve Hera onu görüntüleyecek.
-> Kapının geçmesi bu kaybı telafi etmiyor.
+## Boru hattı
 
-> **G4, motorun *yakınsadığını* ve *çıkarımın işlediğini* kanıtlar; motorun
-> *doğru* `β` ürettiğini kanıtlamaz.** İkisi ayrı sorular ve ikincisi açık
-> ([A17](docs/FAZ4-SIKINTI-RAPORU.md)): motor `β ≈ 1,41` üretiyor, ölçülen
-> periyot değişimi `3,2225` istiyor. Aday elemeleri ölçümle yapıldı —
-> koşu süresi (`0,2 → 600 s`, `3000×`), mukavemet (`Y0` `1 → 2,15e6 Pa`,
-> altı mertebe), yerçekimi, gözeneklilik, çözünürlük. Hiçbiri açığı
-> kapatmıyor; hepsi aynı yere çıkıyor: `β`'nın kontrol yüzeyini geçen
-> maddesi hedef ejektası değil **merminin geri sekmesi**
-> ([ADR-0028](docs/adr/ADR-0028-uzun-kosu-kararliligi.md)).
+```
+sahne (elipsoit + bloklar)     kilitli tasarım: 96 nokta, LHS, tohum 20260906
+        |                      θ = (α_b, Y₀, f)          [ADR-0053]
+        v
+SPH çarpma benzetimi           Warp/CUDA FP64, Wendland C2, Tillotson EOS,
+  600 s, merdivenli incelme    P-α gözeneklilik, Grady-Kipp hasar, öz çekim
+        |                      5 iç içe bölge: 48 m yarıçapta 5,6 m aralık
+        |                      -> 3 m yarıçapta 0,35 m  (kaba, N ~ 17 000)
+        v
+gözlenebilirler                β (fırlatı geleneğinde)   [ADR-0060]
+                               ω (kazanılan spin)        [PROTOKOL-SI]
+        |                      krater, ejekta kütle kesri
+        v
+vekil                          GP, ARD kare-eksponansiyel;
+                               θ-gruplu 4-kat CV, Bachoc varyans kalibrasyonu
+        |
+        v
+posterior                      ızgara, ölçülmüş artık korelasyonu (λ = 0,3)
+        |
+        v
+yargı                          Fisher öz değerleri -> öğrenilen yön sayısı
+                               eşik ve kurallar havuzdan ÖNCE kilitli
+```
 
-[G3 kanıtı](docs/evidence/G3_GATE_0b88ae9.md) — commit `0b88ae9`, TRUBA / H100,
-iş 1446129, **620 test geçti / 0 kaldı** (`xfail` yok), kapsam **%97,0**,
-kırmızı takım (P0 §12 + P3 §10) **14/14 temiz**, çıkış kodu **0**.
-
-> **Makineler arası determinizm — ölçüldü.** FAZ 3 sahne karması iki bağımsız
-> ortamda birebir aynı: `6d6f1d10eaff64e2…` (Linux/numpy 1.26.4/H100 ve
-> Windows/numpy 2.5.1/RTX 3050). Bu eşitlik önce **tutmuyordu**; iki gerçek
-> kusur bulundu — ışın-yüzey kesişiminin mesh köşesinde dejenere olması
-> (yüzey normali makineye göre **2,5°** oynuyordu, fiziksel olarak önemli) ve
-> `centroid`'de toplama sırası. İkisi de düzeltildi ve bir altın-karma
-> bekçisiyle kilitlendi ([ADR-0025](docs/adr/ADR-0025-sahne-makineler-arasi-determinizm.md)).
-
-> **Gerçek Dimorphos geometrisi kullanılıyor.** C7 kriteri PDS veri
-> ürünlerinin kimlik ve sağlama toplamlarını ister; paket
-> `urn:nasa:pds:dart_shapemodel::1.0` çekildi (Daly ve dig., NASA PDS 2023) ve
-> **10/10 ürün arşivin resmi MD5'iyle doğrulandı**. Okunan Dimorphos eşdeğer
-> yarıçapı **75,0 m** — yayımlanan değerle birebir. Veri depoda değildir;
-> depoya giren köken kaydıdır ([`data_manifest/`](data_manifest/README.md)).
->
-> **Birim uyarısı:** PDS şekil modelleri kilometre cinsindendir. Metre saymak
-> cismi 1000 kat küçültür ve hiçbir yerde hata vermeden bütün fiziği
-> anlamsızlaştırır; bu yüzden dönüşüm `units="km"` ile **açıkça** verilir.
-
-Koşu bazlı raporlar: [G0](docs/evidence/G0_report_truba_1425656.md) ·
-[G1](docs/evidence/G1_report_truba_1426162.md) ·
-[G2](docs/evidence/G2_report_truba_1426596.md). CPU↔GPU bit-eşit roundtrip
-üç GPU mimarisinde doğrulandı: sm_80 (A100), sm_90 (H100), sm_86 (RTX 3050).
-G1 ayrıca iki farklı düğümde koşulup sekiz ölçütün kanıt sayıları birebir
-aynı çıktı.
-
-> **Kapsam sınırı:** Kapılar motorun **doğrulama senaryolarını** geçtiği
-> anlamına gelir. Dimorphos hakkında **henüz hiçbir bilimsel sonuç iddia
-> edilmemektedir**. FAZ 3 çarpma **sahnesini** kurar; çarpma **koşuları**
-> FAZ 4'tedir.
-
-> **Gözeneklilik kusuru — ÇÖZÜLDÜ:** P-α distansiyonu açık güncelleniyordu ve
-> sert Tillotson EOS'unda aşırı atıyordu (α tek adımda 1,5→1,0). Örtük
-> (bisection) çözümle çarpma senaryosunda enerji hatası **%15,81 → %0,3955**
-> ve artık çözünürlükle büyümüyor —
-> [ADR-0023](docs/adr/ADR-0023-porozite-ortuk-cozum.md).
-
-### Uzun koşu ve determinizm — ölçüldü (TRUBA H100, iş 1429628)
-
-| Ölçüm | Sonuç |
-|---|---|
-| 30 000 adım enerji drifti | **1,00×** (birikme yok) |
-| 30 000 adım kütle korunumu | **0,00e+00** |
-| Determinizm, tam fizik, 19 416 parçacık | **bit-eşit** |
-| Determinizm, tam fizik, 65 840 parçacık | **bit-eşit** |
-
-## Motor hedefe yetiyor mu? (ölçüldü)
-
-Doğrulama senaryolarını geçmek, hedef problemi çözebilmek anlamına gelmez.
-Ölçek ve maliyet ayrıca ölçüldü — [docs/FIZIBILITE.md](docs/FIZIBILITE.md):
-
-- **11,2 milyon parçacık** TRUBA H200'de koştu, 150 GB'ın yalnızca 6'sını
-  kullanarak. Maliyet 175 kat aralıkta **N ile doğrusal** (123–150 µs/1000
-  parçacık) — gizli bir `O(N²)` yok, bellek darboğaz değil.
-- DART ölçeğinde (2 M parçacık) bir koşu ~**2,4 saat** (1 s simüle süre) —
-  ama bu **öz-yerçekimi kapalıyken**. Açıkken mevcut uygulama ~17 kat yavaş
-  (832 K parçacıkta adım 4 837 ms ↔ yerçekimsiz 1 M'de 287 ms), çünkü baskın
-  kalem CPU'da Python'da kurulan Barnes-Hut ağacıdır. FAZ 5'in öngördüğü
-  "yüzlerce koşu" yerçekimsiz ~30 GPU-günü ile **fizibil**; yerçekimli
-  koşular için ağacın GPU'ya taşınması ya da K adımda bir yenilenmesi gerekir.
-- Fizik seti (Tillotson + P-α + basınca bağlı dayanım + öz-yerçekimi +
-  **Grady-Kipp hasar**) zayıf ve gözenekli hedefler için literatürdeki
-  standart settir. Hasar modeli P2 §1.3'te STRETCH olarak bırakılmış ve `D = 0`
-  sabitlenmişti; **kapatıldı** — Weibull kusur dağılımı, çekmeyi zayıflatan
-  (basmayı değil) uygulama, 32 test, çekme dayanımı ≈32 MPa (bazalt bandı) —
-  [ADR-0027](docs/adr/ADR-0027-grady-kipp-hasar-modeli.md).
-- **Mermi çözünürlüğü FAZ 4'ün tasarımını belirliyor.** DART mermisini çapı
-  boyunca 6 parçacıkla çözmek **1,72e9 parçacık** ister — ölçülmüş fizibil
-  sınırın (1,12e7) **153 katı**. Tekdüze ağ yetmez; çarpma bölgesinde yerel
-  yüksek çözünürlük gerekir —
-  [ADR-0026](docs/adr/ADR-0026-mermi-cozunurlugu-tekduze-agda-imkansiz.md).
-
-## Doğrulama sonuçları
-
-Motorun analitik/deneysel referanslara karşı ölçülen hataları:
-
-| Senaryo | Referans | Ölçülen | Eşik |
-|---|---|---|---|
-| Sod şok tüpü | Kesin Riemann (Toro) | şok hızı %0,08; post-şok en kötü %0,80 | %3–5 |
-| Sedov-Taylor patlaması | Benzerlik çözümü | şok yarıçapı **%4,46** | %5 |
-| Yakınsama | L1(ρ), 64→256 | 0,0200 → 0,0134 → 0,0111 (monoton) | azalmalı |
-| Kütle korunumu | — | **0,00e+00** | ~makine hassasiyeti |
-| Momentum korunumu | — | **8,39e-16** | 1e-6 |
-| Enerji korunumu | — | %0,432 | %0,5 |
-| Rijit dönme (objektiflik) | Jaumann | %1,66 (Jaumann kapalıyken %200) | — |
-| Elastik dalga hızı | 4593 m/s teorik | 4463 m/s → **%2,83** | %3 |
-| Taylor bar (bakır) | Deney bandı 0,60–0,80 | **L/L0 = 0,731**, enerji %0,083 | %1,5 |
-| İki-cisim (20 yörünge) | Kepler | E hatası 2,4e-07, yarıçap drifti 1,3e-08 | — |
-| Soğuk çöküş | — | enerji %0,36; momentum 1,2e-17 | %1; 1e-6 |
-
-### Marj analizi — kapılar yeşil, ama bazıları kılpayı
-
-Bir ölçütün geçmesi, sağlam geçtiği anlamına gelmez. Altı ölçüt eşiğine
-%20'den yakın:
-
-| Ölçüt | Ölçülen | Eşik | Marj |
-|---|---|---|---|
-| Elastik dalga hızı | %2,83 | %3 | **1,06×** |
-| Sedov şok yarıçapı | %4,46 | %5 | 1,12× |
-| Enerji korunumu | %0,432 | %0,5 | 1,16× |
-| Yerçekimi: BH↔doğrudan medyan | %0,43 | %0,5 | 1,16× |
-| von Mises drifti | %1,66 | %2 | 1,20× |
-| Yerçekimi: kabuk hatası | %1,90 | %5 | 2,6× |
-
-Kabuk hatası bu listede daha önce %4,65 (1,08×) ile yer alıyordu. İncelenince
-metriğin alan doğruluğunu değil **örnekleme gürültüsünü** ölçtüğü ve n ile
-monoton olmadığı görüldü (n=2000'de %8,97 — eşiğin neredeyse iki katı). Eşik
-değiştirilmedi; düzeltilen şey ölçünün neyi ölçtüğü —
-[ADR-0017](docs/adr/ADR-0017-kabuk-metrigi-minimum-ornekleme.md).
-
-Bunların hiçbiri gizlenmiyor; ölçülen değerler yukarıdaki tabloda ve kapı
-raporlarındadır. İkisinin davranışı ayrıca incelendi:
-
-- **Elastik dalga** hatası çözünürlükle sıfıra yakınsıyor (%9,13 → %5,36 →
-  %4,19 → %2,83, yaklaşık birinci mertebe). Sistematik bir taban yok; daha
-  ince kafes marjı büyütür.
-- **Sedov** hatası ise ~%3,9'luk bir **tabana** iniyor (n=112'ye kadar
-  ölçüldü). Bu ayrıklaştırma değil, sonlu enjeksiyon yarıçapının model-form
-  hatası — [ADR-0011](docs/adr/ADR-0011-sedov-yakinsama-kurulumu.md).
-
-### Enerji hatasının mertebesi (ADR-0020)
-
-Sedov'da enerji hatası çözünürlükle büyüyor ve n≥96'da %0,5 bütçesini aşıyor
-(%0,510 → %0,534). Bu bir **sızıntı değil**: sabit çözünürlükte yalnızca CFL
-değiştirilerek ölçüldü —
-
-| CFL | adım | enerji hatası | önceki/bu |
-|---|---|---|---|
-| 0,2500 | 162 | %0,29502 | — |
-| 0,1250 | 324 | %0,14303 | **2,06** |
-| 0,0625 | 647 | %0,06904 | **2,07** |
-
-dt yarılandığında hata tam yarıya iniyor, yani hata `O(dt¹)` **kesme
-hatasıdır ve kontrol edilebilir**. Sızıntı olsaydı oran 1'e yakın olurdu.
-Aynı taramada şok yarıçapı hatası %1,14 → %1,12 ile sabit; bu da onun
-zaman ayrıklaştırmasından değil sonlu enjeksiyon yarıçapından geldiğini
-bağımsız olarak doğruluyor.
-
-G1 kapısı bu oranı **her koşuda ölçüp raporlar**
-(`energy_error_dt_halving_ratio`). Böylece ölçüt "hata < %0,5"ten daha
-keskindir: gerçek bir sızıntı girerse oran 2'den 1'e düşer ve eşik hâlâ
-geçiliyor olsa bile kanıt metninde görünür.
-
-## Mimari
-
-Her GPU çekirdeğinin **Warp'tan bağımsız bir NumPy FP64 referansı** vardır ve
-ikisi çapraz kontrol edilir (tipik sapma < 1e-8). Bu, tek başına yeşil görünen
-bir GPU çekirdeğinin yanlış ayrıklaştırma yapmasını engeller — nitekim
-[ADR-0015](docs/adr/ADR-0015-sureklilik-yogunlugu.md) bu kontrolün yakaladığı
+Her GPU çekirdeğinin **Warp'tan bağımsız bir NumPy FP64 referansı**
+vardır ve ikisi çapraz kontrol edilir (tipik sapma `< 1e-8`). Bu
+kontrol, tek başına yeşil görünen bir çekirdeğin yanlış ayrıklaştırma
+yapmasını engeller — nitekim
+[ADR-0015](docs/adr/ADR-0015-sureklilik-yogunlugu.md) bu yolla yakalanmış
 gerçek bir çekirdek hatasını kaydeder.
 
-### FAZ 0 — Altyapı (DR-RIFT-P0)
+## Motor doğrulaması
 
-| Modül | Gereksinim | İçerik |
-|---|---|---|
-| `units` | P0-FR-01 | SI birim sistemi, sabitler, boyut analizi (`UnitError`) |
-| `config` | P0-FR-02, P0-DR-01 | Sürümlü YAML şeması (pydantic), 15 geçersiz vaka kataloğu |
-| `particles` | P0-FR-03 | SoA parçacık deposu + Warp CPU↔GPU köprüsü (bit-eşit roundtrip) |
-| `rng` | P0-FR-04 | Tek kök tohum, adlandırılmış akışlar, **shard-değişmez** örnekleme |
-| `invariants` | P0-FR-05 | NaN/Inf, kütle/yoğunluk, hasar, distansiyon, sınır denetimi |
-| `logging_cfg` | P0-FR-06, P0-DR-02 | JSONL log + Ek A manifest üreteci/doğrulayıcı |
-| `io_hdf5` | P0-FR-07 | 3 katman: `scalar_budget` / `sparse_snapshot` / `event_catalog` |
-| `cpu_math` | — | NumPy referans vektör matematiği, sabit-sıralı Kahan indirgeme |
+Analitik ve deneysel referanslara karşı **ölçülen** hatalar. Hepsi kapı
+kanıtlarından, koşu künyeleriyle:
 
-### FAZ 1 — SPH şok motoru (DR-RIFT-P1)
-
-| Modül | Gereksinim | İçerik |
-|---|---|---|
-| `warp_core/kernel_fn` | P1-FR-04 | Wendland C2 çekirdeği (FP64 tipli sabitlerle) |
-| `warp_core/hash_grid`, `neighbors` | P1-FR-01 | GPU hash-grid komşu arama + parite testleri |
-| `warp_core/density` | P1-FR-02 | Toplama **ve** süreklilik yoğunluğu, çapraz kontrol |
-| `warp_core/forces` | P1-FR-03/05 | Çift-antisimetrik kuvvet, tutarlı enerji, Monaghan AV + Balsara |
-| `warp_core/integrator` | P1-FR-06 | KDK leapfrog + tam-trapez u/S güncellemesi |
-| `warp_core/timestep` | P1-FR-06/07 | CFL + ivme kriterleri, kısıt sınıfı tanısı |
-| `warp_core/solver` | P1 §4.1 | 1B/3B çözücü orkestrasyonu (kernel sırası sözleşmesi) |
-| `cpu_reference/sph_ref` | — | Warp'tan bağımsız NumPy FP64 referansı |
-| `validation/riemann`, `sod`, `sedov`, `plate`, `conservation` | P1-VR-01..06 | Kesin Riemann, Sod, Sedov, plate impact, korunum |
-
-### FAZ 2 — Malzeme fiziği (DR-RIFT-P2)
-
-| Modül | Gereksinim | İçerik |
-|---|---|---|
-| `warp_core/eos_tillotson` | P2-FR-03 | Tillotson EOS (bazalt; Benz & Asphaug 1999) |
-| `warp_core/solid_stress` | P2-FR-01 | Jaumann objektif gerilme hızı, Randles-Libersky gradyan düzeltmesi |
-| `warp_core/strength_lundborg` | P2-FR-02 | Basınca bağlı dayanım Y(P) + von Mises return mapping |
-| `warp_core/porosity_palpha` | P2-FR-04 | P-α crush curve (geri genleşme yok) |
-| `warp_core/damage_gradykipp`, `cpu_reference/damage_ref` | P2 §1.3 (STRETCH → **kapandı**) | Grady-Kipp hasar + Weibull kusurları; yalnızca çekmeyi zayıflatır (ADR-0027) |
-| `warp_core/gravity_tree` | P2-FR-05 | Barnes-Hut halat-ağacı (deterministik DFS) + doğrudan N² referansı |
-| `warp_core/solver_solid` | P2 §4.1 | Katı SPH çözücüsü |
-| `cpu_reference/materials`, `solid_ref`, `gravity_ref` | — | NumPy referansları |
-| `validation/solids`, `porous`, `gravity`, `ablation` | P2-VR-01..06, P2-FR-06 | Rijit dönme, elastik dalga, Taylor bar, crush, yerçekimi, ablasyon matrisi |
-
-### FAZ 3 — Sahne kurulumu (DR-RIFT-P3)
-
-| Modül | Gereksinim | İçerik |
-|---|---|---|
-| `setup/shape_mesh` | P3-FR-01 | Mesh yükleme/temizleme/dışa yönlendirme, ışın-atma iç testi (sol-üst kenar kuralı) |
-| `setup/rubble_generator` | P3-FR-02/03/04 | FCC doldurma, power-law iri-bloklar (hacim oranı geri ölçülür), parçacık başına malzeme |
-| `setup/settling` | P3-FR-05, P3-VR-01 | Öz-yerçekimi altında **denge sınaması** (ADR-0024) |
-| `setup/impactor` | P3-FR-06/07, P3-VR-02 | DART mermisi — sonlu boyutlu, nokta parçacık yasak; yüzey normaline göre çarpma geometrisi |
-| `setup/scene` | P3 §4 | Sahne birleştirici: config → yeniden üretilebilir tam durum (`Scene.digest`) |
-| `observables/momentum_transfer` | P3-FR-08, P3-VR-03 | β + kontrol yüzeyi duyarlılığı, momentum defteri kapanması |
-| `observables/ejecta_catalog` | P3-FR-08 | Kütle-hız dağılımı (kutulama yok), fırlatma açıları, üslü yasa üssü + R² |
-| `observables/crater_shape` | P3-FR-08 | **Yerel** krateri **küresel** biçim değişiminden ayırır (eşit katı açılı kutular) |
-| `observables/period_interface` | P3-FR-08 | β ↔ yörünge periyodu değişimi (sınırları açık yazılı) |
-| `validation/scene_checks` | G3 | Şekil hattı, yığın kalitesi, mermi yakınsaması, gözlenebilir öz-sınavı, sahne determinizmi |
-
-> **Adlandırma:** FAZ 3 sahnesi bir "DART senaryosu" **değil**, "DART benzeri
-> senaryo"dur. Hedef şekli analitik bir ikosferdir; gerçek PDS ürünleri depoda
-> yok (G3 kriter C7 **KANITLANAMADI**, bkz. `data_manifest/README.md`). Şekil
-> modeli geldiğinde `shape: obj` yeter — değişecek olan sayılardır, kod değil.
-
-### FAZ 4 — Çözünürlük ve çıkarım (DR-RIFT-P4)
-
-| Modül | İçerik |
-|---|---|
-| `setup/refine` | Yerel incelme; **parçacık başına `h`** (A′ yaklaşımı, [ADR-0041](docs/adr/ADR-0041-yerel-incelme-yaklasimi.md)) |
-| `setup/coarsen` | Lagrange'cı kabalaştırma: kütle/momentum/enerji `~1e-15` korunumlu; `mermi_kesri` **kesir olarak** taşınır |
-| `setup/two_stage` | İki aşamalı koşu ([ADR-0043](docs/adr/ADR-0043-iki-asamali-cozunurluk.md)): `λ₁ = 19` çekirdek → `λ₂ = 2`; üç seviyeli (iki seviyelide momentumun `%69`'u atılıyordu) |
-| `inference/design` | Parametre uzayı, LHS/faktöriyel tasarım |
-| `inference/forward` | İleri model: sahne → `(β, krater_derinlik, ejekta_kutle_kesri)` |
-| `inference/surrogate` | İkinci derece vekil + **kapalı formda LOO** (`q2`); sabit/yetersiz gözlenebilir **durdurur** |
-| `inference/posterior` | Izgara posterior'u, HDI |
-| `inference/recovery` | G4-C yargısı (C1 kapsama / C2 daralma / C3 gürültü tepkisi) |
-| `validation/h_policy` | Sabit `h` yeterli mi — küp **ve** DART geometrisinde ([ADR-0042](docs/adr/ADR-0042-h-sabittir-omega-birimdir.md)) |
-| `validation/g4_gate` | Kapı yargısı + koşullu kabullerin **raporda görünmesi** |
-
-> **`Ω ≡ 1` bir ölçüm değil cebir:** `h` reçeteli olduğu için `∂h/∂ρ = 0` ve
-> zincir kuralı çarpanı terimi kapatır. Ölçülen şey sabit `h`'nin
-> **yeterliliğiydi**; DART geometrisinde `N_komşu` salınımı `1,064×` çıktı —
-> kanıtın kurulduğu küp aralığından (`2,06×`) **daha dar**.
-
-## Bilinen açık sorunlar
-
-Bu depo kendi sıkıntılarını [`docs/FAZ*-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md)
-altında izler; **motoru** engelleyen açıklar ayrıca
-[issue](https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/issues?q=is%3Aissue+is%3Aopen+label%3Amotor)
-olarak da duruyor ki dışarıdan görülebilsin.
-
-| | konu | durum |
-|---|---|---|
-| [#6](https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/issues/6) | `β` hedef ejektasını değil merminin sekmesini ölçüyor (A17/A12) | açık |
-| [#7](https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/issues/7) | Krater çapı gerçek ensemble'da gözlenemiyor (A11) | açık |
-
-### Motoru şu an tıkayan işler (2026-09-11)
-
-| # | sorun | neyi kilitliyor | durum |
+| senaryo | referans | ölçülen | eşik |
 |---|---|---|---|
-| **A72** | kuvvet akma sınırını aşan gerilmeyi görüyor (`q/Y` üretimde `10⁴–10⁵`) | `Y₀` sinyalinin fiziksel mi sayısal mı olduğu | `--akma-kipi ara` yazıldı; **Protokol J** koşuyor |
-| **A52** | komşu arama yarıçapı her parçacık için `2·h_max` | üç noktalı yakınsama | destek kutulu BVH yazıldı (`--komsu-arama bvh`), yerelde `3,73×`; H100 ölçümü bekleniyor |
-| **A51** | `Y₀` Tillotson'un çekme dalını sınırlamıyor (`−15,19 MPa`) | üretim modelinde kazı akışı | granüler dal için `--matris-cekme-siniri T_m` yazıldı; ADR ve doğrulama bekliyor |
-| **A69** | krater derinliği mutlak olarak yakınsamıyor (`%72`) | `Y₀ = f(d)` niceliksel eşlemesi | adaylar A72 (`Δt`) ve A73 (ölçü); ince merdiven (`N = 487 358`) hazır |
+| Sod şok tüpü | kesin Riemann | şok hızı %0,08; post-şok en kötü %0,80 | %3–5 |
+| Sedov-Taylor | benzerlik çözümü | şok yarıçapı %4,46 | %5 |
+| kütle korunumu | — | **0,00e+00** | ~makine hassasiyeti |
+| momentum korunumu | — | **8,39e-16** | 1e-6 |
+| enerji korunumu | — | %0,432 | %0,5 |
+| elastik dalga hızı | 4593 m/s teorik | 4458 m/s → %2,96 | %3 |
+| Taylor bar (bakır) | deney bandı 0,60–0,80 | `L/L₀ = 0,731`; enerji %0,083 | %1,5 |
 
-Kök sebep A52 için `h_ij = (h_i+h_j)/2`: ince parçacık kaba
-komşusunu `14 m` öteden aramak zorunda. `7,06×` parçacık için
-**`45,3×`** yavaşlama ölçüldü.
+Kanıtlar: [G0](docs/evidence/G0_report_truba_1425656.md) ·
+[G1](docs/evidence/G1_report_truba_1426162.md) ·
+[G2](docs/evidence/G2_report_truba_1426596.md) ·
+[G3](docs/evidence/G3_GATE_0b88ae9.md) ·
+[G4 kapanışı](docs/FAZ4-KAPANIS.md)
 
-> Kapanmış sıkıntılar **silinmiyor**, raporda gerekçesiyle duruyor —
-> deponun değeri nerede yanıldığının izlenebilir olmasında (`RULES.txt`).
+> **Marj dürüstlüğü.** Bir ölçütün geçmesi sağlam geçtiği anlamına
+> gelmez: elastik dalga `%2,96`'da ve eşiği `%3`. Kılpayı geçen ölçütler
+> saklanmıyor; davranışları ayrıca incelenmiş (elastik dalga hatası
+> çözünürlükle sıfıra yakınsıyor, Sedov hatası ise `~%3,9`'luk bir
+> **tabana** iniyor ve bu ayrıklaştırma değil model-form hatasıdır —
+> [ADR-0011](docs/adr/ADR-0011-sedov-yakinsama-kurulumu.md)).
 
-## Kurulum ve test
+## Depo düzeni
+
+```
+src/dartrift/
+  warp_core/        GPU çekirdekleri: çekirdek fonksiyonu, komşuluk, yoğunluk,
+                    kuvvet, integratör, Tillotson, dayanım, P-α, Grady-Kipp,
+                    Barnes-Hut çekim
+  cpu_reference/    her çekirdeğin bağımsız NumPy FP64 referansı
+  setup/            şekil, moloz üretici, oturma, mermi, sahne, incelme
+  observables/      β, ejekta kataloğu, krater biçimi, periyot arayüzü,
+                    β gelenek dönüşümü
+  inference/        tasarım, ileri model, vekil, posterior, artık korelasyonu,
+                    tarih eşleme (model hatası paydası)
+  validation/       kapı ölçütlerinin koşucuları
+docs/
+  adr/              60 mimari karar kaydı
+  defter/           78 mühendislik defteri kaydı
+  truba/            39 kilitli protokol (koşudan ÖNCE yazılır)
+  evidence/         kapı raporları, koşu künyeleriyle
+  rapor2204/        TÜBİTAK 2204-A proje raporu (LaTeX)
+  preprint/         bilimsel ön baskı (İngilizce, DOI'li)
+truba/              Slurm iş betikleri ve sıra planları
+data_manifest/      dış veri ürünlerinin kimlik + sağlama kaydı
+```
+
+Gereksinim → kod → sınav → kanıt eşlemesinin tamamı:
+[`docs/IZLENEBILIRLIK.md`](docs/IZLENEBILIRLIK.md).
+
+## Kurulum ve sınav
 
 ```bash
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev,gpu]"    # gpu = warp-lang (CPU cihazıyla da çalışır)
 ```
 
 ```bash
-pytest tests -m "not gpu" --cov=dartrift    # GPU'suz ortam
+pip install -e ".[dev,gpu]"
 ```
+
+GPU'suz ortamda (2705 sınav toplanıyor, GPU gerektirenler atlanır):
 
 ```bash
-pytest tests --cov=dartrift                 # CUDA'lı ortam (tam paket)
+pytest tests -m "not gpu" --cov=dartrift
 ```
 
-Kapı koşucuları (her biri CUDA ister):
+CUDA'lı ortamda tam paket:
 
 ```bash
-python scripts/run_g0_gate.py
+pytest tests --cov=dartrift
 ```
+
+Kapı koşucuları CUDA ister ve CUDA bulunmayan bir makinede **"geçti"
+demez**: ilgili ölçüt kanıtlanamadığı için `KANITLANAMADI` yazıp exit 2
+döner.
 
 ```bash
 python scripts/run_g1_gate.py
 ```
 
-```bash
-python scripts/run_g2_gate.py
-```
-
-```bash
-python scripts/run_red_team.py
-```
-
-Kapı koşucuları CUDA bulunmayan bir makinede **"geçti" demez**: ilgili ölçüt
-kanıtlanamadığı için `KANITLANAMADI` yazıp exit 2 döner. `--allow-no-gpu`
-yalnızca ön kontrol içindir ve o mod da geçti iddiası üretmez.
-
-> **Kütüphane tabanı:** Hedef ortam NumPy **1.26.4** kullanır. NumPy 2.0+ ile
-> gelen API'ler (`np.trapezoid`, `np.concat`, …) kullanılamaz; gerekiyorsa
-> sürümden bağımsız köprü yazılır. Gerekçe ve olay kaydı:
-> [ADR-0005](docs/adr/ADR-0005-python-surumu-truba.md).
+> **Kütüphane tabanı.** Hedef ortam NumPy **1.26.4** kullanır; NumPy 2.0+
+> API'leri (`np.trapezoid`, `np.concat`, …) kullanılamaz
+> ([ADR-0005](docs/adr/ADR-0005-python-surumu-truba.md)).
 
 ## TRUBA (ARF-ACC) üzerinde kanıt üretimi
 
-TRUBA kuralları gereği `/arf`'a pip/conda ile **kurulum yapılmaz**; merkezî
-modül kullanılır ve ek paketler wheel arşivleri açılarak `PYTHONPATH` üzerinden
-kullanılır (639 dosya; inode kotası 500.000). Hazırlık **giriş düğümünde bir
-kez** yapılır:
+Kanıtlar hedef ortamda, temiz git ağacıyla üretilir. TRUBA kuralları
+gereği `/arf`'a pip/conda ile **kurulum yapılmaz**; merkezî modül
+kullanılır ve ek paketler wheel arşivleri açılarak `PYTHONPATH` üzerinden
+verilir. Hazırlık giriş düğümünde bir kez yapılır:
 
 ```bash
 cd /arf/scratch/<grup>/driftclaude && module purge && module load apps/truba-ai/gpu-2024.0 && python3 -m pip download warp-lang pytest-cov coverage --no-deps -d wheels && mkdir -p pylib && for w in wheels/*.whl; do python3 -m zipfile -e "$w" pylib; done
 ```
 
-Ardından kapı koşuları GPU kuyruğuna gönderilir:
-
 ```bash
-sbatch slurm/faz0_g0_gate.sh
+sbatch truba/is_HAVUZ.slurm
 ```
 
-```bash
-sbatch slurm/faz12_gates.sh
-```
+> **Donanım arızası kapı sonucu değildir.** Betikler bilinen arızalı
+> düğümleri `--exclude` ile dışlar ve arıza saptarsa 75
+> (`EX_TEMPFAIL`) ile çıkar; böylece bir düğüm sorunu "kapı kaldı" gibi
+> görünmez.
 
-Kanıtlar `gate_runs/<koşu>/` içinde üretilir; kabul edilenler koşu künyesiyle
-(iş kimliği, düğüm, commit, ortam sürümleri) `docs/evidence/` altına
-kopyalanıp sürümlenir.
+## Mühendislik disiplini
 
-> **Donanım arızaları kapı sonucu değildir.** Betikler bilinen arızalı
-> düğümleri `#SBATCH --exclude` ile dışlar ve arıza saptarsa 75 (`EX_TEMPFAIL`)
-> ile çıkar — böylece bir düğüm sorunu "kapı kaldı" gibi görünmez. Saptanan
-> arızalar: `palamut5` (`/arf`'a veri yazamıyor), `palamut6` (büyük dosya
-> okuyamıyor), `kolyoz13` (`nvidia-smi` GPU'yu görüyor ama CUDA sürücüsü
-> açılmıyor). Ayırt edici testler mühendislik defterindedir.
+Bu depo, doğru çıktığı şeyler kadar **yanıldığı yerlerin izlenebilir
+olmasıyla** kurulmuştur.
 
-## İzlenebilirlik ve mühendislik disiplini
+| | |
+|---|---|
+| mimari karar kaydı | **60** — her büyük karar gerekçesi, alternatifleri ve sınavıyla; sessiz değişiklik yasak |
+| mühendislik defteri | **78** — başarısız denemeler ve negatif sonuçlar silinmez, işlenir |
+| kilitli protokol | **39** — karar kuralları koşudan **önce** yazılır, sonuç gelince değişmez |
+| kusur kütüğü | [`FAZ4-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md), A117'ye kadar — kapanan kayıtlar da duruyor |
+| sınav | **2705** toplanıyor; kapı koşumları ayrıca kırmızı takım sınavlarını koşar |
 
-- **[docs/IZLENEBILIRLIK.md](docs/IZLENEBILIRLIK.md)** — 49 gereksinim
-  kimliğinin (13 P0 + 13 P1 + 12 P2 + 11 P3) her biri kodu, testi ve kanıtıyla
-  eşlenmiştir. Aynı belge, şartnamece **yasak** olduğu için bilerek
-  yapılmayanları da listeler ki eksik ile kapsam-dışı karışmasın.
-- **[docs/EKSIKLER.md](docs/EKSIKLER.md)** — bilinen eksiklerin tek kaydı:
-  ne kapandı, ne açık, ne bilinçli kapsam dışı. Amaç, bir eksiğin
-  "unutuldu" mu "bilinçli bırakıldı" mı olduğunun hiç belirsiz kalmaması.
-- **[docs/adr/](docs/adr/)** — 28 mimari karar kaydı. Her büyük teknik karar
-  gerekçesi, değerlendirilen alternatifleri ve doğrulama testiyle kayıtlıdır;
-  sessiz değişiklik yasaktır.
-- **[docs/defter/](docs/defter/)** — 15 mühendislik defteri kaydı. Başarısız
-  denemeler ve negatif sonuçlar **silinmez**, işlenir; yanlış çıkan bir iddia
-  da silinmez, düzeltme notuyla kayda geçer.
-- **[docs/evidence/](docs/evidence/)** — kapı raporları, koşu künyeleriyle.
+Dört kural, kendimize dayattığımız biçimde:
 
-### Dürüstlük sınırı
+1. **Sınav geçilmediyse iddia edilmez.** İddia daraltılır, bilim
+   bükülmez — nitekim çıkarım uzayı bir kez üç parametreden bire
+   indirildi ([ADR-0046](docs/adr/ADR-0046-cikarim-uzayi-olculebilir-olana-indirilir.md));
+   ölçüm iyileşince üretim uzayı yeniden üç eksene açıldı
+   (`DART_UZAYI_S4`, [ADR-0053](docs/adr/ADR-0053-y0-onseli-ve-tanimlayici-gozlemli.md)
+   kabulüyle).
+2. **Görsel olarak makul bir sonuç kanıt değildir;** kanıt sınav ve
+   sayıdır.
+3. **Kanıt hedef ortamda üretilir.** Yerelde yeşil olanın kümede de
+   yeşil olduğu varsayılmaz — kapı mekanizması üç kez, yerelde
+   görünmeyen bir kusuru yakaladı.
+4. **Düzeltme silmek değildir.** Yanlış çıkan bir iddia kaydın
+   üzerinden geçilerek değil, tarihli bir düzeltme notuyla kapatılır.
 
-- Test geçilmediyse iddia edilmez. Benchmark geçmeyen modülün iddiası
-  yapılmaz; iddia daraltılır ama bilim bükülmez.
-- Görsel olarak makul bir sonuç **kanıt değildir**; kanıt test ve sayıdır.
-- Kanıt hedef ortamda üretilir. Yerelde yeşil olan bir paketin kümede de
-  yeşil olduğu varsayılmaz — nitekim kapı mekanizması üç kez, yerelde
-  görünmeyen bir kusuru yakaladı (NumPy sürüm farkı, düğüm sürücü arızası,
-  metrik serileştirme hatası).
+Son örnek: `β`'nın hangi doğrultuya izdüşürüldüğü. Ön baskı iki izdüşüm
+arasındaki açıyı vermiyordu; sonradan ölçüldüğünde terimin yörünge
+geometrisine değil koşunun kendi fırlatı alanına bağlı olduğu ve
+ortanca farkın **1,166** olduğu görüldü — ilan edilen bütün model hata
+bütçesinden büyük. Ön baskı metni değiştirilmedi (yayımlanmış kayıttır);
+düzeltme [ADR-0060](docs/adr/ADR-0060-beta-hangi-dogrultuya-izdusurulur.md)
+olarak eklendi ve rapor düzeltilmiş hâli taşıyor.
 
-## Devam etmek isteyenler için
+## Belgeler
 
-Projeyi kaldığı yerden sürdürmek (veya ilk kez ele almak) için:
-**[DEVAM.md](DEVAM.md)** — ortam ayrıntıları, mimarinin değişmez kuralları,
-öğrenilmiş tuzaklar, ölçülmüş performans sınırları ve FAZ 3'e başlama adımları.
+| belge | ne |
+|---|---|
+| [`docs/BULGULAR.md`](docs/BULGULAR.md) | ne kanıtlandı, ne kanıtlanmadı |
+| [`docs/DEVAM-BITIS3.md`](docs/DEVAM-BITIS3.md) | devir notu: durum, plan, bütçe, riskler, dersler |
+| [`docs/preprint/`](docs/preprint/) | bilimsel ön baskı (İngilizce) |
+| [`docs/rapor2204/`](docs/rapor2204/) | TÜBİTAK 2204-A proje raporu (Türkçe) |
+| [`docs/FIZIBILITE.md`](docs/FIZIBILITE.md) | motor hedefe yetiyor mu — ölçülmüş maliyet |
+| [`docs/EKSIKLER.md`](docs/EKSIKLER.md) | eksiklerin tek kaydı: kapandı / açık / kapsam dışı |
 
-Üç günlük çalışmanın sentezi:
-**[KAYIT-014](docs/defter/KAYIT-014_2026-07-29_faz012_sentez.md)** — ne
-yapıldı, hangi sorunlar çıktı, ne öğrenildi.
+## Lisans ve atıf
 
-## Lisans
+Yazılım **MIT** — [LICENSE](LICENSE). Ön baskı metni ve özgün figürleri
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); üçüncü taraf
+logoları (Ethosoft, ORCID, GitHub) bu lisansın dışındadır.
 
-MIT — bkz. [LICENSE](LICENSE). Atıf için [CITATION.cff](CITATION.cff).
+Atıf için [CITATION.cff](CITATION.cff) —
+[10.5281/zenodo.23284193](https://doi.org/10.5281/zenodo.23284193)
+(sürüm), [10.5281/zenodo.23284192](https://doi.org/10.5281/zenodo.23284192)
+(kavram, en yeni sürüme çözülür).
