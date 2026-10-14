@@ -40,6 +40,57 @@ koşulmaz (teyit edilince bu tabloya kaynak yazılır):
 > **Kural:** teyit edilmemiş sabitle koşulan ölçüm **OKUNMAZ** sayılır.
 > Hatırladığım sayıyla hesap yapmak, ölçülmemiş bir kesinlik iddiasıdır.
 
+#### TEYİT EDİLDİ — 2026-10-14 (üstteki tablo yerinde kalır, kural 5)
+
+Birincil kaynak: **Naidu, S. P., Chesley, S. R., Moskovitz, N., ve ark.
+(2024), *The Planetary Science Journal* 5, 74,
+[doi:10.3847/PSJ/ad26e7](https://doi.org/10.3847/PSJ/ad26e7)**; değerler
+**Richardson, D. C., ve ark. (2025)**, *"The Dynamical State of the
+Didymos System Before and After the DART Impact"*,
+[arXiv:2502.14990](https://arxiv.org/abs/2502.14990) **Tablo 2**'de
+derlenmiş ve orada Naidu 2024'e atfedilmiştir.
+
+| sabit | **çarpma öncesi, teyitli** | kaynak |
+|---|---|---|
+| sistem toplam kütlesi | **`5,3 ± 0,2 × 10¹¹ kg`** | Naidu 2024 (R25 Tablo 2) |
+| Dimorphos kütlesi | **`4,5 ± 0,4 × 10⁹ kg`** | R25 §III.3.3 |
+| Didymos (birincil) kütlesi | **`5,255 ± 0,020 × 10¹¹ kg`** | farktan türetildi |
+| karşılıklı yörünge ayrıklığı `a` | **`1189 ± 17 m`** | Naidu 2024 (R25 Tablo 2) |
+| karşılıklı yörünge periyodu `T` | **`11,921493 ± 0,000016 sa`** | Naidu 2024 (R25 Tablo 2) |
+| ikincil çap (hacim eşdeğeri) | `150,0 ± 2,5 m` | Daly ve ark. 2024, PSJ 5, 24 |
+| ikincil yığın yoğunluğu | `2400 ± 300 kg/m³` | Daly ve ark. 2023, Nature 616, 443 |
+
+**Bağımsız teyit (periyot):** Naidu ve ark. (2022),
+[arXiv:2210.05101](https://arxiv.org/abs/2210.05101), çarpma epoğunda
+(2022 Eylül 26,0 TDB) periyodu `11,9214869 ± 0,000028 sa` veriyor.
+Yukarıdaki `11,921493 ± 0,000016` ile belirsizlikler içinde örtüşüyor.
+
+> ### ⚠ Hatırlanan değer YANLIŞMIŞ
+>
+> Üstteki tablo `a ≈ 1206 m` yazıyordu. Teyitli çarpma öncesi değer
+> **`1189 ± 17 m`**; aradaki fark `17 m`, yani belirsizliğin tam bir
+> katı. (`1206`, büyük olasılıkla *karşılaşma öncesi* `1,20 ± 0,03 km`
+> değerinin yuvarlanmışıyla karışmış.) `v_kaçış`, `a`'nın kareköküyle
+> gittiği için `%0,7`'lik bir kayma yapardı — küçük, ama tam olarak
+> "hatırladığım sayıyla hesap" kuralının engellemek için konduğu şey.
+> **Kural işledi.**
+>
+> Dimorphos kütlesi de `4,3e9` yazılıydı; teyitli değer `4,5 ± 0,4e9`.
+> `4,3e9` 1σ içinde, ÇELİŞMİYOR. Ayrıca sahne kütlesi
+> (`4,2980e9`, ADR-0054) bilinçli bir kalibrasyondur ve bu tablodan
+> bağımsızdır; değiştirilmez.
+
+#### Türetilen: sistemden kaçış hızı (§2 ve §4 için)
+
+    v_kaçış,sistem = sqrt(2 G M_birincil / a)
+                   = 0,24289 ± 0,00494 m/s
+
+Koşulardan geri çözülen cismin **kendi** kaçış hızı `0,0791–0,0890 m/s`
+aralığında; sistemden kaçış onun **2,89 katı**. Protokolün §2'de
+beklediği `~0,24 m/s` ile tutuyor.
+
+**Bu teyitle §2, §3 ve §4 artık BLOKE DEĞİL.**
+
 ---
 
 ## 2. İki kaçış ölçütüyle `β` ve geri düşme payı
