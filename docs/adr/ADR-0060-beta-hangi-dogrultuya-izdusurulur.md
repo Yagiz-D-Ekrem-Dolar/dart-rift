@@ -1,7 +1,9 @@
 # ADR-0060 — `β` hangi doğrultuya izdüşürülür: gözlemle **aynı** gelenek
 
-**Tarih:** 2026-10-14 · **Durum:** ÖNERİ → karar kullanıcıya
+**Tarih:** 2026-10-14 · **Durum:** **KABUL** (2026-10-14, kullanıcı kararı
+devretti; gerekçe §4)
 **Öncül:** KAYIT-078 §6, PROTOKOL-SI §3, ADR-0054 (gözlem hedefi)
+**Uygulama:** `src/dartrift/observables/beta_gelenegi.py` + sınavları
 
 ---
 
