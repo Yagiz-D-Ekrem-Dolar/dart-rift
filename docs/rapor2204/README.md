@@ -121,6 +121,27 @@ demektir.
 
 ---
 
+## Havuz dolduğunda ne değişir
+
+Raporun havuza bağlı her sayısı **tek bir satırdan** okunur
+(`rapor.tex`, `\havuzBiten`). Gövdede altı yerde elle yazılıydı; biri
+atlanırsa rapor kendi kendisiyle çelişiyordu. Sıra şudur:
+
+1. `python scripts/uretim_posterior.py` — ölçümleri yeniler: Spearman
+   korelasyonları, Fisher öz değerleri, $n_{\text{yön}}$, kaçış eşiği
+   koşu sayısı, $\beta$ gelenek oranının ortancası.
+2. `rapor.tex` içindeki `\newcommand{\havuzBiten}{88}` → yeni sayı.
+   **Yalnız bu satır**; gövdeye dokunulmaz.
+3. `veri/eksen_duyarliligi.dat` başlığındaki `88/96` ve tarih —
+   kaynak künyesi, elle güncellenir.
+4. `make` — iki geçiş; sonra `pdftotext rapor.pdf - | grep -c 88` ile
+   eski sayının kalmadığı denetlenir (yarı eksen `88,5` hariç).
+
+`\havuzToplam` **kilitli tasarım boyudur** (ADR-0053 S4, lhs 96) ve
+havuz eksik kalsa bile düşmez: rapor bulduğunu değil beklediğini sayar.
+
+---
+
 ## Şekiller
 
 | # | dosya | ne gösterir |

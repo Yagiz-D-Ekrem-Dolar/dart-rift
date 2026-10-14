@@ -12,6 +12,22 @@
 \documentclass[12pt,a4paper]{article}
 \usepackage{tubitak}
 
+% -----------------------------------------------------------------------
+% ÜRETİM HAVUZUNUN O ANKİ BOYU — TEK KAYNAK.
+% Havuz büyüdüğünde YALNIZ \havuzBiten değişir; gövdedeki her geçiş
+% buradan okur (altı yerde elle yazılıydı, biri atlanırsa rapor kendi
+% kendisiyle çelişiyordu). DİKKAT: aynı havuzdan hesaplanan ölçümler
+% -- Denklem (betaeksen), (spineksen), kaçış eşiğindeki koşu sayısı,
+% oran ortancası ve veri/eksen_duyarliligi.dat -- bu satırla birlikte
+% YENİLENMEK zorundadır:
+%     python scripts/uretim_posterior.py        (ölçümler)
+%     make veri                                 (malzeme eğrileri)
+% Kural 8: rapor bulduğunu değil beklediğini sayar; \havuzToplam kilitli
+% tasarım boyudur (ADR-0053 S4, lhs 96) ve havuz eksik kalsa bile düşmez.
+% -----------------------------------------------------------------------
+\newcommand{\havuzBiten}{88}
+\newcommand{\havuzToplam}{96}
+
 \hypersetup{
   pdftitle={Dimorphos'un İç Yapısının DART Momentum Aktarımından GPU
             Tabanlı SPH Benzetimleriyle Çıkarımı},
@@ -717,7 +733,7 @@ oradaki duyarlılığı sınırlarlar, küresel türev değildirler.}
 
 \subsection{Üretim havuzundan ilk bulgular}
 
-Üretim havuzunun 96 noktasından 88'i tamamlanmış durumdadır; kayıp koşu
+Üretim havuzunun \havuzToplam\ noktasından \havuzBiten'i tamamlanmış durumdadır; kayıp koşu
 yoktur (Kapı~1 ölçütü \%20, ölçülen \%0,00). Aşağıdaki iki ölçüm bu
 kısmi havuzdandır ve havuz dolduğunda yinelenecektir; yine de projenin
 \emph{araştırma sorusunu} doğrudan yanıtladıkları için burada
@@ -725,7 +741,7 @@ verilmektedir.
 
 \subsubsection*{$\beta$ tek bir yön taşıyor}
 
-Havuzun 88 noktasında $\beta$ ile üç koordinat arasındaki Spearman sıra
+Havuzun \havuzBiten\ noktasında $\beta$ ile üç koordinat arasındaki Spearman sıra
 korelasyonu ölçüldü:
 \begin{equation}
 \rho(\beta,\log Y_0) = -0{,}983, \quad
@@ -760,8 +776,8 @@ yani \textbf{neredeyse diktirler} (Şekil~\ref{sek:eksen}).
 \centering
 \includegraphics[width=0.88\linewidth]{eksen.pdf}
 \caption{Hangi gözlenebilir hangi ekseni görüyor. Çubuklar Spearman sıra
-korelasyonunun büyüklüğüdür (işaret değil); üretim havuzunun 88
-noktasından ölçülmüştür. $\beta$ yalnız $Y_0$'da uzundur: DART'ın tek
+korelasyonunun büyüklüğüdür (işaret değil); üretim havuzunun
+\havuzBiten\ noktasından ölçülmüştür. $\beta$ yalnız $Y_0$'da uzundur: DART'ın tek
 skaleri iç yapının tek bir yönünü taşır. Çarpmanın kazandırdığı açısal
 hız $\omega$ ise $f$ ve $\alpha_b$'de uzundur --- $\beta$'nın kör olduğu
 iki eksen. İkisinin birbiriyle korelasyonu yalnız $+0{,}131$'dir. $\omega$
@@ -873,7 +889,7 @@ Projenin sınırları yapısaldır ve burada eksiksiz sayılmaktadır.
       gelenek arasındaki dönüşüm
       $b_{\hat{E}} = b_{\text{çarpıcı}}/\cos^{2}\theta$ olup
       $\theta=\angle(\hat{E},\hat{e}_U)$ her koşunun kendi fırlatı
-      alanından hesaplanır; dışarıdan bir sabit gerekmez. 88 koşuda
+      alanından hesaplanır; dışarıdan bir sabit gerekmez. \havuzBiten\ koşuda
       ölçülen: $\theta = 14{,}1^{\circ}$--$27{,}7^{\circ}$, oran
       ortanca \textbf{1,166}. Bu, ilan edilen bütün model fark
       bütçesinden ($0{,}065$) iki kat büyüktür. Düzeltme uygulanmıştır;
@@ -884,7 +900,7 @@ Projenin sınırları yapısaldır ve burada eksiksiz sayılmaktadır.
       mertebesindedir; Didymos \emph{sisteminden} kaçış ise
       $0{,}2429\pm0{,}0049$ m\,s$^{-1}$'dir (birincil kaynak: Naidu ve
       ark. 2024 sabitleri). İkisinin oranı 2,89 olduğundan fark
-      önemsiz değildir: 88 koşunun 13'ünde kaçan kütlenin \%97'ye kadarı
+      önemsiz değildir: \havuzBiten\ koşunun 13'ünde kaçan kütlenin \%97'ye kadarı
       cismi terk edip sistemi terk etmemektedir. Kilitli karşılaştırma
       cismin kendi ölçütüyle yapılır, sistem ölçütü yan yana
       raporlanır.
@@ -905,7 +921,7 @@ tamamlanmıştır: ileri model kurulmuş ve doğrulanmış, denetimli
 duyarlılıklar ölçülmüş, karar kuralları veriden önce kilitlenmiştir.
 
 Üçüncü hedef --- gözlemin $\theta$ uzayında kaç yönü kısıtladığı ---
-\emph{kısmen} yanıtlanmıştır. Üretim havuzunun 88 noktası,
+\emph{kısmen} yanıtlanmıştır. Üretim havuzunun \havuzBiten\ noktası,
 Denklem~\eqref{esit:betaeksen} ile $\beta$'nın pratikte tek bir
 koordinatı ($Y_0$) taşıdığını göstermektedir; diğer iki eksenle
 korelasyonu sıfıra yakındır. Bu, Hipotez~1'i nicel olarak
