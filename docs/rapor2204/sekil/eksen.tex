@@ -1,0 +1,74 @@
+% Hangi gözlenebilir hangi ekseni görüyor — projenin ana bulgusu.
+%
+% Tek eksen, iki renk, altı çubuk. beta yalnız Y0'da uzun; omega f ve
+% alpha_b'de uzun. İkisi birbirini tamamlıyor.
+%
+% Veri: ../rapor2204/veri/eksen_duyarliligi.dat, üretim havuzu 88/96.
+% `docs/rapor2204` içinden derle:  lualatex sekil/eksen.tex
+\documentclass[border=3pt,tikz]{standalone}
+\input{sekil/ortak.tex}
+\usepackage[outline]{contour}
+\contourlength{1.0pt}
+
+\colorlet{ink}{black!82}
+\colorlet{betacol}{vurgu}                 % gözlenen: DART'ın verdiği
+\colorlet{spincol}{kabuk}                 % öngörü: Hera'nın ölçeceği
+
+\pgfplotstableread{veri/eksen_duyarliligi.dat}\duy
+
+\begin{document}
+\begin{tikzpicture}[font=\footnotesize]
+\begin{axis}[
+  width=72mm, height=36mm, scale only axis,
+  xbar, bar width=4.2pt,
+  % Mutlak değer çizilir: işaret değil, BÜYÜKLÜK soruluyor.
+  xmin=0, xmax=1.06,
+  ytick={0,1,2},
+  yticklabels={$\alpha_b$ \,blok gözenekliliği,
+               $Y_0$ \,matris dayanımı,
+               $f$ \,blok kesri},
+  y dir=reverse, ymin=-0.6, ymax=2.6,
+  yticklabel style={font=\footnotesize, text=ink, align=right},
+  xlabel={duyarlılık \;$|\rho_{\mathrm{Spearman}}|$},
+  xtick={0,0.25,0.5,0.75,1},
+  xticklabels={$0$,,$0{,}5$,,$1$},
+  axis line style={draw=ink!65}, tick style={draw=ink!65},
+  ticklabel style={text=ink!80},
+  label style={text=ink},
+  xmajorgrids, grid style={draw=ink!12, line width=0.3pt},
+  y axis line style={draw=none}, ytick style={draw=none},
+  enlarge y limits=false,
+  axis on top=false,
+  nodes near coords,
+  % `/pgf/number format/.cd` anahtar YOLUNU degistirir; ondan SONRA
+  % yazilan `xshift` o yolda aranir ve hata verir. Once konum, sonra
+  % sayi bicimi.
+  nodes near coords style={font=\scriptsize, text=ink!85, xshift=1pt,
+                           /pgf/number format/.cd, fixed,
+                           precision=2, use comma},
+]
+  \addplot[draw=betacol, fill=betacol!75] table[x expr={abs(\thisrow{beta})},
+    y=sira] {\duy};
+  \addplot[draw=spincol, fill=spincol!70] table[x expr={abs(\thisrow{omega})},
+    y=sira] {\duy};
+\end{axis}
+
+% gösterge
+\begin{scope}[shift={($(current axis.north west)+(0,7mm)$)}]
+  \fill[betacol!75, draw=betacol] (0,-1.1pt) rectangle (4mm,1.1pt);
+  \node[anchor=west, text=ink, font=\footnotesize, inner sep=3pt] at (4.4mm,0)
+       {$\beta$ --- DART'ın \emph{ölçtüğü}};
+  \fill[spincol!70, draw=spincol] (36mm,-1.1pt) rectangle (40mm,1.1pt);
+  \node[anchor=west, text=ink, font=\footnotesize, inner sep=3pt] at (40.4mm,0)
+       {$\omega$ --- Hera'nın \emph{ölçeceği}};
+\end{scope}
+
+\node[anchor=north west, align=left, font=\footnotesize, text=ink,
+      text width=86mm, inner sep=0pt]
+     at ($(current axis.south west)+(-16mm,-9mm)$)
+     {İki gözlenebilir \emph{farklı} eksenleri görüyor:
+      $r(\beta,\omega)=+0{,}131$, yani neredeyse dik. $\beta$ tek başına
+      bir yön kısıtlıyor; spin diğer ikisini taşıyor.};
+
+\end{tikzpicture}
+\end{document}

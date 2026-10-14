@@ -715,6 +715,67 @@ oradaki duyarlılığı sınırlarlar, küresel türev değildirler.}
 \label{sek:duyarlilik}
 \end{figure}
 
+\subsection{Üretim havuzundan ilk bulgular}
+
+Üretim havuzunun 96 noktasından 88'i tamamlanmış durumdadır; kayıp koşu
+yoktur (Kapı~1 ölçütü \%20, ölçülen \%0,00). Aşağıdaki iki ölçüm bu
+kısmi havuzdandır ve havuz dolduğunda yinelenecektir; yine de projenin
+\emph{araştırma sorusunu} doğrudan yanıtladıkları için burada
+verilmektedir.
+
+\subsubsection*{$\beta$ tek bir yön taşıyor}
+
+Havuzun 88 noktasında $\beta$ ile üç koordinat arasındaki Spearman sıra
+korelasyonu ölçüldü:
+\begin{equation}
+\rho(\beta,\log Y_0) = -0{,}983, \quad
+\rho(\beta,\alpha_b) = -0{,}061, \quad
+\rho(\beta,f) = +0{,}055 .
+\label{esit:betaeksen}
+\end{equation}
+$\beta$, $Y_0$ ile neredeyse tam tekdüze; diğer iki koordinatla
+korelasyonu \emph{pratikte sıfırdır}. Yani tek skaler gözlem, üç boyutlu
+iç yapı uzayında \textbf{bir yön} taşımaktadır. Bu, Hipotez~1'in
+(``ölçülebilir yön sayısı üçten küçüktür'') doğrudan ve nicel
+doğrulamasıdır; Şekil~\ref{sek:dejenerasyon}'de çizilen koridorun
+ölçülmüş hâlidir.
+
+\subsubsection*{Spin, $\beta$'nın göremediğini görüyor}
+
+Aynı koşuların kaydedilmiş son durumlarından, bağlı malzemenin açısal
+momentumu ve eylemsizlik tensörü hesaplanarak çarpmanın kazandırdığı
+açısal hız $\omega$ ölçüldü (sıfır GPU; kaçış ölçütü her koşunun kendi
+çıktısından geri çözüldü). $\omega$, $\theta$ boyunca 14,4 kat
+değişmektedir ve duyarlılığı $\beta$'nınkinin neredeyse tümleyenidir:
+\begin{equation}
+\rho(\omega,f) = +0{,}459, \quad
+\rho(\omega,\alpha_b) = -0{,}316, \quad
+\rho(\omega,\log Y_0) = -0{,}111 .
+\label{esit:spineksen}
+\end{equation}
+İki gözlenebilir arasındaki korelasyon $\rho(\beta,\omega)=+0{,}131$,
+yani \textbf{neredeyse diktirler} (Şekil~\ref{sek:eksen}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.88\linewidth]{eksen.pdf}
+\caption{Hangi gözlenebilir hangi ekseni görüyor. Çubuklar Spearman sıra
+korelasyonunun büyüklüğüdür (işaret değil); üretim havuzunun 88
+noktasından ölçülmüştür. $\beta$ yalnız $Y_0$'da uzundur: DART'ın tek
+skaleri iç yapının tek bir yönünü taşır. Çarpmanın kazandırdığı açısal
+hız $\omega$ ise $f$ ve $\alpha_b$'de uzundur --- $\beta$'nın kör olduğu
+iki eksen. İkisinin birbiriyle korelasyonu yalnız $+0{,}131$'dir. $\omega$
+bu projenin bir \emph{öngörüsüdür}; Hera Dimorphos'un dönme durumunu
+doğrudan ölçecektir.}
+\label{sek:eksen}
+\end{figure}
+
+Bunun sonucu doğrudandır: dejenerasyonu kıracak şey daha ince bir
+benzetim değil, \textbf{ikinci bir gözlenebilirdir} --- ve aday
+bellidir. Spin, DART posterioruna şu an giremez, çünkü kilitli bir
+gözlenen değeri ve belirsizliği yoktur; ancak Hera'nın sınayacağı
+mühürlü bir öngörü olarak yeri tam buradadır.
+
 % =======================================================================
 \section{Sonuç ve Tartışma}
 
@@ -842,8 +903,21 @@ Projenin sınırları yapısaldır ve burada eksiksiz sayılmaktadır.
 Amaç bölümünde sayılan dört hedeften birinci, ikinci ve dördüncüsü
 tamamlanmıştır: ileri model kurulmuş ve doğrulanmış, denetimli
 duyarlılıklar ölçülmüş, karar kuralları veriden önce kilitlenmiştir.
-Üçüncü hedef --- gözlemin kaç yönü kısıtladığının ölçülmesi --- üretim
-havuzunun tamamlanmasını beklemektedir.
+
+Üçüncü hedef --- gözlemin $\theta$ uzayında kaç yönü kısıtladığı ---
+\emph{kısmen} yanıtlanmıştır. Üretim havuzunun 88 noktası,
+Denklem~\eqref{esit:betaeksen} ile $\beta$'nın pratikte tek bir
+koordinatı ($Y_0$) taşıdığını göstermektedir; diğer iki eksenle
+korelasyonu sıfıra yakındır. Bu, Hipotez~1'i nicel olarak
+desteklemektedir. Ancak \emph{sıra korelasyonu tanımlanabilirlik
+değildir}: $n_{\text{yön}}$'ün kilitli ölçümü Fisher öz değerleriyle
+yapılır ve tam havuzu, kalibre edilmiş vekili ve ölçülmüş $R$'yi
+gerektirir.
+
+Beklenmedik bir kazanç da bu hedeften çıktı:
+Denklem~\eqref{esit:spineksen}, dejenerasyonun \emph{nasıl}
+kırılabileceğini göstermektedir. Daha ince bir benzetim değil, ikinci ve
+neredeyse dik bir gözlenebilir gerekmektedir --- ve Hera onu ölçecektir.
 
 \begin{bekleyen}
 \textbf{Bu raporda henüz bulunmayanlar.} Üretim posterioru,
