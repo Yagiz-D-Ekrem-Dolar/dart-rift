@@ -145,3 +145,92 @@ ve hatırlanmış bir sayıyı (`a ≈ 1206 m`). Üçü de sessizce geçebilirdi
 
 Bu kayıt bir başarı kaydı değil; kuralların **neden** yazıldığının
 kaydıdır.
+
+---
+
+## 6. EK — §3'ün öncülü YANLIŞMIŞ, ve doğrusu dış sabit istemiyor
+
+PROTOKOL-SI §3 şöyle diyordu: *"Literatür: `β`, **yörünge hızı yönünde**
+ölçülür."* Birincil kaynak okununca bunun tam doğru olmadığı görüldü.
+
+**Cheng ve ark. (2023),** *Momentum Transfer from the DART Mission
+Kinetic Impact on Asteroid Dimorphos*,
+[arXiv:2303.03464](https://arxiv.org/abs/2303.03464), Denklem (1):
+
+    M Δv⃗ = m U⃗ + m (β − 1) (Ê · U⃗) Ê
+
+ve makalenin kendi cümlesi: *"β, aktarılan momentumun çarpıcı
+momentumuna oranıdır, **net fırlatı momentumu doğrultusunda**"*; ayrıca
+*"önceki çalışmalar yüzey normalini kullanmıştı, biz bunun yerine fırlatı
+doğrultusunu seçtik ki sonuç yüzey topografyasından bağımsız olsun."*
+
+Yani **üç ayrı gelenek** var:
+
+| gelenek | referans yön | kim |
+|---|---|---|
+| yüzey normali | yüzey normali | eski çalışmalar |
+| **fırlatı doğrultusu `Ê`** | net fırlatı momentumu | **Cheng 2023 — gözlenen `β`** |
+| çarpıcı doğrultusu `ê_U` | mermi momentumu | **bizim koşularımız** |
+
+Along-track yön (`ê_T`), `β`'nın tanımı değil, `Δv`'nin **ölçülebildiği**
+yöndür; Denklem (2) sadece (1)'in `ê_T` ile skaler çarpımıdır.
+
+### Sonuç: aradaki fark `1/cos²` ve hesaplanabilir
+
+`P⃗_fırlatı = Σ m v⃗` (kaçan hedef maddesi), `Ê = P⃗/|P⃗|` olmak üzere:
+
+    b_bizim = |P⃗| |cos θ| / p          (p = m_mermi v_mermi)
+    b_Cheng = |P⃗| / (p |cos θ|)
+    => b_Cheng = b_bizim / cos²θ,   θ = ∠(Ê, ê_U)
+
+Türetme 88 koşuda sayıyla doğrulandı: **azami sapma `4,0×10⁻¹⁵`.**
+
+### Ölçülen (88 nokta, kısmi havuz)
+
+| büyüklük | değer |
+|---|---|
+| `cos θ` | `−0,9699 .. −0,8856` (ortanca `−0,9260`) |
+| `θ` | `14,1° .. 27,7°` |
+| `b_Cheng / b_bizim` | ortanca **`1,166`**, aralık `1,063 .. 1,275` |
+
+**Bizim `β`'mız, gözlemin tanımına göre ortanca `%17` düşük.**
+
+### Neden önemli
+
+Bu fark, ilan edilmiş bütün bütçeden büyük:
+
+| terim | bağıl |
+|---|---|
+| matris çekme yasası | `0,971` |
+| bağdaşım `10–5000 Pa` | `0,682` |
+| **`β` tanımı (`ê_U` vs `Ê`)** | **`0,166`** |
+| çarpıcı geometrisi | `0,134` |
+| `σ_model` (altı terim toplamı) | `0,065` |
+| gözlemin kendi `1σ`'sı (`b` üzerinde) | `0,074–0,097` |
+
+Yani kaldıraç sıralamasında **üçüncü sıraya** girer ve `σ_model`'in iki
+katından fazladır. Düzeltilmeden yapılan bir `β` karşılaştırması, iki
+**farklı büyüklüğü** karşılaştırmaktır.
+
+### İyi haber
+
+`Ê` dış bir sabit değil; her koşunun kendi fırlatı alanından
+hesaplanıyor. Yani §3 için beklenen *"yörünge sabitleri teyit edilmeli"*
+koşulu bu terim için **gerekmiyor**. Ön baskının *"iki izdüşüm
+arasındaki açıyı vermiyoruz, yörünge sabitlerinden çıkar"* cümlesi
+**fazla karamsarmış**: asıl terim yörünge geometrisine değil, kendi
+fırlatı alanımıza bağlı.
+
+### Sınırlar
+
+* Kısmi havuz (88/96), mühürlü değil.
+* `Ê` bizim sahnemizin `600 s`'deki fırlatı alanından; Cheng'in `Ê`'si
+  Hubble/LICIACube'dan kestirilmiş. **Yön doğruluğu ayrı bir sorudur**;
+  burada ölçülen yalnız *tanım* farkıdır.
+* `b_bizim` yeniden kurulumu mutlak değerde azami `%4,3` sapıyor (§3
+  yöntem notu); ancak oran `b_Cheng/b_bizim` içinde `|P⃗|` ve `p`
+  sadeleştiği için **oran bu sapmadan etkilenmez**.
+* Yargı kuralı PROTOKOL-SI §3'te `σ_yon` eşikleriyle yazılıydı ve o
+  kural `ê_yörünge` içindi. Buradaki terim **farklı bir büyüklük**;
+  mevcut eşikler ona uygulanmadı. Uygulanacaksa kuralın havuz
+  okunmadan yeniden yazılması gerekir — bu kayıt yalnız **ölçüyor**.
