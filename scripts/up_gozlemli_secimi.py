@@ -72,21 +72,36 @@ U0_NOKTALAR = (
 def durumlari_oku(kampanya: str) -> tuple[list[dict], list[int], np.ndarray]:
     """Her `.durumlar` dizinindeki `npz`'den aday sözlüğü üretir.
 
-    Döner: `(adaylar, küresel_indeksler, theta_dosyadan)`. Son öğe
-    tasarımla çapraz denetlenir — indeks eşlemesi (`küresel = dilim +
-    24·i`) bir varsayım, ve yanlışsa bütün Jakobyen anlamsız olur.
+    Döner: `(adaylar, küresel_indeksler, theta_dosyadan)`.
+
+    Küresel indeks **dosya adından okunmaz**: havuz her dilimdeki dört
+    dosyayı da `nokta_0000_<hash>.npz` diye adlandırıyor, yani addaki
+    sayı ayırt edici değil. Bunun yerine her dosyanın kendi `theta`'sı
+    kilitli tasarımla eşleştirilir; eşleşme birebir olmazsa betik durur.
     """
-    kayitlar: list[tuple[int, dict]] = []
+    kayitlar: list[tuple[int, dict, np.ndarray]] = []
+    tasarim = np.asarray(lhs_design(DART_UZAYI_S4, N_NOKTA, root_seed=TOHUM),
+                         dtype=np.float64)
+    kullanilan: dict[int, str] = {}
     desen = os.path.join(kampanya, "HAVUZ_g1p0.dilim*_24.durumlar")
     for dizin in sorted(glob.glob(desen)):
-        m = re.search(r"dilim(\d+)_24", dizin)
-        if not m:
+        if not re.search(r"dilim(\d+)_24", dizin):
             raise ValueError(f"dilim numarasi okunamadi: {dizin}")
-        dilim = int(m.group(1))
         for yol in sorted(glob.glob(os.path.join(dizin, "nokta_*.npz"))):
             d = np.load(yol, allow_pickle=True)
-            i_ic = int(re.search(r"nokta_(\d+)_", os.path.basename(yol)).group(1))
-            kuresel = dilim + 24 * i_ic
+            th = np.asarray(d["theta"], dtype=np.float64).ravel()
+            uz = np.max(np.abs(tasarim - th) / np.maximum(np.abs(tasarim),
+                                                          1e-30), axis=1)
+            kuresel = int(np.argmin(uz))
+            if uz[kuresel] > 1e-9:
+                raise SystemExit(
+                    f"{os.path.basename(yol)}: theta {th} kilitli tasarimda "
+                    f"yok (en yakin {kuresel}, bagil {uz[kuresel]:.3e})")
+            if kuresel in kullanilan:
+                raise SystemExit(
+                    f"AYNI tasarim noktasi iki dosyada: {kuresel} -> "
+                    f"{kullanilan[kuresel]} ve {os.path.basename(yol)}")
+            kullanilan[kuresel] = os.path.basename(yol)
             # `fizik_tani` npz'de JSON DIZGESI olarak duruyor, sozluk degil.
             ft = json.loads(str(d["fizik_tani"]))
             ea = ft["ejekta_ayrismasi"]
