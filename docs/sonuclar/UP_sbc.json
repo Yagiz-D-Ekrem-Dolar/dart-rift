@@ -1,27 +1,49 @@
 {
   "protokol": "PROTOKOL-HAVUZ §6 — SBC kapisi",
-  "kosuldu": "2026-10-16",
+  "kosuldu": "2026-10-16 (aksam, DUZELTILMIS girdi)",
   "kosucu": "scripts/up_sbc_kapisi.py",
   "n_sbc": 200,
   "tohum_sbc": 20261016,
   "n_grid": 60,
-  "vekil": {"beta_q2": 0.93099, "M_ejekta_q2": 0.98817,
-            "bachoc_beta": 1.28964, "bachoc_M": 1.09528},
-  "R_rho_kuculmus": 0.20469,
+  "vekil": {
+    "beta_q2": 0.9765,
+    "M_ejekta_q2": 0.98817,
+    "bachoc_beta": 1.367,
+    "bachoc_M": 1.09528
+  },
+  "R_rho_kuculmus": 0.456,
   "eksenler": [
-    {"ad": "boulder_alpha0", "tani": "KALIBRE", "pit_ortalama": 0.5050,
-     "pit_ortalama_se": 0.0204, "ks_p": 0.9714, "kapsama68": 0.675},
-    {"ad": "Y0", "tani": "KALIBRE", "pit_ortalama": 0.4682,
-     "pit_ortalama_se": 0.0204, "ks_p": 0.1794, "kapsama68": 0.675},
-    {"ad": "f_boulder", "tani": "KALIBRE", "pit_ortalama": 0.5394,
-     "pit_ortalama_se": 0.0204, "ks_p": 0.0690, "kapsama68": 0.675}
+    {
+      "ad": "boulder_alpha0",
+      "tani": "KALIBRE",
+      "pit_ortalama": 0.4998,
+      "pit_ortalama_se": 0.0204,
+      "ks_p": 0.868,
+      "kapsama68": 0.645
+    },
+    {
+      "ad": "Y0",
+      "tani": "KALIBRE",
+      "pit_ortalama": 0.4751,
+      "pit_ortalama_se": 0.0204,
+      "ks_p": 0.0741,
+      "kapsama68": 0.65
+    },
+    {
+      "ad": "f_boulder",
+      "tani": "KALIBRE",
+      "pit_ortalama": 0.5326,
+      "pit_ortalama_se": 0.0204,
+      "ks_p": 0.2994,
+      "kapsama68": 0.68
+    }
   ],
   "genel": "KALIBRE",
   "karar": "YAYIMLANIR -- butun eksenler KALIBRE.",
   "sinira_yakin": {
-    "f_boulder_ks_p": "0,0690 vs esik 0,05 -- en zayif eksen",
-    "Y0_pit_sapmasi": "0,0318 vs yanlilik bandi 2*se = 0,0408 (1,56 sigma)"
+    "Y0_ks_p": "0,0741 vs esik 0,05 -- en zayif eksen (duzeltme oncesi f idi)"
   },
   "kapsam": "SBC veriyi cikarimin KENDI modelinden uretir; sorusu 'model dogruysa posterior kalibre mi'. Modelin gercege uyup uymadigi ayri soru -- cevabi KAYIT-080 (tarih eslemesi).",
-  "yontem_notu": "uret() gercek theta'yi en yakin izgara dugumune tutturur, PIT gercek x'e karsi hesaplanir; alt-izgara farki PIT'i hafifce genisletir (muhafazakar yon)."
+  "yontem_notu": "uret() gercek theta'yi en yakin izgara dugumune tutturur, PIT gercek x'e karsi hesaplanir; alt-izgara farki PIT'i hafifce genisletir (muhafazakar yon).",
+  "duzeltme": "Ilk kosum hatali kos sutunuyla yapildi; yargi degismedi. Bkz. KAYIT-082."
 }

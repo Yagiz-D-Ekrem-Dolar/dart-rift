@@ -91,115 +91,123 @@ eşiğin iki yanında; kararsız olduğu için kural en küçüğü aldırıyor.
 `FISHER_ESIGI` **değiştirilmedi** — indirmek protokolde yasak ve
 indirilirse yargı geçersiz sayılır.
 
-## 6. Model gözleme ulaşıyor mu — **evet**, ve geriye %7,37 kalıyor
+## 6. Model gözleme ulaşıyor mu — **evet**, ve geriye %34 kalıyor
 
-PROTOKOL-UP §6 (tarih eşleme, Vernon) 2026-10-16'da koşuldu
-([`UP_s5_s6.json`](UP_s5_s6.json),
-[KAYIT-080](../defter/KAYIT-080_2026-10-16_UP-onsel-duyarliligi-ve-tarih-eslemesi.md)):
+PROTOKOL-UP §6 (tarih eşleme, Vernon), düzeltilmiş girdiyle
+([`UP_s5_s6.json`](UP_s5_s6.json), KAYIT-080 + düzeltmesi
+[KAYIT-082](../defter/KAYIT-082_2026-10-16_kos-hatasi-ve-duzeltilmis-sonuclar.md)):
 
 | ölçü | değer |
 |---|---|
-| `I_min` | **0,504** (kesme `I > 3`) |
-| bağdaşır hacim | **%7,37** — 15 916 / 216 000 düğüm |
-| posterior %68 hacmi | %0,50 |
-| oran | **14,78** (eşik 10) |
+| `I_min` | **0,325** (kesme `I > 3`) |
+| bağdaşır hacim | **%34,04** — 73 537 / 216 000 düğüm |
+| posterior %68 hacmi | %10,27 |
+| oran | **3,31** (eşik 10) |
 | post68 kütlesinin bağdaşır oranı | **1,0000** (eşik 0,90) |
-| **yargı** | **POSTERIOR DAR** |
+| **yargı** | **İKİ YÖNTEM UYUŞUYOR** |
 
-`I_min = 0,504` önemsiz değil: **model DART'ın gözlemine ulaşabiliyor.**
-Hiçbir `θ` bağdaşmasaydı `I_min > 3` çıkar, ileri model reddedilirdi.
+`I_min = 0,325`: **model DART'ın gözlemine ulaşıyor.** Hiçbir `θ`
+bağdaşmasaydı `I_min > 3` çıkar, ileri model reddedilirdi.
 
-Çelişki yok — posteriorun %68 kütlesinin **tamamı** bağdaşır bölgenin
-içinde. Ama hacmi o bölgenin 1/14,8'i: Gauss olabilirliği + köşegen
-kovaryans varsayımının aşırı-güven imzası. Protokolün karşılığı:
-**ana sonuç tarih eşleme bölgesidir**, posterior "olabilirlik
-varsayımına koşullu" etiketiyle verilir.
+Ve iki yöntem **birbirini doğruluyor**: posteriorun %68 kütlesinin
+tamamı bağdaşır bölgede, hacim oranı 3,31 ile eşiğin (10) altında.
+Protokolün karşılığı: posterior yayımlanır, tarih eşleme
+**doğrulayıcı ek** olur.
 
-## 7. Sonuç veriden mi önselden mi — **arada**
+## 7. Sonuç veriden mi önselden mi — **veriden**, ama sınav dişsiz
 
-| önsel | kip `log10 Y₀` | kip `Y₀` (Pa) |
-|---|---:|---:|
-| `KILITLI` | +0,2542 | 1,796 |
-| `DUZ_LOG` | +0,2542 | 1,796 |
-| `KAYDIRILMIS` (×3) | +0,5085 | 3,225 |
+| önsel | kip `log10 Y₀` |
+|---|---:|
+| `KILITLI` | +1,2712 |
+| `DUZ_LOG` | +1,2712 |
+| `KAYDIRILMIS` (×3) | +1,2712 |
 
-`σ_onsel = 0,2542 dex` → **ÖNSEL ETKİLİ** (eşikler 0,15 / 0,50).
-Posterior yayımlanır ama üç önselin tablosu **zorunlu ek**.
+`σ_onsel = 0,0000 dex` → **SONUÇ VERİDEN GELİYOR**.
 
-İki yan bulgu kayda geçti:
+**Ama bu göründüğünden zayıf bir kanıt** ve öyle yazılıyor:
+`KAYDIRILMIS` önsel `Y₀ < 3 Pa`'yı kesiyor, posterior kipi ise
+`18,7 Pa`. Kesilen bölge posteriorun zaten umursamadığı yer, yani
+perturbasyon hiçbir şeye dokunmuyor. Kilitli yargı uygulandı; sınavın
+ayırt edici gücü düşük.
 
-- **`KILITLI` ile `DUZ_LOG` aynı dağılım.** ADR-0053 kilitli önseli
-  `Y₀ ∈ [1e0, 1e5]` (log, 5 dekad), yani protokolün "bilgisiz uç"
-  dediği şeyin ta kendisi. Protokol yazılırken fark edilmemiş;
-  düzeltilmiyor, kaydediliyor.
-- **Kip önsel kenarına yapışık.** `u = (0,661 ; 0,051 ; 0,949)`:
-  `Y₀` alt kenarda, `f` üst kenarda. Veri önsel kutusunun dışını
-  istiyor — ADR-0053'ün `ÖNSEL GÖZLEMİ İÇERMİYOR` yargısıyla aynı yön.
+Yan bulgu: **`KILITLI` ile `DUZ_LOG` aynı dağılım.** ADR-0053 kilitli
+önseli `Y₀ ∈ [1e0, 1e5]` (log, 5 dekad), yani protokolün "bilgisiz uç"
+dediği şeyin ta kendisi. Protokol yazılırken fark edilmemiş.
 
-## 8. Vekilin durumu
+## 8. Posterior — `n_yön = 1`'in somut hâli
 
-| vekil | `q²` | Bachoc çarpanı | kalibre %68 kapsama |
-|---|---:|---:|---:|
-| `β` (fırlatı geleneğinde) | **0,9310** | 1,2896 | 0,7083 |
-| `ln M_ejekta` | **0,9882** | 1,0953 | 0,7188 |
+| eksen | büzülme | sd oranı | sınıf |
+|---|---:|---:|---|
+| `α_b` | 0,031 | 0,984 | **ÖNSEL BASKIN** |
+| `Y₀` | **0,882** | 0,343 | **ÖĞRENİLDİ** |
+| `f` | −0,305 | 1,143 | **ÖNSEL BASKIN** |
 
-θ-gruplu 4-kat ÇD; Bachoc ikisini de büyüttü, kapsama `0,68` hedefinin
-biraz üstünde (muhafazakâr taraf). Ölçülen artık korelasyonu
-`ρ = 0,2047` (ham `0,2924`, λ = 0,3).
+Kip: `Y₀ ≈ 18,7 Pa`, önsel kutusunun içinde (kenarda değil).
+Fisher: `[499,73 · 0,82 · 0,00]`, eşik 36 → **`n_yön = 1`**.
 
-## 9. SBC kapısı — **GEÇTİ**
+Büzülme sınıfları Fisher yargısıyla **tutarlı**: bir eksen öğrenildi,
+ikisi önselden ayırt edilemiyor.
 
-PROTOKOL-HAVUZ §6, `n_sbc = 200`, tohum `20261016`
+## 9. Vekil ve bilgi bütçesi
+
+| vekil | `q²` | ÇD-RMSE | Bachoc | kalibre %68 kapsama |
+|---|---:|---:|---:|---:|
+| `β` (fırlatı geleneğinde) | **0,9765** | 0,1509 | 1,367 | 0,792 |
+| `ln M_ejekta` | **0,9882** | 0,1806 | 1,095 | 0,719 |
+
+`β` belirsizliğinin kaynakları (toplam sd `0,3126`):
+
+| kaynak | pay |
+|---|---:|
+| gözlem | **%48,4** |
+| model hatası bütçesi | %28,3 |
+| vekil (GP) | %23,3 |
+
+Baskın kalem **gözlem** — ve onu biz iyileştiremeyiz. Daha çok tasarım
+noktası vekil payını (%23,3) küçültür, toplamı çok değiştirmez.
+
+## 10. SBC kapısı — **GEÇTİ**
+
+PROTOKOL-HAVUZ §6, `n_sbc = 200`, tohum `20261016`, düzeltilmiş girdi
 ([`UP_sbc.json`](UP_sbc.json),
 [KAYIT-081](../defter/KAYIT-081_2026-10-16_SBC-kapisi-gecti.md)):
 
 | eksen | tanı | PIT ort. (se 0,0204) | KS `p` | kapsama68 |
 |---|---|---:|---:|---:|
-| `α_b` | **KALİBRE** | 0,5050 | 0,9714 | 0,675 |
-| `Y₀` | **KALİBRE** | 0,4682 | 0,1794 | 0,675 |
-| `f` | **KALİBRE** | 0,5394 | 0,0690 | 0,675 |
+| `α_b` | **KALİBRE** | 0,4998 | 0,8680 | 0,645 |
+| `Y₀` | **KALİBRE** | 0,4751 | 0,0741 | 0,650 |
+| `f` | **KALİBRE** | 0,5326 | 0,2994 | 0,680 |
 
 **GENEL: KALİBRE → posterior yayımlanabilir.** PLAN-90-GÜN'de `~%25`
-yazılı olan "SBC düşer" riski gerçekleşmedi.
+yazılı "SBC düşer" riski gerçekleşmedi. En zayıf eksen `Y₀`
+(`p = 0,0741`, eşik `0,05`) ve saklanmıyor.
 
-İki eksen sınıra yakın ve saklanmıyor: `f`'nin KS `p = 0,0690`
-(eşik `0,05`), `Y₀`'ın PIT sapması `1,56σ` (yanlılık bandı `2σ`).
+SBC'nin kanıtladığı dar: çıkarım makinesi **kendi varsayımları
+altında** kalibre. Modelin gerçeğe uyması §6'nın sorusu.
 
-SBC'nin kanıtladığı şey dar: çıkarım makinesi **kendi varsayımları
-altında** kalibre — posterior "%68" dediğinde gerçekten %68 kapsıyor.
-Modelin gerçeğe uyup uymadığı §6'nın sorusu ve cevabı orada.
-
-## 10. Hâlâ ölçülmeyen
+## 11. Hâlâ ölçülmeyen
 
 | | durum |
 |---|---|
-| üretim posterioru (yayımlanabilir hâli) | **koşmadı** — ama artık **engel yok**: SBC geçti, etiketleri belli |
-| ince koşu (12 nokta, σ mı yanlılık mı) | **koşmadı** — ~224 GPU-saat, ADR-0059 |
-| Hera spin ön kaydı | **üretilmedi** — protokolü kilitli: [PROTOKOL-HS](../truba/PROTOKOL-HS-HERA-SPIN.md) |
+| ince koşu (12 nokta, σ mı yanlılık mı) | **koşuyor** — iş `1601448`, 4 GPU, ADR-0059 |
+| Hera spin ön kaydı | **üretilmedi** — [PROTOKOL-HS](../truba/PROTOKOL-HS-HERA-SPIN.md) kilitli |
 | Hera krater ön kaydı | **üretilmedi** — [PROTOKOL-HT](../truba/PROTOKOL-HT-HERA-TAHMIN.md) |
 | `μ_f` sürtünme duyarlılığı | **koşmadı** — ~10 GPU-saat |
 
-## 11. Bugünkü hâliyle savunulabilir cümle
+## 12. Bugünkü hâliyle savunulabilir cümle
 
 > DART'ın `β`'sı `(α_b, Y₀, f)` uzayında **bir** yön kısıtlıyor
-> (`n_yön = 1`). Ölçülmüş model hatası bütçesiyle yapılan elemede önsel
-> hacminin **%7,37'si** gözlemle bağdaşır kalıyor ve model gözleme
-> **ulaşıyor** (`I_min = 0,504`). Çıkarım makinesi kendi varsayımları
-> altında kalibredir (SBC: üç eksen de `KALİBRE`). Ama Gauss
-> olabilirliğine dayanan posterior bağdaşır bölgeden 14,8 kat dar
-> olduğu için ana sonuç **eleme bölgesidir**; posterior varsayıma
-> koşullu bir ek olarak verilir. Sonuç önselden bağımsız değildir
-> (`0,254 dex`), bu yüzden üç önselin tablosu sonuçla birlikte
-> yayımlanır.
+> (`n_yön = 1`): `Y₀` öğreniliyor (büzülme 0,882, kip ≈ 18,7 Pa),
+> `α_b` ve `f` önselden ayırt edilemiyor. Ölçülmüş model hatası
+> bütçesiyle yapılan elemede önsel hacminin **%34'ü** bağdaşır kalıyor
+> ve model gözleme **ulaşıyor** (`I_min = 0,325`). Posterior ile eleme
+> **birbirini doğruluyor** (oran 3,31 < 10) ve çıkarım makinesi SBC'de
+> kalibre çıkıyor. Sonuç önsele duyarsız görünüyor, ama o sınavın
+> ayırt edici gücü düşüktür ve öyle raporlanıyor.
 
-## 12. Bu klasörün dışında duran iki uyarı
+## 13. Bu klasörün dışında duran uyarı
 
-- **Önsel kutusunun tabanı fiziği kesiyor olabilir.** Posterior kipi
-  `Y₀ ≈ 1,80 Pa` ve kutu `1 Pa`'dan başlıyor. Literatürde moloz yığını
-  kararlılığı için `~0,5 Pa`'lık bağdaşım değerleri geçiyor — yani veri
-  kutunun dışını isterken, kutunun dışı fiziksel olarak anlamlı.
-  Kutuyu şimdi genişletmek ön kaydı çiğner; **bulgu olarak** kayıtta.
-- **`β` gelenek düzeltmesi özgün bir katkı DEĞİL.** 2026-10-16
-  literatür kontrolü: DART ekibi `β_n`, `β_p` ve Cheng'in fırlatı
-  doğrultusu `β`'sını açıkça tanımlıyor. ADR-0060 bizim kendi
-  hatamızı yakaladı; sunumda keşif olarak geçmeyecek.
+**`β` gelenek düzeltmesi özgün bir katkı DEĞİL.** 2026-10-16 literatür
+kontrolü: DART ekibi `β_n`, `β_p` ve Cheng'in fırlatı doğrultusu
+`β`'sını açıkça tanımlıyor. ADR-0060 bizim kendi hatamızı yakaladı;
+sunumda keşif olarak geçmeyecek.

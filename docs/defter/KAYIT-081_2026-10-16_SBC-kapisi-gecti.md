@@ -6,6 +6,16 @@
 **Öncül:** [PROTOKOL-HAVUZ](../truba/PROTOKOL-HAVUZ-URETIM.md) §6,
 KAYIT-079, KAYIT-080
 
+
+> ## ⚠ NOT — 2026-10-16 akşam
+>
+> Bu SBC koşumu hatalı `kos` sütunlu girdiyle yapıldı
+> ([KAYIT-082](KAYIT-082_2026-10-16_kos-hatasi-ve-duzeltilmis-sonuclar.md)).
+> Düzeltilmiş girdiyle **yeniden koşuldu** ve yargı **değişmedi**:
+> üç eksen de `KALİBRE` (`p = 0,868 / 0,074 / 0,299`,
+> kapsama `0,645 / 0,650 / 0,680`). Aşağıdaki sayılar eski koşuma
+> aittir ve kayıt olarak durur.
+
 ---
 
 ## 1. Sonuç

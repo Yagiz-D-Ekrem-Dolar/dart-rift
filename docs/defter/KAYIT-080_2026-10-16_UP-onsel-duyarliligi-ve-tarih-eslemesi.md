@@ -6,6 +6,22 @@
 **Öncül:** [PROTOKOL-UP](../truba/PROTOKOL-UP-POSTERIOR.md) §5/§6
 (2026-10-08, veriden önce), ADR-0053, ADR-0058, KAYIT-079
 
+
+> ## ⚠ DÜZELTME — 2026-10-16 akşam
+>
+> Bu kaydın §5 ve §6 yargıları **geçersizdir**. Girdi dosyasında
+> `kos` sütunu yanlış nicelikti (`kos_ort`, parçacık kosinüslerinin
+> ortalaması) ve ADR-0060 net momentum doğrultusunun kosinüsünü
+> istiyor. `b_model` 1,437 kat şişmişti.
+>
+> Düzeltilmiş değerler: §6 **İKİ YÖNTEM UYUŞUYOR** (oran 3,31,
+> bağdaşır hacim %34,04), §5 **SONUÇ VERİDEN GELİYOR**
+> (`σ_onsel = 0`). "Posterior kenara yapışık" ve "vekil %77"
+> bulguları da geri çekildi.
+>
+> **Hiçbir satır silinmedi** (kural 5); tam döküm:
+> [KAYIT-082](KAYIT-082_2026-10-16_kos-hatasi-ve-duzeltilmis-sonuclar.md).
+
 ---
 
 ## 1. İki yargı
