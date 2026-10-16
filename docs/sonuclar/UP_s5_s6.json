@@ -1,0 +1,59 @@
+{
+  "protokol": "PROTOKOL-UP §5 + §6",
+  "kosuldu": "2026-10-16",
+  "kosucu": "scripts/up_onsel_ve_tarih.py",
+  "girdi": "96/96 uretim havuzu (idx, beta, ejf, kos)",
+  "n_grid": 60,
+  "kapi1": {"okunan": 96, "hedef": 96, "kayip": 0.0, "yargi": "GECTI"},
+
+  "vekil": {
+    "beta": {"cd_rmse": 0.50188, "q2": 0.93099, "bachoc_carpani": 1.28964,
+             "kapsama68_kalibre": 0.70833, "ell": [0.23291, 0.24697, 0.54578]},
+    "M_ejekta": {"cd_rmse": 0.18061, "q2": 0.98817, "bachoc_carpani": 1.09528,
+                 "kapsama68_kalibre": 0.71875, "ell": [0.90955, 0.62879, 10.0]}
+  },
+  "R_olculmus": {"rho_ham": 0.29242, "rho_kuculmus": 0.20469, "lam": 0.3,
+                 "artik_std": [0.50382, 0.18155]},
+
+  "S6_tarih_esleme": {
+    "I_kesme": 3.0,
+    "I_min": 0.50426,
+    "I_ortanca": 7.68672,
+    "I_maks": 29.51973,
+    "V_bagdasir": 0.0736852,
+    "bagdasir_dugum": 15916,
+    "toplam_dugum": 216000,
+    "V_post68": 0.0049861,
+    "oran_V_bagdasir_V_post68": 14.77809,
+    "post68_kutlesinin_bagdasir_orani": 1.0,
+    "esikler": {"hacim_orani": 10.0, "kutle_ortusme": 0.9},
+    "yargi": "POSTERIOR DAR",
+    "sonucu": "Tarih esleme bolgesi ANA SONUC olarak verilir; posterior 'olabilirlik varsayimina kosullu' etiketiyle yayimlanir (UP §6 yargi tablosu)."
+  },
+
+  "S5_onsel_duyarliligi": {
+    "ayni_dagilim_bulgusu": {
+      "KILITLI_ile_DUZ_LOG_ayni": true,
+      "not": "ADR-0053 kilitli onseli Y0 in [1e0,1e5] (log, 5 dekad) = log10 duzgun [0,5]; protokolun DUZ_LOG'u ile BIREBIR ayni dagilim. Protokol yazilirken fark edilmemis. Gercek sinav KAYDIRILMIS ile yapildi."
+    },
+    "kaydirma_carpani": 3.0,
+    "kipler_log10_Y0": {"KILITLI": 0.254237, "DUZ_LOG": 0.254237,
+                        "KAYDIRILMIS": 0.508475},
+    "sigma_onsel_dex": 0.254237,
+    "bagil_kayma_alpha_f": 0.050847,
+    "esikler": {"veriden": 0.15, "onselden": 0.50},
+    "yargi": "ONSEL ETKILI",
+    "sonucu": "Posterior yayimlanir ama uc onselin tablosu ZORUNLU EK olur ve ozet cumlede yazilir (UP §5 yargi tablosu).",
+    "kipler": {
+      "KILITLI": {"dogal_alpha_Y0_f": [1.19831, 1.79571, 0.47712],
+                  "u": [0.66102, 0.05085, 0.94915],
+                  "sd_u": [0.18738, 0.12406, 0.24649],
+                  "daralma": [0.57869, 0.81531, 0.27091]},
+      "KAYDIRILMIS": {"dogal_alpha_Y0_f": [1.20339, 3.22459, 0.50000],
+                      "u": [0.67797, 0.10169, 1.00000],
+                      "sd_u": [0.29989, 0.11445, 0.35457],
+                      "daralma": [-0.07918, 0.84283, -0.50861]}
+    },
+    "kenar_uyarisi": "KILITLI kipi birim kupte u = (0,661 ; 0,051 ; 0,949): Y0 ALT kenara, f UST kenara yapisik. KAYDIRILMIS'ta f tam u = 1,0. Veri onsel kutusunun disini istiyor; ADR-0053'un 'onsel gozlemi icermiyor' yargisiyla ayni yone isaret ediyor."
+  }
+}

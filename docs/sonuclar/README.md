@@ -91,15 +91,77 @@ eşiğin iki yanında; kararsız olduğu için kural en küçüğü aldırıyor.
 `FISHER_ESIGI` **değiştirilmedi** — indirmek protokolde yasak ve
 indirilirse yargı geçersiz sayılır.
 
-## 6. Hâlâ ölçülmeyen
+## 6. Model gözleme ulaşıyor mu — **evet**, ve geriye %7,37 kalıyor
+
+PROTOKOL-UP §6 (tarih eşleme, Vernon) 2026-10-16'da koşuldu
+([`UP_s5_s6.json`](UP_s5_s6.json),
+[KAYIT-080](../defter/KAYIT-080_2026-10-16_UP-onsel-duyarliligi-ve-tarih-eslemesi.md)):
+
+| ölçü | değer |
+|---|---|
+| `I_min` | **0,504** (kesme `I > 3`) |
+| bağdaşır hacim | **%7,37** — 15 916 / 216 000 düğüm |
+| posterior %68 hacmi | %0,50 |
+| oran | **14,78** (eşik 10) |
+| post68 kütlesinin bağdaşır oranı | **1,0000** (eşik 0,90) |
+| **yargı** | **POSTERIOR DAR** |
+
+`I_min = 0,504` önemsiz değil: **model DART'ın gözlemine ulaşabiliyor.**
+Hiçbir `θ` bağdaşmasaydı `I_min > 3` çıkar, ileri model reddedilirdi.
+
+Çelişki yok — posteriorun %68 kütlesinin **tamamı** bağdaşır bölgenin
+içinde. Ama hacmi o bölgenin 1/14,8'i: Gauss olabilirliği + köşegen
+kovaryans varsayımının aşırı-güven imzası. Protokolün karşılığı:
+**ana sonuç tarih eşleme bölgesidir**, posterior "olabilirlik
+varsayımına koşullu" etiketiyle verilir.
+
+## 7. Sonuç veriden mi önselden mi — **arada**
+
+| önsel | kip `log10 Y₀` | kip `Y₀` (Pa) |
+|---|---:|---:|
+| `KILITLI` | +0,2542 | 1,796 |
+| `DUZ_LOG` | +0,2542 | 1,796 |
+| `KAYDIRILMIS` (×3) | +0,5085 | 3,225 |
+
+`σ_onsel = 0,2542 dex` → **ÖNSEL ETKİLİ** (eşikler 0,15 / 0,50).
+Posterior yayımlanır ama üç önselin tablosu **zorunlu ek**.
+
+İki yan bulgu kayda geçti:
+
+- **`KILITLI` ile `DUZ_LOG` aynı dağılım.** ADR-0053 kilitli önseli
+  `Y₀ ∈ [1e0, 1e5]` (log, 5 dekad), yani protokolün "bilgisiz uç"
+  dediği şeyin ta kendisi. Protokol yazılırken fark edilmemiş;
+  düzeltilmiyor, kaydediliyor.
+- **Kip önsel kenarına yapışık.** `u = (0,661 ; 0,051 ; 0,949)`:
+  `Y₀` alt kenarda, `f` üst kenarda. Veri önsel kutusunun dışını
+  istiyor — ADR-0053'ün `ÖNSEL GÖZLEMİ İÇERMİYOR` yargısıyla aynı yön.
+
+## 8. Vekilin durumu
+
+| vekil | `q²` | Bachoc çarpanı | kalibre %68 kapsama |
+|---|---:|---:|---:|
+| `β` (fırlatı geleneğinde) | **0,9310** | 1,2896 | 0,7083 |
+| `ln M_ejekta` | **0,9882** | 1,0953 | 0,7188 |
+
+θ-gruplu 4-kat ÇD; Bachoc ikisini de büyüttü, kapsama `0,68` hedefinin
+biraz üstünde (muhafazakâr taraf). Ölçülen artık korelasyonu
+`ρ = 0,2047` (ham `0,2924`, λ = 0,3).
+
+## 9. Hâlâ ölçülmeyen
 
 | | durum |
 |---|---|
-| önsel duyarlılığı (UP §5) | **koşmadı** — sıfır GPU |
-| tarih eşleme (UP §6) | **koşmadı** — sıfır GPU |
-| üretim posterioru | **koşmadı**; başlığı `n_yön` parametreli olacak |
+| üretim posterioru (yayımlanabilir hâli) | **koşmadı** — koştuğunda §5 ve §6'nın etiketleriyle çıkacak |
+| ince koşu (12 nokta, σ mı yanlılık mı) | **koşmadı** — ~224 GPU-saat |
 | Hera ön kaydı | **üretilmedi** |
 
-`n_yön = 1` olduğu için posterior yalnız o tek birleşim için
-yayımlanacak; `α_b` ve `f` için **sayı verilmeyecek**, "önselden ayırt
-edilemez" yazılacak.
+## 10. Bugünkü hâliyle savunulabilir cümle
+
+> DART'ın `β`'sı `(α_b, Y₀, f)` uzayında **bir** yön kısıtlıyor
+> (`n_yön = 1`). Ölçülmüş model hatası bütçesiyle yapılan elemede önsel
+> hacminin **%7,37'si** gözlemle bağdaşır kalıyor ve model gözleme
+> **ulaşıyor** (`I_min = 0,504`). Gauss olabilirliğine dayanan posterior
+> bu bölgeden 14,8 kat dar olduğu için ana sonuç **eleme bölgesidir**;
+> posterior varsayıma koşullu bir ek olarak verilir. Sonuç önselden
+> bağımsız değildir (`0,254 dex`), bu yüzden üç önselin tablosu
+> sonuçla birlikte yayımlanır.
