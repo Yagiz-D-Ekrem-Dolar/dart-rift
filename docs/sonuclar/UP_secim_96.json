@@ -1,0 +1,78 @@
+{
+  "protokol": "PROTOKOL-UP §3/§4",
+  "kosuldu": "2026-10-16",
+  "kosucu": "scripts/up_gozlemli_secimi.py",
+  "tam_cikti": "TRUBA: /arf/scratch/egitimg16u3/driftclaude/analiz/UP_secim_96.json (41 noktalik tam sigma taramasi orada)",
+  "nokta": 96,
+  "tohum": 20260906,
+  "eksik_alan": 0.0,
+  "gozlenen_adaylar": ["beta", "M_kacan", "e_hiz"],
+  "gruplar": {
+    "beta": "periyot_degisimi",
+    "M_kacan": "ejekta_kutlesi",
+    "e_hiz": "ejekta_hiz_dagilimi"
+  },
+  "secim_zorunluydu": "Gozlenen aday tam uc tane ve her biri AYRI grupta; k=3 alt kumesi tek secenek.",
+
+  "A_geometri_sigma_bagimsiz": [
+    {"u0": [0.50, 0.50, 0.50],
+     "aci_derece": {"beta~M_kacan": 7.4162, "beta~e_hiz": 4.6414, "M_kacan~e_hiz": 3.9466},
+     "tekil_degerler": [1.729352, 0.091664, 0.030652], "kosul_sayisi": 56.42},
+    {"u0": [0.25, 0.25, 0.25],
+     "aci_derece": {"beta~M_kacan": 23.0669, "beta~e_hiz": 13.8433, "M_kacan~e_hiz": 10.9791},
+     "tekil_degerler": [1.707449, 0.283630, 0.064598], "kosul_sayisi": 26.43},
+    {"u0": [0.75, 0.25, 0.75],
+     "aci_derece": {"beta~M_kacan": 26.9497, "beta~e_hiz": 12.7751, "M_kacan~e_hiz": 14.2166},
+     "tekil_degerler": [1.700350, 0.329692, 0.010698], "kosul_sayisi": 158.94},
+    {"u0": [0.25, 0.75, 0.75],
+     "aci_derece": {"beta~M_kacan": 29.4845, "beta~e_hiz": 24.3996, "M_kacan~e_hiz": 5.1191},
+     "tekil_degerler": [1.688923, 0.384043, 0.007164], "kosul_sayisi": 235.76},
+    {"u0": [0.75, 0.75, 0.25],
+     "aci_derece": {"beta~M_kacan": 6.2261, "beta~e_hiz": 0.6250, "M_kacan~e_hiz": 5.8995},
+     "tekil_degerler": [1.729884, 0.086356, 0.006567], "kosul_sayisi": 263.43}
+  ],
+
+  "B_sigma_taramasi": {
+    "nerede": "YALNIZ u0 = merkez ve rho = 0",
+    "taban_sigma": {"beta": 0.23164617, "M_kacan": 0.08143022},
+    "e_hiz_sigma_araligi": [0.001, 10.0],
+    "ikinci_yon_acildi_mi": false,
+    "ikinci_ozdeger_tavani": 4.16458,
+    "not": "Merkez noktada ikinci ozdeger sigma(e_hiz) ile DOYUYOR: sigma 1000 kat kucultulurse 2,351 -> 4,165. Esik 36. Sigma'yi kucultmek o satirin AGIRLIGINI artirir, YONUNU dondurmez; neredeyse esdogrusal gradyanlari hassasiyet duzeltmez.",
+    "ornek": [
+      {"sigma_e_hiz": 0.001, "ogrenilen": 1, "ikinci_ozdeger": 4.164580},
+      {"sigma_e_hiz": 0.01, "ogrenilen": 1, "ikinci_ozdeger": 4.039637},
+      {"sigma_e_hiz": 0.1, "ogrenilen": 1, "ikinci_ozdeger": 2.535959},
+      {"sigma_e_hiz": 1.0, "ogrenilen": 1, "ikinci_ozdeger": 2.351035},
+      {"sigma_e_hiz": 10.0, "ogrenilen": 1, "ikinci_ozdeger": 2.349047}
+    ]
+  },
+
+  "C_kafes": {
+    "referans_sigma_e_hiz": 1.0,
+    "esik": 36.0,
+    "kafes": [
+      {"rho": 0.0, "u0": [0.50, 0.50, 0.50], "ikinci_ozdeger": 2.3510, "ogrenilen": 1},
+      {"rho": 0.0, "u0": [0.25, 0.25, 0.25], "ikinci_ozdeger": 27.4077, "ogrenilen": 1},
+      {"rho": 0.0, "u0": [0.75, 0.25, 0.75], "ikinci_ozdeger": 28.7432, "ogrenilen": 1},
+      {"rho": 0.0, "u0": [0.25, 0.75, 0.75], "ikinci_ozdeger": 38.4437, "ogrenilen": 2},
+      {"rho": 0.0, "u0": [0.75, 0.75, 0.25], "ikinci_ozdeger": 1.6676, "ogrenilen": 1},
+      {"rho": 0.4, "u0": [0.50, 0.50, 0.50], "ikinci_ozdeger": 3.5132, "ogrenilen": 1},
+      {"rho": 0.4, "u0": [0.25, 0.25, 0.25], "ikinci_ozdeger": 40.5607, "ogrenilen": 2},
+      {"rho": 0.4, "u0": [0.75, 0.25, 0.75], "ikinci_ozdeger": 43.6233, "ogrenilen": 2},
+      {"rho": 0.4, "u0": [0.25, 0.75, 0.75], "ikinci_ozdeger": 54.5858, "ogrenilen": 2},
+      {"rho": 0.4, "u0": [0.75, 0.75, 0.25], "ikinci_ozdeger": 2.2045, "ogrenilen": 1},
+      {"rho": 0.8, "u0": [0.50, 0.50, 0.50], "ikinci_ozdeger": 9.4435, "ogrenilen": 1},
+      {"rho": 0.8, "u0": [0.25, 0.25, 0.25], "ikinci_ozdeger": 107.7627, "ogrenilen": 2},
+      {"rho": 0.8, "u0": [0.75, 0.25, 0.75], "ikinci_ozdeger": 118.2881, "ogrenilen": 2},
+      {"rho": 0.8, "u0": [0.25, 0.75, 0.75], "ikinci_ozdeger": 140.5281, "ogrenilen": 2},
+      {"rho": 0.8, "u0": [0.75, 0.75, 0.25], "ikinci_ozdeger": 5.2698, "ogrenilen": 1}
+    ],
+    "ikinci_ozdeger_araligi": [1.6676, 140.5281],
+    "kararli": false,
+    "en_kucuk_n_yon": 1,
+    "yargi": "1 YON OGRENILIYOR (3 parametre icin YETMIYOR)",
+    "ek_yargi": "YON SAYISI NOKTAYA VE KOVARYANSA BAGLI",
+    "not": "§4 geregi EN KUCUK n_yon alinir; en iyi noktayi secip onu raporlamak kiraz toplamaktir. Esik 36 DEGISTIRILMEDI."
+  }
+}

@@ -67,17 +67,39 @@ değerleri `../rapor2204/veri/eksen_duyarliligi.dat` taşıyor:
 > tekdüze; diğer iki eksenle korelasyonu sıfıra yakın. Tek skaler gözlem,
 > üç boyutlu iç yapı uzayında **bir yön** görüyor.
 
-## 5. Henüz ölçülmeyen — ve neden
+## 5. Kaç yön öğreniliyor — **ölçüldü: bir**
 
-Bu klasörde **yok**, çünkü kilitli ölçüm henüz koşmadı:
+PROTOKOL-UP §3/§4, 2026-10-16'da tam havuzda koşuldu
+([`UP_secim_96.json`](UP_secim_96.json), gerekçe
+[KAYIT-079](../defter/KAYIT-079_2026-10-16_UP-gozlemli-secimi-ve-n-yon.md)):
+
+> **1 YÖN ÖĞRENİLİYOR (3 parametre için YETMİYOR)**
+> Yan yargı: **YÖN SAYISI NOKTAYA VE KOVARYANSA BAĞLI** → §4 gereği en
+> küçük `n_yön` alındı.
+
+Kapı A ve B'den geçen aday tam üç tane ve her biri ayrı grupta
+(`beta` · `M_kacan` · `e_hiz`), yani seçimde tercih yoktu. Sebep σ'dan
+bağımsız: üç gradyan **neredeyse paralel** — `β` ile `e_hız` arası açı
+merkezde `4,64°`, bir köşede `0,62°`.
+
+σ(`e_hız`) bin kat küçültülse ikinci öz değer yalnız `2,35 → 4,17`
+oluyor; eşik **36**. Öz değer σ ile doyuyor, çünkü σ bir satırın
+*ağırlığını* artırır, *yönünü* döndürmez.
+
+Kafeste (3 ρ × 5 θ) ikinci öz değer `1,67 – 140,53` aralığında, yani
+eşiğin iki yanında; kararsız olduğu için kural en küçüğü aldırıyor.
+`FISHER_ESIGI` **değiştirilmedi** — indirmek protokolde yasak ve
+indirilirse yargı geçersiz sayılır.
+
+## 6. Hâlâ ölçülmeyen
 
 | | durum |
 |---|---|
-| öğrenilen yön sayısı `n_yön` | **ölçülmedi** — PROTOKOL-UP §3, Fisher eşiği 36 |
-| gözlenebilir seçimi (3 grup) | **ölçülmedi** — hız dağılımı grubunun katkısı açık |
-| posterior | **koşmadı** |
+| önsel duyarlılığı (UP §5) | **koşmadı** — sıfır GPU |
+| tarih eşleme (UP §6) | **koşmadı** — sıfır GPU |
+| üretim posterioru | **koşmadı**; başlığı `n_yön` parametreli olacak |
 | Hera ön kaydı | **üretilmedi** |
 
-`FISHER_ESIGI`'ni `n_yön` büyüsün diye indirmek protokolde **yasak**;
-indirilirse yargı geçersiz sayılır. Bu klasör yargıdan **önceki** durumu
-dondurur.
+`n_yön = 1` olduğu için posterior yalnız o tek birleşim için
+yayımlanacak; `α_b` ve `f` için **sayı verilmeyecek**, "önselden ayırt
+edilemez" yazılacak.
