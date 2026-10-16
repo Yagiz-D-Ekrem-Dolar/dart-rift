@@ -69,8 +69,13 @@ U0_NOKTALAR = (
 )
 
 
-def durumlari_oku(kampanya: str) -> tuple[list[dict], list[int]]:
-    """Her `.durumlar` dizinindeki `npz`'den aday sözlüğü üretir."""
+def durumlari_oku(kampanya: str) -> tuple[list[dict], list[int], np.ndarray]:
+    """Her `.durumlar` dizinindeki `npz`'den aday sözlüğü üretir.
+
+    Döner: `(adaylar, küresel_indeksler, theta_dosyadan)`. Son öğe
+    tasarımla çapraz denetlenir — indeks eşlemesi (`küresel = dilim +
+    24·i`) bir varsayım, ve yanlışsa bütün Jakobyen anlamsız olur.
+    """
     kayitlar: list[tuple[int, dict]] = []
     desen = os.path.join(kampanya, "HAVUZ_g1p0.dilim*_24.durumlar")
     for dizin in sorted(glob.glob(desen)):
@@ -82,8 +87,9 @@ def durumlari_oku(kampanya: str) -> tuple[list[dict], list[int]]:
             d = np.load(yol, allow_pickle=True)
             i_ic = int(re.search(r"nokta_(\d+)_", os.path.basename(yol)).group(1))
             kuresel = dilim + 24 * i_ic
-            ft = d["fizik_tani"].item() if "fizik_tani" in d else {}
-            ea = ft.get("ejekta_ayrismasi", {})
+            # `fizik_tani` npz'de JSON DIZGESI olarak duruyor, sozluk degil.
+            ft = json.loads(str(d["fizik_tani"]))
+            ea = ft["ejekta_ayrismasi"]
             m_kacan = float(ea["M_kacan"])
             mk = d["mermi_kesri"] if "mermi_kesri" in d else None
             v_esc = kacis_hizi_kalibre(d["v"], d["m"], m_kacan, mermi_kesri=mk)
@@ -91,15 +97,22 @@ def durumlari_oku(kampanya: str) -> tuple[list[dict], list[int]]:
                                 mermi_kesri=mk,
                                 beta=float(ft["beta_hedef"]))
             # Tutarlilik kapisi (UP §2): kosunun kendi defteriyle ayni mi.
-            bagil = abs(aday["M_kacan"] - m_kacan) / max(abs(m_kacan), 1e-30)
-            if bagil > 1e-6:
-                raise SystemExit(
-                    f"TUTARSIZ nokta {kuresel}: M_kacan cevrimdisi "
-                    f"{aday['M_kacan']:.6e} vs kosudan {m_kacan:.6e} "
-                    f"(bagil {bagil:.2e} > 1e-6). Sessiz duzeltme yasak.")
-            kayitlar.append((kuresel, aday))
+            # Uc carpan da sinanir, yalniz kutle degil.
+            for alan, tol in (("M_kacan", 1e-6), ("v_ort", 1e-6),
+                              ("kos_ort", 1e-6)):
+                ref = float(ea[alan])
+                bagil = abs(aday[alan] - ref) / max(abs(ref), 1e-30)
+                if bagil > tol:
+                    raise SystemExit(
+                        f"TUTARSIZ nokta {kuresel}: {alan} cevrimdisi "
+                        f"{aday[alan]:.6e} vs kosudan {ref:.6e} "
+                        f"(bagil {bagil:.2e} > {tol:g}). "
+                        "Sessiz duzeltme yasak.")
+            kayitlar.append((kuresel, aday, np.asarray(d["theta"],
+                                                       dtype=np.float64)))
     kayitlar.sort(key=lambda t: t[0])
-    return [a for _, a in kayitlar], [g for g, _ in kayitlar]
+    return ([a for _, a, _ in kayitlar], [g for g, _, _ in kayitlar],
+            np.vstack([t for _, _, t in kayitlar]))
 
 
 def ana() -> int:
@@ -108,7 +121,7 @@ def ana() -> int:
     ap.add_argument("--cikti", required=True)
     a = ap.parse_args()
 
-    durumlar, kuresel = durumlari_oku(a.kampanya)
+    durumlar, kuresel, theta_dosya = durumlari_oku(a.kampanya)
     if len(durumlar) != N_NOKTA:
         raise SystemExit(f"{len(durumlar)} nokta okundu, {N_NOKTA} bekleniyordu "
                          "(kural 8: eksik kampanya sessiz gecmez)")
@@ -119,6 +132,14 @@ def ana() -> int:
     eksik = float(np.sum(Y["eksik_sayisi"]))
     X = np.asarray(lhs_design(DART_UZAYI_S4, N_NOKTA, root_seed=TOHUM),
                    dtype=np.float64)
+
+    # Indeks eslemesi dogru mu: dosyanin kendi theta'si tasarimla ayni mi.
+    sapma = np.max(np.abs(theta_dosya - X) / np.maximum(np.abs(X), 1e-30))
+    if sapma > 1e-9:
+        raise SystemExit(
+            f"INDEKS ESLEMESI YANLIS: dosyadaki theta ile tasarim arasinda "
+            f"bagil sapma {sapma:.3e}. 'kuresel = dilim + 24*i' varsayimi "
+            "tutmuyor; Jakobyen anlamsiz olurdu.")
 
     # Kapi A: yalniz gozlenen adaylar posteriora girebilir.
     gozlenen = [c for c in ADAYLAR if c.gozlenen]
