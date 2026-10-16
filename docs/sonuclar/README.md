@@ -147,21 +147,59 @@ Posterior yayımlanır ama üç önselin tablosu **zorunlu ek**.
 biraz üstünde (muhafazakâr taraf). Ölçülen artık korelasyonu
 `ρ = 0,2047` (ham `0,2924`, λ = 0,3).
 
-## 9. Hâlâ ölçülmeyen
+## 9. SBC kapısı — **GEÇTİ**
+
+PROTOKOL-HAVUZ §6, `n_sbc = 200`, tohum `20261016`
+([`UP_sbc.json`](UP_sbc.json),
+[KAYIT-081](../defter/KAYIT-081_2026-10-16_SBC-kapisi-gecti.md)):
+
+| eksen | tanı | PIT ort. (se 0,0204) | KS `p` | kapsama68 |
+|---|---|---:|---:|---:|
+| `α_b` | **KALİBRE** | 0,5050 | 0,9714 | 0,675 |
+| `Y₀` | **KALİBRE** | 0,4682 | 0,1794 | 0,675 |
+| `f` | **KALİBRE** | 0,5394 | 0,0690 | 0,675 |
+
+**GENEL: KALİBRE → posterior yayımlanabilir.** PLAN-90-GÜN'de `~%25`
+yazılı olan "SBC düşer" riski gerçekleşmedi.
+
+İki eksen sınıra yakın ve saklanmıyor: `f`'nin KS `p = 0,0690`
+(eşik `0,05`), `Y₀`'ın PIT sapması `1,56σ` (yanlılık bandı `2σ`).
+
+SBC'nin kanıtladığı şey dar: çıkarım makinesi **kendi varsayımları
+altında** kalibre — posterior "%68" dediğinde gerçekten %68 kapsıyor.
+Modelin gerçeğe uyup uymadığı §6'nın sorusu ve cevabı orada.
+
+## 10. Hâlâ ölçülmeyen
 
 | | durum |
 |---|---|
-| üretim posterioru (yayımlanabilir hâli) | **koşmadı** — koştuğunda §5 ve §6'nın etiketleriyle çıkacak |
-| ince koşu (12 nokta, σ mı yanlılık mı) | **koşmadı** — ~224 GPU-saat |
-| Hera ön kaydı | **üretilmedi** |
+| üretim posterioru (yayımlanabilir hâli) | **koşmadı** — ama artık **engel yok**: SBC geçti, etiketleri belli |
+| ince koşu (12 nokta, σ mı yanlılık mı) | **koşmadı** — ~224 GPU-saat, ADR-0059 |
+| Hera spin ön kaydı | **üretilmedi** — protokolü kilitli: [PROTOKOL-HS](../truba/PROTOKOL-HS-HERA-SPIN.md) |
+| Hera krater ön kaydı | **üretilmedi** — [PROTOKOL-HT](../truba/PROTOKOL-HT-HERA-TAHMIN.md) |
+| `μ_f` sürtünme duyarlılığı | **koşmadı** — ~10 GPU-saat |
 
-## 10. Bugünkü hâliyle savunulabilir cümle
+## 11. Bugünkü hâliyle savunulabilir cümle
 
 > DART'ın `β`'sı `(α_b, Y₀, f)` uzayında **bir** yön kısıtlıyor
 > (`n_yön = 1`). Ölçülmüş model hatası bütçesiyle yapılan elemede önsel
 > hacminin **%7,37'si** gözlemle bağdaşır kalıyor ve model gözleme
-> **ulaşıyor** (`I_min = 0,504`). Gauss olabilirliğine dayanan posterior
-> bu bölgeden 14,8 kat dar olduğu için ana sonuç **eleme bölgesidir**;
-> posterior varsayıma koşullu bir ek olarak verilir. Sonuç önselden
-> bağımsız değildir (`0,254 dex`), bu yüzden üç önselin tablosu
-> sonuçla birlikte yayımlanır.
+> **ulaşıyor** (`I_min = 0,504`). Çıkarım makinesi kendi varsayımları
+> altında kalibredir (SBC: üç eksen de `KALİBRE`). Ama Gauss
+> olabilirliğine dayanan posterior bağdaşır bölgeden 14,8 kat dar
+> olduğu için ana sonuç **eleme bölgesidir**; posterior varsayıma
+> koşullu bir ek olarak verilir. Sonuç önselden bağımsız değildir
+> (`0,254 dex`), bu yüzden üç önselin tablosu sonuçla birlikte
+> yayımlanır.
+
+## 12. Bu klasörün dışında duran iki uyarı
+
+- **Önsel kutusunun tabanı fiziği kesiyor olabilir.** Posterior kipi
+  `Y₀ ≈ 1,80 Pa` ve kutu `1 Pa`'dan başlıyor. Literatürde moloz yığını
+  kararlılığı için `~0,5 Pa`'lık bağdaşım değerleri geçiyor — yani veri
+  kutunun dışını isterken, kutunun dışı fiziksel olarak anlamlı.
+  Kutuyu şimdi genişletmek ön kaydı çiğner; **bulgu olarak** kayıtta.
+- **`β` gelenek düzeltmesi özgün bir katkı DEĞİL.** 2026-10-16
+  literatür kontrolü: DART ekibi `β_n`, `β_p` ve Cheng'in fırlatı
+  doğrultusu `β`'sını açıkça tanımlıyor. ADR-0060 bizim kendi
+  hatamızı yakaladı; sunumda keşif olarak geçmeyecek.
