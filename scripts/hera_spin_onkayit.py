@@ -61,6 +61,26 @@ N_ORNEK, TOHUM_ONGORU = 20000, 20261016
 KANTILLER = (0.05, 0.16, 0.50, 0.84, 0.95)
 
 
+def _commit() -> str:
+    """Betiğin kendi deposundaki HEAD. Bulunamazsa **durur**.
+
+    Künyesiz bir ön kayıt mühür sayılmaz: PROTOKOL-HS §5 commit'i
+    meta'nın parçası yapıyor ve commit tarihi zaman damgasının ikinci
+    kanıtı. Çalışma dizininden bağımsız olsun diye betiğin kendi yolu
+    kullanılıyor — ilk üretimde bu yüzden boş kalmıştı.
+    """
+    import subprocess
+    kok = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    try:
+        c = subprocess.run(["git", "-C", kok, "rev-parse", "HEAD"],
+                           capture_output=True, text=True, check=True)
+    except (OSError, subprocess.CalledProcessError) as e:
+        raise SystemExit(
+            f"git commit okunamadi ({kok}): {e}. Kunyesiz on kayit "
+            "uretilmez (PROTOKOL-HS §5).") from e
+    return c.stdout.strip()
+
+
 def omega_oku(kampanya: str) -> tuple[np.ndarray, np.ndarray, dict]:
     """Her durum dosyasında `ω`; kilitli tasarımla eşleştirilmiş."""
     tasarim = np.asarray(lhs_design(DART_UZAYI_S4, N_NOKTA,
@@ -160,7 +180,7 @@ def main(argv=None) -> int:
         "protokol": "PROTOKOL-HS-HERA-SPIN",
         "etiket": a.etiket,
         "uretildi_utc": datetime.now(timezone.utc).isoformat(),
-        "git_commit": os.popen("git rev-parse HEAD").read().strip(),
+        "git_commit": _commit(),
         "havuz": str(a.havuz),
         "n_ornek": N_ORNEK,
         "tohum_ongoru": TOHUM_ONGORU,
