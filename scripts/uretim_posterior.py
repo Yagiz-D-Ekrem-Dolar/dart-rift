@@ -68,6 +68,11 @@ BETA_GOZ, BETA_UST, BETA_ALT = 3.5418, 0.188, 0.247
 #: L17 (Lolachi ve ark. 2025) ve sahne kütlesi (ADR-0054).
 M_EJEKTA_GOZ, M_EJEKTA_SIGMA, M_SAHNE = 1.6e7, 0.3e7, 4.2980e9
 
+#: ADR-0060 kapisi (KAYIT-082): sabit sahnede gelenek carpaninin
+#: ortancasi 1,166 olculdu. Bant genis -- amac ince ayar degil,
+#: `kos` sutununa yanlis nicelik konmasini yakalamak.
+ADR0060_CARPAN_ALT, ADR0060_CARPAN_UST = 1.05, 1.35
+
 #: KAYIT-076 §7 — paydaya giren terimler, gözlemli başına.
 TERIMLER_BETA = ("gerceklem_beta_DART", "cozunurluk_uzak",
                  "cozunurluk_yakin", "plato_olculen_DART",
@@ -139,11 +144,35 @@ def main(argv=None) -> int:
     # kosunun kendi firlati alanindan; secilen bir sayi degil.
     if np.any(np.abs(kos) < 0.30):
         raise SystemExit("ADR-0060: |cos| < 0,30 olan kosu var, 1/cos^2 iraksar")
+    carpan = 1.0 / kos**2
+    ortanca = float(np.median(carpan))
+
+    # KAPI (KAYIT-082): `kos` DOGRU nicelik mi?
+    #
+    # 2026-10-16'da bu sutuna `kos_ort` -- parcacik kosinuslerinin
+    # momentum agirlikli ORTALAMASI -- konuldu. ADR-0060 ise NET
+    # momentum doğrultusunun kosinusunu istiyor. Ucgen esitsizligi
+    # geregi `cos_net >= <cos>`, yani yanlis nicelik carpani DAIMA
+    # buyutur: ortanca 1,166 yerine 1,676 cikti ve `b_model` 1,437 kat
+    # sisti. Yukaridaki `0,30` kapisi bunu gecirdi (alt sinir 0,476'ydi).
+    #
+    # Sahne sabit oldugu icin ortanca carpan da sabittir; ADR-0060 onu
+    # 88 noktada `1,166` olarak olctu. Sapma payi genis tutuldu --
+    # amac ince ayar degil, nicelik karisikligini yakalamak.
+    if not (ADR0060_CARPAN_ALT <= ortanca <= ADR0060_CARPAN_UST):
+        raise SystemExit(
+            f"ADR-0060 KAPISI: gelenek carpani ortancasi {ortanca:.4f}, "
+            f"beklenen bant [{ADR0060_CARPAN_ALT}, {ADR0060_CARPAN_UST}] "
+            f"(ADR-0060 olcumu 1,166). `kos` sutunu NET momentum "
+            "dogrultusunun kosinusu mu, yoksa yanlislikla `kos_ort` mu? "
+            "Bkz. KAYIT-082.")
+
     b_model = (beta - 1.0) / kos**2
     m_model = ejf * M_SAHNE
     rapor["gelenek_carpani"] = {
-        "ortanca": float(np.median(1.0 / kos**2)),
-        "aralik": [float((1.0 / kos**2).min()), float((1.0 / kos**2).max())],
+        "ortanca": ortanca,
+        "aralik": [float(carpan.min()), float(carpan.max())],
+        "kapi": [ADR0060_CARPAN_ALT, ADR0060_CARPAN_UST],
     }
 
     gp_b, e_b = vekil_kur(X, b_model, katlar, "vekil_beta", rapor)

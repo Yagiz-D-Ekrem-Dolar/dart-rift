@@ -109,3 +109,59 @@ def test_olcek_degisimi_carpani_DEGISTIRMEZ():
     E2, _ = firlati_dogrultusu(3.7 * v, 11.0 * m, kacan)
     assert gelenek_carpani(E1, eU) == pytest.approx(
         gelenek_carpani(E2, eU), rel=1e-12)
+
+
+# --------------------------------------------------------------------
+# KAYIT-082: gercekten yapilmis bir hatayi sabitleyen sinav.
+# --------------------------------------------------------------------
+
+def _yelpaze(yari_aci_derece: float, n: int = 2000):
+    """Çarpıcı `-z`; fırlatı `+z` çevresinde geniş bir **koni**.
+
+    Koni ne kadar geniş olursa `⟨cos⟩` ile `cos θ_net` o kadar ayrışır:
+    vektör toplamında yanal bileşenler birbirini götürür, kosinüs
+    ortalamasında götürmez.
+    """
+    rng = np.random.default_rng(11)
+    eU = np.array([0.0, 0.0, -1.0])
+    a = np.radians(yari_aci_derece)
+    kos = rng.uniform(np.cos(a), 1.0, n)
+    sin = np.sqrt(1.0 - kos ** 2)
+    faz = rng.uniform(0.0, 2.0 * np.pi, n)
+    v = np.column_stack([sin * np.cos(faz), sin * np.sin(faz), kos])
+    return v, np.full(n, 1.5), np.ones(n, bool), eU
+
+
+def test_carpan_NET_DOGRULTUDAN_gelir_kosinus_ORTALAMASINDAN_degil():
+    """`1/cos²` net momentum doğrultusundan; `⟨cos⟩`'tan **değil**.
+
+    2026-10-16'da üretim girdisine `kos_ort` (parçacık kosinüslerinin
+    momentum ağırlıklı ortalaması) konuldu ve `b_model` 1,437 kat
+    şişti; §5/§6 yargıları yanlış çıktı (KAYIT-082). İki nicelik
+    üçgen eşitsizliğiyle ayrışır: `cos θ_net ≥ ⟨cos⟩`.
+    """
+    v, m, kacan, eU = _yelpaze(50.0)
+    E, _ = firlati_dogrultusu(v, m, kacan)
+    carpan = gelenek_carpani(E, eU)
+
+    hiz = np.linalg.norm(v, axis=1)
+    kos_i = -(v @ eU) / hiz
+    kos_ort = float(np.average(kos_i, weights=m * hiz))   # HATALI nicelik
+    kos_net = abs(float(E @ eU))                          # DOGRU nicelik
+
+    assert kos_net > kos_ort, "ucgen esitsizligi: cos_net >= <cos>"
+    assert carpan == pytest.approx(1.0 / kos_net ** 2, rel=1e-12)
+    # Hatali nicelik acikca BASKA bir sayi verir.
+    assert abs(carpan - 1.0 / kos_ort ** 2) > 0.05
+
+
+def test_dar_yelpazede_iki_nicelik_yakinsar():
+    """Koni daraldıkça fark kapanır — tuzağın niçin sessiz olduğunu gösterir."""
+    farklar = []
+    for yari in (60.0, 30.0, 10.0):
+        v, m, kacan, eU = _yelpaze(yari)
+        E, _ = firlati_dogrultusu(v, m, kacan)
+        hiz = np.linalg.norm(v, axis=1)
+        kos_ort = float(np.average(-(v @ eU) / hiz, weights=m * hiz))
+        farklar.append(abs(float(E @ eU)) - kos_ort)
+    assert farklar[0] > farklar[1] > farklar[2] > 0.0
