@@ -1,6 +1,6 @@
 # TÜBİTAK 2204-A proje raporu
 
-> **17 sayfa** (sınır 20) · **11 şekil** · **18 denklem** · **3 tablo**
+> **19 sayfa** (sınır 20) · **11 şekil** · **23 denklem** · **3 tablo**
 > Yapı: `proje_yazma_sablonu_2026-2027.docx` · Dil: Türkçe
 
 `rapor.tex`, 2204-A başvurusu için Türkçe proje raporudur. Ön baskının
@@ -186,23 +186,46 @@ yatırılan dosyayla bayt bayt aynı tutuluyor.
 
 ## Raporun iddia ettikleri ve etmedikleri
 
-**İddia edilen** (ölçülmüş, 88/96 kısmi havuz):
+**İddia edilen** (ölçülmüş, **96/96 tam havuz**, kayıp koşu yok):
 
+* **Öğrenilen yön sayısı bir.** Kilitli Fisher ölçütü (eşik 36) tam
+  havuzda `λ = (499,73 ; 0,82 ; 0,00)` verdi → $n_{\text{yön}} = 1$.
+  Beş $\theta$ noktası ve üç kovaryans varsayımı üzerinde koşuldu, en
+  küçüğü alındı.
 * $\beta$ pratikte tek bir koordinat taşıyor:
-  $\rho(\beta,\log Y_0) = -0{,}983$, diğer iki eksenle $\approx 0$.
-* Çarpmanın kazandırdığı spin, $\beta$'nın kör olduğu eksenleri görüyor;
-  $r(\beta,\omega) = +0{,}131$.
-* $\beta$'nın izdüşüm geleneği düzeltildi; fark ortanca `1,166`.
+  $\rho(\beta,\log Y_0) = -0{,}986$, diğer iki eksenle $\approx 0$.
+* Çarpmanın kazandırdığı spin, $\beta$'nın kör olduğu eksenleri
+  görüyor; $r(\beta,\omega) = +0{,}085$ — neredeyse dik.
+* **Model gözleme ulaşıyor:** $I_{\min} = 0{,}325$, önsel hacmin
+  %34,04'ü bağdaşır kalıyor. Posterior ile eleme birbirini doğruluyor
+  (oran 3,31 < 10).
+* **Çıkarım makinesi kalibre:** SBC üç eksende de `KALİBRE`.
+* **Hera için mühürlü öngörü var:** $\omega \in [2{,}31; 15{,}12]\times
+  10^{-6}$ rad/s ($q_{05}$–$q_{95}$), SHA-256'lı ve commit'li.
+* **Çözünürlük farkı yanlılıktır:** 7/7 noktada aynı yön, ortanca
+  `%+23,3`, $p = 0{,}0156$.
 
 **İddia edilmeyen:**
 
-* $(\alpha_b, Y_0, f)$ için nokta tahmini ya da güven aralığı.
-* Hera için sayısal, mühürlü öngörü.
+* $(\alpha_b, Y_0, f)$ için nokta tahmini ya da güven aralığı —
+  $\alpha_b$ ve $f$ önselden ayırt edilemiyor.
+* **$Y_0$'ın mutlak değeri.** Kip 18,7 Pa, ama çözünürlük yanlılığı
+  $Y_0$'da ×3,2'ye karşılık geliyor; 3,5 m de yakınsamış değil.
 * Çözünürlük yakınsaması.
+* Hera için **krater** öngörüsü (yalnız spin mühürlendi).
+* Çok doğruluklu düzeltme — iç içe tasarım 7/12'de kaldı, ADR-0059
+  kapısı düştü, manşet kilitli $\sigma$ tarifinde kaldı.
 
-Gerekçeler raporun *Geçerlilik sınırları* bölümünde ve
-`docs/truba/PROTOKOL-*.md` kilitli protokollerinde yazılı.
+> **Geri çekilen iddia.** Ön baskıda ve bu README'nin eski sürümünde
+> $\beta$'nın izdüşüm geleneği düzeltmesi (ortanca `1,166`) özgün bir
+> katkı gibi sunuluyordu. 2026-10-16 literatür kontrolü bunu
+> **çürüttü**: DART ekibi $\beta_n$, $\beta_p$ ve Cheng'in fırlatı
+> doğrultusu $\beta$'sını açıkça tanımlıyor. Düzeltme bizim kendi
+> hatamızı giderdi; alana katkı değil. Sunumda keşif olarak
+> geçmeyecek.
 
-Havuz tamamlandığında eklenecek tek şey mühürlü $n_{\text{yön}}$
-ölçümüdür; boru hattı hazırdır
-([`scripts/uretim_posterior.py`](../../scripts/uretim_posterior.py)).
+Gerekçeler raporun *Geçerlilik sınırları* bölümünde,
+`docs/truba/PROTOKOL-*.md` kilitli protokollerinde ve
+[`docs/sonuclar/`](../sonuclar/) altındaki ölçüm kayıtlarında yazılı.
+
+Mühürlü ön kayıtlar: [`docs/onkayit/`](../onkayit/).

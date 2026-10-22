@@ -1,18 +1,16 @@
 # Her gozlenebilirin her eksene duyarliligi -- Spearman sira korelasyonu.
 #
-# KAYNAK: uretim havuzu, 88/96 nokta (2026-10-14). beta kosunun kendi
-# cikti kaydindan (`beta_hedef`); omega durum dosyalarindan PROTOKOL-SI §5
-# yontemiyle (bagli malzemenin acisal momentumu / eylemsizlik tensoru).
-# Kacis olcutu kosunun kendi M_kacan'indan geri cozuldu (72/72 makine
-# hassasiyetinde). Ayrinti: KAYIT-078.
+# KAYNAK: uretim havuzu, 96/96 nokta (2026-10-22). TAM havuz; kayip
+# kosu yok. beta kosunun kendi cikti kaydindan (`beta_hedef`); omega
+# durum dosyalarindan PROTOKOL-SI §5 yontemiyle (bagli malzemenin
+# acisal momentumu / eylemsizlik tensoru), 96/96 noktada olculdu.
 #
-# DIKKAT: kismi havuz. 96 nokta tamamlandiginda yeniden uretilecek.
-#
-# r(beta, omega) = +0,131  -- iki gozlenebilir neredeyse DIK.
+# r(beta, omega) = +0,085  -- iki gozlenebilir neredeyse DIK.
+#   (88 noktada +0,131 idi; tam havuzda diklik ARTTI)
 #
 # sira: cizimde yukaridan asagiya.
 # eksen adlari LaTeX'te verilir (Turkce karakter + matematik).
 sira eksen beta omega
-0 alpha_b -0.061 -0.316
-1 logY0   -0.983 -0.111
-2 f       +0.055 +0.459
+0 alpha_b -0.019 -0.342
+1 logY0   -0.986 -0.068
+2 f       +0.026 +0.474

@@ -25,7 +25,7 @@
 % Kural 8: rapor bulduğunu değil beklediğini sayar; \havuzToplam kilitli
 % tasarım boyudur (ADR-0053 S4, lhs 96) ve havuz eksik kalsa bile düşmez.
 % -----------------------------------------------------------------------
-\newcommand{\havuzBiten}{88}
+\newcommand{\havuzBiten}{96}
 \newcommand{\havuzToplam}{96}
 
 \hypersetup{
@@ -731,22 +731,20 @@ oradaki duyarlılığı sınırlarlar, küresel türev değildirler.}
 \label{sek:duyarlilik}
 \end{figure}
 
-\subsection{Üretim havuzundan ilk bulgular}
+\subsection{Üretim havuzunun bulguları}
 
-Üretim havuzunun \havuzToplam\ noktasından \havuzBiten'i tamamlanmış durumdadır; kayıp koşu
-yoktur (Kapı~1 ölçütü \%20, ölçülen \%0,00). Aşağıdaki iki ölçüm bu
-kısmi havuzdandır ve havuz dolduğunda yinelenecektir; yine de projenin
-\emph{araştırma sorusunu} doğrudan yanıtladıkları için burada
-verilmektedir.
+Üretim havuzu \havuzToplam\ noktanın \havuzBiten'sıyla \textbf{tamamlanmıştır};
+kayıp koşu yoktur (Kapı~1 ölçütü \%20, ölçülen \%0,00). Aşağıdaki ölçümler
+tam havuzdandır ve kilitli yargılar bu veriyle verilmiştir.
 
 \subsubsection*{$\beta$ tek bir yön taşıyor}
 
 Havuzun \havuzBiten\ noktasında $\beta$ ile üç koordinat arasındaki Spearman sıra
 korelasyonu ölçüldü:
 \begin{equation}
-\rho(\beta,\log Y_0) = -0{,}983, \quad
-\rho(\beta,\alpha_b) = -0{,}061, \quad
-\rho(\beta,f) = +0{,}055 .
+\rho(\beta,\log Y_0) = -0{,}986, \quad
+\rho(\beta,\alpha_b) = -0{,}019, \quad
+\rho(\beta,f) = +0{,}026 .
 \label{esit:betaeksen}
 \end{equation}
 $\beta$, $Y_0$ ile neredeyse tam tekdüze; diğer iki koordinatla
@@ -764,12 +762,12 @@ açısal hız $\omega$ ölçüldü (sıfır GPU; kaçış ölçütü her koşunu
 çıktısından geri çözüldü). $\omega$, $\theta$ boyunca 14,4 kat
 değişmektedir ve duyarlılığı $\beta$'nınkinin neredeyse tümleyenidir:
 \begin{equation}
-\rho(\omega,f) = +0{,}459, \quad
-\rho(\omega,\alpha_b) = -0{,}316, \quad
-\rho(\omega,\log Y_0) = -0{,}111 .
+\rho(\omega,f) = +0{,}474, \quad
+\rho(\omega,\alpha_b) = -0{,}342, \quad
+\rho(\omega,\log Y_0) = -0{,}068 .
 \label{esit:spineksen}
 \end{equation}
-İki gözlenebilir arasındaki korelasyon $\rho(\beta,\omega)=+0{,}131$,
+İki gözlenebilir arasındaki korelasyon $\rho(\beta,\omega)=+0{,}085$,
 yani \textbf{neredeyse diktirler} (Şekil~\ref{sek:eksen}).
 
 \begin{figure}[t]
@@ -780,7 +778,7 @@ korelasyonunun büyüklüğüdür (işaret değil); üretim havuzunun
 \havuzBiten\ noktasından ölçülmüştür. $\beta$ yalnız $Y_0$'da uzundur: DART'ın tek
 skaleri iç yapının tek bir yönünü taşır. Çarpmanın kazandırdığı açısal
 hız $\omega$ ise $f$ ve $\alpha_b$'de uzundur --- $\beta$'nın kör olduğu
-iki eksen. İkisinin birbiriyle korelasyonu yalnız $+0{,}131$'dir. $\omega$
+iki eksen. İkisinin birbiriyle korelasyonu yalnız $+0{,}085$'tir. $\omega$
 bu projenin bir \emph{öngörüsüdür}; Hera Dimorphos'un dönme durumunu
 doğrudan ölçecektir.}
 \label{sek:eksen}
@@ -791,6 +789,162 @@ benzetim değil, \textbf{ikinci bir gözlenebilirdir} --- ve aday
 bellidir. Spin, DART posterioruna şu an giremez, çünkü kilitli bir
 gözlenen değeri ve belirsizliği yoktur; ancak Hera'nın sınayacağı
 mühürlü bir öngörü olarak yeri tam buradadır.
+
+\subsection{Kilitli yargı: öğrenilen yön sayısı \emph{bir}}
+
+Sıra korelasyonu tanımlanabilirlik değildir. Kilitli ölçüt
+(PROTOKOL-UP §3/§4, havuzdan önce yazılmış) Fisher öz değerlerini
+sayar; eşik 36, yani bir yönün ``öğrenilmiş'' sayılması için verinin
+önsel genişliği en az yarıya indirmesi gerekir.
+
+Kapı~A (DART karşılığı olmak) ve Kapı~B (ölçüm grubu başına en çok bir
+aday) uygulandığında geriye \textbf{tam üç} aday kalır ve her biri ayrı
+gruptadır: $\beta$, $M_{\text{kaçan}}$ ve fırlatı hız dağılımının eğimi.
+Yani seçimde tercih yoktu; ölçüt bir şey seçmedi, değerlendirdi.
+
+\begin{equation}
+\lambda = (499{,}73;\ 0{,}82;\ 0{,}00), \qquad
+n_{\text{yön}} = \mathbf{1} .
+\label{esit:fisher}
+\end{equation}
+
+İkinci öz değer eşiğin \textbf{44 kat} altındadır. Yargı, beş farklı
+$\theta$ noktası ve üç kovaryans varsayımı ($\rho\in\{0;0{,}4;0{,}8\}$)
+üzerinde koşulmuş, protokolün emrettiği gibi \emph{en küçük} değer
+alınmıştır --- en iyi noktayı seçip onu raporlamak kiraz toplamak
+olurdu.
+
+\subsubsection*{Sebep: gradyanlar neredeyse paralel}
+
+Bu sonuç ölçüm hassasiyetinden değil geometriden gelir. Üç
+gözlenebilirin $\theta$ uzayındaki gradyanları arasındaki açı merkez
+noktada $4{,}64^{\circ}$ ile $7{,}42^{\circ}$ arasındadır; bir köşede
+$0{,}62^{\circ}$'ye iner. Birim Jakobyen'in tekil değerleri
+$1{,}7294$, $0{,}0917$ ve $0{,}0307$'dir: ilki ikincinin 19 katı.
+
+Hassasiyet bunu kurtarmaz. Hız dağılımı eğiminin ölçüm belirsizliği
+bin kat küçültüldüğünde ikinci öz değer yalnız $2{,}35$'ten $4{,}17$'ye
+çıkar; eşik 36'dır. Belirsizliği küçültmek bir satırın \emph{ağırlığını}
+artırır, \emph{yönünü} döndürmez.
+
+\subsection{Dejenerasyonun fiziksel sebebi}
+
+Bulgu, Fisher öz değerlerinden daha anlaşılır biçimde şöyle de
+yazılabilir. Pilot koşulardan ölçülen güç yasası
+$\beta-1 \propto Y_0^{-0{,}1791}$ olduğundan:
+
+\begin{equation}
+Y_0 \to 2Y_0 \ \Longrightarrow\ (\beta-1) \to 0{,}883\,(\beta-1),
+\qquad \text{yani } \%11{,}7 .
+\label{esit:yukseltec}
+\end{equation}
+
+Model değeri üzerindeki toplam belirsizliğimiz ise \%12,3'tür (vekil,
+gözlem ve model hatası birlikte). İkisi neredeyse eşittir: ölçüm
+hassasiyetimiz, $Y_0$'daki \textbf{iki katlık} bir değişimi ancak ayırt
+edebilmektedir. Dejenerasyon bir yöntem kusuru değil, $\beta$'nın
+$Y_0$'a üs $-0{,}18$ ile bağlı olmasının kaçınılmaz sonucudur.
+
+\subsection{Model gözleme ulaşıyor mu}
+
+Posteriorun taşıdığı Gauss ve köşegen kovaryans varsayımlarını
+taşımayan ikinci bir yol, tarih eşlemesi, yalnız ``bu $\theta$ gözlemle
+bağdaşmaz mı'' diye sorar \citep{vernon2014}:
+
+\begin{equation}
+I(\theta) = \max_j
+\frac{\left|E_j(\theta) - z_j\right|}
+     {\sqrt{\operatorname{Var}_j(\theta) + \sigma_j^{2}}},
+\qquad I > 3 \Rightarrow \text{bağdaşmaz}.
+\label{esit:bagdasmazlik}
+\end{equation}
+
+Ölçülen en küçük değer $I_{\min}=0{,}325$'tir. Bu önemsiz bir sayı
+değildir: hiçbir $\theta$ gözlemle bağdaşmasaydı $I_{\min}>3$ çıkar ve
+ileri modelin tamamı reddedilirdi. Önsel hacmin \textbf{\%34,04}'ü
+bağdaşır kalmakta, \%65,96'sı elenmektedir.
+
+İki yöntem birbirini doğrulamaktadır: posteriorun \%68 kütlesinin
+tamamı bağdaşır bölgenin içindedir ve hacim oranı $3{,}31$ ile kilitli
+eşiğin (10) altındadır.
+
+\subsection{Çıkarım makinesi kalibre mi}
+
+Benzetim tabanlı kalibrasyon \citep{talts2018}, havuzun gerçek vekili,
+ölçülmüş $R$ ve aynı $\sigma$ ile 200 tekrarda koşuldu. Üç eksende de
+yargı \textbf{KALİBRE}'dir (KS $p = 0{,}868$; $0{,}074$; $0{,}299$;
+\%68 kapsama $0{,}645$--$0{,}680$). En zayıf eksen $Y_0$'dır ve eşiğe
+yakınlığı saklanmamaktadır.
+
+Bu geçişin kanıtladığı dardır: posterior ``\%68'' dediğinde gerçekten
+\%68 kapsamaktadır. Modelin \emph{doğru} olduğunu kanıtlamaz; o ayrı
+bir sorudur ve cevabı bir sonraki altbölümdedir.
+
+\subsection{Çözünürlük farkı yanlılıktır --- ve bedeli}
+
+İç içe tasarımın tamamlanan 7 noktasında, aynı $\theta$ için ince
+çözünürlükteki model değeri kaba çözünürlüktekinden \textbf{yedisinde
+de} büyüktür:
+
+\begin{equation}
+\frac{b_{\text{ince}}}{b_{\text{kaba}}}:\quad
+\text{ortanca } 1{,}2328,\quad
+7/7 \text{ aynı yön},\quad
+p = 0{,}0156 .
+\label{esit:yanlilik}
+\end{equation}
+
+Yedi noktayla bile şansa bağlanamaz (tek örnek $t = 5{,}10$). Yani
+kaba ile orta çözünürlük arasındaki fark saçılma değil
+\textbf{sistematik kaymadır}; paydaya varyans terimi koyan yaklaşım onu
+doğru temsil etmemektedir.
+
+Bedeli Denklem~\eqref{esit:yukseltec}'in yükselteciyle ölçülür:
+$\%{+}23{,}3$'lük bir kayma $Y_0$'da $3{,}2$ kata karşılık gelir.
+Paydadaki terim bu kaymanın ancak dörtte birini hesaba katmaktaydı.
+
+\begin{sinir}
+\textbf{Bunun sonucu, raporun iddiasını daraltır.} $Y_0$'ın mutlak
+değeri bu veriyle \emph{belirlenememektedir}: posteriorun kipi
+$18{,}7$ Pa, orta çözünürlükte aynı gözlemi karşılayan değer
+$\sim\!60$ Pa, ve $3{,}5$ m de yakınsamış değildir. Belirlenen şey
+$\beta$'nın \textbf{bir} yön taşıdığıdır; o yönün sayısal konumu
+değildir.
+
+Bu kayma, aynı geçiş için daha önce ölçülmüş $-\%13$ ile \emph{ters
+işaretlidir}. Çelişki açıktır ve kapatılmamıştır; kapatılmadan
+``çözünürlük düzeltmesi şudur'' denemez.
+\end{sinir}
+
+\subsection{Hera için mühürlü öngörü}
+
+$\omega$ posteriora giremez, çünkü kilitli bir gözlenen değeri yoktur.
+Ama Hera onu ölçecektir --- radyo bilimi Dimorphos'un dönme hızını
+$10^{-3}$'ten iyi verecektir. Bu yüzden öngörü, üretilmeden önce
+yazılmış bir protokole göre mühürlenmiştir.
+
+$\theta$ örnekleri \emph{eleme bölgesinden} alınmıştır (posterior
+ağırlığı kullanılmamıştır: daha dar olanı seçmek öngörüyü sahte
+biçimde keskinleştirirdi). 20\,000 örnek, sabit tohum:
+
+\begin{equation}
+\omega \in [2{,}31;\ 15{,}12] \times 10^{-6}\ \text{rad\,s}^{-1}
+\quad (q_{05}\text{--}q_{95}), \qquad
+q_{50} = 5{,}18 \times 10^{-6} .
+\label{esit:spinongoru}
+\end{equation}
+
+Kayıt SHA-256 özetiyle depoya işlenmiştir; aynı adla ikinci kayıt
+yazılamaz ve commit tarihi zaman damgasının ikinci kanıtıdır. Hera'nın
+ölçtüğü değer $q_{05}$--$q_{95}$ dışında kalırsa yargı
+\textbf{TUTARSIZ} yazılacak ve kayda dokunulmayacaktır.
+
+Öngörünün yanında, asıl kullanışlı ürün $\omega \to f$ eşlemesidir:
+ölçülen bir açısal hız, $f$ hakkında ne söyler. Eşleme tekdüzedir
+($\omega$ arttıkça $f$'nin ortancası $0{,}134$'ten $0{,}309$'a çıkar)
+ama aralıklar geniş biçimde örtüşür --- $f$ önselden baskın olduğu için
+beklenen budur. Pratikte yüksek bir $\omega$ ölçümü $f<0{,}126$'yı
+eler; düşük bir ölçüm az şey söyler.
 
 % =======================================================================
 \section{Sonuç ve Tartışma}
@@ -921,14 +1075,13 @@ tamamlanmıştır: ileri model kurulmuş ve doğrulanmış, denetimli
 duyarlılıklar ölçülmüş, karar kuralları veriden önce kilitlenmiştir.
 
 Üçüncü hedef --- gözlemin $\theta$ uzayında kaç yönü kısıtladığı ---
-\emph{kısmen} yanıtlanmıştır. Üretim havuzunun \havuzBiten\ noktası,
-Denklem~\eqref{esit:betaeksen} ile $\beta$'nın pratikte tek bir
-koordinatı ($Y_0$) taşıdığını göstermektedir; diğer iki eksenle
-korelasyonu sıfıra yakındır. Bu, Hipotez~1'i nicel olarak
-desteklemektedir. Ancak \emph{sıra korelasyonu tanımlanabilirlik
-değildir}: $n_{\text{yön}}$'ün kilitli ölçümü Fisher öz değerleriyle
-yapılır ve tam havuzu, kalibre edilmiş vekili ve ölçülmüş $R$'yi
-gerektirir.
+\textbf{tam olarak} yanıtlanmıştır. Kilitli ölçüt tam havuzda koşulmuş
+ve Denklem~\eqref{esit:fisher} ile $n_{\text{yön}} = 1$ vermiştir: DART'ın
+tek skaleri üç boyutlu iç yapı uzayında \textbf{bir} yön taşımaktadır.
+Bu, Hipotez~1'in doğrulanmasıdır. Yanıtın bir bedeli vardır ve
+saklanmamaktadır: $\alpha_b$ ve $f$ için \emph{önselden ayırt edilemez}
+yazılmakta, sayı verilmemektedir. $Y_0$'ın mutlak değeri de Denklem~\eqref{esit:yanlilik}'in
+ölçtüğü çözünürlük yanlılığı yüzünden belirlenememektedir.
 
 Beklenmedik bir kazanç da bu hedeften çıktı:
 Denklem~\eqref{esit:spineksen}, dejenerasyonun \emph{nasıl}
@@ -936,13 +1089,24 @@ kırılabileceğini göstermektedir. Daha ince bir benzetim değil, ikinci ve
 neredeyse dik bir gözlenebilir gerekmektedir --- ve Hera onu ölçecektir.
 
 \begin{bekleyen}
-\textbf{Bu raporda henüz bulunmayanlar.} Üretim posterioru,
-$(\alpha_b, Y_0, f)$ için herhangi bir nokta tahmini ya da güven aralığı,
-tanımlanabilir yön sayısı $n_{\text{yön}}$'ün ölçülmüş değeri ve Hera
-görevi için sayısal bir öngörü. Bunların hiçbiri sunulmamaktadır, çünkü
-Şekil~\ref{sek:kapilar}'deki kapılar henüz çalıştırılmamıştır. Kapılar
-veriden önce yazıldığı için, sonuç ne çıkarsa çıksın kuralı değiştirme
-imkânı yoktur; raporun bu bölümünün varlık sebebi budur.
+\textbf{Bu raporda hâlâ bulunmayanlar.} $(\alpha_b, Y_0, f)$ için
+nokta tahmini ya da güven aralığı verilmemektedir --- ve artık bunun
+\emph{ölçülmüş} bir sebebi vardır: $\alpha_b$ ile $f$ önselden ayırt
+edilemediği (Denklem~\eqref{esit:fisher}) ve $Y_0$'ın mutlak değeri
+çözünürlüğe sistematik olarak bağlı olduğu
+(Denklem~\eqref{esit:yanlilik}) için.
+
+Hera için sayısal öngörü \emph{vardır} ve mühürlüdür
+(Denklem~\eqref{esit:spinongoru}), ama yalnız $\omega$ içindir;
+krater ön kaydı henüz üretilmemiştir. Çözünürlük yanlılığının
+düzeltilmiş hâli de yoktur: iç içe tasarım 12 noktanın 7'siyle
+tamamlanabilmiş, çok doğruluklu düzeltmenin kilitli kapısı bu
+yüzden düşmüştür ve manşet, kilitli $\sigma$ tarifinde kalmıştır.
+
+Kapılar veriden önce yazıldığı için, sonuç ne çıkarsa çıksın kuralı
+değiştirme imkânı yoktu. Nitekim iki beklenti de tutmadı: protokol
+$n_{\text{yön}}=2$ bekliyordu, $1$ çıktı; çözünürlük farkının
+saçılma olması umuluyordu, yanlılık çıktı. İkisi de kayıttadır.
 \end{bekleyen}
 
 % =======================================================================
