@@ -45,6 +45,18 @@ merkezinde** bırakır. Fark sistematik bir kaymaysa, `θ` o kaymayı
 
 ### Çözülmemiş uyuşmazlık
 
+> **2026-10-22 yan notu (kural 6: ADR metni değişmez).** Aşağıdaki
+> uyuşmazlık **çözüldü ve bir uyuşmazlık olmadığı anlaşıldı**:
+> `−%13` `t = 24 ms`'de, matrise zorlanmış çarpma sahasında,
+> çekmesiz ve `1,7–6,5` m bloklu bir sahnede ölçülmüştü;
+> `cozunurluk_yakin` ve üretim ölçümleri `t = 600 s`'de üretim
+> sahnesindedir. Karşılaştırılabilir değillerdi.
+> Bkz. [KAYIT-086](../defter/KAYIT-086_2026-10-22_M-ile-ince-kosu-celiskisi-COZULDU.md).
+>
+> Bu, §3'teki kararı **değiştirmez**: iç içe ince tasarım gerekçesi
+> ayakta ve KAYIT-085 çözünürlük farkının gerçekten yanlılık
+> olduğunu ölçtü.
+
 PROTOKOL-M / U0, kaba → orta geçişinde `β` için **`−%13`** ölçtü
 (`cok_dogruluk.py`'nin kendi gerekçe metninde yazılı).
 `cozunurluk_yakin` ise **`%5,3`**.

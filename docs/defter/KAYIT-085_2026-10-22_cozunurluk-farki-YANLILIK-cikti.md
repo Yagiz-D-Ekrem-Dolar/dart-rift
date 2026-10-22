@@ -64,7 +64,20 @@ ADR-0059'un uyarısı birebir gerçekleşti:
 > kalır — yani yanlış bir iç yapıya, doğru bir `β` ürettiği için
 > inanırız."*
 
-## 4. M/U0 ile **işaret çelişkisi** — çözülmedi
+## 4. M/U0 ile "işaret çelişkisi" — **AYNI GÜN ÇÖZÜLDÜ**
+
+> **Düzeltme (KAYIT-086).** Aşağıdaki "çözülmedi" değerlendirmesi
+> **yanlıştı**. `PROTOKOL-M` `t = 24 ms`'de, çarpma sahası matrise
+> zorlanmış, çekmesiz, `1,7–6,5` m bloklu bir sahnede ölçüyordu;
+> bizim ince koşu `t = 600 s`'de üretim sahnesinde ölçüyor. İki
+> sayı hiçbir zaman karşılaştırılabilir değildi — ortada çelişki
+> yok. Ayrıntı:
+> [KAYIT-086](KAYIT-086_2026-10-22_M-ile-ince-kosu-celiskisi-COZULDU.md).
+>
+> **Bu kaydın yanlılık bulgusu etkilenmez:** `7/7 aynı yön`,
+> `p = 0,0156`, `b` ortancası `%+23,3` aynen geçerlidir.
+
+Aşağıdaki metin kayıt olarak durur (kural 5).
 
 ADR-0059 §2, PROTOKOL-M/U0'ın kaba→orta geçişinde `β` için **`−%13`**
 ölçtüğünü kaydediyor. Biz aynı geçişte **`+%15,1`** ölçtük.
