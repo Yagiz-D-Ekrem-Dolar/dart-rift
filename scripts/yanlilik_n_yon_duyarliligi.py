@@ -158,7 +158,22 @@ def main(argv=None) -> int:
     b_duz = b_kaba * duzeltme
     m_model = ejf * up.M_SAHNE
 
-    sonuc = {}
+    # Kovaryans IKI KOLDA DA AYNI ve uretim tarifinden gelir. Veri
+    # sacilmasindan (`bv.std()`) kurmak iki hata yapardi: mutlak n_yon
+    # anlamsiz cikar (kilitli olcum 1 iken 0 goruldu) ve iki kol farkli
+    # payda kullandigi icin karsilastirma elma-armut olurdu.
+    from dartrift.inference.tarih_esleme import model_eksikligi_kaynakli
+    b_goz = up.BETA_GOZ - 1.0
+    s_b = float(np.hypot(
+        0.5 * (up.BETA_UST + up.BETA_ALT),
+        model_eksikligi_kaynakli(b_goz, list(up.TERIMLER_BETA))["sigma"]))
+    s_m = float(np.hypot(
+        up.M_EJEKTA_SIGMA / up.M_EJEKTA_GOZ,
+        model_eksikligi_kaynakli(1.0, list(up.TERIMLER_MEJ))["sigma"]))
+    kovm = np.diag(np.array([s_b, s_m]) ** 2)
+
+    sonuc = {"kovaryans": {"sigma_beta": s_b, "sigma_M_ejekta": s_m,
+                           "not": "iki kolda AYNI; uretim tarifinden"}}
     for ad, bv in (("kaba", b_kaba), ("yanlilik_duzeltilmis", b_duz)):
         gp_b, _ = up.vekil_kur(X, bv, katlar, f"vekil_{ad}", sonuc)
         gp_m, _ = up.vekil_kur(X, np.log(m_model), katlar, f"vekilM_{ad}",
@@ -172,8 +187,6 @@ def main(argv=None) -> int:
         oz, nyon = [], []
         for u0 in U0_NOKTALAR:
             J = yerel_jakobyen(ileri, np.asarray(u0, dtype=np.float64))
-            sdv = np.array([bv.std(ddof=1), np.log(m_model).std(ddof=1)])
-            kovm = np.diag(sdv ** 2)
             f = fisher_yonleri(J, kovm)
             oz.append([float(x) for x in f["ozdegerler"]])
             nyon.append(int(f["ogrenilen_yon_sayisi"]))
@@ -181,7 +194,8 @@ def main(argv=None) -> int:
                      "en_kucuk_n_yon": int(min(nyon))}
 
     rapor["fisher"] = {k: v for k, v in sonuc.items()
-                       if k in ("kaba", "yanlilik_duzeltilmis")}
+                       if k in ("kaba", "yanlilik_duzeltilmis",
+                                "kovaryans")}
     rapor["fisher_esigi"] = FISHER_ESIGI
 
     print("=" * 70)
