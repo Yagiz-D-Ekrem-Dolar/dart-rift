@@ -6,9 +6,15 @@
 #SBATCH -n 1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:1
-#SBATCH --time=2-00:00:00
+#   `--time` 2 gun DEGIL 3 gun (KAYIT-085): ilk kosumda 48 saatle
+#   gonderildi ve nokta 20 ile 44 duvara carpti -- ikisi de ~58 saat
+#   istiyordu. Bolumun kendi siniri `3-00:00:00` (sinfo ile dogrulandi),
+#   yani 48 bizim kendi sectigimiz gereksiz bir kisittı.
+#SBATCH --time=3-00:00:00
 #SBATCH --array=0-11%4
-#SBATCH --exclude=kolyoz19,kolyoz9
+#   kolyoz11 (KAYIT-085): nokta 78, 87, 92 orada "nvidia-smi GPU
+#   gormuyor" ile dustu. kolyoz13 ayni aileden, README'de kayitli.
+#SBATCH --exclude=kolyoz19,kolyoz9,kolyoz11,kolyoz13
 #SBATCH -o /arf/scratch/egitimg16u1/driftclaude/ciktilar/HAVUZ_INCE_%A_%a.out
 #SBATCH -e /arf/scratch/egitimg16u1/driftclaude/ciktilar/HAVUZ_INCE_%A_%a.err
 
