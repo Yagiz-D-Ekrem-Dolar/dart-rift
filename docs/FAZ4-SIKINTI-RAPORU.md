@@ -5881,7 +5881,21 @@ Kalıp: **düzeltmenin kendisini yalnız hatayı yakalayan noktada sınamak**
 (A85'te `0,16`). Uç ve iç durumlar ayrı sınanmalı.
 
 ---
-### A86 — **M2'de taban θ'nın ince `99991111` koşusunda krater operatörü `nan`** (2026-09-14) — *açık, incelenmedi*
+### A86 — **M2'de taban θ'nın ince `99991111` koşusunda krater operatörü `nan`** (2026-09-14) — *kök sebep BULUNDU 2026-10-22, düzeltme uygulanmadı*
+
+> **Kök sebep (KAYIT-088).** `nan` dönen **referans** yüzeydir, son
+> yüzey değil. `tepe` iki durumdan **ortak** alınıyor; zayıf matriste
+> yukarı atılan ama kaçmayan malzeme onu şişiriyor ve `10` m'lik
+> pencere orijinal yüzeye (`z ≈ 59,5` m) inemiyor — düşen noktalarda
+> pencere tabanı `91–95` m. Üretim havuzunda **30/96** nokta böyle
+> düşüyor ve hepsinde `Y₀ < 149` Pa.
+>
+> Aşağıdaki 2026-09-14 tanısı (**son** durumun seyrelmesi) üretim
+> rejiminde **doğrulanmadı**; `z_son` bulunuyor. Metin kayıt olarak
+> durur (kural 5).
+>
+> Önerilen düzeltme: pencereyi ışın başına değil **durum başına**
+> kurmak. Kilitli operatöre dokunulmadı.
 
 `M2_ince_b_sahne99991111`: `d_merkez = V_krater = nan`, `β−1 = 0,490`
 sonlu. Aynı θ'nın öbür tohumu `3,69 m / 51,8 m³`. M2'nin `V_krater` ve
