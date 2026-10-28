@@ -276,7 +276,55 @@ düştükten sonra) görecek. Krater ön kaydı bu anlık görüntüden
 `R_krater` ayrıca 96 noktanın yalnız **2**'sinde sonlu (`4,0` ve
 `3,8` m); A11'in "krater yarıçapı gözlenemez" yargısı ayakta.
 
-## 14. Bu klasörün dışında duran uyarı
+## 14. Tarama yönü — krater **46 → 66** noktada okunur oldu (2026-10-28)
+
+Kaynak: [`havuz_krater_tarama_96.csv`](havuz_krater_tarama_96.csv),
+işler `6864679` + `6864736`, sıfır GPU.
+Karar: [ADR-0063](../adr/ADR-0063-yuzey-icten-disa-taranir.md),
+ölçüm: [KAYIT-091](../defter/KAYIT-091_2026-10-28_icten-disa-tarama-olculdu-66-nokta-capraz-dogrulandi.md).
+
+| | ÖLÇÜLDÜ | ÖRTÜLÜ | YÜZEY_YOK |
+|---|---:|---:|---:|
+| `distan` (kilitli varsayılan) | 46 | 25 | 25 |
+| `icten` (yeni, yan yana) | **79** | 17 | **0** |
+
+**46 ortak noktada iki tanım birebir aynı**: bağıl fark ortanca
+`0,000e+00`, en büyük `1,868e-14`. Yani yeni tanım hiçbir yayımlanmış
+sayıyı değiştirmiyor.
+
+### 14.1 Çapraz doğrulama — sıfır çelişki
+
+`icten`'in kurtardığı 33 noktanın **20**'sini, tamamen bağımsız bir
+tanı (`arama_derinligi = 60 m`) da ölçüyor ve **`%1` içinde uyuyor**;
+**çelişen nokta yok**.
+
+| `capraz_dogrulandi` | n |
+|---|---:|
+| `EVET_distan_ile` | 46 |
+| `EVET_60m_ile` | 20 |
+| `HAYIR_tek_tani` | 13 |
+| `olculmedi` | 17 |
+
+**Kullanılabilir taban `%48 → %69`.**
+
+### 14.2 Ve 13 nokta **güvenilmiyor** — gizlenmiyor
+
+Bu 13'te yalnız `icten` sayı veriyor ve bazıları fiziksel değil:
+idx 87 `+36,49 m` (`V = 3 043 m³`), idx 6 `+28,61 m` — hedefin yarı
+eksenleri `58 – 88,5` m.
+
+Ayrım sayıya vuruyor: çapraz doğrulanan 66 noktanın aralığı
+`−4,930 … +4,428` m, doğrulanmayan 13'ünki `−5,587 … +36,490` m.
+
+Sebep: `icten` gövde **içindeki** bir boşluğa takılabiliyor; `distan`
+ise yukarıdaki yığına. **İki yön de aynı sınıfın hatasını yapıyor** —
+doğru kesişimi *doğrultuya* bakarak seçmek. Asıl çözüm bağlantılılık
+ölçütü; yazılmadı, önü de kapatılmadı.
+
+Bu yüzden **varsayılan değiştirilmedi**: `icten` yalnız çapraz
+doğrulanmış 66 noktada kullanılıyor.
+
+## 15. Bu klasörün dışında duran uyarı
 
 **`β` gelenek düzeltmesi özgün bir katkı DEĞİL.** 2026-10-16 literatür
 kontrolü: DART ekibi `β_n`, `β_p` ve Cheng'in fırlatı doğrultusu
