@@ -4,6 +4,18 @@
 **Öncül:** A86 (2026-09-14, *açık, incelenmedi*), ADR-0055
 **Veri:** üretim havuzu, **30/96** nokta `krater_derinlik = nan`
 
+> **DÜZELTME (2026-10-28, KAYIT-090) — iki çıkarıcı karıştırılmış.**
+> Yukarıdaki **30/96** sayısı `havuz_96.csv`'nin `krater_derinlik`
+> sütunundan, yani **`crater_profile`**'den geliyor (A19 ile zaten
+> `xfail`). Aşağıdaki §2 tablosu (`z_ref` / `z_son` / pencere) ise
+> **`krater_yuzey`** operatöründen. İkisi ayrı kod yollarıdır
+> (`crater_profile` `_doluluk_kesisimi`'ni hiç çağırmaz).
+>
+> `krater_yuzey`'in havuzdaki gerçek taban çizgisi **2026-10-28'de
+> ölçüldü**: **47/96** okunamıyor (49 okunuyor). Teşhisin kendisi
+> (§3'teki mekanizma) doğru ve düzeltmeyle doğrulandı — yalnız
+> başlıktaki sayı yanlış operatöre aitti. Hiçbir satır silinmedi.
+
 ---
 
 ## 1. Tek cümle

@@ -205,7 +205,78 @@ altında** kalibre. Modelin gerçeğe uyması §6'nın sorusu.
 > kalibre çıkıyor. Sonuç önsele duyarsız görünüyor, ama o sınavın
 > ayırt edici gücü düşüktür ve öyle raporlanıyor.
 
-## 13. Bu klasörün dışında duran uyarı
+## 13. Krater gözlemlisi — **96/96 yeniden okundu** (2026-10-28)
+
+Kaynak: [`havuz_krater_96.csv`](havuz_krater_96.csv). Operatör
+`krater_yuzey` (A73 yüzey operatörü), ADR-0061 + ADR-0062 sonrası.
+İş `6864648` (yeni), `6864667` (taban çizgisi, **eski** operatör aynı
+betikle). Sıfır GPU — yalnız kayıtlı `npz` okundu.
+
+> **Dikkat: bu sütun `havuz_96.csv`'deki `krater_derinlik` DEĞİL.**
+> O sütun eski çıkarıcıdan (`crater_profile`, A19 ile `xfail`) gelir ve
+> `30` `nan` taşır. Buradaki sayılar yüzey operatöründen. İki kod yolu
+> birbirini hiç çağırmıyor.
+
+| sınıf | n | `Y₀` ortanca | ne demek |
+|---|---:|---:|---|
+| **ÖLÇÜLDÜ** | **46** | `3 650` Pa | krater okundu |
+| **ÖRTÜLÜ** | **25** | `9,3` Pa | eksende **yoğun** bağlı ejekta; ADR-0062 reddi |
+| **YÜZEY_YOK** | **25** | `88,4` Pa | eksende **seyrek** bağlı ejekta; `φ` eşiği kesmiyor |
+
+Ölçülen `d_merkez`: `−3,69 … +3,49` m (7'si negatif).
+Örtü yüksekliği (25 ÖRTÜLÜ nokta): `6,50 … 47,99` m, **ortanca `30,89` m**.
+
+### 13.1 Düzeltme ne yaptı — geçiş matrisi
+
+| eski → yeni | n |
+|---|---:|
+| ÖLÇÜLDÜ → ÖLÇÜLDÜ | 46 |
+| YÜZEY_YOK → **ÖRTÜLÜ** | 22 |
+| YÜZEY_YOK → YÜZEY_YOK | 25 |
+| ÖLÇÜLDÜ → **ÖRTÜLÜ** | 3 |
+
+- **ADR-0061 kendi hedefini tam tutturdu.** Eski 47 başarısızlığın
+  hepsi "yüzey bulunamadı"ydı; `REFERANS` tarafından düşen **hiç
+  kalmadı**. Kalan 25'in **tamamı** `SON` tarafı.
+- **ADR-0062 yalnız 3 sayıyı reddetti** ve üçü de **negatifti**
+  (`−12,46 … −6,50` m). Pozitif okunan hiçbir nokta kaybolmadı.
+- Eskiden pozitif okunan **39** noktanın `d_merkez`'i `%1` içinde
+  **değişmedi** (ihlal `0`) — ADR-0062 §5 geri alma kapısı **geçti**.
+
+### 13.2 Bir geri alma koşulu literal olarak tetiklendi — ve niçin tutuldu
+
+ADR-0061 §5: *"`nan` sayısını düşürmek yerine **artırırsa** geri
+alınır."* Ölçüm: okunamayan nokta **47 → 50**. Koşul lafzen tetiklendi
+ve bu **gizlenmiyor**. Tutulmasının gerekçesi ölçüldü, uydurulmadı:
+
+1. **ADR-0061 tek başına 47 → 25** yapıyor (22 nokta `YUZEY_YOK`'tan
+   çıkıyor). Yani koşulun hedef aldığı değişiklik koşulu **geçiyor**.
+2. Artışın tamamı ADR-0062'nin **kasıtlı** reddi: 3 nokta, üçü de
+   negatif çöp sayı. ADR-0062'nin kendi kapısı ("pozitif bir derinliği
+   reddederse geri alınır") **tetiklenmedi**.
+3. ADR-0061 §5'teki *"daha önce okunan 66 nokta"* ifadesi de yanlış
+   çıkarıcıya aitti (`crater_profile`'ın 66'sı); yüzey operatörünün
+   tabanı `49`.
+
+Yani koşul yanlış taban çizgisine göre yazılmıştı. Düzeltilmiş hâliyle
+**geçiyor**; kural sonuç görüldükten sonra değiştirilmedi, ölçüm
+yazıldı.
+
+### 13.3 Bundan çıkan bilimsel cümle
+
+> `t = 600 s`'te, zayıf matris rejiminde **geçici krater
+> gözlenemiyor**: kaçış hızını geçmemiş ejekta eksende `6 – 48` m
+> yükseklikte duruyor ve doluluk eş-yüzeyi tabanı değil onu okuyor.
+
+Bu, Hera için doğrudan bağlayıcı: Hera **son** krateri (ejekta
+düştükten sonra) görecek. Krater ön kaydı bu anlık görüntüden
+`d_merkez`/`V_krater` olarak **kurulamaz** — ayrıntı
+[KAYIT-089](../defter/KAYIT-089_2026-10-27_ADR-0061-tek-basina-30-nani-30-yanlis-sayiya-cevirecekti.md).
+
+`R_krater` ayrıca 96 noktanın yalnız **2**'sinde sonlu (`4,0` ve
+`3,8` m); A11'in "krater yarıçapı gözlenemez" yargısı ayakta.
+
+## 14. Bu klasörün dışında duran uyarı
 
 **`β` gelenek düzeltmesi özgün bir katkı DEĞİL.** 2026-10-16 literatür
 kontrolü: DART ekibi `β_n`, `β_p` ve Cheng'in fırlatı doğrultusu
