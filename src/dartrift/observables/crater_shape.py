@@ -646,13 +646,25 @@ def _dik_taban(a: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 
 def _doluluk_kesisimi(x, V, h, *, taban, a, z_ust, z_alt, adim, esik,
-                      n_bolme: int = 48) -> float:
-    """Tek dogru uzerinde `phi = sum V_j W(|p - x_j|, h_j)`'nin esigi
-    DISTAN ICE ilk kez astigi yukseklik (`taban`'dan `a` boyunca).
+                      n_bolme: int = 48, yon: str = "distan") -> float:
+    """Tek dogru uzerinde `phi = sum V_j W(|p - x_j|, h_j)` es-yuzeyi.
 
-    Kesisim yoksa ya da pencerenin tepesi zaten doluysa `nan` -- sessiz
-    bir sayi yerine.
+    `yon` (ADR-0063, **yan yana** alan; varsayilan bit-ayni):
+
+    - `"distan"` (VARSAYILAN, kilitli davranis): `z_ust`'ten asagi
+      inilir, `phi` esigi ILK astigi yukseklik dondurulur. Kesisim
+      yoksa ya da pencerenin tepesi zaten doluysa `nan`.
+    - `"icten"`: `z_alt`'tan YUKARI cikilir ve `phi`'nin esigin
+      ALTINA ILK dustugu yukseklik dondurulur. Bu, `taban`'i iceren
+      cismin dis yuzeyidir; uzerindeki bosluk ve ondan sonraki
+      (kacmamis ejekta gibi) ayri yigin YAPISAL OLARAK iskalanir.
+      `z_alt` cismin icinde degilse (`phi(z_alt) < esik`) `nan`.
+
+    Iki yon de ayni `phi`, ayni `esik`, ayni ikiye bolmeyi kullanir;
+    degisen yalniz hangi kesisimin "yuzey" sayildigidir.
     """
+    if yon not in ("distan", "icten"):
+        raise ValueError(f"yon 'distan' ya da 'icten' olmali, {yon!r} degil")
     from ..cpu_reference.sph_ref import kernel_w
 
     d = x - taban[None, :]
@@ -671,12 +683,24 @@ def _doluluk_kesisimi(x, V, h, *, taban, a, z_ust, z_alt, adim, esik,
         return kernel_w(q, hs[None, :], 3) @ Vs
 
     n = int(np.ceil((z_ust - z_alt) / adim)) + 1
-    zq = z_ust - adim * np.arange(n)
-    f = phi(zq)
-    dolu = np.nonzero(f >= esik)[0]
-    if len(dolu) == 0 or dolu[0] == 0:
-        return float("nan")
-    ust, alt = float(zq[dolu[0] - 1]), float(zq[dolu[0]])
+    if yon == "icten":
+        zq = z_alt + adim * np.arange(n)
+        f = phi(zq)
+        if f[0] < esik:
+            # Pencerenin tabani cismin ICINDE degil -- icten disa
+            # tarama tanimsiz. Sessiz sayi yerine `nan`.
+            return float("nan")
+        bos = np.nonzero(f < esik)[0]
+        if len(bos) == 0:
+            return float("nan")
+        alt, ust = float(zq[bos[0] - 1]), float(zq[bos[0]])
+    else:
+        zq = z_ust - adim * np.arange(n)
+        f = phi(zq)
+        dolu = np.nonzero(f >= esik)[0]
+        if len(dolu) == 0 or dolu[0] == 0:
+            return float("nan")
+        ust, alt = float(zq[dolu[0] - 1]), float(zq[dolu[0]])
     for _ in range(n_bolme):
         orta = 0.5 * (ust + alt)
         if phi(np.array([orta]))[0] >= esik:
@@ -709,6 +733,7 @@ def krater_yuzey(
     kabuk_kalinligi: float | None = None,
     rijit_duzeltme: bool = False,
     ayrilma_mesafesi: float = 2.0,
+    tarama: str = "distan",
 ) -> KraterYuzey:
     """Krateri bagli cismin **yuzeyinden**, sabit fiziksel olcekte olc.
 
@@ -885,8 +910,15 @@ def krater_yuzey(
     for ad, (tepe_ad, zz, hh) in pencereler.items():
         ic = hh[zz > tepe_ad - float(arama_derinligi)]
         h_ust = float(np.max(ic)) if len(ic) else float(np.max(hh))
+        # ADR-0063: `icten` kipte pencere cismin ICINDEN baslar.
+        # `z` her zaman `taban`a goredir ve `taban` kutle merkezi
+        # duzlemindedir, yani cismin icindedir; o yuzden `z_alt = 0`.
+        # `arama_derinligi` bu kipte KULLANILMAZ -- yuzeyin nerede
+        # oldugunu bir mesafe ayari degil, dolulugun kendisi belirler.
+        z_alt = 0.0 if tarama == "icten" else tepe_ad - float(
+            arama_derinligi)
         pencere[ad] = {"z_ust": tepe_ad + 2.0 * h_ust + adim,
-                       "z_alt": tepe_ad - float(arama_derinligi)}
+                       "z_alt": z_alt}
 
     V0, V = m / rho0, m / rho
     K = int(np.floor(s_max / ds + 1e-9)) + 1
@@ -894,7 +926,7 @@ def krater_yuzey(
     fi = 2.0 * np.pi * np.arange(n_azimut) / n_azimut
     z_ref = np.full((K, n_azimut), np.nan)
     z_son = np.full((K, n_azimut), np.nan)
-    ortak = dict(a=a, adim=adim, esik=esik)
+    ortak = dict(a=a, adim=adim, esik=esik, yon=tarama)
     p_ref, p_son = pencere["ref"], pencere["son"]
     xb, Vb, hb = xk[bagli], V[bagli], h[bagli]
     for k in range(K):
@@ -990,6 +1022,7 @@ def krater_yuzey(
         s=s, profil=profil, profil_std=profil_std,
         tani={"pencere_ref": p_ref, "pencere_son": p_son,
               "adim": adim, "esik": esik, "ortu_payi": ortu_payi,
+              "tarama": tarama,
               "h_eksen": h_eksen, "ayrilma_hizi": v_ayr,
               "ayrilma_mesafesi_h": float(ayrilma_mesafesi),
               "rijit_duzeltme": bool(rijit_duzeltme),
