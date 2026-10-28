@@ -763,13 +763,31 @@ def krater_yuzey(
     cikarmamak ihmal edilebilir hata, yanlis cikarmak `0,4 m`. Kayma
     her durumda `rijit_kayma` olarak RAPORLANIR.
 
-    ## Degismezler (sinanir: `tests/test_krater_yuzey.py`)
+    ## Ne zaman REDDEDER (`ValueError`)
+
+    1. *Eksen isininda yuzey bulunamadi* -- arama penceresi yuzeyi
+       gormuyor. Pencere ADR-0061'den beri **durum basina** kurulur
+       (eskiden ortakti ve uretim havuzunda 30/96 nokta burada
+       dusuyordu); mesaj hangi TARAFIN dustugunu yazar.
+    2. *ORTULU KRATER* (ADR-0062) -- merkezde son yuzey, referans
+       yuzeyin bir cekirdek destegi (`2 h`) **uzerinde**. Kacis hizini
+       gecmemis malzeme krateri ortmus demektir ve `phi = esik`
+       es-yuzeyi tabani degil ortunun tepesini okur. Bu durumda
+       derinlik OLCULEMEZ ve sayi dondurmek yaniltici olur.
+
+    Iki red de `derinlik = 0` yerine istisnadir: cagiran taraf
+    (`gozlem_vektoru`, `forward`) gozlemliyi `nan` yapar ve sebebi
+    kaydeder.
+
+    ## Degismezler (sinanir: `tests/test_krater_yuzey.py`,
+    `tests/test_krater_pencere_durum_basina.py`)
 
     - `x is x_reference` -> profil tam sifir.
     - Butun cismin rijit otelemesi -> sifir.
     - Destek kalinligindan (`2 h`) kalin dis kabuk sabitken ic hareket
       -> sifir.
     - Yeniden ornekleme (kopya + `m/k`) -> ayni sonuc.
+    - Referans penceresi son durumdan BAGIMSIZ (ADR-0061).
     """
     x = np.ascontiguousarray(x, dtype=np.float64)
     x0 = np.ascontiguousarray(x_reference, dtype=np.float64)
@@ -833,9 +851,20 @@ def krater_yuzey(
     # yalniz eksenden `s_max` icindeki parcaciklarin EN UST noktasi; `h`
     # payi da yalniz arama penceresinin ICINDEKI parcaciklardan.
     e1, e2 = _dik_taban(a)
-    tepe = -np.inf
+    # ADR-0061: pencere ISIN basina degil DURUM basina kurulur.
+    #
+    # Eskiden `tepe` iki durumun ORTAK en ustuydu. Zayif matriste carpma
+    # malzemeyi eksen boyunca yukari firlatiyor; bir kismi kacis hizini
+    # gecmedigi icin `bagli` sayilip ortak `tepe`'yi belirliyordu ve
+    # `arama_derinligi` kadar sarkan pencere REFERANS yuzeyi (30-35 m
+    # asagida) hic gormuyordu. Uretim havuzunda 30/96 nokta boyle
+    # `nan` donuyordu ve hepsinde `Y_0 < 149` Pa (KAYIT-088).
+    #
+    # Iki durum ayni `a` ekseni ve ayni `c0` tabani uzerinde tanimli,
+    # yani `z` olcegi zaten ortak; pencerenin de ortak olmasi gerekmiyor.
+    # Dusus yine `z_ref - z_son` olarak hesaplanir.
+    pencereler = {}
     h_eksen = float("nan")
-    kume = []
     for ad, xx, sec in (("ref", x0, np.ones(n, bool)), ("son", xk, bagli)):
         d = xx[sec] - c0[None, :]
         z = d @ a
@@ -845,15 +874,19 @@ def krater_yuzey(
             yakin = yan < s_max + 2.0 * h[sec]
         if not np.any(yakin):
             raise ValueError("carpma ekseni cevresinde parcacik yok")
-        tepe = max(tepe, float(np.max(z[yakin])))
-        kume.append((z[yakin], h[sec][yakin]))
+        zz, hh = z[yakin], h[sec][yakin]
+        tepe_ad = float(np.max(zz))
         if ad == "ref":
-            h_eksen = float(np.min(h[sec][yakin]))
-    pencere_ici = [hh[zz > tepe - float(arama_derinligi)] for zz, hh in kume]
-    h_ust = float(max(np.max(p) for p in pencere_ici if len(p)))
+            h_eksen = float(np.min(hh))
+        pencereler[ad] = (tepe_ad, zz, hh)
+
     adim = 0.25 * h_eksen if adim is None else float(adim)
-    z_ust = tepe + 2.0 * h_ust + adim
-    z_alt = tepe - float(arama_derinligi)
+    pencere = {}
+    for ad, (tepe_ad, zz, hh) in pencereler.items():
+        ic = hh[zz > tepe_ad - float(arama_derinligi)]
+        h_ust = float(np.max(ic)) if len(ic) else float(np.max(hh))
+        pencere[ad] = {"z_ust": tepe_ad + 2.0 * h_ust + adim,
+                       "z_alt": tepe_ad - float(arama_derinligi)}
 
     V0, V = m / rho0, m / rho
     K = int(np.floor(s_max / ds + 1e-9)) + 1
@@ -861,13 +894,16 @@ def krater_yuzey(
     fi = 2.0 * np.pi * np.arange(n_azimut) / n_azimut
     z_ref = np.full((K, n_azimut), np.nan)
     z_son = np.full((K, n_azimut), np.nan)
-    ortak = dict(a=a, z_ust=z_ust, z_alt=z_alt, adim=adim, esik=esik)
+    ortak = dict(a=a, adim=adim, esik=esik)
+    p_ref, p_son = pencere["ref"], pencere["son"]
     xb, Vb, hb = xk[bagli], V[bagli], h[bagli]
     for k in range(K):
         for j in range(n_azimut if k > 0 else 1):
             taban = c0 + s[k] * (np.cos(fi[j]) * e1 + np.sin(fi[j]) * e2)
-            z_ref[k, j] = _doluluk_kesisimi(x0, V0, h, taban=taban, **ortak)
-            z_son[k, j] = _doluluk_kesisimi(xb, Vb, hb, taban=taban, **ortak)
+            z_ref[k, j] = _doluluk_kesisimi(x0, V0, h, taban=taban,
+                                            **p_ref, **ortak)
+            z_son[k, j] = _doluluk_kesisimi(xb, Vb, hb, taban=taban,
+                                            **p_son, **ortak)
         if k == 0:
             z_ref[0, :], z_son[0, :] = z_ref[0, 0], z_son[0, 0]
     dusus = z_ref - z_son
@@ -879,9 +915,50 @@ def krater_yuzey(
         profil = np.full(K, np.nan)
         profil_std = np.full(K, np.nan)
     if not np.isfinite(profil[0]):
+        # ADR-0061: hangi TARAFIN dustugu yazilir. Eskiden yalniz tek
+        # bir pencere basiliyordu ve 30 vakanin tamami sebebi
+        # yazilmadan kayboldu (A86 ikinci tespiti, KAYIT-088 §8).
+        dusen = []
+        if not np.isfinite(z_ref[0, 0]):
+            dusen.append(f"REFERANS (pencere {p_ref['z_alt']:.3f}"
+                         f"..{p_ref['z_ust']:.3f} m)")
+        if not np.isfinite(z_son[0, 0]):
+            dusen.append(f"SON (pencere {p_son['z_alt']:.3f}"
+                         f"..{p_son['z_ust']:.3f} m)")
         raise ValueError(
-            "eksen isininda yuzey bulunamadi (pencere: "
-            f"{z_alt:.3f}..{z_ust:.3f} m) -- arama_derinligi'ni artirin")
+            "eksen isininda yuzey bulunamadi -- " + " ve ".join(dusen)
+            + "; arama_derinligi'ni artirin")
+
+    # ADR-0062: ORTULU KRATER -- pencere duzelince `nan` kalkiyor ama
+    # yerine gelen sayi krater derinligi DEGIL.
+    #
+    # Pencere durum basina kurulunca (ADR-0061) referans yuzey artik
+    # bulunuyor; ama zayif matriste eksende, kacis hizini GECMEMIS
+    # (yani `bagli` sayilan) yogun malzeme duruyor ve `phi = esik`
+    # es-yuzeyi DISTAN ICE tarandigi icin onun tepesini okuyor.
+    # Uretim havuzunda olculen: `z_ref = 59,517`, `z_son = 105,916`
+    # -> `d_merkez = -46,4` m. Sentetik levhada ayni sey birebir
+    # tekrarlanir: perde `yuk` metreye kaldirilinca
+    # `d_merkez = -(yuk + 0,913)` m (olculdu, 0 - 30 m).
+    #
+    # Olcut COZUNURLUKTUR, ayarlanmis sayi degil: merkezde son yuzey
+    # referans yuzeyin bir CEKIRDEK DESTEGI (`2h`) uzerine cikmissa,
+    # referansta bos olan yerde madde var. Okunan sey ortudur,
+    # kraterin tabani degil. Esigin yeri genis: uretimde calisan
+    # noktalar `+0,75` / `+0,89` m, dusen 30 nokta `-46` m; kapi
+    # `-1` ile `-45` m arasinda HERHANGI bir yerde ayni siniflamayi
+    # verir. Yonu de onceden belli -- yalniz sayiyi REDDE cevirir,
+    # hicbir yerde krater YARATMAZ.
+    ortu_payi = 2.0 * h_eksen
+    if profil[0] < -ortu_payi:
+        raise ValueError(
+            f"ORTULU KRATER: eksende son yuzey {z_son[0, 0]:.3f} m, "
+            f"referans yuzey {z_ref[0, 0]:.3f} m; son yuzey "
+            f"{-float(profil[0]):.3f} m YUKARIDA (cekirdek destegi "
+            f"{ortu_payi:.3f} m). Kacmamis malzeme krateri ortuyor; "
+            f"phi=esik es-yuzeyi tabani degil ortunun tepesini okur "
+            f"-- derinlik bu durumda OLCULEMEZ")
+
     derinlik = float(np.nanmax(profil))
     yaricap = float("nan")
     if derinlik > 0.0:
@@ -911,7 +988,8 @@ def krater_yuzey(
         hacim_degisimi=float(V[bagli].sum() - V0[bagli].sum()),
         kuresel_dusus=kuresel, n_ayrilan=int(ayrilan.sum()),
         s=s, profil=profil, profil_std=profil_std,
-        tani={"z_ust": z_ust, "z_alt": z_alt, "adim": adim, "esik": esik,
+        tani={"pencere_ref": p_ref, "pencere_son": p_son,
+              "adim": adim, "esik": esik, "ortu_payi": ortu_payi,
               "h_eksen": h_eksen, "ayrilma_hizi": v_ayr,
               "ayrilma_mesafesi_h": float(ayrilma_mesafesi),
               "rijit_duzeltme": bool(rijit_duzeltme),

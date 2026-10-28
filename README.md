@@ -161,6 +161,99 @@ Kanıtlar: [G0](docs/evidence/G0_report_truba_1425656.md) ·
 > **tabana** iniyor ve bu ayrıklaştırma değil model-form hatasıdır —
 > [ADR-0011](docs/adr/ADR-0011-sedov-yakinsama-kurulumu.md)).
 
+## İki ayrı doğrulama — karıştırılmamalı
+
+Bir dış geri bildirim şunu söylemişti: *"`G0 ✅ G1 ✅ G2 ✅ G3 ✅` gören
+bir jüri üyesi bilinçaltında 'fizik doğrulandı' diye düşünebilir."*
+Haklıydı. `G` kapıları **çözücünün** doğru denklemleri doğru çözdüğünü
+gösterir, hedef problemin çözüldüğünü değil.
+
+> **Bunların hiçbiri şunu kanıtlamaz:** *"Bu model DART–Dimorphos
+> çarpışmasındaki momentum aktarımını doğru modelliyor."* İki tabloyu
+> ayırmak zorunlu; yoksa yeşil kapılar sırasını okuyan biri fiziğin
+> doğrulandığını sanır.
+
+### 1. MÜHENDİSLİK DOĞRULAMASI
+
+| Kapı | Kapsam | Sonuç | Karar |
+|---|---|---|---|
+| **G0** | Zemin sağlam (altyapı) | **GEÇTİ** | FAZ 1 başlayabilir |
+| **G1** | Şok motoru çalışıyor (Sod, Sedov) | **GEÇTİ** | FAZ 2 başlayabilir |
+| **G2** | Gerçek malzeme fiziği (Tillotson, Hugoniot) | **GEÇTİ** | FAZ 3 başlayabilir |
+| **G3** | Sahne kurulumu | **GEÇTİ** 7/7 | FAZ 5 değil — önce G4 |
+| **G4** | Çözünürlük + çıkarım **altyapısı** | **GEÇTİ** 10/10 | ([kapanış](docs/FAZ4-KAPANIS.md)) |
+
+### 2. BİLİMSEL DOĞRULAMA
+
+Hedef problemin kendisi. Aşağıdaki tablo **`2026-09-06` itibarıyla**
+ölçülmüş değerleri taşır ve **o hâliyle duruyor** — hiçbir satır sonradan
+yeşile boyanmadı. Sonrasında ne değiştiği tablonun altında, ayrı ve
+tarihli olarak yazılı.
+
+| # | ölçüt | durum | ölçülen |
+|---|---|---|---|
+| **S1** | DART koşullarında şok kuruluyor mu | **GEÇTİ** | zirve `%69,2`, `t = 8,61e-05 s`; öngörü `6,0e-05 s` |
+| **S2** | Şok ızgarada taşınıyor mu | **GEÇTİ** | kaba seviyede şoklu `0 → 2 983` (A25) |
+| **S3** | Momentum defteri kapanıyor mu | **GEÇTİ** | artık `1,15e-14` (A29) |
+| **S4** | Krater oluşuyor mu | **GEÇTİ** | `0,08 – 0,43 m`, `θ` ile değişiyor |
+| **S5** | Kazı akışını **ne durduruyor** | **GEÇTİ** | matris çekmesi; kontrollü deney, `Δβ` `7,7×` |
+| **S6** | Ejekta dağılımı ölçekleme yasasına uyuyor mu | **GEÇTİ** | `μ = 0,463 ± 0,016`; H&H `0,40 – 0,55` |
+| **S7** | Gözlenebilir iç yapıyı **ayırt ediyor** mu | **GEÇTİ** | `F = 1006`; `Y₀` ile `ρ = −0,94` (`p < 1e-4`) |
+| **S8** | Vekil + posterior zinciri kapanıyor mu | **GEÇTİ** | sigmoid `R² = 0,941`; LOO `RMSE = 0,026 m` |
+| **S9** | `β` gözlenebilir olarak kullanılabilir mi | **DÜŞTÜ** | her ölçekte ayrıklaştırma tabanında |
+| **S10** | Uzamsal yakınsama (üç nokta) | **YAPILAMADI** | A52: `R3` için `224` saat, sınır `48` |
+| **S11** | Niceliksel kalibrasyon (`Y₀ = f(d)`) | **DÜŞTÜ** | `%72` çözünürlük kayması (A69) |
+| **S12** | Üretim modelinde kazı akışı | **DÜŞTÜ** | granüler çekme modeli yok |
+
+> **Bugünkü savunulabilir bilimsel cümleler:**
+>
+> 1. Gözenekli hedefli SPH çarpma simülasyonunda matrisin **sahte
+>    çekme dayanımı** — akma dayanımı `Y₀`'ın Tillotson çekme dalını
+>    sınırlamamasından doğuyor (`−15,19 MPa`, sekiz mertebede sabit) —
+>    kazı akışını **tamamen bastırıyor**.
+> 2. Çekme kaldırıldığında ejekta kütle–hız dağılımı
+>    `M(>v) ∝ v^(−3μ)`, **`μ = 0,47 ± 0,03`**, `R² > 0,99` ile
+>    Housen–Holsapple'ın `0,40 – 0,55` aralığına oturuyor.
+> 3. Krater derinliği matris kohezyonu `Y₀` hakkında **bilgi
+>    taşıyor** (`F = 1006`, `ρ = −0,94`); blok yapısı hakkında
+>    **taşımıyor**.
+>
+> **Ve neyi söyleyemiyoruz:** niceliksel eşleme yakınsamıyor
+> (`%72`), yani hesaplanan posterior bir **yöntem gösterimi**dir,
+> fiziksel öngörü değil.
+
+#### `2026-10-28` — o tarihten sonra ne değişti
+
+Tablo güncellenmedi; değişenler burada, kaynaklarıyla.
+
+| ne | durum | kaynak |
+|---|---|---|
+| Üretim havuzu | **96/96 kapandı**, kayıp yok | [`docs/sonuclar/`](docs/sonuclar/) |
+| `n_yön` (kaç yön çözülüyor) | **KİLİTLİ YARGI: `1`** — `α_b` ve `f` önselden ayırt edilemiyor | [KAYIT-079](docs/defter/KAYIT-079_2026-10-16_UP-gozlemli-secimi-ve-n-yon.md) |
+| Tarih eşlemesi (history matching) | havuzun **%34,04**'ü bağdaşır, `I_min = 0,325` → model gözleme **ulaşıyor** | [KAYIT-080](docs/defter/KAYIT-080_2026-10-16_UP-onsel-duyarliligi-ve-tarih-eslemesi.md) |
+| SBC kapısı | **KALİBRE** (`200` tekrar) → posterior yayımlanabilir | [KAYIT-081](docs/defter/KAYIT-081_2026-10-16_SBC-kapisi-gecti.md) |
+| **S11**'in kaderi | kötüleşti: çözünürlük farkı **saçılma değil YANLILIK** (7/7, `p = 0,0156`), `Y₀`'da **×3,22** | [KAYIT-085](docs/defter/KAYIT-085_2026-10-22_cozunurluk-farki-YANLILIK-cikti.md) |
+| Krater gözlemlisi (**S4**'ün devamı) | `t = 600 s`'te zayıf matris rejiminde **gözlenemez**: kaçmamış ejekta krateri örtüyor | [KAYIT-089](docs/defter/KAYIT-089_2026-10-27_ADR-0061-tek-basina-30-nani-30-yanlis-sayiya-cevirecekti.md), [ADR-0062](docs/adr/ADR-0062-ortulu-krater-olculemez-sayi-yerine-red.md) |
+| Geri çekilen bulgu | `kos` hatası: dört bulgu **geri çekildi**, düzeltilmiş hâlleri yayımlandı | [KAYIT-082](docs/defter/KAYIT-082_2026-10-16_kos-hatasi-ve-duzeltilmis-sonuclar.md) |
+
+**S9/S10/S12 hâlâ düşük.** `S11` yukarıdaki ölçümle daha da sağlamlaştı
+— olumsuz yönde. Yani *"posterior bir yöntem gösterimidir, fiziksel
+öngörü değil"* cümlesi **bugün de geçerlidir**; `Y₀`'nın mutlak değeri
+belirlenmiyor.
+
+> **Uzman yanıtından sonra (2026-09-11) — yukarıdaki cümlelerin iki koşulu:**
+>
+> - **A72:** kuvvet, akma sınırını **aşan** gerilmeyi görüyor. Üretim
+>   koşusunda zayıf matriste hedef kütlesinin `%27–42`'si `q/Y ~ 10⁴–10⁵`;
+>   kuvvetin gördüğü gerilme `Y₀`'dan bağımsız `~5e8 Pa`. Cümle 3'teki
+>   `Y₀` sinyalinin bir kısmı sayısal olabilir — **Protokol J** sınıyor.
+> - **A73/A74:** krater ölçüsü bir yüzey değildi; blok kesri ekseni
+>   sahnede `0,10 – 0,37`'ye sıkışmıştı. *"Blok yapısı hakkında
+>   taşımıyor"* bu yüzden **henüz sınanmadı** sayılmalı — **Protokol L**
+>   (üç eksenli duyarlılık pilotu) sınıyor.
+
+Açık kusurlar: [`FAZ4-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md) — **87**.
+
 ## Depo düzeni
 
 ```

@@ -5881,7 +5881,37 @@ Kalıp: **düzeltmenin kendisini yalnız hatayı yakalayan noktada sınamak**
 (A85'te `0,16`). Uç ve iç durumlar ayrı sınanmalı.
 
 ---
-### A86 — **M2'de taban θ'nın ince `99991111` koşusunda krater operatörü `nan`** (2026-09-14) — *kök sebep BULUNDU 2026-10-22, düzeltme uygulanmadı*
+### A86 — **M2'de taban θ'nın ince `99991111` koşusunda krater operatörü `nan`** (2026-09-14) — *kök sebep BULUNDU 2026-10-22; DÜZELTİLDİ 2026-10-27 (ADR-0061 + ADR-0062), ama sonuç bir ÖLÇÜM SINIRI*
+
+> **DÜZELTME (2026-10-27, KAYIT-089).** İki adımda kapandı ve ikinci
+> adım birincinin sınavından çıktı:
+>
+> 1. **ADR-0061** — pencere artık **durum başına** kurulur. Referans
+>    yüzeyin kaçması bitti; `1e-6` m arama derinliğinde bile iki yüzey
+>    bulunuyor (ölçüldü, sınavlı).
+> 2. **ADR-0062** — ama ölçüldü ki `nan`'ın yerine gelen sayı krater
+>    derinliği **değil**: `d_merkez = −(örtü yüksekliği + 0,913)` m,
+>    yani eksendeki kaçmamış örtünün tepesi. Üretimde
+>    `59,517 − 105,916 = −46,4` m. Operatör artık bu durumda
+>    `ORTULU KRATER` diye **reddediyor** — 30 dürüst `nan`, 30 yanlış
+>    sayıya çevrilmedi.
+>
+> **Kalan sınır (kusur değil):** `t = 600 s`'te, `Y₀ ≲ 149` Pa
+> rejiminde geçici krater **gözlenemez**; kaçış hızını geçmemiş ejekta
+> onu örtüyor. Hera *son* krateri göreceği için krater ön kaydı
+> (PROTOKOL-HT) bu anlık görüntüden kurulamaz — ayrıntı KAYIT-089 §8.
+>
+> İkinci tespit (**sessiz `nan`**) de kapandı: hata mesajı hangi
+> tarafın (`REFERANS` / `SON`) düştüğünü penceresiyle yazıyor,
+> `gozlem_vektoru` sebebi `sebepler["krater"]` içine kaydediyor.
+>
+> **A86 niçin yine de AÇIK listesinde.** Kod kusuru kapandı, ama
+> kusurun yarattığı eksiklik kapanmadı: `Y₀ ≲ 149` Pa rejiminde krater
+> hâlâ okunamıyor — şimdi sebebi yazılı bir redle, daha önce sessiz
+> bir `nan`'la. Başlıkta `KAPANDI` yazmıyor; sayaç bilinçli olarak
+> açık tutuluyor (kural 8: rapor bulduğunu değil beklediğini sayar).
+> Kapanması için ya ejekta düştükten sonraki bir anlık görüntü ya da
+> yüzey taramasının içten dışa çevrilmesi gerekiyor (ADR-0062 §3).
 
 > **Kök sebep (KAYIT-088).** `nan` dönen **referans** yüzeydir, son
 > yüzey değil. `tepe` iki durumdan **ortak** alınıyor; zayıf matriste

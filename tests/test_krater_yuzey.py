@@ -164,11 +164,28 @@ def test_hizsiz_perde_dislanamaz_ve_krateri_DOLDURUR(levha):
 
     Bu bir sınır, kusur değil: ölçülen `0,92 → 0,40 m`. Durum
     dosyası `v` taşıdığı sürece ayrım yapılır.
+
+    **NOT (2026-10-27, ADR-0062).** Bu sınırın üretimde gerçekten
+    vurduğu ölçüldü: havuzun 30/96 noktasında eksende, kaçış hızını
+    geçmemiş yoğun malzeme duruyor (`z_ref = 59,517`,
+    `z_son = 105,916` → `d_merkez = -46,4` m). Yukarıdaki satırlar
+    silinmedi, çünkü ölçüm doğruydu: hızsız perde gerçekten dışlanamaz.
+    Değişen, operatörün o durumda ne yaptığı — artık `0,40 m` gibi
+    **yanıltıcı bir sayı döndürmüyor**, `ORTULU KRATER` diye
+    REDDEDİYOR. Eski ölçüm (`0,40 m`, yani `0,6 × 0,92`'nin altı)
+    aşağıda kayıt olarak duruyor; sınav artık reddi bağlıyor.
+    Ayrıntı: `tests/test_krater_pencere_durum_basina.py`.
     """
     k_yok, _, _ = _cukur(levha, 2.0, 1.0)
-    k_q, _, _ = _cukur(levha, 2.0, 1.0, perde=True, hizli=False)
-    assert k_q.n_ayrilan == 0
-    assert k_q.derinlik < 0.6 * k_yok.derinlik
+    #: Eski (ADR-0062 oncesi) olculen deger: `0,40 m` < `0,6 * 0,92`.
+    ESKI_DOLU = 0.6 * k_yok.derinlik
+    assert ESKI_DOLU > 0.0
+    with pytest.raises(ValueError) as e:
+        _cukur(levha, 2.0, 1.0, perde=True, hizli=False)
+    mesaj = str(e.value)
+    assert "ORTULU KRATER" in mesaj, mesaj
+    # Reddin sebebi ortunun yuksekligi: olculen `-2,913 m`.
+    assert "2.913 m YUKARIDA" in mesaj, mesaj
 
 
 def test_stres_dalgasi_yuzey_hareketi_EJEKTA_SAYILMIYOR(levha):
