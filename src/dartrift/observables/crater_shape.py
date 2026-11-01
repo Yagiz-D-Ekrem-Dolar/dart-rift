@@ -646,7 +646,8 @@ def _dik_taban(a: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 
 def _doluluk_kesisimi(x, V, h, *, taban, a, z_ust, z_alt, adim, esik,
-                      n_bolme: int = 48, yon: str = "distan") -> float:
+                      n_bolme: int = 48, yon: str = "distan",
+                      z_hedef: float | None = None) -> float:
     """Tek dogru uzerinde `phi = sum V_j W(|p - x_j|, h_j)` es-yuzeyi.
 
     `yon` (ADR-0063, **yan yana** alan; varsayilan bit-ayni):
@@ -659,12 +660,20 @@ def _doluluk_kesisimi(x, V, h, *, taban, a, z_ust, z_alt, adim, esik,
       cismin dis yuzeyidir; uzerindeki bosluk ve ondan sonraki
       (kacmamis ejekta gibi) ayri yigin YAPISAL OLARAK iskalanir.
       `z_alt` cismin icinde degilse (`phi(z_alt) < esik`) `nan`.
+    - `"en_yakin"` (ADR-0064): BUTUN asagi kesisimler toplanir ve
+      `z_hedef`e en yakin olani dondurulur. `z_hedef` ayni isinin
+      REFERANS yuzeyidir, yani nokta basina OLCULMUS bir nicelik --
+      yeni bir ayarlanmis uzunluk YOK. `z_hedef` verilmezse `nan`.
+      Olcum (is `6892196`): bu secim, cismin ICINDEKI bosluga dusen
+      taramayi duzeltir; `icten` idx 87'de `22,5 m`'yi yuzey sanip
+      `+36,49 m` derinlik veriyordu.
 
-    Iki yon de ayni `phi`, ayni `esik`, ayni ikiye bolmeyi kullanir;
+    Butun yonler ayni `phi`, ayni `esik`, ayni ikiye bolmeyi kullanir;
     degisen yalniz hangi kesisimin "yuzey" sayildigidir.
     """
-    if yon not in ("distan", "icten"):
-        raise ValueError(f"yon 'distan' ya da 'icten' olmali, {yon!r} degil")
+    if yon not in ("distan", "icten", "en_yakin"):
+        raise ValueError(
+            f"yon 'distan', 'icten' ya da 'en_yakin' olmali, {yon!r} degil")
     from ..cpu_reference.sph_ref import kernel_w
 
     d = x - taban[None, :]
@@ -683,7 +692,23 @@ def _doluluk_kesisimi(x, V, h, *, taban, a, z_ust, z_alt, adim, esik,
         return kernel_w(q, hs[None, :], 3) @ Vs
 
     n = int(np.ceil((z_ust - z_alt) / adim)) + 1
-    if yon == "icten":
+    if yon == "en_yakin":
+        # ADR-0064: BUTUN asagi kesisimler toplanir ve `z_hedef`e
+        # (ayni isinin REFERANS yuzeyi) en yakin olani secilir. Yeni
+        # bir uzunluk olcegi YOK: olcut, nokta basina OLCULMUS referans
+        # yuzeyin kendisidir. `distan`/`icten` ise kesisimi
+        # DOGRULTUYA bakarak seciyordu (KAYIT-091 §7).
+        if z_hedef is None or not np.isfinite(z_hedef):
+            return float("nan")
+        zq = z_alt + adim * np.arange(n)
+        f = phi(zq)
+        ustte = f >= esik
+        gec = np.nonzero(ustte[:-1] & ~ustte[1:])[0]
+        if len(gec) == 0:
+            return float("nan")
+        i = int(gec[np.argmin(np.abs(zq[gec] - float(z_hedef)))])
+        alt, ust = float(zq[i]), float(zq[i + 1])
+    elif yon == "icten":
         zq = z_alt + adim * np.arange(n)
         f = phi(zq)
         if f[0] < esik:
@@ -915,7 +940,7 @@ def krater_yuzey(
         # duzlemindedir, yani cismin icindedir; o yuzden `z_alt = 0`.
         # `arama_derinligi` bu kipte KULLANILMAZ -- yuzeyin nerede
         # oldugunu bir mesafe ayari degil, dolulugun kendisi belirler.
-        z_alt = 0.0 if tarama == "icten" else tepe_ad - float(
+        z_alt = 0.0 if tarama in ("icten", "en_yakin") else tepe_ad - float(
             arama_derinligi)
         pencere[ad] = {"z_ust": tepe_ad + 2.0 * h_ust + adim,
                        "z_alt": z_alt}
@@ -927,15 +952,26 @@ def krater_yuzey(
     z_ref = np.full((K, n_azimut), np.nan)
     z_son = np.full((K, n_azimut), np.nan)
     ortak = dict(a=a, adim=adim, esik=esik, yon=tarama)
+    # ADR-0064: `en_yakin` kipinde REFERANS taramasi `distan` kalir --
+    # olculdu (is `6892196`): carpilmamis cisimde eksende kesisim
+    # `96/96` noktada TEK, yani referansin secime ihtiyaci yok. Son
+    # durum ise referansin BULDUGU yuzeye en yakin kesisimi secer.
+    ortak_ref = dict(ortak, yon="distan") if tarama == "en_yakin" else ortak
     p_ref, p_son = pencere["ref"], pencere["son"]
+    if tarama == "en_yakin":
+        # `z_alt` yukarida `en_yakin` icin 0'a cekilmisti; referans
+        # `distan` ile tarandigi icin kendi penceresine geri alinir.
+        p_ref = dict(p_ref,
+                     z_alt=pencereler["ref"][0] - float(arama_derinligi))
     xb, Vb, hb = xk[bagli], V[bagli], h[bagli]
     for k in range(K):
         for j in range(n_azimut if k > 0 else 1):
             taban = c0 + s[k] * (np.cos(fi[j]) * e1 + np.sin(fi[j]) * e2)
             z_ref[k, j] = _doluluk_kesisimi(x0, V0, h, taban=taban,
-                                            **p_ref, **ortak)
+                                            **p_ref, **ortak_ref)
             z_son[k, j] = _doluluk_kesisimi(xb, Vb, hb, taban=taban,
-                                            **p_son, **ortak)
+                                            **p_son, **ortak,
+                                            z_hedef=z_ref[k, j])
         if k == 0:
             z_ref[0, :], z_son[0, :] = z_ref[0, 0], z_son[0, 0]
     dusus = z_ref - z_son
