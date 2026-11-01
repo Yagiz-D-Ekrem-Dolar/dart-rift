@@ -9,9 +9,18 @@ tarih kontrolü"* maddesi. Daha önce **hiç yapılmamıştı.**
 |---|---|---|
 | **Çağrı Duyurusu 2027** | kurallar, belgeler, eleme sebepleri | `2204_A_cagri_duyurusu_2026-2027.pdf`, tubitak.gov.tr, metni çıkarıldı (32 567 karakter) |
 | **Proje Rehberi 2027** | alanlar, etik, rapor biçimi, değerlendirme | `2204A_proje_rehberi_2027.pdf`, tubitak.gov.tr, 110 sayfa |
+| **Proje Yazma Şablonu 2026-2027** | **zorunlu bölüm sırası + biçim kuralı + YZ beyanı** | `proje_yazma_sablonu_2026-2027.docx`, tubitak.gov.tr |
+| **Ön Değerlendirme Kriterleri** | I. aşama puan ağırlıkları | `on_degerlendirme_kriterleri_2025_web.pdf` (**2025 sürümü**, yarışma sayfasında bağlı olan) |
+| **Bölge/Final Sergi Kriterleri** | II./III. aşama puan ağırlıkları | `sergi_kriterleri_2025_web.pdf` (**2025 sürümü**) |
+| **Yarışma sayfası** | takvim, 58. yarışma, belge bağlantıları | `tubitak.gov.tr/tr/yarismalar/icerik-lise-ogrencileri-arastirma-projeleri-yarismasi` |
 
 Aşağıdaki madde numaraları **Çağrı Duyurusu'nun** kendi numaralarıdır.
 Haber sitelerinden değil, resmî belgeden okundu.
+
+> **NOT (aynı gün, ikinci tur).** Bu belgenin ilk hâli yalnız Çağrı
+> Duyurusu ve Proje Rehberi'ne dayanıyordu; şablon ve kriter dosyaları
+> sonra bulundu ve **iki yargıyı düzeltti**. Düzeltmeler §1.4 ve §2.1'de
+> NOT olarak duruyor, ilk yargı **silinmedi** (kural 5).
 
 ---
 
@@ -114,6 +123,32 @@ Hazırlığı: [`SAVUNMA-NOTU.md`](SAVUNMA-NOTU.md) ve
 [`YAPAY-ZEKA-BEYANI.md`](YAPAY-ZEKA-BEYANI.md). Beyan **zaten raporun
 içinde** (§"Yapay Zeka Araçları Kullanım Beyanı").
 
+> **NOT — yukarıdaki "sessiz" yargısı YANLIŞTI; düzeltme:** Çağrı
+> Duyurusu ve Proje Rehberi gerçekten sessiz, ama **resmî Proje Yazma
+> Şablonu sessiz değil.** Şablon, **Yapay Zeka Araçları Kullanım
+> Beyanı**'nı zorunlu bir bölüm olarak koyuyor ve **dört alt başlık**
+> istiyor:
+>
+> > *"Proje kapsamında, **Üretken Yapay Zeka (ÜYZ)** araçları
+> > kullanıldıysa buna dair aşağıdaki başlıklara açıklama
+> > eklenmelidir."*
+>
+> | şablonun istediği | ne yazılacak | raporda |
+> |---|---|---|
+> | **Kullanılan araçlar** | aracın adı, **versiyonu** ve erişim tarihi | ✓ var |
+> | **Kullanım amacı** | ne için kullanıldığı | ✓ var |
+> | **Kullanım kapsamı** | hangi bölümlerde, **ne ölçüde** | ✓ var |
+> | **İnsan müdahalesi** | çıktı üzerinde yapılan değişiklik ve **doğrulama** | ✓ var |
+>
+> Yani beyan **isteğe bağlı bir dürüstlük jesti değil, şablonun zorunlu
+> bölümü**; rapor dördünü de taşıyor. Şablonun kendi örneği
+> (*"ÜYZ çıktılarının %50'si düzenlenmiş, tüm kaynaklar bağımsız olarak
+> doğrulanmıştır"*) **nicel** bir ifade bekliyor — raporun bu alanı
+> okunup gerçek orana ve doğrulama biçimine uygun olduğundan emin
+> olunmalı. Bu, 4.1.7'nin *"kendi bilgi ve becerileri"* ölçütünü
+> ortadan kaldırmıyor: beyan vermek **şart**, yetmez; sözlü sunumda
+> hakimiyet ayrıca puanlanıyor (§4.1).
+
 **(b) "devam etmekte olan proje".** Projede şu an koşan bir GPU işi ve
 `87` açık kusur var. Bunların hiçbiri projeyi "fikir aşamasında"
 yapmıyor — rapor edilen bulgular tamamlanmış ölçümlerdir ve mühürlü ön
@@ -149,7 +184,7 @@ girmeli. Raporun bugünkü dili buna uygun.
 > ölçüldü: `20` sayfa, `190` kelime, `0` LaTeX hatası.
 > Eski özetin tam metni [KAYIT-093](../defter/KAYIT-093_2026-11-01_2204A-kural-denetimi-ve-ozet-yenilendi.md) §3'te duruyor (kural 5).
 
-### 2.1 ⚠️ AÇIK: resmî "Proje Yazım Şablonu"
+### 2.1 ~~⚠️ AÇIK~~ → **KAPALI**: resmî "Proje Yazım Şablonu"
 
 **4.2.4** raporun *"yarışmanın web sayfasında bulunan **Proje Yazım
 Şablonu** kullanılarak"* hazırlanmasını istiyor. Bu proje kendi
@@ -158,8 +193,41 @@ girmeli. Raporun bugünkü dili buna uygun.
 **başlık sırası, zorunlu bölümler ve biçim** karşılaştırılmalı.
 Şekilsel ön inceleme (I. Aşama) tam buna bakıyor.
 
-> **Yapılacak:** şablonu indir, raporun bölüm başlıklarını birebir
-> eşle. Bu, denetlenemeyen tek sert kural.
+> **NOT — bu madde AÇIK DEĞİL, kapalı. İlk yargı yanlıştı.** Şablon
+> indirildi (`proje_yazma_sablonu_2026-2027.docx`) ve metni çıkarıldı.
+> İki şey görüldü:
+>
+> **(a) `tubitak.sty` zaten şablona göre yazılmış** — dosyanın 3.
+> satırı biçim kuralını *birebir alıntılıyor* ve başlığı
+> `2026/10/12 TÜBİTAK 2204-A 2026-2027 rapor stili`. Yani şablon
+> **2026-10-12'de okunmuş**; bu denetim onu yeniden keşfetti.
+>
+> **(b) Biçim ve bölüm sırası eşlendi:**
+>
+> | şablonun kuralı | bizde |
+> |---|---|
+> | Times New Roman | `newtxtext/newtxmath` (Times ölçü-eşi serbest klon; `.sty` gerekçesi yazılı) |
+> | **12 punto** | `\documentclass[12pt]` ✓ |
+> | her yandan **2,5 cm** | `geometry[margin=2.5cm]` ✓ |
+> | **tek satır aralığı** | varsayılan ✓ |
+> | **iki yana yaslı** | varsayılan ✓ |
+> | Kaynaklar **APA** | APA biçiminde, 18 kaynak ✓ |
+>
+> **Zorunlu on beş bölüm, şablonun sırasıyla** — raporun satır
+> numaralarıyla: Proje Ana Alanı (43) · Proje Tematik Alanı (44) ·
+> Proje Adı (45) · **Yapay Zeka Araçları Kullanım Beyanı (47)** ·
+> Özet (72) · Anahtar Kelimeler (98) · Amaç (102) · Giriş (136) ·
+> Yöntem (228) · **Proje İş-Zaman Çizelgesi (544)** · Bulgular (577) ·
+> Sonuç ve Tartışma (1039) · Öneriler (1207) · Kaynaklar (1260) ·
+> Ekler (1355). **Eksik bölüm yok, sıra bozulmuş değil.**
+>
+> **Tek kalan iş — Ekler taşma kuralı.** Şablon şunu istiyor: ekler
+> 20 sayfaya sığmazsa EK BELGELER'e yüklenir ve *"proje raporunda EK
+> BELGELER kısmına dosya yüklendiği belirtilmeli ve eklenen belgeler
+> **liste hâlinde** yazılmalıdır."* TRUBA izin belgesi (§1.1) oraya
+> yükleneceği için **raporun Ekler bölümüne bu listeyi koymak
+> gerekecek.** Rapor `20/20` sayfada olduğu için listeye yer açmak
+> ayrıca planlanmalı.
 
 ---
 
