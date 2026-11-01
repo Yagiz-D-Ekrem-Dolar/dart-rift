@@ -1,0 +1,408 @@
+{
+ "protokol": "PROTOKOL-HT-HERA-TAHMIN + EK-1 (2026-10-28)",
+ "etiket": "uretim66",
+ "uretildi_utc": "2026-11-01T14:56:48.400426+00:00",
+ "git_commit": "f08e5ba1453992325380fb54b89ff0131ca46e31",
+ "kosul": "POSTERIOR",
+ "kosul_gerekcesi": "HT §2: onsel ICINDE -> posterior agirlik. Tarih eslemesinde model gozleme ULASIYOR: I_min = 0.3251, bagdasir hacim %34.04.",
+ "havuz": "docs\\sonuclar\\havuz_posterior_girdi.csv",
+ "krater_olcumu": "docs\\sonuclar\\havuz_krater_tarama_96.csv",
+ "t_end_s": 600.0,
+ "n_ornek": 20000,
+ "tohum_ongoru": 20260914,
+ "kantiller": [
+  0.05,
+  0.16,
+  0.5,
+  0.84,
+  0.95
+ ],
+ "nokta_kumesi": {
+  "beklenen": 96,
+  "kullanilan": 66,
+  "dislanan": 30,
+  "kullanilan_idx": [
+   1,
+   2,
+   4,
+   7,
+   8,
+   9,
+   11,
+   12,
+   13,
+   15,
+   17,
+   18,
+   21,
+   22,
+   23,
+   26,
+   27,
+   28,
+   29,
+   34,
+   35,
+   36,
+   37,
+   38,
+   39,
+   40,
+   41,
+   42,
+   43,
+   44,
+   46,
+   47,
+   48,
+   50,
+   51,
+   54,
+   56,
+   57,
+   58,
+   59,
+   60,
+   61,
+   62,
+   63,
+   64,
+   65,
+   66,
+   67,
+   68,
+   69,
+   70,
+   71,
+   72,
+   75,
+   78,
+   79,
+   81,
+   83,
+   86,
+   88,
+   89,
+   90,
+   91,
+   92,
+   94,
+   95
+  ],
+  "dislanan_detay": [
+   {
+    "idx": 0,
+    "Y0": 28.2969,
+    "sebep": "HAYIR_tek_tani"
+   },
+   {
+    "idx": 3,
+    "Y0": 8.5134,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 5,
+    "Y0": 20.6735,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 6,
+    "Y0": 5.7643,
+    "sebep": "HAYIR_tek_tani"
+   },
+   {
+    "idx": 10,
+    "Y0": 2.1404,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 14,
+    "Y0": 13.4597,
+    "sebep": "HAYIR_tek_tani"
+   },
+   {
+    "idx": 16,
+    "Y0": 1.1459,
+    "sebep": "HAYIR_tek_tani"
+   },
+   {
+    "idx": 19,
+    "Y0": 1.7752,
+    "sebep": "HAYIR_tek_tani"
+   },
+   {
+    "idx": 20,
+    "Y0": 6.4553,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 24,
+    "Y0": 29.9021,
+    "sebep": "HAYIR_tek_tani"
+   },
+   {
+    "idx": 25,
+    "Y0": 73.4603,
+    "sebep": "HAYIR_tek_tani"
+   },
+   {
+    "idx": 30,
+    "Y0": 9.2885,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 31,
+    "Y0": 2.9484,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 32,
+    "Y0": 4.0509,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 33,
+    "Y0": 5.0124,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 45,
+    "Y0": 433.3118,
+    "sebep": "HAYIR_tek_tani"
+   },
+   {
+    "idx": 49,
+    "Y0": 43.1192,
+    "sebep": "HAYIR_tek_tani"
+   },
+   {
+    "idx": 52,
+    "Y0": 17.2257,
+    "sebep": "HAYIR_tek_tani"
+   },
+   {
+    "idx": 53,
+    "Y0": 40.106,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 55,
+    "Y0": 2.7405,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 73,
+    "Y0": 2.3886,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 74,
+    "Y0": 1.4581,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 76,
+    "Y0": 15.1699,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 77,
+    "Y0": 3.4155,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 80,
+    "Y0": 23.5439,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 82,
+    "Y0": 33.2288,
+    "sebep": "olculmedi"
+   },
+   {
+    "idx": 84,
+    "Y0": 18.5663,
+    "sebep": "HAYIR_tek_tani"
+   },
+   {
+    "idx": 85,
+    "Y0": 98.6785,
+    "sebep": "HAYIR_tek_tani"
+   },
+   {
+    "idx": 87,
+    "Y0": 1.3499,
+    "sebep": "HAYIR_tek_tani"
+   },
+   {
+    "idx": 93,
+    "Y0": 11.8661,
+    "sebep": "olculmedi"
+   }
+  ],
+  "capraz_dagilim": {
+   "EVET_distan_ile": 46,
+   "EVET_60m_ile": 20
+  },
+  "SECILIM_YANLILIGI": {
+   "kullanilan_Y0_Pa": [
+    1.0612,
+    97882.5166
+   ],
+   "dislanan_Y0_Pa": [
+    1.1459,
+    433.3118
+   ],
+   "kullanilan_Y0_ortanca": 1918.36605,
+   "dislanan_Y0_ortanca": 10.577300000000001,
+   "not": "EK-1 §3: dislanan noktalar Y_0'in DUSUK ucunda yigili. Vekil orada EKSTRAPOLE ediyor; ongoru genisligi bunu yansitmali. Dar cikmasi basari degil HATA isaretidir."
+  }
+ },
+ "vekil": {
+  "V_krater": {
+   "ell": [
+    10.000000000000002,
+    0.19610237308708997,
+    0.20956691349886997
+   ],
+   "n_egitim": 66,
+   "egitim_araligi": [
+    0.0,
+    500.0607
+   ],
+   "ornek_destek_disi_orani": 0.28545
+  },
+  "d_merkez": {
+   "ell": [
+    0.49888712439582295,
+    0.07955450359332232,
+    0.9104530807587767
+   ],
+   "n_egitim": 66,
+   "egitim_araligi": [
+    -4.930358,
+    4.427722
+   ],
+   "ornek_destek_disi_orani": null
+  }
+ },
+ "vekil_notu": "EK-1 §4: GP (ADR-0058 ailesi) kullanildi; HT §3 'ikinci derece vekil' diyordu. Sapma ongoru hesaplanmadan once EK-1'de yazildi.",
+ "FIZIKSEL_DESTEK_UYARISI": "V_krater ornekleri GP'nin Gauss ongoru dagilimindan geliyor ve bir kismi NEGATIF cikiyor; hacim negatif OLAMAZ. Kirpilmadi: kirpmak genisligi sahte bicimde daraltirdi. Negatif oran `vekil.V_krater.ornek_destek_disi_orani` alaninda ve vekilin ne kadar EKSTRAPOLE ettiginin dogrudan olcusudur.",
+ "ONGORU": {
+  "V_krater_m3": {
+   "q05": -46.32183132167958,
+   "q16": -17.78369799637475,
+   "q50": 34.06776554954068,
+   "q84": 381.2687824092944,
+   "q95": 503.954036346754
+  },
+  "d_merkez_m": {
+   "q05": -3.4624111608328243,
+   "q16": -1.9474689423584388,
+   "q50": 0.8093261211049946,
+   "q84": 3.4042160162559436,
+   "q95": 4.405129622352752
+  }
+ },
+ "MUHURLENMEYENLER": {
+  "R_krater": "96 noktanin 2'sinde sonlu (4,0 ve 3,8 m). A11'in 'krater yaricapi gozlenemez' yargisi ayakta; sayi yerine bu sayim muhurlenir.",
+  "M_ejekta": "Hera'nin olcecegi bir nicelik degil VE posteriorun kosullandigi veri (M_EJEKTA_GOZ = 1,6e7 kg). Kendi verisini ongoru diye muhurlemek dongusel olurdu."
+ },
+ "V_krater_Y0_eslemesi": [
+  {
+   "V_krater_araligi_m3": [
+    -341.5646422823337,
+    -16.83309509936628
+   ],
+   "n": 3334,
+   "Y0_Pa": {
+    "q05": 2.182644728397487,
+    "q16": 8.55467253556568,
+    "q50": 27.58531617629184,
+    "q84": 60.20894493336129,
+    "q95": 88.95134973108236
+   }
+  },
+  {
+   "V_krater_araligi_m3": [
+    -16.83309509936628,
+    6.658677495899697
+   ],
+   "n": 3333,
+   "Y0_Pa": {
+    "q05": 4.763938010401341,
+    "q16": 15.36174946671828,
+    "q50": 40.75392965871776,
+    "q84": 73.18242219076174,
+    "q95": 108.11807510766077
+   }
+  },
+  {
+   "V_krater_araligi_m3": [
+    6.658677495899697,
+    34.06776554954068
+   ],
+   "n": 3333,
+   "Y0_Pa": {
+    "q05": 3.919406774847219,
+    "q16": 12.638482029342978,
+    "q50": 33.52924149249558,
+    "q84": 60.20894493336129,
+    "q95": 88.95134973108236
+   }
+  },
+  {
+   "V_krater_araligi_m3": [
+    34.06776554954068,
+    94.68158049112006
+   ],
+   "n": 3333,
+   "Y0_Pa": {
+    "q05": 2.652948464431896,
+    "q16": 8.55467253556568,
+    "q50": 22.695105366946684,
+    "q84": 49.5353520895917,
+    "q95": 73.18242219076174
+   }
+  },
+  {
+   "V_krater_araligi_m3": [
+    94.68158049112006,
+    372.59777845088485
+   ],
+   "n": 3333,
+   "Y0_Pa": {
+    "q05": 1.2154742500762865,
+    "q16": 3.2245905452963948,
+    "q50": 22.695105366946684,
+    "q84": 40.75392965871776,
+    "q95": 60.20894493336129
+   }
+  },
+  {
+   "V_krater_araligi_m3": [
+    372.59777845088485,
+    588.5515562303538
+   ],
+   "n": 3334,
+   "Y0_Pa": {
+    "q05": 1.4773776525985112,
+    "q16": 2.182644728397487,
+    "q50": 5.277190995501915,
+    "q84": 12.638482029342978,
+    "q95": 18.671810912919195
+   }
+  }
+ ],
+ "yanlislanma": "Hera'nin olcecegi deger q05-q95 disinda -> TUTARSIZ, icinde -> TUTARLI (HT §7). Kantil yazilir. UYARI_kaydin_parcasi yargının yanina aynen tasinir.",
+ "UYARI_kaydin_parcasi": [
+  "ZAMAN OLCEGI (HT §5, artik SAYILI): model krateri t_end = 600 s'deki GECICI kraterdir; Hera SON krateri (ejekta dustukten sonra) olcecek. 2026-10-28 olcumu: eksende kacmamis ejekta 6,50-47,99 m yukseklikte, ortanca 30,89 m (KAYIT-090). Bu bir MEKANIZMA on kaydidir, son krater ongorusu DEGIL.",
+  "SECILIM YANLILIGI: 96 noktanin 30'u disarida ve Y_0'in dusuk ucunda yigili (EK-1 §3).",
+  "n_yon = 1 (KAYIT-079): alpha_b ve f onselden ayirt edilemiyor; ongoru genisliginin bir kismi onselin genisligidir.",
+  "COZUNURLUK YANLILIGI (KAYIT-085): ince kosu 7/7 noktada ayni yone sapiyor, Y_0'da x3,22. Krater bundan muaf degildir; kayit yeniden uretilecekse YENI ETIKETLE.",
+  "TEK SABIT SAHNE; ongoru o sahneye kosullu.",
+  "OLCUM TANIMI: krater degerleri ADR-0063'un 'icten' taramasiyla, yalniz capraz dogrulanmis noktalarda. Varsayilan operator 'distan' ve DEGISTIRILMEDI."
+ ],
+ "sha256": "1b3b811e260d86b2840361ec4fc0e1d4cbdaa4671e8353f04c8af68c27d67d42"
+}
