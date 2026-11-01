@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-10-10 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 87 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113, A114, A115, A116 · A70, A84, A91, A92, A94, A96, A106, A110, A111, A112 ve A117 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-10-10 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 88 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113, A114, A115, A116, A118 · A70, A84, A91, A92, A94, A96, A106, A110, A111, A112 ve A117 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5183,6 +5183,49 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A118 — **ADR-0062'nin "eşik geniş" savunması üretim çözünürlüğünde ZAYIF: bir nokta kapıdan `13 mm` uzakta** (2026-11-01) — *açık*
+
+ADR-0062 krater kapısını şöyle savunuyordu:
+
+> *"kapı `−1` ile `−45` m arasında **herhangi** bir yerde aynı
+> sınıflamayı verir. Ayarlanmış bir sayı değil."*
+
+Bu, düşen noktaların `−46` m'de olduğu **ince** çözünürlükte doğruydu.
+**Üretim havuzunda değil.** Ölçüldü (iş `6892326`, `0` GPU): eksende
+`h_eksen = 2,800` m, yani kapı `ortu_payi = 2h = `**`5,600`** m. Ve:
+
+| idx | `profil[0]` (m) | kapıya uzaklık |
+|---:|---:|---:|
+| `0` | `−5,587` | **`13 mm`** |
+| `24` | `−5,560` | `40 mm` |
+| `49` | `−5,399` | `0,20 m` |
+
+Üç nokta kapıya `0,2` m'den yakın, biri `13 mm`. `2h`'nin küçük bir
+değişmesi üçünün de sınıfını çevirir — "eşiğin yeri geniş" cümlesi
+üretimde **geçerli değil**.
+
+**Sebep bir eşik ayarı değil, çözünürlük.** `ortu_payi` tanım gereği
+`2h` ile ölçekleniyor; kaba merdivende `5,6` m, yani **krater
+derinliğinin kendisiyle aynı mertebede**. İnce koşuda (`h = 0,70`) kapı
+`1,4` m olurdu ve üçü de reddedilirdi. Yani bu noktaların sınıfı
+**çözünürlüğe bağlı** ve sayıları bu yüzden yayımlanamaz.
+
+**Hafifletici:** çapraz doğrulama bu üçünü **zaten** yayımlamıyor
+(`HAYIR_tek_tani`, KAYIT-091). Yani çapraz doğrulama, kapının bu
+kırılganlığını **bilmeden** doğru davrandı — bağımsız bir doğrulanması
+sayılır. Mühürlü `uretim66` bu üç noktayı **içermiyor**.
+
+**Niçin AÇIK:** kapının kırılganlığı duruyor. Çaresi bir eşik ayarı
+değil; ya (a) ince çözünürlükte yeniden okumak (A52/S10 maliyeti), ya
+(b) kapıyı `2h`'den bağımsız, fiziksel bir ölçeğe bağlamak — ikisi de
+yapılmadı. Bu kayıt, **ADR-0062'nin kendi savunma cümlesinin sınırını**
+yazıyor; ADR metni kural 6 gereği değiştirilmedi, düzeltme
+[ADR-0064](adr/ADR-0064-yuzey-referansa-en-yakin-kesisimdir.md) §3.3'ün
+NOT'unda.
+
+Kaynak: [KAYIT-094](defter/KAYIT-094_2026-11-01_kesisim-sayisi-olculdu-ADR-0062-tek-yanli-cikti.md) §9.
 
 ---
 ### A117 — **Yerel GPU'da üretim yapılandırması `529 ms/adım`: `t_end = 3 s` bile `~33 saat`** (2026-10-10) — **KAPANDI** (ölçüldü; bilgi kaydı olarak duruyor)

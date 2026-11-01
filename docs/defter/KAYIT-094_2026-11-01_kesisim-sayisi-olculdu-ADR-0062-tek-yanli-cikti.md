@@ -144,9 +144,83 @@ koyuyor. ADR-0064 §3.3'ün `13` noktalık tahmin tablosu betiğe
 > Sonuç bu kaydın **§9**'una yazılacak. Kapılar yukarıda, sonuç
 > görülmeden duruyor.
 
-## 9. Havuz sonucu
+## 9. Havuz sonucu — **iki kapı geçti, biri DÜŞTÜ**
 
-*(iş `6892243` koşuyor — bu bölüm sonuç gelince doldurulacak)*
+İş `6892243` (`9m37s`, `0` GPU), commit `595aa46`, `96/96` okundu.
+
+| tanım | `OLCULDU` | `ORTULU` | `YUZEY_YOK` |
+|---|---:|---:|---:|
+| `distan` (kilitli varsayılan) | **46** | 25 | 25 |
+| `icten` (ADR-0063) | 79 | 17 | 0 |
+| **`en_yakin`** (ADR-0064) | **78** | 18 | 0 |
+
+| kapı | sonuç |
+|---|---|
+| **1 — GERİ ALMA** (ADR-0064 §5) | **GEÇTİ** — `distan`'ın ölçtüğü `46` noktanın hiçbirinde `en_yakin` sayıyı `1e-9` bağıl farktan fazla değiştirmedi |
+| **2 — KAYIP YOK** | **GEÇTİ** — `46 → 78` |
+| **3 — ÖNGÖRÜ** | **DÜŞTÜ: `8/13`** (eşik `10`) |
+
+### 9.1 Öngörü niçin düştü — **benim aritmetik hatam**
+
+ADR-0064 §3.3'ün tablosunu kurarken `2h`'yi **`1,4` m** aldım. O,
+sentetik levhanın ve ince koşunun değeri. Üretimde ölçüldü
+(iş `6892326`): **`h_eksen = 2,800` m**, yani kapı
+**`ortu_payi = 5,600` m**. ADR-0062'nin kapısı tam tanımlandığı gibi
+çalıştı; yanlış olan sayımdı.
+
+Tutmayan beşi (`0`, `24`, `49`, `84`, `85`) hepsi `−5,600`'ün
+**içinde**: `−5,587`, `−5,560`, `−5,399`, `−3,028`, `−1,436`. Doğru
+`2h` ile aynı mekanizma `13/13` verirdi — **ama bu yeniden türetme
+post-hoc'tur ve geçmiş bir kapı sayılmaz.** Tablo kural 6 gereği
+değiştirilmedi; düzeltme ADR-0064 §3.3'ün NOT'unda.
+
+### 9.2 **Yeni kusur A118** — kapının kendisi kırılgan
+
+Üç nokta kapıya `0,2` m'den yakın, idx `0` yalnızca **`13 mm`**.
+ADR-0062'nin *"eşik `−1` ile `−45` m arasında herhangi bir yerde aynı
+sınıflamayı verir"* savunması **üretim çözünürlüğünde geçerli değil**:
+`ortu_payi` tanım gereği `2h` ile ölçekleniyor ve kaba merdivende
+`5,6` m, yani krater derinliğinin kendisiyle aynı mertebede.
+
+Hafifletici: çapraz doğrulama bu üçünü **zaten** yayımlamıyor
+(`HAYIR_tek_tani`) ve mühürlü `uretim66` onları **içermiyor**. Yani
+çapraz doğrulama, kapının bu kırılganlığını bilmeden doğru davrandı.
+Kusur [A118](../FAZ4-SIKINTI-RAPORU.md) olarak açıldı.
+
+### 9.3 Asıl kazanç — `en_yakin`, `icten`'in yarısı kadar yanlış
+
+`13` tek tanılı noktada üç tanım yan yana:
+
+| idx | `distan` | `icten` | **`en_yakin`** |
+|---:|---|---|---|
+| `6` | ÖRTÜLÜ | **`+28,609`** ✗ | **ÖRTÜLÜ** ✓ |
+| `87` | ÖRTÜLÜ | **`+36,490`** ✗ | **`+36,490`** ✗ |
+| `0` | ÖRTÜLÜ | `−5,587` | `−5,587` |
+| `14` | ÖRTÜLÜ | `+4,356` | `+4,356` |
+| `16` | ÖRTÜLÜ | `+4,434` | `+4,434` |
+| `19` | ÖRTÜLÜ | `+4,968` | `+4,968` |
+| `24` | YÜZEY_YOK | `−5,560` | `−5,560` |
+| `25` | ÖRTÜLÜ | `−0,793` | `−0,793` |
+| `45` | ÖRTÜLÜ | `+0,707` | `+0,707` |
+| `49` | ÖRTÜLÜ | `−5,399` | `−5,399` |
+| `52` | YÜZEY_YOK | `−0,724` | `−0,724` |
+| `84` | ÖRTÜLÜ | `−3,028` | `−3,028` |
+| `85` | ÖRTÜLÜ | `−1,436` | `−1,436` |
+
+**`icten` savunulamayan iki sayı veriyor (`6` ve `87`), `en_yakin`
+bir.** idx `6`'da `en_yakin` doğru kesişimi (`87,339` m) seçip
+ADR-0062'nin kapısına düşürüyor ve **ÖRTÜLÜ** diyor — yani `icten`'in
+`+28,609`'u sessizce üretmesi bitti. idx `87` ise §6'da yazıldığı gibi
+hâlâ kaçıyor; ADR-0064 §3.4 bunu **önceden** söylemişti.
+
+> **Özet yargı.** `en_yakin`, `distan`'ın hiçbir sayısını bozmadan
+> (kapı 1) ölçülen nokta sayısını `46 → 78` çıkarıyor ve `icten`'in
+> savunulamayan çıktılarını **ikiden bire** indiriyor. Öngörü tablosu
+> düştü, sebebi bulundu ve kapının kendisinde yeni bir kusur (A118)
+> görüldü. Üçü de burada yazılı.
+>
+> **`uretim66` DEĞİŞTİRİLMEDİ.** `78` sayısı bu kaydın bulgusudur,
+> mühürlü öngörünün girdisi **değildir**.
 
 ## 10. Kilitli yargılara etkisi — YOK
 

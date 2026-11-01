@@ -112,6 +112,57 @@ Yani seçim kuralı tek başına, **yeni bir eşik koymadan**, altı vakayı
 mevcut kapıya düşürüp doğru reddediyor ve altı noktada fiziksel olarak
 makul bir derinlik veriyor.
 
+> ### NOT (2026-11-01, iş `6892243`) — **§3.3'ün öngörüsü ÇÜRÜDÜ: 8/13**
+>
+> Yukarıdaki tablo `scripts/tani_krater_en_yakin_havuz.py`'nin `ONGORU`
+> sözlüğüne aynen alındı ve `96` noktada sınandı. **Kapı 3 düştü**
+> (eşik `10/13`, tutan `8/13`). Tablo **değiştirilmiyor** — kural 6.
+>
+> Tutmayan beşi: idx `0`, `24`, `49`, `84`, `85`. Hepsini
+> "REDDEDİLİR" diye yazmıştım; **ölçüldüler**.
+>
+> **Sebep tek ve benim hatam:** tabloyu kurarken `2h`'yi `1,4 m`
+> aldım. O, sentetik levhanın ve ince koşunun değeri. Üretim havuzunda
+> ölçüldü (iş `6892326`): eksende **`h_eksen = 2,800 m`**, yani
+> **`ortu_payi = 2h = 5,600 m`**. ADR-0062'nin kapısı tam
+> tanımlandığı gibi çalıştı; yanlış olan benim aritmetiğimdi.
+>
+> | idx | `profil[0]` (m) | kapı `−5,600` | sonuç |
+> |---:|---:|---|---|
+> | `0` | `−5,587` | **`13 mm` içeride** | ölçüldü |
+> | `24` | `−5,560` | `40 mm` içeride | ölçüldü |
+> | `49` | `−5,399` | `0,20 m` içeride | ölçüldü |
+> | `84` | `−3,028` | içeride | ölçüldü |
+> | `85` | `−1,436` | içeride | ölçüldü |
+> | `6` | `−27,8` | **dışarıda** | ÖRTÜLÜ (son yüzey `87,339 m`) |
+> | `87` | `+36,490` | kapı bu yöne bakmıyor | **KAÇIYOR** (§3.4) |
+>
+> Doğru `2h` ile aynı mekanizma `13/13` verirdi. **Ama bu yeniden
+> türetme POST-HOC'tur ve geçmiş bir kapı sayılmaz.** Kayda geçen şey
+> şudur: öngörü `8/13` ile düştü, sebebi bulundu, tablo olduğu gibi
+> duruyor.
+>
+> ### Ve bir BULGU: ADR-0062'nin "eşik geniş" savunması üretimde ZAYIF
+>
+> ADR-0062 kapısını şöyle savunuyordu: *"kapı `−1` ile `−45` m
+> arasında HERHANGİ bir yerde aynı sınıflamayı verir."* Bu, düşen
+> noktaların `−46` m'de olduğu **ince** çözünürlük için doğruydu.
+> Üretimde (`kademeler kaba`, `spacing 7,0`) kapı `−5,600` m'de ve
+> **üç nokta ona `0,2 m`'den yakın**, biri `13 mm`. Yani o savunma
+> üretim çözünürlüğünde **geçerli değil**: `2h`'nin küçük bir
+> değişmesi idx `0`/`24`/`49`'un sınıfını çevirir.
+>
+> Bu bir eşik ayarı sorunu değil, **çözünürlük sorunu**: `ortu_payi`
+> tanım gereği `2h` ile ölçekleniyor ve kaba merdivende `5,6 m`,
+> krater derinliğinin kendisiyle **aynı mertebeye** çıkıyor. İnce
+> koşuda (`h = 0,70`) kapı `1,4 m` olurdu ve üçü de reddedilirdi.
+> Yani bu beş nokta **çözünürlüğe bağlı sınıf** taşıyor ve sayıları
+> bu yüzden yayımlanmamalıdır. Çapraz doğrulama onları **zaten**
+> yayımlamıyor (`HAYIR_tek_tani`) — bu, çapraz doğrulamanın
+> bağımsız bir doğrulanması sayılır.
+>
+> Kusur `docs/FAZ4-SIKINTI-RAPORU.md`'ye **A115** olarak işlendi.
+
 ### 3.4 Aşağı yöndeki eşik **KONMUYOR** — ve niçin
 
 Geriye tek nokta kalıyor: `87`, `+37,08` m. Simetrik bir kapı
