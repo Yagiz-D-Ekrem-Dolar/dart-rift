@@ -5458,7 +5458,7 @@ olur. Yani kayıp hem büyük hem **yanlı**.
 
 ### Ne yapılmalı
 
-[ADR-0055](../adr/ADR-0055-gozlemli-vektoru-ve-krater-kutusu.md) iki parçalı
+[ADR-0055](adr/ADR-0055-gozlemli-vektoru-ve-krater-kutusu.md) iki parçalı
 öneri getiriyor: (1) zorunlu/isteğe bağlı gözlemli ayrımı — krater
 ölçülemediğinde o **bileşen** `NaN` olur, `β` ve ejekta kesri yaşar;
 (2) en iç kutunun **uyarlanır** olması ya da `n_bins`'in düşürülmesi.
