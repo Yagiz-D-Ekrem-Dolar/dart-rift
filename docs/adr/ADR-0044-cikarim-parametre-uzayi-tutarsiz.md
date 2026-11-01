@@ -8,7 +8,7 @@
   `DART_UZAYI` ve `secenek3=False` yolu **duruyor**.
 - **Tarih:** 2026-08-09
 - **Tetikleyen:** FAZ 4.6 GPU duman testi — **29 tasarım noktasının 29'u da düştü**
-- **İlgili:** [ADR-0030](ADR-0030-kutle-hacim-tutarliligi.md) (kütle-hacim
+- **İlgili:** [ADR-0030](ADR-0030-kutle-gozeneklilikten-turer.md) (kütle-hacim
   değişmezi), `src/dartrift/inference/design.py`
 
 ---

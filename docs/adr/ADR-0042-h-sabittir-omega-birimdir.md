@@ -4,7 +4,7 @@
 - **Tarih:** 2026-08-08
 - **Değiştirdiği:** [ADR-0041](ADR-0041-yerel-incelme-yaklasimi.md) §5b madde 2
 - **Kanıt:** [KAYIT-035](../defter/KAYIT-035_2026-08-08_omega-celiskisi-olculerek-cozuldu.md)
-- **İlgili:** [ADR-0004](ADR-0004-determinizm.md) (determinizm kilidi)
+- **İlgili:** [ADR-0004](ADR-0004-rng-mimarisi.md) (determinizm kilidi)
 
 ---
 

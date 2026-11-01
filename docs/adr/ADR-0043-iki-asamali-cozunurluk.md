@@ -4,7 +4,7 @@
 - **Tarih:** 2026-08-08
 - **Tetikleyen:** G4-A1 **düştü** —
   [KAYIT-041](../defter/KAYIT-041_2026-08-08_yerel-gpu-ve-mermi-cozulmemis.md)
-- **İlgili:** [ADR-0026](ADR-0026-mermi-cozunurlugu.md) (mermi çözünürlüğü),
+- **İlgili:** [ADR-0026](ADR-0026-mermi-cozunurlugu-tekduze-agda-imkansiz.md) (mermi çözünürlüğü),
   [ADR-0041](ADR-0041-yerel-incelme-yaklasimi.md) (A′)
 
 ---

@@ -5,7 +5,7 @@
 **İlgili:** [ADR-0043](ADR-0043-iki-asamali-cozunurluk.md) ·
 [ADR-0047](ADR-0047-beta-ileri-modelin-ciktisi-degil.md) ·
 [ADR-0028](ADR-0028-uzun-kosu-kararliligi.md) ·
-[KAYIT-053](../defter/KAYIT-053_2026-08-21_kutle-orani-ve-denetim.md)
+[KAYIT-053](../defter/KAYIT-053_2026-08-21_enerji-alti-parcacikta.md)
 
 ---
 
