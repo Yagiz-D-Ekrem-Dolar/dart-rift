@@ -177,6 +177,56 @@ Yukarıdaki liste **silinmedi**; durumu burada yazılı (kural 5).
 kapandı. Savunma notu **okunmakla** değil **tekrar edilmekle** işe
 yarar; §9'unda kontrol listesi var.
 
+### 6.2 Devir notu — 2026-11-01 (oturum kapanışı)
+
+**Kuyrukta bekleyen tek iş:** `1639229_[0-3]`, `kolyoz-cuda`, **4 GPU**,
+`t_end = 5000 s`, hâlâ `PENDING (Priority)`. Yargısı
+[EK-2](truba/PROTOKOL-HT-EK2-2026-11-01.md) §5'te **önceden kilitli**:
+dört noktanın en az üçünde "ÖRTÜ AÇILDI" çıkmazsa geç döküm yolu krater
+ön kaydı için yetersiz ilan edilir. Sonuç ne olursa olsun **mühürlü
+`uretim66` DEĞİŞTİRİLMEZ**; yeni sayı gerekirse yeni etiket
+(`gec_dokum4`). Okuma: `scripts/havuz_krater_yeniden_oku.py`.
+
+**Bu oturumda kapanan / açılan:**
+
+| ne | sonuç |
+|---|---|
+| 13 tek tanılı nokta (asıl açık sorun) | **çözüldü** — `AUC = 0,948`, [ADR-0064](adr/ADR-0064-yuzey-referansa-en-yakin-kesisimdir.md), ölçülen nokta `46 → 78` |
+| A19 (1 yıllık) | çare **bağlandı** ([ADR-0065](adr/ADR-0065-krater-derinlik-ureticisi-yan-yana-baglanir.md)); varsayılan kural 6 gereği değişmedi → **açık** |
+| A106 ("kapanmış") | çaresi **eksikti**, 28 çağrı daha; düzeltildi + sınav |
+| A118, A119, A120 | **yeni** (sırayla: kapı kırılgan / BOM körlüğü / `failure.py` bağlı değil) |
+| Yarışma paketi | savunma notu + YZ beyanı + **kural denetimi** yazıldı |
+| 2204 raporu | özet **bayattı**, yenilendi; `20/20` sayfa, `190` kelime |
+| 5 kırık bağlantı | düzeltildi + depo geneli sınav |
+
+**Sonraki oturumun ilk üç işi:**
+
+1. **Literatür karşılaştırma tablosu** — tek gerçek puan açığı. Okunan
+   resmî puan formunun 11. göstergesi *"standart prosedürlere göre
+   karşılaştırılması"* diyor ve bizde yok. Kaynaklar **doğrulanmadan**
+   kullanılmaz (§12.3'ün dersi).
+2. **Poster** — Rehber §3.5 ve Şekil 2'deki örnek tasarıma göre.
+3. **A116'nın çaresi** — modül düzeyi defter. Ölçüldü: üretimde hiç
+   geçmeyen **3 modül** (`failure`, `validation.adaptive_h_cost`,
+   `validation.deposit_calibration`). A116'nın kendi önerdiği **geniş**
+   sınav (*"her genel API'nin üretim çağrısı olsun"*) da ölçüldü ve
+   **187 düşen** üretiyor — çoğu yanlış pozitif (`units.py` sabitleri,
+   `validation/` koşucuları). O yüzden geniş hâli **yazılmamalı**;
+   modül düzeyi olan doğru olan.
+
+**Kullanıcıdan bekleyen (benim yapamayacağım):** TRUBA/ULAKBİM **izin
+belgesi** (Çağrı 4.2.9 + 4.1.12, eksikse eleme, kurum yazısı zaman
+alır), **ARBİS** kaydı, ve savunma notunun **tekrar edilmesi** — bölge/
+final puanının `%40`'ı "projeye hakimiyet" ve göstergelerinden biri
+doğrudan *"projenin öğrenciler tarafından kurgulanma düzeyi"*.
+Ayrıntı: [`yarisma/TUBITAK-2204A-KURAL-DENETIMI.md`](yarisma/TUBITAK-2204A-KURAL-DENETIMI.md) §5.
+
+**Takvim:** son başvuru **4 Ocak 2027, 17:30** (resmî sayfadan
+doğrulandı; 58. yarışma, başvuru 23 Eylül 2026'da açıldı). Hedef
+**20 Aralık**'ta başvuru tamamlanmış ve **onaylanmış** olsun — 4.2.14
+sistem kapanınca hiçbir değişikliği kabul etmiyor, 4.2.13 ise onayı
+kaldırıp yeniden onaylamayı unutan projeyi değerlendirmeye almıyor.
+
 ## 7. Riskler (U/V başarısızlığı dışında)
 
 1. Çözünürlük artınca β düşüyor → kabada ulaşan varyant ortada banttan çıkabilir (**en olası**).

@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-10-10 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 88 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113, A114, A115, A116, A118 · A70, A84, A91, A92, A94, A96, A106, A110, A111, A112 ve A117 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-10-10 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 89 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113, A114, A115, A116, A118, A120 · A70, A84, A91, A92, A94, A96, A106, A110, A111, A112 ve A117 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5217,6 +5217,58 @@ demek değil. *"Alüminyum küre"* ifadesi fiziksel EOS yönlendirmesiyle
 uyuşmuyor. Çare: malzeme kimliğine göre EOS/dayanım yönlendirmesi, ya
 da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
+
+---
+### A120 — **`failure.py` hiç çağrılmıyor: şartnamenin "config dondur" maddesi üretimde karşılanmıyor** (2026-11-01) — *açık*
+
+A116'nın çaresini ölçerken bulundu (modül düzeyi tarama: `src/` altında
+hiçbir genel adı dışarıdan çağrılmayan modüller).
+
+Şartname **DR-RIFT-P0 §6.2** son satırı zorunlu kılıyor:
+
+> `# ihlal -> kosuyu 'numerical_failure' etiketiyle durdur, config dondur`
+
+`src/dartrift/failure.py` tam bunun için yazıldı ve kendi başlığı niçin
+FAZ 0'da yazıldığını söylüyor: *"FAZ 1'de ilk NaN görüldüğünde hazır
+olmalı."* Dondurduğu paket: `manifest.yaml` (status=`numerical_failure`,
+config gömülü), `failing_config.yaml`, `violation_report.txt`.
+
+**Ölçüm:** `freeze_failed_run` ve `FrozenFailure`, `src/` ve `scripts/`
+altında **hiçbir yerde çağrılmıyor**. Yalnız `tests/test_failure.py`
+(9 sınav) onları koşuyor.
+
+**Sebebi tembellik değil, mimari ayrışma.** `freeze_failed_run` bir
+`RunConfig` ister; üretim yolu (ensemble) `RunConfig` **kurmuyor**,
+sahne parametreleriyle çalışıyor. Yani madde, üretimin hiç kullanmadığı
+bir koşu biçimi (tek, config güdümlü koşu) için uygulanmış.
+
+**Üretim ne yapıyor:** `inference/ensemble.py` düşen noktayı **kaydediyor**
+— `{"i": …, "y": None, "hata": str(e)[:400]}` satırı JSONL'e anında
+yazılıp dosya kapanıyor. Yani başarısızlık **gizlenmiyor**, ama
+şartmanın istediği *dondurma* yapılmıyor: manifest yok, dondurulmuş
+config yok, ihlal raporu yok — `400` karakterlik bir hata metni var.
+
+**Hafifletici:** config yeniden kurulabilir (Slurm betiğindeki bayraklar
++ `SABIT_COMMIT` + JSONL'deki `root_seed` ve `surum`). Yani bilgi kayıp
+değil, **tek dosyada dondurulmuş** değil.
+
+**Niçin önemli:** bu projede onlarca koşu NaN'la öldü (A80, A117'de
+`19` saat). Her birinde "bu koşu neyle koşuyordu" sorusu elle yeniden
+kuruldu — dondurma bağlı olsaydı tek dosyadan okunacaktı.
+
+**İkinci bulgu — izlenebilirlik matrisi fazla şey iddia ediyor.**
+`docs/IZLENEBILIRLIK.md` satır 52 bu gereksinimi `failure.py` +
+`test_failure.py` (9 test) ile **karşılanmış** gösteriyor. Belgenin
+kendi önsözü *"Bir satırın 'Test' sütunu boşsa o gereksinim için
+başarı iddia edilemez"* diyor; sütun dolu olduğu için başarı **iddia
+ediliyor**. Ama uygulama üretime bağlı değil. *"Sınavlar geçiyor" ile
+"üretim yolunda" aynı şey değil* (A116'nın cümlesi).
+
+**Çare (yapılmadı):** iki yol var ve ikisi de tasarım kararı —
+(a) ensemble yolunda `RunConfig` kurup `freeze_failed_run`'ı bağlamak,
+(b) ensemble'a uygun daha hafif bir dondurma tanımlamak. Hangisinin
+seçileceği karar ister; o yüzden bu kayıt **açık** bırakıldı, yarım
+bağlama yapılmadı.
 
 ---
 ### A119 — **Dört kaynak dosyası UTF-8 BOM ile başlıyor: `ast.parse` düşüyor, statik analiz KÖR** (2026-11-01) — **KAPANDI** (aynı gün, sınavlı)

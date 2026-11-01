@@ -252,7 +252,7 @@ belirlenmiyor.
 >   taşımıyor"* bu yüzden **henüz sınanmadı** sayılmalı — **Protokol L**
 >   (üç eksenli duyarlılık pilotu) sınıyor.
 
-Açık kusurlar: [`FAZ4-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md) — **88**.
+Açık kusurlar: [`FAZ4-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md) — **89**.
 
 ## Depo düzeni
 
