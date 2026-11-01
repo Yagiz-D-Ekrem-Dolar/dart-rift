@@ -71,27 +71,29 @@ ve bağımsız bir kusur arama kampanyasından geçirilmiş; bulunan kusurlar
 % =======================================================================
 \section*{Özet}
 
-Amerika Birleşik Devletleri Ulusal Havacılık ve Uzay Dairesi'nin (NASA)
-DART görevi 2022'de Dimorphos asteroidine çarparak yörünge dönemini
-ölçülebilir biçimde değiştirmiş ve cisme aktarılan momentumu $\beta$
-katsayısıyla sınırlamıştır. Bu tek sayıdan cismin iç yapısını geri okumak
-doğrudan bir ters problem değildir: yakın tarihli çalışmalar birbirinden
-farklı iç yapıların aynı $\beta$ değerini ürettiğini göstermiştir. Bu
-projede çarpma, grafik işlem birimi (GPU) üzerinde düzgünleştirilmiş
-parçacık hidrodinamiği ile modellenmiş ve üç iç yapı koordinatının ---
-blok gözenekliliği, matris bağdaşım dayanımı ve blok hacim kesri ---
-gözlemden ne kadarının öğrenilebildiği sorusu, bir nokta tahmini yerine
-tanımlanabilirlik sorusu olarak kurulmuştur. Sabit bir çarpma sahnesinde
-geçerliliği denetlenmiş beş benzetim tamamlanmıştır. Bağdaşım dayanımı
-10 Pa'dan 5000 Pa'ya çıkarıldığında $\beta$ 3,7480'den 1,8738'e düşmekte,
-fırlatılan kütle 26,1 kat azalmaktadır. Denenen matris çekme yasasının
-açılması fazla momentumu \%97,1 değiştirmekte; çarpma noktasının 25 m
-kaydırılması ise $\beta$'yı yalnız \%2,2 değiştirirken fırlatı kütlesini
-\%18 değiştirmektedir. Ölçülen tüm etkiler tek ölçekte sıralandığında en
-büyüğü, çıkarılmak istenen koordinatlardan değil, kararla sabitlenen bir
-model seçiminden gelmektedir. Üretim çıkarımının tasarımı, olabilirlik
-tanımı ve beş karar kapısı veriye bakılmadan önce yazılıp tarih damgasıyla
-kayda alınmıştır.
+NASA'nın DART görevi 2022'de Dimorphos asteroidine çarparak yörünge
+dönemini ölçülebilir biçimde değiştirmiş ve cisme aktarılan momentumu
+$\beta$ katsayısıyla sınırlamıştır. Bu tek sayıdan iç yapıyı geri okumak
+doğrudan bir ters problem değildir: farklı iç yapılar aynı $\beta$
+değerini üretebilmektedir. Bu projede çarpma, grafik işlem birimi (GPU)
+üzerinde düzgünleştirilmiş parçacık hidrodinamiği ile modellenmiş ve üç
+iç yapı koordinatının --- blok gözenekliliği, matris bağdaşım dayanımı
+$Y_0$ ve blok hacim kesri --- gözlemden ne kadarının öğrenilebildiği,
+nokta tahmini yerine tanımlanabilirlik sorusu olarak kurulmuştur. Latin
+hiperküp tasarımıyla seçilen \havuzToplam\ noktanın tamamı koşulmuş,
+aralar Gauss süreci vekiliyle doldurulmuş, çıkarım hem ızgara posterioru
+hem tarih eşlemesiyle yapılmıştır. Fisher bilgisinin özdeğerleri
+$\beta$'nın yalnız \emph{bir} yön kısıtladığını vermektedir: $Y_0$
+öğrenilmekte (büzülme 0,882), gözeneklilik ile blok kesri önselden ayırt
+edilememektedir. Ölçülmüş model hatası bütçesiyle yapılan elemede önsel
+hacminin \%34'ü bağdaşır kalmakta, yani model gözleme ulaşmaktadır;
+çıkarım makinesi benzetim tabanlı kalibrasyondan geçmektedir. Buna
+karşılık çözünürlük iki katına çıkarıldığında $Y_0$ eşlemesi 3,22 kat
+kaymaktadır ve bu saçılma değil yanlılıktır; hesaplanan posterior bu
+nedenle niceliksel öngörü değil yöntem gösterimi sayılmıştır. Tasarım,
+olabilirlik tanımı ve beş karar kapısı veriye bakılmadan önce yazılıp
+tarih damgasıyla kayda alınmıştır. Hera'nın ölçeceği dönme hızı ve krater
+için öngörüler, veri gelmeden mühürlenmiştir.
 
 \anahtarkelimeler{gezegen savunması, çarpma fiziği, düzgünleştirilmiş
 parçacık hidrodinamiği, Bayesçi çıkarım, Dimorphos}
