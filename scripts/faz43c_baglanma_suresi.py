@@ -138,7 +138,7 @@ def main() -> int:
         {"lam": a.lam, "r_ince": a.r_ince, "N": n, "A1": a1,
          "v_carpma": v_carpma, "t_sim": t_sim,
          "t1_olculen": d["t_durulma"], "durulmus": bool(d["durulmus"]),
-         "durulma_tanisi": d, "izler": izler}, indent=2))
+         "durulma_tanisi": d, "izler": izler}, indent=2), encoding="utf-8")
     print(f"\nyazildi: {a.out}", flush=True)
     return 0
 

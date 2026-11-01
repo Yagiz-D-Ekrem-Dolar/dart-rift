@@ -148,11 +148,11 @@ def test_beyazlatma_GURULTUYE_bolunuyor():
 def test_tasarim_dosyasi_yazimi(tmp_path):
     p = tmp_path / "t.json"
     dr.main(["--kok", str(tmp_path), "--kol", "x", "--tasarim-yaz", str(p)])
-    d = json.loads(p.read_text())
+    d = json.loads(p.read_text(encoding="utf-8"))
     assert len(d["theta"]) == 7 and d["adlar"][0] == "merkez"
     dr.main(["--kok", str(tmp_path), "--kol", "x", "--tasarim-yaz", str(p),
              "--sadece-merkez"])
-    assert len(json.loads(p.read_text())["theta"]) == 1
+    assert len(json.loads(p.read_text(encoding="utf-8"))["theta"]) == 1
 
 
 # --- ejekta egimi --------------------------------------------------------

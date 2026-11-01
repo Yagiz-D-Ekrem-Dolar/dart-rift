@@ -189,7 +189,7 @@ def main() -> int:
         Path(a.out).write_text(json.dumps(
             {"r_ince": a.r_ince, "n_blok": int(len(blk.radii)),
              "yeniden_uretim_ayni": bool(ayni), "durum": "belirsiz",
-             "kayitlar": kayitlar}, indent=2, default=float))
+             "kayitlar": kayitlar}, indent=2, default=float), encoding="utf-8")
         return 1
     en_kotu = max(olculen, key=lambda z: z["yanlis_oran"])
     print(f"\nEN KOTU: lam={en_kotu['lam']:.0f} -> "
@@ -206,7 +206,7 @@ def main() -> int:
     Path(a.out).write_text(json.dumps(
         {"r_ince": a.r_ince, "n_blok": int(len(blk.radii)),
          "yeniden_uretim_ayni": bool(ayni), "kayitlar": kayitlar},
-        indent=2, default=float))
+        indent=2, default=float), encoding="utf-8")
     print(f"\nyazildi: {a.out}", flush=True)
     return 0
 

@@ -1,4 +1,4 @@
-﻿"""Carpma anindaki tek-seferlik enerji kaymasi: kesme hatasi mi, yapay mi?
+"""Carpma anindaki tek-seferlik enerji kaymasi: kesme hatasi mi, yapay mi?
 
 OLCULEN OLGU. Uzun kosuda enerji hatasi carpmanin hemen ardindan ~%1.46'ya
 sicriyor ve SONRA HIC DEGISMIYOR (2250 adim boyunca birebir sabit; log-log

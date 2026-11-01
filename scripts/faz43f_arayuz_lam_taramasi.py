@@ -160,7 +160,7 @@ def main() -> int:
     Path(a.out).write_text(json.dumps(
         {"n_coarse": a.n_coarse, "r_ic": a.r_ic, "t_end": a.t_end,
          "lam_19_olculemez": True, "atlanan": atlanan,
-         "sonuclar": sonuclar}, indent=2, default=float))
+         "sonuclar": sonuclar}, indent=2, default=float), encoding="utf-8")
     print(f"\nyazildi: {a.out}", flush=True)
     return 0
 

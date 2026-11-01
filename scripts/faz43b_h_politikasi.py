@@ -72,7 +72,7 @@ def main() -> int:
     for k, v in y.items():
         print(f"    {k:22s} = {v}", flush=True)
 
-    with open(REPO.parent / "faz43b_sonuc.json", "w") as f:
+    with open(REPO.parent / "faz43b_sonuc.json", "w", encoding="utf-8") as f:
         json.dump({"salinim": sal, "tarama": satirlar, "yargi": y}, f, indent=2)
     print("\nyazildi: faz43b_sonuc.json", flush=True)
     return 0

@@ -634,7 +634,7 @@ def main() -> int:
         "n_tasarim_tam": int(tam_n),
         "gozlenebilirler": list(GOZLENEBILIRLER),
         "duvar_s": time.perf_counter() - t0,
-    }, indent=2))
+    }, indent=2), encoding="utf-8")
     print(f"\nyazildi: {a.out}  ve  {ozet}", flush=True)
     return 0
 

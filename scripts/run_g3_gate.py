@@ -1,4 +1,4 @@
-﻿"""G3 kapisi kosucusu — DR-RIFT-P3 §7'deki 7 kriteri kanitlariyla isletir.
+"""G3 kapisi kosucusu — DR-RIFT-P3 §7'deki 7 kriteri kanitlariyla isletir.
 
 Kullanim:
     python scripts/run_g3_gate.py [--device cuda:0] [--quick] [--run-dir DIZIN]

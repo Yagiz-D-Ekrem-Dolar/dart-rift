@@ -90,7 +90,7 @@ def main() -> int:
             sonuclar[ad] = {"yargi": "olculemedi", "neden": str(e),
                             "tasma_rel": float("nan")}
 
-    with open(REPO.parent / "faz44b_sonuc.json", "w") as f:
+    with open(REPO.parent / "faz44b_sonuc.json", "w", encoding="utf-8") as f:
         json.dump({"t_end": T_END, "r_ic": R_IC, "r_sonda": R_SONDA,
                    "sonuclar": sonuclar}, f, indent=2)
     print("\nyazildi: faz44b_sonuc.json", flush=True)

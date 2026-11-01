@@ -126,7 +126,7 @@ def main() -> int:
                             ("sikisma_max_yuzde", "yargi", "n_yuzde5_ustu")},
         "duvari_asti": bool(gecti),
         "duvar_s": time.perf_counter() - t0,
-    }, indent=2))
+    }, indent=2), encoding="utf-8")
     np.savez_compressed(
         Path(a.out).with_suffix(".son_durum.npz"),
         x=st["x"], v=st["v"], m=st["m"],

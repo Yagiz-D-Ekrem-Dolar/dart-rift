@@ -164,7 +164,7 @@ def main() -> int:
            "energy_drift_loglog_slope": egim,
            "series": izler}
     ham.update(faz45_ozet(ham))
-    Path(a.out).write_text(json.dumps(ham, indent=2))
+    Path(a.out).write_text(json.dumps(ham, indent=2), encoding="utf-8")
     print(f"\nyazildi: {a.out}", flush=True)
     print("\nG4 ANAHTARLARI", flush=True)
     for k in ("B2_durulmus", "B4_enerji_egim"):

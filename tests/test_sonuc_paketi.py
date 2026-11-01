@@ -13,11 +13,12 @@ _spec.loader.exec_module(sp)
 
 def _kampanya(k: Path):
     k.mkdir()
-    (k / "S_DART_Qo.json").write_text(json.dumps({"kapsama": {"karar": "ONSEL DISI"}}), "utf-8")
-    (k / "ONKAYIT_HERA_Qo.json").write_text('{"sha256": "ab"}', "utf-8")
-    (k / "BITIS3-TASLAK.md").write_text("# taslak\nçözülüyor\n", "utf-8")
-    (k / "baska.txt").write_text("alinmaz", "utf-8")
-    (k / "S_buyuk.json").write_text("x" * 50, "utf-8")
+    (k / "S_DART_Qo.json").write_text(
+        json.dumps({"kapsama": {"karar": "ONSEL DISI"}}), encoding="utf-8")
+    (k / "ONKAYIT_HERA_Qo.json").write_text('{"sha256": "ab"}', encoding="utf-8")
+    (k / "BITIS3-TASLAK.md").write_text("# taslak\nçözülüyor\n", encoding="utf-8")
+    (k / "baska.txt").write_text("alinmaz", encoding="utf-8")
+    (k / "S_buyuk.json").write_text("x" * 50, encoding="utf-8")
 
 
 def test_topla_ac_gidis_donus_bit_ayni(tmp_path):

@@ -653,7 +653,7 @@ def main() -> int:
              "sok": _sok_yargisi(st_tek["rho"], st_tek["u"], st_tek["m"],
                                  a2.alpha0,
                                  ~np.asarray(a2.is_impactor, bool)),
-             "duvar_s": time.perf_counter() - t0, **b}, indent=2))
+             "duvar_s": time.perf_counter() - t0, **b}, indent=2), encoding="utf-8")
         print(f"\nyazildi: {a.out}", flush=True)
         return 0
 
@@ -871,7 +871,7 @@ def main() -> int:
          "sok_t1": _sok_yargisi(st1["rho"], st1["u"], st1["m"], a1.alpha0,
                                 ~np.asarray(a1.is_impactor, bool)),
          "izler": izler,
-         "duvar_s": time.perf_counter() - t0, **b}, indent=2, default=float))
+         "duvar_s": time.perf_counter() - t0, **b}, indent=2, default=float), encoding="utf-8")
     print(f"\nyazildi: {a.out}", flush=True)
     return 0
 

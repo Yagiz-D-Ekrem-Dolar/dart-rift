@@ -221,7 +221,7 @@ def main() -> int:
          "n_site": int(len(siteler)),
          "sikistirma": int(ince.sum()) / max(len(siteler), 1),
          "kayitlar": kayitlar}, indent=2,
-        default=float))
+        default=float), encoding="utf-8")
     print(f"\nyazildi: {a.out}", flush=True)
     return 0 if kayitlar else 1
 

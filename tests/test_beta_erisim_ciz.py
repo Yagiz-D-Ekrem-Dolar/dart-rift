@@ -20,7 +20,8 @@ def _dart(tmin, bmax, beta=3.12, s=0.34, karar="ONSEL DISI (YUKARI)"):
 
 
 def test_satirlar_havuz_ve_varyant(tmp_path):
-    (tmp_path / "S_DART_kesif_k72.json").write_text(json.dumps(_dart(1.246, 1.853)), "utf-8")
+    (tmp_path / "S_DART_kesif_k72.json").write_text(
+        json.dumps(_dart(1.246, 1.853)), encoding="utf-8")
     (tmp_path / "S_U.json").write_text(json.dumps({"satirlar": {
         "U0:kaba": {"beta_eksi_1_sim": 0.95, "beta_eksi_1_gozlem": 2.12, "sigma_beta": 0.34,
                     "karar": "ALTINDA"},
@@ -32,7 +33,7 @@ def test_satirlar_havuz_ve_varyant(tmp_path):
 
 
 def test_ciz_png_yaziyor(tmp_path):
-    (tmp_path / "S_DART_Qo.json").write_text(json.dumps(_dart(1.3, 1.9)), "utf-8")
+    (tmp_path / "S_DART_Qo.json").write_text(json.dumps(_dart(1.3, 1.9)), encoding="utf-8")
     out = tmp_path / "sekil" / "b.png"
     bec.ciz(bec.satirlar(tmp_path), out)
     assert out.exists() and out.stat().st_size > 1000

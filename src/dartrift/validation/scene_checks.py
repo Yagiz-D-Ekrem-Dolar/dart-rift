@@ -1,4 +1,4 @@
-﻿"""FAZ 3 sahne kurulumu dogrulama senaryolari (G3 kaniti).
+"""FAZ 3 sahne kurulumu dogrulama senaryolari (G3 kaniti).
 
 Her fonksiyon TEK bir kriteri olcer ve sayilarini dondurur; gecti/kaldi
 karari kapi kosucusuna aittir. Boylece esikler tek yerde durur ve senaryo

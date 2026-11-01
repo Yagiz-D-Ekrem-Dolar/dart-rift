@@ -136,7 +136,7 @@ def main() -> int:
         _yaz(yk)
         sonuclar[ad] = yk
 
-    with open(REPO.parent / "faz44_sonuc.json", "w") as f:
+    with open(REPO.parent / "faz44_sonuc.json", "w", encoding="utf-8") as f:
         json.dump({"t_end": t_end, "sonuclar": sonuclar}, f, indent=2)
     print("\nyazildi: faz44_sonuc.json", flush=True)
 

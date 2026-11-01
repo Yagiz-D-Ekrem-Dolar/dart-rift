@@ -147,7 +147,7 @@ def main() -> int:
         {"N": rs.n, "R": R, "v_kacis": v_esc, "t_sim": t,
          "beta_bal_son": float(bs[-1]),
          "firlatma_suresi_s": dd["t_durulma"],
-         "durulma_tanisi": dd, "izler": izler}, indent=2, default=float))
+         "durulma_tanisi": dd, "izler": izler}, indent=2, default=float), encoding="utf-8")
     print(f"\nyazildi: {a.out}", flush=True)
     return 0
 

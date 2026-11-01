@@ -5185,6 +5185,39 @@ da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
 
 ---
+### A119 — **Dört kaynak dosyası UTF-8 BOM ile başlıyor: `ast.parse` düşüyor, statik analiz KÖR** (2026-11-01) — **KAPANDI** (aynı gün, sınavlı)
+
+A106'nın çaresi AST ile denetlenmek istenince tarama dört dosyada
+`SyntaxError: invalid non-printable character U+FEFF` verdi:
+
+| dosya |
+|---|
+| `src/dartrift/validation/scene_checks.py` |
+| `scripts/measure_impact_energy_offset.py` |
+| `scripts/run_g3_gate.py` |
+| `scripts/run_red_team.py` |
+
+Üçü `EF BB BF` (UTF-8 BOM) ile başlıyordu. **Python bunları koşturur** —
+kodlama sezgisi BOM'u yutar — ama `ast.parse(p.read_text(encoding="utf-8"))`
+BOM'u `U+FEFF` karakteri olarak görür ve düşer. Yani çalışma zamanında
+hiçbir belirti yok, **bütün statik analiz bu dosyalarda kör**.
+
+Deponun var olan AST sınavı (`test_kosucu_yollari.py`) yalnız
+`scripts/faz4*.py` glob'una bakıyordu; dördü de **kapsam dışıydı**.
+Dolayısıyla "AST taraması temiz" cümlesi (öğrenilen dersler tablosu)
+bu dosyalar için hiç sınanmamıştı.
+
+**A33'ün sınıfı:** *sınav geçti, kusur duruyordu.* Burada daha incesi —
+sınav **doğru** şeyi sınıyordu, ama **yanlış kümeye** bakıyordu.
+
+**Çare:** BOM'lar silindi (dördü de `ast.parse` ile doğrulandı) ve
+`tests/test_kaynak_kodlama_hijyeni.py` üç kapı koydu:
+`test_hicbir_kaynak_dosyasi_BOM_ile_BASLAMIYOR`,
+`test_BOSLUK_hepsi_AST_ile_ayristirilabiliyor` (ayrıştırılamayan dosya
+sessizce atlanamaz) ve `test_BOSLUK_dosyalar_bulunuyor` (en az 400).
+Kapsam `src/` + `scripts/` + `tests/` — glob değil, ağaç.
+
+---
 ### A118 — **ADR-0062'nin "eşik geniş" savunması üretim çözünürlüğünde ZAYIF: bir nokta kapıdan `13 mm` uzakta** (2026-11-01) — *açık*
 
 ADR-0062 krater kapısını şöyle savunuyordu:
@@ -5667,6 +5700,27 @@ JSON okuma/yazma `encoding="utf-8"`; `a98k_raporu` ekran çıktısı gerekirse
 ASCII'ye düşer (`_yaz`). **Kilitli yargı metinleri değişmedi.** Kalıp:
 *çıktının kodlaması, hesabın doğruluğundan bağımsız olarak yargıyı
 düşürebilir* (A91'in akrabası: rapor, `β`'ya bakmadan çöküyor).
+
+> **NOT (2026-11-01) — bu çare EKSİK uygulanmıştı.** Yukarıda *"bütün
+> JSON okuma/yazma `encoding="utf-8"`"* yazıyor. Depo ilk kez **AST ile
+> baştan sona** tarandı (449 dosya) ve kodlama verilmeyen **28** metin
+> G/Ç çağrısı daha bulundu: `write_text` ×24, `read_text` ×1,
+> `open` ×3. Yani çare A98/A103/A104/A105 raporlarına uygulanmış, geri
+> kalan `scripts/` ve `tests/` dosyalarında uygulanmamıştı. **Hiçbir
+> sınav bakmadığı için iki ay görünmedi.**
+>
+> Hepsi düzeltildi ve kural artık sınavlı:
+> `tests/test_kaynak_kodlama_hijyeni.py`. Sınav konumsal kodlamayı
+> (`read_text("utf-8")`) doğru sayar, ikili akışları (`"wb"`) muaf
+> tutar ve iki boşluk kontrolü taşır.
+>
+> **Düzeltirken kendim bir hata ürettim ve sınav onu yakaladı:**
+> otomatik düzeltmenin ilk geçişi, kodlamayı **zaten konumsal** veren
+> çağrılara anahtar kelimeyi de ekledi →
+> `write_text(x, "utf-8", encoding="utf-8")`, yedi yerde, hepsi
+> çalışma zamanında `TypeError`. **`ruff` bunu görmedi** (yalnız satır
+> uzunluğundan şikâyet etti). `test_hicbir_cagri_kodlamayi_IKI_KEZ_vermiyor`
+> bu yüzden var.
 
 ---
 ### A105 — **`β` matris çekme dayanımına çok duyarlı: `T_m = Y₀/μ_f` açılınca −%23** (2026-09-26, başka oturum) — *açık, ölçüldü*

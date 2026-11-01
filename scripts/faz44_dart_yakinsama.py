@@ -240,7 +240,7 @@ def main() -> int:
            "tasarruf": tasarruf_min,
            "sonuclar": sonuclar}
     ham.update(faz44_ozet(ham))
-    Path(a.out).write_text(json.dumps(ham, indent=2))
+    Path(a.out).write_text(json.dumps(ham, indent=2), encoding="utf-8")
     print(f"\nyazildi: {a.out}", flush=True)
     print("\nG4 ANAHTARLARI", flush=True)
     for k in ("A1_mermi_parcacik_cap", "A2_r_ince_carpani", "A3_kutle_sapmasi",

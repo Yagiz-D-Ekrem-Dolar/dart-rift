@@ -395,7 +395,7 @@ def main() -> int:
         "uzay": list(UZAY.names),
         "uzay_adi": "DART_UZAYI" if a.eski_uzay else "DART_UZAYI_S3",
         "adr_0044": not a.eski_uzay,
-    }, indent=2))
+    }, indent=2), encoding="utf-8")
     print(f"\nyazildi: {a.out}", flush=True)
     return 0
 

@@ -68,7 +68,8 @@ def test_bozuk_onbellek_dosyasi_yok_sayiliyor(tmp_path):
     h = _Sayac()
     assert gob.gozlem(f, h, kod="k1")["a"] == 7.0 / 3.0
     assert h.n == 1
-    assert json.loads((tmp_path / "nokta_0000.gozlem.json").read_text())["anahtar"]["kod"] == "k1"
+    _g = (tmp_path / "nokta_0000.gozlem.json").read_text(encoding="utf-8")
+    assert json.loads(_g)["anahtar"]["kod"] == "k1"
 
 
 def test_ortam_degiskeni_ile_kapatma(tmp_path, monkeypatch):
@@ -82,9 +83,9 @@ def test_ortam_degiskeni_ile_kapatma(tmp_path, monkeypatch):
 
 def test_kod_ozeti_kaynaklara_bagli(tmp_path):
     a = tmp_path / "a.py"
-    a.write_text("x = 1\n")
+    a.write_text("x = 1\n", encoding="utf-8")
     o1 = gob.kod_ozeti((a,))
-    a.write_text("x = 2\n")
+    a.write_text("x = 2\n", encoding="utf-8")
     assert gob.kod_ozeti((a,)) != o1
     assert all(p.exists() for p in gob.KAYNAKLAR)
 

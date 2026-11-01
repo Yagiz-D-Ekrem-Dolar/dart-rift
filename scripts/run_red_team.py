@@ -1,4 +1,4 @@
-﻿"""Kirmizi-takim kontrol listesi kosucusu — DR-RIFT-P0 §12 + DR-RIFT-P3 §10.
+"""Kirmizi-takim kontrol listesi kosucusu — DR-RIFT-P0 §12 + DR-RIFT-P3 §10.
 
 Yol Haritasi §7.5: "Her fazin kirmizi-takim kontrol listesi teslimden once
 isletilir." Kapi kosucusundan (run_g0_gate.py) ayridir: kapi "gereksinimler
