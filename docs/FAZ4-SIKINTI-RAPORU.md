@@ -2381,6 +2381,40 @@ Kilit: `tests/test_krater_bos_sinav.py` — iki kusur
 `xfail(strict=True)` ile sabitlendi; düzeltildikleri gün testler
 **düşer** ve bu bölüm güncellenmek zorunda kalır.
 
+> **NOT (2026-11-01) — çare bir yıldır DEPODA, `xfail`'ler yine
+> düşmedi; sebebi ölçüldü.** `xfail`'ler `crater_profile`'ı sınıyor ve
+> o çıkarıcı hiç değişmedi, dolayısıyla hâlâ **doğru** düşüyorlar.
+> Ama A73'ün yüzey operatörü `krater_yuzey` (ADR-0061/62/63/64) aynı
+> iki senaryoyu **geçiyor** — ölçüldü, sentetik, `0` GPU:
+>
+> | A19 sınavı | gereken | `crater_profile` | `krater_yuzey` |
+> |---|---|---|---|
+> | pürüzlü yüzey, **çarpma yok** | `0` | **`+0,2598`** ✗ | **`+0,0000`** ✓ |
+> | gerçek `12 m` çukur | `> 6` | **`−0,0262`** ✗ | **`+6,3170`** ✓ |
+>
+> Yani A19 **bir yıldır çözülmüştü ve kimse bağlamamıştı** — A116'nın
+> deseninin en pahalı örneği. `forward.py:390` hâlâ `crater_profile`'ı
+> çağırıp sonucu `y[1] = krater_derinlik` yapıyordu.
+>
+> **Yapılan** ([ADR-0065](adr/ADR-0065-krater-derinlik-ureticisi-yan-yana-baglanir.md)):
+> `gozlem_vektoru`'na `krater_uretici` alanı eklendi —
+> `"profil"` (varsayılan, bit-aynı) ya da `"yuzey"`. Üç yeni sınav
+> farkı çiviliyor (`test_ADR0065_*`), beş sınav bağlamayı
+> (`test_krater_uretici_secimi.py`).
+>
+> **NİÇİN HÂLÂ AÇIK:** varsayılan `"profil"` kaldı. Bu bir tercih
+> değil, kural 6: `krater_derinlik` yayımlanmış `y` vektörlerine girdi
+> (`havuz_96.csv`, `30/96` `nan`), üreticisini sessizce değiştirmek
+> yayımlanmış bir gözlenebilirin **tanımını sonradan değiştirmek**
+> olur. Varsayılanın değişmesi **koşudan önce yazılmış bir protokol**
+> ve **yeni etiket** ister. A19 o gün kapanır.
+>
+> **Canlı zararın sınırı yazılı:** `krater_derinlik` ADR-0055 ile
+> isteğe bağlı ve **posteriora girmiyor** (`n_yön = 1` yalnız `β`'ya
+> dayanıyor); mühürlü `uretim66` ön kaydı `havuz_krater_tarama_96.csv`'yi,
+> yani **`krater_yuzey`'i** kullandı, `crater_profile`'ı değil.
+> Kaynak: [KAYIT-095](defter/KAYIT-095_2026-11-01_A19-bir-yildir-cozulmus-ama-baglanmamisti.md).
+
 ---
 
 ### A21 — **Enerji yayılmıyor: gelen enerjinin `%78`'i `6` parçacıkta** (2026-08-21)
@@ -5309,6 +5343,7 @@ bırakılıyor. Sınavlar geçtiği için hiçbir uyarı çıkmıyor; modül
 | # | modül | ne yapmalıydı | nasıl bulundu |
 |---|---|---|---|
 | 1 | `krater_yerdegistirme` | A19'un çaresi | A114 incelenirken |
+<!-- 1. satir 2026-11-01'de cozuldu: ADR-0065, asagidaki NOT -->
 | 2 | `inference/cok_dogruluk.py` | UY2 + KAYIT-071 s.22 ile kilitli çok doğruluklu vekil | **kullanıcı sezgisiyle** sordu |
 | 3 | `io_hdf5.write_snapshot` / `sparse_snapshot` | ara an kaydı → video, A95 konisi, Hera mührü | video sorusu üzerine |
 

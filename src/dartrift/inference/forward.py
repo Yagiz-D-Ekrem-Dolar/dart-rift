@@ -36,7 +36,7 @@ import json
 import numpy as np
 
 __all__ = ["sahne_parametreleri", "gozlenebilirleri_cikar", "ileri_kosu",
-           "A114_UYARILARI",
+           "A114_UYARILARI", "KRATER_URETICI_KUTUGU",
            "ileri_kosu_ikiasama",
            "GOZLENEBILIRLER"]
 
@@ -335,6 +335,11 @@ KRATER_KUTUP_KUTUSU_ESIGI_DEG = 7.0
 #: ölçülemediğini sayar.
 A114_UYARILARI: list[str] = []
 
+#: ADR-0065 §3.2: `krater_derinlik`i hangi cikaricinin urettigi.
+#: `A114_UYARILARI`dan AYRI tutulur -- o kanal `nan` yazilan bilesenleri
+#: sayiyor ve sinavi orada tam bir girdi bekliyor.
+KRATER_URETICI_KUTUGU: list[str] = []
+
 
 def _a114_uyari(mesaj: str) -> None:
     A114_UYARILARI.append(mesaj)
@@ -344,6 +349,7 @@ def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,
                            target_radius, is_impactor, impact_direction,
                            x_reference, krater_ayarlari=None,
                            yari_eksenler=None,
+                           krater_uretici: str = "profil",
                            istege_bagli: tuple[str, ...] = ()) -> np.ndarray:
     """Son durumdan üç gözlenebilir — `GOZLENEBILIRLER` sırasında.
 
@@ -385,18 +391,70 @@ def gozlenebilirleri_cikar(st: dict, *, impactor_momentum, target_mass,
     # REDDEDER (`0` dondurmek yaniltici olurdu). `istege_bagli` icinde
     # "krater_derinlik" varsa bu RED yalniz O BILESENI `nan` yapar; `beta` ve
     # ejekta kesri yasar. Varsayilan BOS: davranis DEGISMEDI.
+    # ADR-0065: `krater_derinlik`in URETICISI yan yana secilir.
+    #   "profil" = `crater_profile`  -> VARSAYILAN, bit-ayni, A19'lu
+    #   "yuzey"  = `krater_yuzey`    -> A19'un iki sinavini da gecer
+    # Varsayilan bir tercih DEGIL, kural 6: bu sayi yayimlanmis `y`
+    # vektorlerine girdi, ureticisini sessizce degistirmek gozlenebilirin
+    # tanimini sonradan degistirmek olur. Olculdu (2026-11-01, sentetik):
+    #   purUzlU yuzey, CARPMA YOK  -> profil +0,2598 (yanlis) / yuzey +0,0000
+    #   gercek 12 m cukur          -> profil -0,0262 (yanlis) / yuzey +6,3170
+    if krater_uretici not in ("profil", "yuzey"):
+        raise ValueError(
+            f"krater_uretici 'profil' ya da 'yuzey' olmali, "
+            f"{krater_uretici!r} degil")
+    # `krater_yuzey` yumusatma boyunu ISTER: yuzey `phi = esik` es-yuzeyi
+    # ve `phi` `h` olmadan tanimsiz. `h`, KATI cozucunun durumunda var
+    # (`solver_solid.state_numpy`), duz cozucude YOK. Sessiz `KeyError`
+    # yerine neyin eksik oldugunu SOYLEYEN kapi (betiklerde sessiz
+    # varsayilan yok kurali).
+    if krater_uretici == "yuzey":
+        eksik = [k for k in ("h", "rho") if k not in st]
+        if eksik:
+            raise ValueError(
+                f"krater_uretici='yuzey' durumda {eksik} ister; "
+                f"`krater_yuzey` yuzeyi `phi = esik` es-yuzeyi olarak "
+                f"tanimlar ve `phi` yumusatma boyu olmadan tanimsizdir. "
+                f"Bu alanlar KATI cozucunun durumunda var "
+                f"(`solver_solid.state_numpy`). Varsayilan "
+                f"krater_uretici='profil' bunlari istemez")
     _krater_hatasi = None
     try:
-        kr_depth = float(crater_profile(
-            st["x"][hedef], center=np.zeros(3),
-            impact_direction=np.asarray(impact_direction, dtype=np.float64),
-            reference_radius=float(target_radius),
-            x_reference=np.asarray(x_reference, dtype=np.float64)[hedef],
-            **(krater_ayarlari or {})).depth)
-    except ValueError as e:
+        if krater_uretici == "yuzey":
+            from ..observables.crater_shape import krater_yuzey
+            kr_depth = float(krater_yuzey(
+                st["x"][hedef],
+                np.asarray(x_reference, dtype=np.float64)[hedef],
+                m=st["m"][hedef], h=st["h"][hedef], rho=st["rho"][hedef],
+                rho_reference=st["rho_referans"][hedef]
+                if "rho_referans" in st else st["rho"][hedef],
+                impact_direction=np.asarray(impact_direction,
+                                            dtype=np.float64),
+                v=st["v"][hedef],
+                **(krater_ayarlari or {})).derinlik_merkez)
+        else:
+            kr_depth = float(crater_profile(
+                st["x"][hedef], center=np.zeros(3),
+                impact_direction=np.asarray(impact_direction,
+                                            dtype=np.float64),
+                reference_radius=float(target_radius),
+                x_reference=np.asarray(x_reference, dtype=np.float64)[hedef],
+                **(krater_ayarlari or {})).depth)
+    except (ValueError, KeyError) as e:
         if "krater_derinlik" not in istege_bagli:
             raise
         kr_depth, _krater_hatasi = float("nan"), str(e)
+    # ADR-0065 §3.2: hangi cikaricinin kullanildigi KUTUGE yazilir.
+    # A19'un asil zarari sayinin yanlis olmasi degil, hangi cikaricidan
+    # geldiginin GORUNMEMESIydi -- KAYIT-088 tam bu yuzden iki ayri
+    # cikariciyi karistirdi. `A114_UYARILARI` kanali KULLANILMAZ: o
+    # kanal `istege_bagli` yuzunden `nan` yazilan bilesenleri sayiyor ve
+    # `test_a114_istege_bagli_gozlemli` orada TAM BIR girdi bekliyor.
+    KRATER_URETICI_KUTUGU.append(
+        f"krater_uretici={krater_uretici}"
+        + (" (A19: bu cikarici 'yokken var, varken yok' diyor -- "
+           "olculdu 2026-11-01, ADR-0065 §1)"
+           if krater_uretici == "profil" else " (ADR-0061/62/63/64)"))
     # A47: `mt.beta` KONTROL YUZEYI `2R` ve mermiyi de sayiyor.
     # Raporladigim `beta_hedef` ise defterin `R` yuzeyinden ve
     # YALNIZ hedef maddesinden geliyor. Ikisi AYNI SEY DEGIL:

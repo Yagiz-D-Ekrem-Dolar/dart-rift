@@ -8,7 +8,7 @@
 [ADR-0062](ADR-0062-ortulu-krater-olculemez-sayi-yerine-red.md),
 [ADR-0063](ADR-0063-yuzey-icten-disa-taranir.md),
 [ADR-0064](ADR-0064-yuzey-referansa-en-yakin-kesisimdir.md)
-**Kayıt:** [KAYIT-095](../defter/KAYIT-095_2026-11-01_A19-cozulmus-ama-baglanmamisti.md)
+**Kayıt:** [KAYIT-095](../defter/KAYIT-095_2026-11-01_A19-bir-yildir-cozulmus-ama-baglanmamisti.md)
 
 ---
 

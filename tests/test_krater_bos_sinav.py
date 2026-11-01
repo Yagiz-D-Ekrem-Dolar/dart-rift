@@ -218,3 +218,81 @@ def test_YENI_bozuk_girdiyi_REDDEDIYOR() -> None:
     with pytest.raises(ValueError, match="pozitif"):
         krater_yerdegistirme(x, x, impact_direction=GELIS,
                              reference_radius=-1.0)
+
+
+# ===================================================================
+# ADR-0065: A19'un ASIL caresi `krater_yuzey`'di ve bir yil
+# BAGLANMAMIS durdu. Asagidaki iki sinav, yukaridaki iki `xfail`in
+# AYNI senaryolarini uretim yuzey operatoruyle kosar.
+#
+# `xfail`ler SILINMEZ (kural 5): `crater_profile` degismedi, hala
+# dusuyor, dolayisiyla onlar hala DOGRU. Iki cikaricinin farki
+# boylece SINAVLI olur.
+#
+# OLCULDU 2026-11-01 (sentetik, 0 GPU):
+#   | senaryo              | gereken | crater_profile | krater_yuzey |
+#   | puruzlu, carpma YOK  |    0    |    +0,2598  X  |   +0,0000  V |
+#   | gercek 12 m cukur    |   > 6   |    -0,0262  X  |   +6,3170  V |
+# ===================================================================
+
+from dartrift.observables.crater_shape import krater_yuzey  # noqa: E402
+
+#: Kure yaricapi ve parcacik sayisi `_cukur` fiksturuyle AYNI.
+_R_KURE = 82.0
+#: `h/aralik = 1,5` -- SPH'in olagan orani. Daha kabasinda cekirdek
+#: destegi `12 m` cukuru yayar ve derinlik duser (olculdu:
+#: `h = 6,20 -> +5,71`, `h = 7,70 -> +5,20`); bu bir kusur degil,
+#: cozunurluk sinirinin kendisi.
+_H_CARPANI = 1.5
+_RHO_SAHNE = 2000.0
+
+
+def _yuzey_derinlik(x, x0, n_parcacik: int) -> float:
+    """`krater_yuzey` ile eksendeki derinlik; `GELIS` yonuyle."""
+    aralik = (4.0 / 3.0 * np.pi * _R_KURE ** 3 / n_parcacik) ** (1.0 / 3.0)
+    h = np.full(len(x), _H_CARPANI * aralik)
+    rho = np.full(len(x), _RHO_SAHNE)
+    m = np.full(len(x), _RHO_SAHNE * (4.0 / 3.0 * np.pi * _R_KURE ** 3)
+                / n_parcacik)
+    return float(krater_yuzey(
+        x, x0, m=m, h=h, rho=rho, rho_reference=rho,
+        impact_direction=GELIS, v=np.zeros_like(x),
+        merkez=np.zeros(3)).derinlik_merkez)
+
+
+def test_ADR0065_YUZEY_puruzlu_yuzeyde_derinlik_YOK() -> None:
+    """A19'un 1. yarisı: `krater_yuzey` **yokken yok** diyor.
+
+    `crater_profile` burada `+0,2598` veriyor (yukarıdaki `xfail`).
+    """
+    rng = np.random.default_rng(11)
+    x = _kure(12000, _R_KURE)
+    yuzey = np.linalg.norm(x, axis=1) > 0.9 * _R_KURE
+    x = x.copy()
+    x[yuzey] *= (1.0 + rng.normal(0.0, 3.0 / _R_KURE,
+                                  int(yuzey.sum())))[:, None]
+    assert _yuzey_derinlik(x, x, 12000) == pytest.approx(0.0, abs=1e-3)
+
+
+def test_ADR0065_YUZEY_GERCEK_cukuru_OLCUYOR() -> None:
+    """A19'un 2. yarısı: `krater_yuzey` **varken var** diyor.
+
+    `crater_profile` burada `-0,0262` veriyor (yukarıdaki `xfail`).
+    Aynı fikstür, aynı `12 m` çukur, aynı `508` kazılmış parçacık.
+    """
+    x, x0, n_kaz = _cukur(80000, _R_KURE, 15.0, 12.0)
+    assert n_kaz > 300, n_kaz
+    d = _yuzey_derinlik(x, x0, 80000)
+    assert d > 6.0, f"olculen {d:+.4f} m"
+    # Ust sinir da yazili: cekirdek destegi cukuru YAYAR, yani olculen
+    # derinlik gercek `12 m`'nin ALTINDA kalir ve bu beklenen.
+    assert d < 12.0, f"olculen {d:+.4f} m -- gercek cukurdan DERIN olamaz"
+
+
+def test_ADR0065_iki_cikarici_AYNI_senaryoda_AYRISIYOR() -> None:
+    """Farkın kendisi sınavlı: aynı girdi, iki ayrı cevap."""
+    x, x0, _ = _cukur(80000, _R_KURE, 15.0, 12.0)
+    eski = _derinlik(x, x0)
+    yeni = _yuzey_derinlik(x, x0, 80000)
+    assert eski < 1.0, f"crater_profile {eski:+.4f} -- A19 duzeldiyse bu dusmeli"
+    assert yeni > 6.0, f"krater_yuzey {yeni:+.4f}"
