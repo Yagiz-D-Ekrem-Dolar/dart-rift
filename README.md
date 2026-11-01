@@ -269,12 +269,14 @@ src/dartrift/
                     tarih eşleme (model hatası paydası)
   validation/       kapı ölçütlerinin koşucuları
 docs/
-  adr/              60 mimari karar kaydı
-  defter/           78 mühendislik defteri kaydı
-  truba/            39 kilitli protokol (koşudan ÖNCE yazılır)
+  adr/              63 mimari karar kaydı
+  defter/           92 mühendislik defteri kaydı
+  truba/            42 kilitli protokol (koşudan ÖNCE yazılır)
+  onkayit/          MÜHÜRLÜ Hera ön kayıtları (SHA-256 çivili)
   evidence/         kapı raporları, koşu künyeleriyle
   rapor2204/        TÜBİTAK 2204-A proje raporu (LaTeX)
   preprint/         bilimsel ön baskı (İngilizce, DOI'li)
+  yarisma/          savunma notu + yapay zekâ kullanım beyanı
 truba/              Slurm iş betikleri ve sıra planları
 data_manifest/      dış veri ürünlerinin kimlik + sağlama kaydı
 ```

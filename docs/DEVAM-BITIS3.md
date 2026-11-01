@@ -160,6 +160,23 @@ hesapları (`108`, `78` GPU-saat); grup CPU-dakika kotası 7,2M → 37,2M (büt�
 9. **Negatif dal:** V süre sınırı ölçümü · teşhis raporu · koşulsuz Hera kaydı · model geliştirme planı
 10. **Hera dönemi:** mühürlü tahminle karşılaştırma · ölçülen kütleyle β/posterior güncelleme
 
+### 6.1 Madde 8 (Yarışma) — kısmi kapanış, 2026-11-01
+
+Yukarıdaki liste **silinmedi**; durumu burada yazılı (kural 5).
+
+| madde 8'in parçası | durum | nerede |
+|---|---|---|
+| savunma notu ⭐ | **YAZILDI** | [`yarisma/SAVUNMA-NOTU.md`](yarisma/SAVUNMA-NOTU.md) |
+| yapay zekâ kullanım beyanı | **YAZILDI** | [`yarisma/YAPAY-ZEKA-BEYANI.md`](yarisma/YAPAY-ZEKA-BEYANI.md) |
+| poster + 10 dk anlatım | anlatım **iskeleti** var (SAVUNMA-NOTU §8); poster **YOK** | — |
+| jüri soruları | **YAZILDI** (11 soru, 3'ü zor) | SAVUNMA-NOTU §6 |
+| İSEF/TÜBİTAK kural ve tarih kontrolü ⭐ | **YAPILMADI** | 2204-A son tarih: 4 Ocak 2027 |
+| özet | **YAPILMADI** | — |
+
+§10'un *"en büyük risk bu"* dediği iki madde (savunma notu + beyan)
+kapandı. Savunma notu **okunmakla** değil **tekrar edilmekle** işe
+yarar; §9'unda kontrol listesi var.
+
 ## 7. Riskler (U/V başarısızlığı dışında)
 
 1. Çözünürlük artınca β düşüyor → kabada ulaşan varyant ortada banttan çıkabilir (**en olası**).

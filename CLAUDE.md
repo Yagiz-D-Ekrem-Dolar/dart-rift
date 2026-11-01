@@ -71,4 +71,7 @@ f blok kesri)` — gerçek DART gözleminden (momentum aktarımı `β`) çıkarm
 | `docs/FAZ4-SIKINTI-RAPORU.md` | kusur kayıtları A1–A88 (sayaçları sınavlı) |
 | `docs/truba/PROTOKOL-{Q,D,U,V,HT}-*.md` | kilitli karar kuralları |
 | `docs/SONUC-M-N-P-J-T.md` | kilitli sonuçlar |
+| `docs/onkayit/` | **mühürlü** Hera ön kayıtları (SHA-256; değiştirilmez) |
+| `docs/yarisma/SAVUNMA-NOTU.md` | jüri savunması: modül haritası, ezberlenecek sayılar, zor sorular |
+| `docs/yarisma/YAPAY-ZEKA-BEYANI.md` | yapay zekâ kullanım beyanı (DEVAM-BITIS3 §10'un "en büyük risk"i) |
 | `truba/sira_*.json` | TRUBA sıra planları |
