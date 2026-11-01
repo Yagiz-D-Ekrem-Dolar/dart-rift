@@ -921,6 +921,88 @@ sahnesindedir. Çelişki yoktur --- ama çözünürlüğün etkisinin
 olarak kaydedilmektedir.
 \end{sinir}
 
+\subsection{Bir gözlenebilirin kurtarılması --- ve bir açıklamanın çürümesi}
+
+Krater derinliği üretim havuzunun \textbf{47}/\havuzToplam\ noktasında
+okunamıyordu ve sebep bir yıl açık kalmıştı. Enstrümante edildiğinde
+görüldü: doluluk eş-yüzeyi iki durumdan \emph{ortak} pencerelenince,
+zayıf matriste yukarı fırlayıp kaçmayan malzeme pencereyi şişiriyor ve
+arama referans yüzeye hiç inemiyordu. Pencere durum başına kurulunca
+bu 47 düşüşün \emph{referans} kaynaklı olanları tamamen bitti.
+
+Ama düzeltme tek başına yanlış olurdu. Ölçüldü: \verb|nan| kalkıyor,
+yerine gelen sayı krater derinliği \emph{değil}, eksende duran örtünün
+tepesi. Sentetik levhada bağıntı birebir çıktı --- örtü $y$ metreye
+kaldırılınca derinlik $-(y + 0{,}913)$ m, eğim $-1{,}000\pm0{,}001$;
+üretimde $59{,}517 - 105{,}916 = -46{,}4$ m. Yani tek başına
+yayımlansa \textbf{47 dürüst eksik, 47 yanlış sayıya} dönüşecekti. Bu
+yüzden operatöre bir red kapısı kondu: merkezde son yüzey, referans
+yüzeyin bir çekirdek desteği ($2h$) üzerindeyse derinlik
+\textbf{ölçülemez} ve sayı yerine sebep döner. Kapı ayarlanmış bir
+sayı değildir; çalışan noktalar $+0{,}75$/$+0{,}89$ m, düşenler
+$-46{,}4$ m, yani eşik $-1$ ile $-45$ m arasında herhangi bir yerde
+aynı sınıflamayı verir.
+
+İkinci adımda yüzey tanımı \emph{içten dışa} çevrildi: ışın cismin
+içinden başlar ve dolululuğun eşiğin altına ilk düştüğü yer alınır;
+üstteki boşluk ve ondan sonraki ayrı yığın yapısal olarak ıskalanır.
+Bu tanım, önceki tanımın ölçtüğü 46 noktayı \textbf{makine
+hassasiyetinde} yeniden üretti (en büyük bağıl fark $1{,}9\times
+10^{-14}$) ve 20 noktayı daha açtı. O 20'si bağımsız bir ikinci tanıyla
+\textbf{sıfır çelişkiyle} doğrulandı. Krater böylece
+\textbf{46}'dan \textbf{66}/\havuzToplam\ noktaya çıktı; kalan 13'te
+iki tanı ayrışıyor ve orada sayı \emph{yayımlanmıyor} --- biri
+$+36{,}5$ m derinlik veriyor, hedefin yarı eksenleri ise
+$58$--$88{,}5$ m.
+
+Bunun üzerine bir açıklama denedik: belki zayıf matriste doluluk alanı
+SPH birim bölünmesini ($\sum_j (m_j/\rho_j)W = 1$) yitiriyordur.
+Beş noktada öyle görünüyordu. \havuzToplam\ noktada sayıldığında
+\textbf{çürüdü}: bozulma gerçek (iç doluluk $0{,}110$--$5{,}115$,
+referans denetimi ise $1{,}230$--$1{,}232$ ile çok sıkı) ama
+başarısızlıkları açıklamıyor --- krater \emph{okunamayan} noktaların
+iç dolululuğu en sağlıklı olanlardır, ayırt edicilik
+$\mathrm{AUC}=0{,}203$ ile \emph{ters} yöndedir. Açıklamaya dayanarak
+yazılmış bağlantılılık kipi de sınandı, fark üretmediği ölçüldü ve
+\emph{yayımlanmadan geri alındı}. Yanlış bir mekanizmanın rapora
+girmesini engelleyen şey, onu beş noktada değil hepsinde saymak oldu.
+
+\subsection{Hera için mühürlü krater ön kaydı}
+
+Bu temizlikten sonra krater ön kaydı, protokolün istediği gibi
+\emph{öngörü hesaplanmadan önce} yazılmış bir ek kapsamla mühürlendi:
+66 çapraz doğrulanmış nokta, posterior ağırlığı, 20\,000 örnek, sabit
+tohum. Kaydın taşıdığı şey bir nokta tahmini değil, \emph{ne kadar
+bilmediğimizin} kilitlenmiş hâlidir:
+
+\begin{equation}
+V_{\text{krater}} \in [-46{,}3;\ 504{,}0]\ \text{m}^3, \qquad
+d_{\text{merkez}} \in [-3{,}46;\ 4{,}41]\ \text{m}
+\quad (q_{05}\text{--}q_{95}).
+\label{esit:krateronkayit}
+\end{equation}
+
+Üç şerh kaydın gövdesindedir. \textbf{Birincisi seçilim
+yanlılığıdır} ve büyüktür: kullanılan 66 noktanın $Y_0$ ortancası
+$1918$ Pa, dışlanan 30'un $10{,}58$ Pa, posteriorun kipi ise
+$18{,}7$ Pa --- yani vekil eğitim desteğinin iki dekad dışına
+ekstrapole etmektedir. Sebebi doğrudan yukarıdaki fizik: krater tam
+verinin işaret ettiği zayıf matris bölgesinde örtülüdür.
+\textbf{İkincisi}, $V_{\text{krater}}$ örneklerinin bir kısmı
+negatiftir; hacim negatif olamaz ve örnekler \emph{kırpılmamıştır},
+çünkü kırpmak genişliği sahte biçimde daraltır ve öngörüyü
+``düzeltilmiş'' gösterirdi. \textbf{Üçüncüsü}, bu bir \emph{geçici}
+kraterdir: $t=600$ s'de eksende kaçmamış ejekta $6{,}5$--$48{,}0$ m
+(ortanca $30{,}9$ m) yükseklikte durmaktadır, Hera ise \emph{son}
+krateri ölçecektir.
+
+Üçüncü şerhi kapatacak koşu --- aynı dört parametre, yalnız bitiş
+zamanı $600 \to 5000$ s --- gönderilmiştir ve yargısı yine önceden
+kilitlidir: dört noktanın en az üçünde örtü açılmazsa bu yol krater
+ön kaydı için yetersiz ilan edilecektir. Mühürlü kayıt o sonuca göre
+\emph{değiştirilmeyecek}; gerekirse yeni etiketle ikinci bir mühür
+kurulacaktır. Mühürün anlamı budur.
+
 \subsection{Hera için mühürlü öngörü}
 
 $\omega$ posteriora giremez, çünkü kilitli bir gözlenen değeri yoktur.
@@ -1066,7 +1148,10 @@ Projenin sınırları yapısaldır ve burada eksiksiz sayılmaktadır.
 
 \item \textbf{Krater tanısı geçersizdir.} Mevcut 600 s bitiş
       noktasındaki krater derinliği, oturmuş bir son kratere fiziksel
-      olarak karşılık gelmemektedir.
+      olarak karşılık gelmemektedir. \emph{Bu sınır artık sayılıdır:}
+      eksende kaçmamış ejekta $6{,}5$--$48{,}0$ m (ortanca
+      $30{,}9$ m) yükseklikte durmakta ve havuzun 30 noktasında
+      krateri örtmektedir.
 
 \item \textbf{Yakınsama kanıtı yoktur.} Daha önceki tek bir çözünürlük
       adımı farklı bir sahnede $\beta-1$ üzerinde \%5,34 ölçmüştür; bu
@@ -1101,9 +1186,11 @@ edilemediği (Denklem~\eqref{esit:fisher}) ve $Y_0$'ın mutlak değeri
 çözünürlüğe sistematik olarak bağlı olduğu
 (Denklem~\eqref{esit:yanlilik}) için.
 
-Hera için sayısal öngörü \emph{vardır} ve mühürlüdür
-(Denklem~\eqref{esit:spinongoru}), ama yalnız $\omega$ içindir;
-krater ön kaydı henüz üretilmemiştir. Çözünürlük yanlılığının
+Hera için sayısal öngörü \emph{vardır} ve mühürlüdür: $\omega$
+için (Denklem~\eqref{esit:spinongoru}) ve --- A86 kapandıktan sonra ---
+krater için (Denklem~\eqref{esit:krateronkayit}). Krater kaydı
+\emph{geniş}tir ve bu bilinçlidir; dar çıkması başarı değil hata
+işareti olurdu. Çözünürlük yanlılığının
 düzeltilmiş hâli de yoktur: iç içe tasarım 12 noktanın 7'siyle
 tamamlanabilmiş, çok doğruluklu düzeltmenin kilitli kapısı bu
 yüzden düşmüştür ve manşet, kilitli $\sigma$ tarifinde kalmıştır.

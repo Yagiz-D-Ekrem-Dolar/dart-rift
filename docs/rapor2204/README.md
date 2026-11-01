@@ -1,6 +1,6 @@
 # TÜBİTAK 2204-A proje raporu
 
-> **19 sayfa** (sınır 20) · **11 şekil** · **23 denklem** · **3 tablo**
+> **20 sayfa** (sınır 20) · **11 şekil** · **24 denklem** · **3 tablo**
 > Yapı: `proje_yazma_sablonu_2026-2027.docx` · Dil: Türkçe
 
 `rapor.tex`, 2204-A başvurusu için Türkçe proje raporudur. Ön baskının
@@ -49,7 +49,7 @@ Resmî şablonun biçim kuralı birebir uygulanmıştır:
 | kenar boşluğu | her yandan 2,5 cm | 2,5 cm |
 | satır aralığı | **tek** | tek |
 | hizalama | iki yana yaslı | iki yana yaslı |
-| sayfa sınırı | en fazla 20 | **17** |
+| sayfa sınırı | en fazla 20 | **20** |
 | kapak sayfası | **yasak** | yok |
 | kimlik bilgisi | **yasak** | yok (aşağıya bakınız) |
 
