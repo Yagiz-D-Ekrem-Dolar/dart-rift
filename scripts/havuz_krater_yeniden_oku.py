@@ -68,17 +68,27 @@ def _kuresel_indeks(th: np.ndarray, tasarim: np.ndarray, yol: str) -> int:
     return k
 
 
-def havuzu_oku(kampanya: str, beklenen: int) -> list[dict]:
+#: Uretim havuzunun dizin deseni -- VARSAYILAN, degistirilmez.
+HAVUZ_DESENI = "HAVUZ_g1p0.dilim*_24.durumlar"
+
+
+def havuzu_oku(kampanya: str, beklenen: int,
+               desen_kalibi: str = HAVUZ_DESENI) -> list[dict]:
     tasarim = np.asarray(lhs_design(DART_UZAYI_S4, N_NOKTA, root_seed=TOHUM),
                          dtype=np.float64)
     kullanilan: dict[int, str] = {}
     satirlar: list[dict] = []
-    desen = os.path.join(kampanya, "HAVUZ_g1p0.dilim*_24.durumlar")
+    desen = os.path.join(kampanya, desen_kalibi)
     dizinler = sorted(glob.glob(desen))
     if not dizinler:
         raise SystemExit(f"BOSLUK: {desen} hicbir dizine uymadi")
     for dizin in dizinler:
-        if not re.search(r"dilim(\d+)_24", dizin):
+        # PROTOKOL-HT EK-2 §5 bu betigi adiyla aniyor ama gec dokumlu
+        # kosu `dilim<k>_96` yaziyor, havuz `dilim<k>_24`. Dilim adi
+        # yalniz DENETIM icin okunuyor (kuresel indeks theta'dan gelir),
+        # o yuzden kalip her iki bicimi de kabul eder; okunamazsa yine
+        # HATA verir -- sessiz gecmez.
+        if not re.search(r"dilim(\d+)_\d+", dizin):
             raise ValueError(f"dilim numarasi okunamadi: {dizin}")
         for yol in sorted(glob.glob(os.path.join(dizin, "nokta_*.npz"))):
             d = np.load(yol, allow_pickle=True)
@@ -95,7 +105,7 @@ def havuzu_oku(kampanya: str, beklenen: int) -> list[dict]:
             sebep = sebepler.get("krater", "YAZILMADI")
             satirlar.append({
                 "kuresel": k, "dosya": os.path.basename(yol),
-                "dilim": int(re.search(r"dilim(\d+)_24", dizin).group(1)),
+                "dilim": int(re.search(r"dilim(\d+)_\d+", dizin).group(1)),
                 "theta": [float(q) for q in th],
                 "Y0": float(th[I_Y0]),
                 "krater_sebep": sebep,
@@ -183,9 +193,11 @@ def main() -> None:
     p.add_argument("--beklenen", type=int, default=N_NOKTA)
     p.add_argument("--onceki", default=None,
                    help="onceki cikti JSON'u; geri alma kapisini kosar")
+    p.add_argument("--desen", default=HAVUZ_DESENI,
+                   help="durum dizini kalibi (varsayilan: uretim havuzu)")
     a = p.parse_args()
 
-    satirlar = havuzu_oku(a.kampanya, a.beklenen)
+    satirlar = havuzu_oku(a.kampanya, a.beklenen, a.desen)
     o = ozet(satirlar)
 
     ihlal: list[str] = []
