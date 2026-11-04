@@ -5424,6 +5424,37 @@ hiçbir kapı çalmadı. "Sınavlar geçiyor" ile "üretim yolunda" aynı şey
 üretim çağrısı olduğunu denetleyen bir sınav. Bu yazılana kadar dördüncü
 örnek gelebilir.
 
+> **NOT (2026-11-04) — dördüncü örnek GELDİ, ve çare yazıldı.**
+>
+> Dördüncü örnek **A120**: `failure.py` hiç çağrılmıyor ve şartnamenin
+> DR-RIFT-P0 §6.2 maddesini (*"config dondur"*) üretimde karşılamıyor.
+> Bu sınav yazılmadığı için üç hafta daha fark edilmedi — A116'nın
+> kendi uyarısı birebir gerçekleşti.
+>
+> **Yukarıdaki GENİŞ biçim yazılmadı, ve niçin yazılmadığı ölçüldü:**
+> `__all__` ile dışa açılan `395` adın **187**'si kendi modülü dışında
+> `src/` + `scripts/` altında hiç geçmiyor. Yani o sınav **187 düşen**
+> üretirdi ve çoğu **yanlış pozitif**: `units.py`'nin birim sabitleri,
+> veri sınıfları, istisnalar, `validation/` koşucuları — hepsi meşru
+> kütüphane yüzeyi. `187` düşen sınav okunmaz, dolayısıyla yazılmamalı.
+>
+> **Yazılan DAR biçim — modül düzeyi:** A116'nın üç örneğini ayıran şey
+> ad değil **modül**. `tests/test_baglanmamis_modul.py` (4 sınav): bir
+> modülün hiçbir genel adı **ve** modül adının kendisi `src/` +
+> `scripts/` altında (kendi dosyası hariç) geçmiyorsa o modül
+> bağlanmamıştır. Ölçülen: **3 modül** —
+> `failure` (A120), `validation.adaptive_h_cost`,
+> `validation.deposit_calibration`.
+>
+> Liste bir **borç defteri**, onay değil. Sınav üç yönlü:
+> yeni bağlanmamış modül eklenirse **düşer**; defterdeki modül
+> bağlanırsa *"defterden çıkar"* diye **düşer**; defterde var olmayan
+> bir ad kalırsa **düşer**. Dedektör ile defterin birebir tuttuğu ayrıca
+> doğrulandı (boş iddia sınamıyor).
+>
+> A116 bununla **kapanmıyor**: üç modül hâlâ bağlı değil. Kapanan şey
+> *"dördüncü örnek sessizce gelebilir"* açığıdır.
+
 ---
 ### A115 — **Vekil sadakati dejenere yönde yetersiz: SBC `Y₀` posteriorunu YANLI buluyor (posterior makinesi temiz)** (2026-10-04, teşhis 2026-10-05'te **DÜZELTİLDİ**) — *açık, ÖLÇÜLDÜ, havuzun kendi verisiyle sınanacak*
 
