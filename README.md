@@ -339,8 +339,13 @@ sessizce düzeltilmez.
 **Bilinen sınır:** mevcut iki kayıt girdi dosyalarının **içerik
 özetini** taşımıyor, yalnız yolunu. Yani "mühür değişmemiş"
 doğrulanabilir, "mühür *şu* veriyle üretilmiş" doğrulanamaz. Geçmişe
-dönük hesaplamak mührün anlamını bozardı; bundan sonraki kayıtlar her
-girdinin `sha256`'sını taşımalı.
+dönük hesaplamak mührün anlamını bozardı, o yüzden **iki mevcut kayda
+eklenmedi** — ama üretici betikler (`hera_krater_onkayit.py`,
+`hera_spin_onkayit.py`) artık `girdi_ozetleri` alanını yazıyor, yani
+**bundan sonraki her mühür** girdilerinin `sha256`'sını taşır ve
+doğrulayıcı onu da denetler (değişmişse `GIRDI DEGISMIS` → ölümcül).
+Bu sınır doğrulayıcının **kendi çıktısında** `IZ EKSIK` olarak
+görünür; düzyazıda saklı değil.
 
 Sınav hâli: [`tests/test_muhur_dogrula.py`](tests/test_muhur_dogrula.py)
 — gerçek mühürleri her koşuda doğrular, ve tek baytı değiştirilmiş bir

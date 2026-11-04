@@ -33,7 +33,12 @@ ONKAYIT = REPO / "docs" / "onkayit"
 #: 2026-11-04'te OLCULEN iz eksikligi. Borc kaydi, onay degil:
 #: spin kaydinin `havuz` alani `analiz/...` diyor (TRUBA calisma
 #: alaninin yolu), deponun karsiligi `docs/sonuclar/...`. Muhur SAGLAM.
-IZ_EKSIK_BEKLENEN = {"ONKAYIT_HERA_SPIN_uretim96.json": 1}
+IZ_EKSIK_BEKLENEN = {
+    # yol bayat (TRUBA alani) + `girdi_ozetleri` yok
+    "ONKAYIT_HERA_SPIN_uretim96.json": 2,
+    # yalniz `girdi_ozetleri` yok
+    "ONKAYIT_HERA_KRATER_uretim66.json": 1,
+}
 
 
 def _kayitlar() -> list[Path]:
@@ -107,3 +112,44 @@ def test_sha256_alani_YOKSA_muhur_sayilmaz(tmp_path: Path) -> None:
                      encoding="utf-8")
     ihlal, _ = kaydi_denetle(hedef)
     assert any("muhur degil" in m for m in ihlal), ihlal
+
+
+# ===================================================================
+# `girdi_ozetleri`: bundan sonraki kayitlar girdi dosyalarinin ICERIK
+# ozetini tasiyacak. Gecmisteki iki kayda eklenmez; bu sinavlar yeni
+# uretici yolunun DOGRU hesapladigini civiler.
+# ===================================================================
+
+from hera_krater_onkayit import girdi_ozetleri  # noqa: E402
+
+
+def test_girdi_ozeti_GERCEK_sha256_veriyor(tmp_path: Path) -> None:
+    import hashlib
+    f = tmp_path / "veri.csv"
+    icerik = b"idx,beta\n0,3.14\n"
+    f.write_bytes(icerik)
+    o = girdi_ozetleri(f)
+    assert o[str(f)] == hashlib.sha256(icerik).hexdigest()
+
+
+def test_girdi_ozeti_TEK_BAYT_degisirse_degisiyor(tmp_path: Path) -> None:
+    f = tmp_path / "veri.csv"
+    f.write_bytes(b"idx,beta\n0,3.14\n")
+    a = girdi_ozetleri(f)[str(f)]
+    f.write_bytes(b"idx,beta\n0,3.15\n")
+    b = girdi_ozetleri(f)[str(f)]
+    assert a != b
+
+
+def test_girdi_ozeti_okunamazsa_SESSIZ_gecmiyor(tmp_path: Path) -> None:
+    """Sessiz varsayilan yok: okunamayan dosya `OKUNAMADI:` yazar."""
+    yok = tmp_path / "olmayan.csv"
+    o = girdi_ozetleri(yok)
+    assert o[str(yok)].startswith("OKUNAMADI:"), o
+
+
+def test_girdi_ozeti_None_atlanir(tmp_path: Path) -> None:
+    f = tmp_path / "v.csv"
+    f.write_bytes(b"x")
+    o = girdi_ozetleri(f, None)
+    assert list(o) == [str(f)]

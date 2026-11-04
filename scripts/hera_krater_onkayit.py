@@ -115,6 +115,30 @@ def _kant(x: np.ndarray) -> dict:
             for q in KANTILLER}
 
 
+def girdi_ozetleri(*yollar) -> dict:
+    """Her girdi dosyasinin `sha256`'si — **mühürün parçası**.
+
+    2026-11-04'te `scripts/muhur_dogrula.py` şunu ölçtü: mevcut iki
+    kayıt girdi dosyalarının yalnız **yolunu** taşıyor, içerik özetini
+    taşımıyor. Yani *"mühür değişmemiş"* doğrulanabiliyor ama
+    *"mühür **şu** veriyle üretilmiş"* doğrulanamıyordu. Geçmişteki iki
+    kayda **geriye dönük eklenmez** (mühürün anlamını bozar); bundan
+    sonraki her kayıt taşır.
+
+    Dosya okunamazsa sessizce atlanmaz: `"OKUNAMADI: ..."` yazılır.
+    """
+    out = {}
+    for y in yollar:
+        if y is None:
+            continue
+        p = Path(y)
+        try:
+            out[str(y)] = hashlib.sha256(p.read_bytes()).hexdigest()
+        except OSError as e:
+            out[str(y)] = f"OKUNAMADI: {e}"
+    return out
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("havuz", type=Path, help="idx,beta,ejf,kos")
@@ -207,6 +231,7 @@ def main(argv=None) -> int:
             f"bagdasir hacim %{100 * te.get('V_bagdasir', float('nan')):.2f}."),
         "havuz": str(a.havuz),
         "krater_olcumu": str(a.tarama),
+        "girdi_ozetleri": girdi_ozetleri(a.havuz, a.tarama),
         "t_end_s": 600.0,
         "n_ornek": N_ORNEK,
         "tohum_ongoru": TOHUM_ONGORU,

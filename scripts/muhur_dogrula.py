@@ -144,6 +144,41 @@ def kaydi_denetle(yol: Path) -> tuple[list[str], list[str]]:
         else:
             iz.append(f"`{alan}` dosyasi depoda BULUNAMADI: {d}")
 
+    # --- 3b. girdi dosyalarinin ICERIK ozeti --------------------------
+    # Varsa DOGRULANIR, yoksa IZ bulgusu olarak yazilir. Gecmise donuk
+    # hesaplanmaz: muhrun uretildigi anda gorulen dosyayi gordugumuzu
+    # varsaymak olurdu. Uretici betikler artik bu alani yaziyor.
+    go = kayit.get("girdi_ozetleri")
+    if not isinstance(go, dict) or not go:
+        iz.append("`girdi_ozetleri` YOK -- 'muhur degismemis' "
+                  "dogrulanabilir, 'muhur SU veriyle uretilmis' "
+                  "dogrulanamaz (gecmise donuk eklenmez)")
+    else:
+        for d, beklenen in sorted(go.items()):
+            if not isinstance(beklenen, str) or beklenen.startswith(
+                    "OKUNAMADI"):
+                iz.append(f"girdi ozeti kayitta bozuk: {d} -> {beklenen}")
+                continue
+            bagil = Path(d.replace("\\", "/"))
+            aday = REPO / bagil
+            if not aday.exists():
+                kars = DEPO_KARSILIGI.get(
+                    bagil.parts[0] if bagil.parts else "")
+                aday = (REPO / kars / bagil.name) if kars else aday
+            if not aday.exists():
+                iz.append(f"girdi dosyasi bulunamadi, ozet denetlenemedi: "
+                          f"{d}")
+                continue
+            try:
+                simdi = hashlib.sha256(aday.read_bytes()).hexdigest()
+            except OSError as e:
+                iz.append(f"girdi okunamadi: {d} ({e})")
+                continue
+            if simdi != beklenen:
+                ihlal.append(
+                    f"GIRDI DEGISMIS: {d}\n      kayitta: {beklenen}"
+                    f"\n      simdi  : {simdi}")
+
     # --- 4. kural 8: beklenen == kullanilan + dislanan -----------------
     nk = kayit.get("nokta_kumesi")
     if isinstance(nk, dict):

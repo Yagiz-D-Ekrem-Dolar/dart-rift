@@ -114,6 +114,30 @@ def omega_oku(kampanya: str) -> tuple[np.ndarray, np.ndarray, dict]:
     return idx, np.array([bulunan[i] for i in idx], dtype=np.float64), tani
 
 
+def girdi_ozetleri(*yollar) -> dict:
+    """Her girdi dosyasinin `sha256`'si — **mühürün parçası**.
+
+    2026-11-04'te `scripts/muhur_dogrula.py` şunu ölçtü: mevcut iki
+    kayıt girdi dosyalarının yalnız **yolunu** taşıyor, içerik özetini
+    taşımıyor. Yani *"mühür değişmemiş"* doğrulanabiliyor ama
+    *"mühür **şu** veriyle üretilmiş"* doğrulanamıyordu. Geçmişteki iki
+    kayda **geriye dönük eklenmez** (mühürün anlamını bozar); bundan
+    sonraki her kayıt taşır.
+
+    Dosya okunamazsa sessizce atlanmaz: `"OKUNAMADI: ..."` yazılır.
+    """
+    out = {}
+    for y in yollar:
+        if y is None:
+            continue
+        p = Path(y)
+        try:
+            out[str(y)] = hashlib.sha256(p.read_bytes()).hexdigest()
+        except OSError as e:
+            out[str(y)] = f"OKUNAMADI: {e}"
+    return out
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("havuz", type=Path)
@@ -182,6 +206,7 @@ def main(argv=None) -> int:
         "uretildi_utc": datetime.now(timezone.utc).isoformat(),
         "git_commit": _commit(),
         "havuz": str(a.havuz),
+        "girdi_ozetleri": girdi_ozetleri(a.havuz),
         "n_ornek": N_ORNEK,
         "tohum_ongoru": TOHUM_ONGORU,
         "kantiller": list(KANTILLER),
