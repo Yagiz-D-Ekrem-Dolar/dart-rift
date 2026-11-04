@@ -310,6 +310,42 @@ Kapı koşucuları CUDA ister ve CUDA bulunmayan bir makinede **"geçti"
 demez**: ilgili ölçüt kanıtlanamadığı için `KANITLANAMADI` yazıp exit 2
 döner.
 
+### Mühürleri doğrulama — GPU, veri, kurulum gerekmez
+
+Bu projenin en güçlü iddiası iki **mühürlü** Hera ön kaydıdır
+([`docs/onkayit/`](docs/onkayit/)): Hera varmadan önce yazılmış,
+SHA-256 ile çivilenmiş öngörüler. O iddianın değeri **başkasının
+doğrulayabilmesine** bağlı. Tek komut:
+
+```bash
+python scripts/muhur_dogrula.py
+```
+
+Her kaydın özeti, üretici betiklerin tarifiyle **birebir** yeniden
+hesaplanır ve kayıttakiyle karşılaştırılır. İki ayrı ağırlık
+karıştırılmaz:
+
+| sonuç | anlamı | çıkış |
+|---|---|---|
+| `MUHUR BOZUK` | özet tutmuyor → kayıt **değiştirilmiş** | `1` |
+| `IZ EKSIK` | özet sağlam, gönderme yapılan dosya/commit depodan bulunamıyor | `0` (`--kati` ile `1`) |
+| `SAGLAM` | özet ve izler tam | `0` |
+
+Bugünkü hâli: **iki mühür de sağlam**; `uretim96`'nın `havuz` alanı
+TRUBA çalışma alanının yolunu taşıyor (`analiz/…`) ve deponun
+karşılığı ayrı adta — bu bir **iz** kusuru, mühürü geçersiz kılmaz ve
+sessizce düzeltilmez.
+
+**Bilinen sınır:** mevcut iki kayıt girdi dosyalarının **içerik
+özetini** taşımıyor, yalnız yolunu. Yani "mühür değişmemiş"
+doğrulanabilir, "mühür *şu* veriyle üretilmiş" doğrulanamaz. Geçmişe
+dönük hesaplamak mührün anlamını bozardı; bundan sonraki kayıtlar her
+girdinin `sha256`'sını taşımalı.
+
+Sınav hâli: [`tests/test_muhur_dogrula.py`](tests/test_muhur_dogrula.py)
+— gerçek mühürleri her koşuda doğrular, ve tek baytı değiştirilmiş bir
+kaydın **yakalandığını** ayrıca sınar (boş iddia sınamaz).
+
 ```bash
 python scripts/run_g1_gate.py
 ```
