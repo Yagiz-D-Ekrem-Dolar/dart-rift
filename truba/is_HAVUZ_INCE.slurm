@@ -19,7 +19,11 @@
 #SBATCH -e /arf/scratch/egitimg16u1/driftclaude/ciktilar/HAVUZ_INCE_%A_%a.err
 
 set -uo pipefail
-KOK=/arf/scratch/egitimg16u1/driftclaude
+# KOK artik cevreden EZILEBILIR: canli calisma alani `egitimg16u3`
+# ve `u1` okunamiyor (Permission denied, olculdu 2026-11-04). Eski
+# varsayilan DEGISMEDI, yani mevcut plan JSON'lari aynen calisir;
+# yeni betiklerin (`is_GEC_DOKUM`) kullandigi bicime getirildi.
+KOK=${KOK:-/arf/scratch/egitimg16u1/driftclaude}
 mkdir -p "$KOK/ciktilar" "$KOK/kampanya"
 module load apps/truba-ai/gpu-2024.0
 
