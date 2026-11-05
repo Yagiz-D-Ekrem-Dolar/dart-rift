@@ -234,6 +234,7 @@ Tablo güncellenmedi; değişenler burada, kaynaklarıyla.
 | SBC kapısı | **KALİBRE** (`200` tekrar) → posterior yayımlanabilir | [KAYIT-081](docs/defter/KAYIT-081_2026-10-16_SBC-kapisi-gecti.md) |
 | **S11**'in kaderi | kötüleşti: çözünürlük farkı **saçılma değil YANLILIK** (7/7, `p = 0,0156`), `Y₀`'da **×3,22** | [KAYIT-085](docs/defter/KAYIT-085_2026-10-22_cozunurluk-farki-YANLILIK-cikti.md) |
 | Krater gözlemlisi (**S4**'ün devamı) | `t = 600 s`'te zayıf matris rejiminde **gözlenemez**: kaçmamış ejekta krateri örtüyor | [KAYIT-089](docs/defter/KAYIT-089_2026-10-27_ADR-0061-tek-basina-30-nani-30-yanlis-sayiya-cevirecekti.md), [ADR-0062](docs/adr/ADR-0062-ortulu-krater-olculemez-sayi-yerine-red.md) |
+| **S6**'nın sayısı | `μ = 0,463` **mekanizma kolundan**; üretim havuzunda ölçülen **`0,4347`** (`95/96` nokta, ortanca) — H&H içinde, L1'in `0,36–0,39`'unun hâlâ üstünde | [KAYIT-098](docs/defter/KAYIT-098_2026-11-05_uretim-havuzunda-mu-olculdu.md) |
 | Geri çekilen bulgu | `kos` hatası: dört bulgu **geri çekildi**, düzeltilmiş hâlleri yayımlandı | [KAYIT-082](docs/defter/KAYIT-082_2026-10-16_kos-hatasi-ve-duzeltilmis-sonuclar.md) |
 
 **S9/S10/S12 hâlâ düşük.** `S11` yukarıdaki ölçümle daha da sağlamlaştı

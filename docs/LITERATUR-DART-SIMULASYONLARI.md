@@ -342,6 +342,32 @@ doğrulayabiliyor. Literatürde karşılığı yok. Sayılar doğru çıkmasa bi
   kendi ölçümünü `μ = 0,36 – 0,39` veriyor — **bizim değer L1'in
   üstünde**, ve bu fark açıklanmadı.
 
+  > **NOT (2026-11-05) — yukarıdaki karşılaştırma YANILTICIYDI,
+  > ölçüldü.** `0,463` **mekanizma çalışmasından** geliyor
+  > (`SONUC-E-F`), üretim havuzundan değil; L1'inki ise kendi üretim
+  > koşusundan. İkisini yan yana koymak elma-elma değildi.
+  >
+  > Üretim havuzunda ölçüldü (iş `6917201`, **0 GPU**,
+  > `scripts/tani_mu_havuz.py`, kapıları koşudan önce):
+  > **`95/96` noktada uydurulabiliyor**, bant başına ortanca
+  > **`2 581`** farklı kütle değeri. Yani `SONUC-E-F`'in *"üretim
+  > kolunda dağılım yok — `12` eşikte `3` değer, basamak
+  > fonksiyonu"* uyarısı **bugünkü üretime uymuyor** (o kol
+  > `--matris-cekme-yok` öncesiydi).
+  >
+  > | | `μ` |
+  > |---|---|
+  > | **üretim havuzu (ortanca)** | **`0,4347`** (`0,290 – 0,457`) |
+  > | S6 / mekanizma kolu | `0,463 ± 0,016` |
+  > | L1 (Raducan & Jutzi 2022) | `0,36 – 0,39` |
+  > | Housen–Holsapple | `0,40 – 0,55` |
+  >
+  > **Doğru ifade:** üretim `μ`'sü `0,435`, H&H aralığının **içinde**;
+  > S6'nın andığı `0,463`'ten **düşük** (yani o sayı üretimi biraz
+  > yukarı gösteriyor); L1'in `0,36 – 0,39`'unun ise hâlâ
+  > **üstünde** — fark `0,463`'e göre daralıyor ama **kapanmıyor** ve
+  > sebebi hâlâ açıklanmamıştır.
+
 ### 11.5 Literatürle görünür çelişki — ve dürüst çözümü
 
 **Çelişki.** L8 (tam metin) blok **kütle kesrinin** `β`'yı homojen
