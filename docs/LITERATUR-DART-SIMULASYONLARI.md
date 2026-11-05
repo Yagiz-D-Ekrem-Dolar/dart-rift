@@ -401,6 +401,15 @@ görünüyor.
 > `Y₀ ≫ α_b ≫ f` sıralamasının **`f` ucu bu yüzden zayıftır** ve
 > sunumda öyle söylenmelidir. Açık kusur: **A109** (hangi blok modeli
 > üretim — kilitli değil) ve §8 madde 9 (tohum sayısı artırılmalı).
+>
+> **NOT (2026-11-05) — ikinci bağımsız kanıt geldi.** Ejekta üsteli
+> `μ` ölçüldü (KAYIT-098 §4.1): `r(f, μ) = −0,035`, yani `μ` de `f`'i
+> **görmüyor** — oysa L1 açıkça *"`f` arttıkça `μ` küçülür"* diyor.
+> `β` ile `μ` bambaşka nicelikler (momentum toplamı vs dağılımın
+> eğimi) ve **ikisi de aynı körlüğü paylaşıyor**. Bu, körlüğün
+> çıkarım makinesinde değil **ileri modelde** olduğunu söyler; A109 ve
+> A89'u doğrudan işaret eder. Hipotezdir: `μ` farkının başka sebepleri
+> (bitiş zamanı, hedef/mermi farkı, ejekta tanımı) ayrılmadı.
 
 ### 11.6 Literatürün reçetesine bir düzeltme
 

@@ -58,6 +58,56 @@ yargısı **ayakta**. Ama L1'in aralığının hâlâ **üstünde**: fark
 `μ` havuz boyunca `0,290 – 0,457` arasında geziyor — yani `θ`'ya
 bağlı, ki H&H'de de `μ` malzemeye bağlıdır.
 
+## 4.1 Fark niçin kapanmıyor — ve beklenmedik bir bağlantı
+
+`μ`'yü `θ`'ya karşı çözdüm (`95` nokta):
+
+| | |
+|---|---:|
+| `r(log₁₀ Y₀, μ)` | **`−0,895`** |
+| `r(f, μ)` | **`−0,035`** |
+| `r(α_b, μ)` | `+0,006` |
+
+Uydurma: **`μ = 0,4914 − 0,0314·log₁₀(Y₀) − 0,0221·f`**, `R² = 0,805`.
+
+Yani bizim `μ`'müzü **`Y₀` yönetiyor**; `α_b` ve `f` neredeyse hiç
+etkilemiyor.
+
+### Eşleşmiş parametrede fark BÜYÜYOR
+
+L1'in kendi koşuları `Y₀ = 50 / 10 / 1 / 0` Pa'da, yani **zayıf uçta**.
+Bizim o rejimdeki değerimiz:
+
+| kesit | n | `μ` ortanca |
+|---|---:|---:|
+| `Y₀ ≤ 50` Pa | 32 | **`0,4521`** |
+| `Y₀ ≤ 50` Pa **ve** `f ≥ 0,40` (L1'in `f` bandıyla örtüşen) | 7 | **`0,4368`** |
+| L1'in ölçtüğü | — | `0,36 – 0,39` |
+
+Fark `%12 – 25` ve **kapanmıyor**. Bizim `μ`'müz L1'in bandına ancak
+`Y₀ = 2 116 – 14 248` Pa'da düşüyor — L1'in `Y₀`'ının **`40 – 300`
+katı**.
+
+### Ve asıl bulgu: `f` körlüğü `β`'ya özgü DEĞİL
+
+L1 açıkça *"`μ = 0,36 – 0,39` (**`f` arttıkça küçülür**)"* diyor. Bizde
+`r(f, μ) = −0,035`, yani **hiç**. Bu önemli, çünkü:
+
+> `β`'nın `f`'i görmemesi (KAYIT-097: payı `q90`'da `0,045`) bir
+> **çıkarım** sorunu sanılabilirdi. Ama `μ` bambaşka bir nicelik —
+> momentum değil, kütle–hız dağılımının **eğimi** — ve o da `f`'i
+> görmüyor. **İki bağımsız gözlenebilir aynı körlüğü paylaşıyor.**
+>
+> Bu, körlüğün çıkarım makinesinde değil **ileri modelde** olduğunu
+> söyler: blok modeli ya da çözünürlüğü. Doğrudan **A109**'u (hangi
+> blok modeli üretim — kilitli değil) ve A89'u (blok çözünürlüğü)
+> işaret ediyor.
+
+**Hipotez, sonuç değil.** `μ` farkının başka sebepleri de olabilir ve
+sınanmadı: bitiş zamanı (`600 s` ile L1'in `30 dk – 2 sa`'i), hedef ve
+mermi farkı, ejekta tanımı (bizde radyal `v_r > 0`). Bunlar ayrılmadan
+*"blok modeli yüzünden"* denemez.
+
 ## 5. Kilitli yargılara etkisi — YOK
 
 S6'nın kilitli tablosuna **dokunulmadı** (kural 5: düzeltme NOT olarak
