@@ -193,6 +193,46 @@ sayı değil.
 yazılı, açıp gösterebilirim" demek **tam puan**lık cevaptır. Sayı
 uydurmak sıfırdır.
 
+### 4.1 En güçlü cümle — ve bir ucunun zayıf olduğu (2026-11-05)
+
+Bu, projenin **genellenebilir** sonucudur ve §1'den sonra en çok işine
+yarayacak cümledir:
+
+> DART'ın ölçümü asteroidin iç yapısındaki üç bilinmeyenden
+> **matris dayanımını** ölçüyor: öğrenilen yönün `Y₀` payı ortanca
+> **`0,999`**, baskın eksen `90/96` noktada `Y₀`. İkinci yön tasarımın
+> **hiçbir** noktasında öğrenilebilir eşiğe ulaşmıyor (`λ₂` maks
+> `33,09`, eşik `36`); iki yön arasındaki bilgi farkı ortancada
+> **`~300` kat**. Ve bunu **daha hassas ölçerek düzeltemezsin**:
+> `σ`'yı `1000` kat küçültmek `λ₂`'yi yalnız `2,35 → 4,17` taşıdı,
+> çünkü `σ` bir ölçümün **ağırlığını** değiştirir, **yönünü** değil.
+> İkinci bir bilinmeyen için **gradyanı gerçekten farklı** bir ölçüm
+> gerekir.
+
+Kaynak: [KAYIT-097](../defter/KAYIT-097_2026-11-05_esdogrusallik-96-noktada-olculdu.md).
+Bu Dimorphos hakkında değil **gelecek görevler için tasarım
+ifadesi**dir — genellenebilir olan kısım tam bu.
+
+**İki şeyi de söylemek zorundasın, yoksa yakalanırsın:**
+
+1. **`n_yön = 1`'in *rankı* buluş değil, aritmetiktir.** Tek skaler
+   ölçüm en çok bir birleşim verir; bunu `tanimlanabilirlik.py`'nin
+   kendi belgesi yazıyor. Buluş olan şey **hangi** yön, **ne kadar**,
+   ve hassasiyetin kurtarmadığı.
+2. **Sıralamanın `f` ucu ZAYIF.** `Y₀ ≫ α_b ≫ f` diyoruz ama `f` (blok
+   kesri) için doğru cümle *"önemsiz"* değil,
+   **"bu tasarımda ölçülemiyor"**. Sebebi: üretim sahnesinde cisimde
+   yalnız `~7` büyük blok var ve her `θ` noktasında **tek tohum**, yani
+   `f`'i değiştirmek yerleşimi de değiştiriyor. Literatür (L8, tam
+   metin okundu) blok kütle kesrinin `β`'yı `%60`'a kadar
+   **değiştirdiğini** ölçüyor ve ona inanmak için sebep var.
+   Ayrıntı: `docs/LITERATUR-DART-SIMULASYONLARI.md` §11.5; açık kusur
+   **A109**.
+
+> Jüri *"blok kesri önemsiz mi"* diye sorarsa cevabın **"hayır,
+> ölçemedik"** olmalı. Bu ikisi aynı şey değil ve farkı bilmek
+> güçlendirir.
+
 ## 5. Yöntem savunması — niçin bu biçimde kurdum
 
 Jüri "neden bu kadar bürokrasi" diye sorarsa, cevap tek bir cümlede
@@ -342,6 +382,7 @@ Son sözü **mühür** ya da **krater hikâyesi** üzerine bırak; ikisi de
 
 - [ ] §1 doksan saniye, kâğıda bakmadan
 - [ ] §4'ün on sayısı
+- [ ] **§4.1'in cümlesi** — ve `f` ucunun niçin zayıf olduğu
 - [ ] §3.6 krater hikâyesi, kendi cümlelerinle
 - [ ] §6'nın üç zor sorusu (yakınsama, "kodu sen mi yazdın", geniş öngörü)
 - [ ] Modelin bir hatasını **anlatabilmek** (§6)
