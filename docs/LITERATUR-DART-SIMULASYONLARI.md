@@ -249,3 +249,159 @@ varsayılan kapalı) + **çok doğruluklu vekil** (kaba çok + orta az; bütçe
 sorununun yöntemsel çözümü). Öncelik 11 (tarih eşleme) kütüphane olarak var,
 henüz hiçbir kilitli protokolde kullanılmadı.
 
+---
+
+## 11. Karşılaştırma tablosu — DART-RIFT literatürün neresinde? (2026-11-05)
+
+> **Niçin bu bölüm.** Resmî değerlendirme formunun 11. göstergesi
+> *"geliştirilen çıktının güncel/standart prosedürlere göre
+> **karşılaştırılması**"* diyor ve projede bu karşılaştırma yoktu.
+> §1–§10 literatürü **okudu**; bu bölüm bizi onun **yanına koyar**.
+
+### 11.1 Nasıl okunur — teyit durumu
+
+§1 ve §7'nin `teyit` sütunu geçerlidir: **tam metin** okunan kaynaklara
+dayanan karşılaştırmalar güçlü, **arama özeti** olanlar **zayıftır** ve
+aşağıda `(¿)` ile işaretlidir. Projenin kuralı: kaynak doğrulanmadan
+sonuç gibi kullanılmaz (§12.3'ün dersi — bir kez hatırlanan bir bulgu
+teyit edilmeden kullanılmaya kalkışıldı).
+
+### 11.2 Boyut boyut karşılaştırma
+
+| boyut | literatür | DART-RIFT | durum |
+|---|---|---|---|
+| Kod | Bern SPH (L1,L2,L3,L8), iSALE (L5,L11), Spheral/CTH (L9), SPH–DEM (L14) | kendi GPU SPH'imiz (NVIDIA Warp, FP64) | **bağımsız dördüncü uygulama** |
+| Parçacık | `5e5 – 2,5e6` (L1, L8) | kaba `1,7e4`, orta `6,9e4`, ince `4,9e5` | **bizde düşük** |
+| Süre | `30 dk – 2 sa` (L1, L8) | `600 s`, geç dökümde `5000 s` | **bizde kısa** |
+| Fizik | Tillotson + P–α + basınç bağımlı dayanım + öz-yerçekimi | aynı aile (Tillotson, P–α, Grady–Kipp, Lundborg, Barnes–Hut) | **eşdeğer** |
+| Gözlenebilir | `β` + ejekta konisi + ejekta kütlesi (L2, L10) | `β` + `M_ejekta` (krater düştü, §11.5) | **bizde az** |
+| Çıkarım | ileri tarama / ML duyarlılık (L15) | **kalibre Bayesçi posterior** + tarih eşleme + SBC | **bizde fazla** |
+| Ön kayıt | yok | **iki mühürlü, SHA-256, açık doğrulayıcı** | **bizde var** |
+| `β` kıyası | L1 Tablo 2 | `0,87 / 0,84 / 0,82` oranla yeniden üretildi | **tuttu** |
+
+### 11.3 Ne ekliyor — her biri kaynağıyla
+
+**(a) Bağımsız kod kıyası.** `Y₀ = 50/10/1` Pa'da bizim `β` =
+`3,295 / 3,667 / 3,992`; L1 Tablo 2 = `3,63 / 4,18 / 4,66`. Oran
+`0,87 / 0,84 / 0,82`, eğilim doğru, sağlamlık `≤ 0,20`, enerji sapması
+`−%0,91` (KAYIT-067, `W2 = KIYAS TUTTU`). Bu alan kod-kod
+karşılaştırması için ayrı makaleler yayımlıyor (L6: üç kod; L7 aynı sınıftan ama **okunamadı**); dördüncü
+bağımsız uygulamanın `%13–18` içinde tutması bir veri noktasıdır.
+
+**(b) Dejenereliğin niceliklenmesi.** L11 `(¿)` ve L15 dejenereliği
+**niteliksel** söylüyor: *"β tek başına iç yapıyı ayırt etmiyor"*,
+*"aynı hız değişimini birçok birleşim üretiyor"*. Biz **ölçtük**
+(KAYIT-079, KAYIT-097; 96 nokta):
+
+- Öğrenilen yön `Y₀` ekseninde: **payı ortanca `0,999`**, baskın
+  eksen `90/96` noktada `Y₀`.
+- İkinci yön tasarımın **hiçbir** noktasında eşiğe ulaşmıyor
+  (`λ₂` maks `33,09`, eşik `36`); birinci yöne göre bilgi farkı
+  ortancada **`~300` kat**.
+- **Hassasiyet kurtarmıyor:** `σ`'yı `1000` kat küçültmek `λ₂`'yi
+  `2,35 → 4,17` taşıdı. `σ` bir satırın **ağırlığını** değiştirir,
+  **yönünü** değil.
+
+Yani niteliksel bilinen şeyin sayısı ve **sebebi**.
+
+**(c) Çözünürlük hatası saçılma değil yanlılık.** `7/7` nokta aynı yönde,
+`Y₀`'da `×3,22`, `p = 0,0156` (KAYIT-085). Çıkarım yapan biri için
+sonucu şudur: çözünürlük hatasını `σ`'ya **varyans** olarak katmak
+yanlıştır. Literatürde çözünürlük sınaması var (L1: `1e6`, `2e6`), ama
+*çıkarıma taşınan bir yanlılık terimi* olarak ölçülmüş hâline
+rastlanmadı.
+
+**(d) `β` parçacık sayısına değil `h`'ye bağlı.** Aynı parçacık sayısıyla
+`h/s = 2 → 1,5`, `4,5` kat parçacık koymanın verdiğiyle aynı etki
+(A104). Çözünürlük bütçesi `N` ile değil `h` ile konuşulmalı.
+
+**(e) Sahte çekme dayanımı.** `Y₀` Tillotson'un çekme dalını
+sınırlamadığı için matris `−15,19 MPa` çekme taşıyor — `Y₀`'ın **sekiz
+mertebesi** boyunca sabit — ve kazı akışını **tamamen** bastırıyor
+(A51). L1 bunu gerinimle kohezyon kaybıyla çözüyor; bizdeki ölçüm
+tuzağın **büyüklüğünü** veriyor.
+
+**(f) Mühürlü, yanlışlanabilir Hera öngörüsü.** İki kayıt, SHA-256 ile
+çivili, `python scripts/muhur_dogrula.py` ile üçüncü şahıs
+doğrulayabiliyor. Literatürde karşılığı yok. Sayılar doğru çıkmasa bile
+**biçim** bir katkıdır.
+
+### 11.4 Ne EKLEMİYOR — açıkça
+
+- **Dimorphos'un iç yapısı.** L2 bunu 2024'te yaptı: `Y₀ < birkaç Pa`,
+  `ρ ≈ 2200`, blok `≲ %40`. L10 `(¿)` yüzey dayanımını
+  `birkaç Pa – onlarca kPa` veriyor. *"İlk kez biz bulduk"* denemez
+  (§6 bunu zaten yazmıştı).
+- **Yeni fizik yok.** Malzeme modelleri literatürün.
+- **Daha iyi kod yok.** iSALE ve Bern SPH daha olgun, daha yüksek
+  çözünürlükte, daha uzun süre koşuyor.
+- **Yakınsamış niceliksel çıkarım yok.** Posterior bir **yöntem
+  gösterimi**dir; `Y₀`'ın mutlak değeri çözünürlükle kayıyor.
+- **Ejekta ölçekleme üsteli bir doğrulama, katkı değil:**
+  `μ = 0,463 ± 0,016`, Housen–Holsapple `0,40 – 0,55` içinde. Ama L1
+  kendi ölçümünü `μ = 0,36 – 0,39` veriyor — **bizim değer L1'in
+  üstünde**, ve bu fark açıklanmadı.
+
+### 11.5 Literatürle görünür çelişki — ve dürüst çözümü
+
+**Çelişki.** L8 (tam metin) blok **kütle kesrinin** `β`'yı homojen
+duruma göre `%60`'a kadar düşürdüğünü ölçüyor. Bizim ölçümümüz ise blok
+hacim kesri `f`'in öğrenilen yöndeki payını `q90`'da bile `0,045`
+veriyor — yani `β` `f`'i **görmüyor**. İkisi birlikte doğru olamaz
+görünüyor.
+
+**Çözüm — ve bu bizim aleyhimize.** Üç olgu birlikte okunduğunda
+çelişki kalkıyor, ama bizim iddiamızı **sınırlıyor**:
+
+1. Üretim havuzu **büyük blok** yapılandırmasıyla koştu
+   (`--blok-rmin 14.0 --blok-rmax 56.0`). A89'un *"blok kütlesinin
+   `%99,3`'ü ortanca `1` parçacık"* ölçümü **küçük blok**
+   yapılandırmasına aittir (`r 1,7–6,5 m`); büyük blokta aynı kaba
+   merdivende bloklar **çözülüyor** (KAYIT-070 eki).
+2. Ama büyük blokta cisimde yalnız **`~7` blok** var. `f`'i
+   `0,054 → 0,497` değiştirmek `7` cismin **yerleşimini** de
+   değiştiriyor, ve her `θ` noktasında **tek sahne tohumu** var.
+3. L8 `2,5e6` parçacık ve blok başına `≥ 30` parçacıkla çalışıyor;
+   L12 `(¿)` yakın blokların etkisinin `≤ %8`, L13 `(¿)` yüzey altı
+   bloğun `%50`'ye kadar olduğunu söylüyor — yani etki **yerleşime**
+   çok duyarlı.
+
+> **Dolayısıyla doğru ifade şu:** `f`'in `β`'ya duyarlılığı bu
+> tasarımda ölçülemiyor; *"blok kesri önemsiz"* **denemez**. Ölçülen
+> şey, bu çözünürlük ve tek tohumla `f`'in etkisinin **yerleşim
+> gürültüsünden ayrılamadığı**dır. L8 etkinin gerçek olduğunu söylüyor
+> ve ona inanmak için sebep var.
+>
+> `Y₀ ≫ α_b ≫ f` sıralamasının **`f` ucu bu yüzden zayıftır** ve
+> sunumda öyle söylenmelidir. Açık kusur: **A109** (hangi blok modeli
+> üretim — kilitli değil) ve §8 madde 9 (tohum sayısı artırılmalı).
+
+### 11.6 Literatürün reçetesine bir düzeltme
+
+L15 dejenereliği kırmak için **"kütle ya da krater boyutu"** öneriyor.
+Biz ikisini de denedik ve biri **çalışmıyor**:
+
+- `M_ejekta` kullanıldı — ama gradyanı `β`'nın gradyanına çok yakın
+  (ortanca `7,95°`), yani ikinci bir yön açmıyor (§11.3b).
+- **Krater yapısal olarak ölçülemez** çıktı: zayıf matris rejiminde
+  kaçmamış ejekta krateri örtüyor; `t = 600 s`'te havuzun `30`
+  noktasında red, geç dökümle `5000 s`'e koşulduğunda örtü temizleniyor
+  ama o zaman eksen kolonunda `0–1` parçacık kalıyor ve yüzey
+  kurulamıyor — **engel ile ölçülen şey aynı malzeme** (KAYIT-096,
+  kilitli yargı `1/4`).
+
+> Yani L15'in iki reçetesinden **krater**, bu hedef sınıfı ve bu
+> çözünürlükte güvenilir bir ikinci gözlenebilir **değildir**. Kalan
+> yol L2/L10'un kullandığı **ejekta konisi açısı** gibi, gradyanı
+> gerçekten farklı bir nicelik olmalıdır — ölçülmedi, önerilir.
+
+### 11.7 Tek paragrafta
+
+Bu proje Dimorphos hakkında yeni bir şey bulmadı; onu L2 daha iyi
+koşullarda yaptı. Eklediği şey **ölçümün sınırının niceliklenmesi**
+(öğrenilen yön `Y₀`, payı `0,999`; ikinci yön hiçbir yerde eşiğe
+ulaşmıyor; hassasiyet kurtarmıyor), **bağımsız bir kodun kıyası tutması**
+(`%13–18`), **çıkarıma taşınan bir çözünürlük yanlılığının ölçülmesi**
+(`×3,22`), ve **mühürlü yanlışlanabilir bir Hera öngörüsü**. Blok kesri
+ucu literatürle çeliştiği için zayıf bırakılmıştır ve sebebi §11.5'te
+yazılıdır.
