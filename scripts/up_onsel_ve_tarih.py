@@ -106,7 +106,12 @@ def _ortak(havuz: Path, n_grid: int) -> dict:
         var_m + s_goz_m**2 + sm_m["sigma"]**2,
     ])
     veri = np.array([b_goz, math.log(up.M_EJEKTA_GOZ)])
+    # `gp` EKLENDI (2026-11-05): tanimlanabilirligi tasarimin HER
+    # noktasinda olcmek icin ileri modelin kendisi gerekiyor, izgara
+    # ongorusu yetmiyor. Sozluge anahtar eklemek mevcut cagrilari
+    # bozmaz; vekil/R/sigma yolu DEGISMEDI.
     return {"rapor": rapor, "ort": ort, "varyans": varyans, "veri": veri,
+            "gp": {"beta": gp_b, "M_ejekta": gp_m},
             "R": R, "eksen": eksen, "n_grid": n_grid,
             "sigma": {"beta": sm_b, "M_ejekta": sm_m,
                       "gozlem_beta": s_goz_b, "gozlem_M": s_goz_m}}
