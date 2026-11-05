@@ -26,7 +26,11 @@ sys.path.insert(0, str(REPO / "scripts"))
 
 
 def sahne(kademeler: str, spacing: float = 7.0, tohum: int = 20260906):
-    from faz5_ensemble_merdiven import MERDIVEN, MERDIVEN_KABA
+    from faz5_ensemble_merdiven import (
+        MERDIVEN,
+        MERDIVEN_INCE,
+        MERDIVEN_KABA,
+    )
     from faz48_iki_asama import SAHNE
 
     from dartrift.inference.design import DART_UZAYI_S3, lhs_design
@@ -38,8 +42,13 @@ def sahne(kademeler: str, spacing: float = 7.0, tohum: int = 20260906):
     kaba = build_scene(spacing=spacing, device="cpu",
                        **sahne_parametreleri(th, {**SAHNE, "root_seed": tohum}))
     mesh = _build_mesh("icosphere", radius=float(kaba.target_radius), subdiv=4)
-    kad = kademe_ayristir(MERDIVEN_KABA if kademeler == "kaba" else MERDIVEN,
-                          spacing)
+    # `ince` EKLENDI (2026-11-05): ucuncu cozunurluk seviyesi.
+    # `MERDIVEN_INCE`in kendi notu "A52 (BVH) olmadan pratik degil"
+    # diyor; BVH artik uretim varsayilani, dolayisiyla maliyeti
+    # TAHMIN etmek yerine OLCULEBILIR hale geldi.
+    kad = kademe_ayristir(
+        {"kaba": MERDIVEN_KABA, "orta": MERDIVEN,
+         "ince": MERDIVEN_INCE}[kademeler], spacing)
     return refine_scene_kademeli(kaba, mesh, kad), th
 
 
@@ -76,14 +85,23 @@ def kos(rs, komsu: str, device: str, n_isinma: int, n_adim: int) -> dict:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--kademeler", choices=("kaba", "orta"), default="kaba")
+    ap.add_argument("--kademeler", choices=("kaba", "orta", "ince"),
+                    default="kaba")
+    ap.add_argument("--spacing", type=float, default=7.0,
+                    help="taban aralik; VARSAYILAN 7,0 (A52 K isiyle "
+                         "kiyaslanabilir). Uretim: kaba 7,0 / orta 3,5 "
+                         "/ ince 1,75")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--isinma", type=int, default=5)
     ap.add_argument("--adim", type=int, default=50)
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args(argv)
 
-    rs, th = sahne(a.kademeler)
+    # VARSAYILAN DEGISMEDI: A52'nin K isi her iki merdiveni de
+    # `spacing 7,0`da olctu (saf MERDIVEN karsilastirmasi). Oradaki
+    # sayilarla kiyaslanabilirlik icin varsayilan oyle kaliyor;
+    # uretim benzeri olcum `--spacing` ile ISTENIR.
+    rs, th = sahne(a.kademeler, spacing=a.spacing)
     print(f"sahne: {a.kademeler}  N = {rs.n}  h_min {rs.h.min():.3f}  "
           f"h_max {rs.h.max():.3f}  theta {np.round(th, 4)}", flush=True)
     s = {}
