@@ -70,6 +70,8 @@ from dartrift.inference.tanimlanabilirlik import (  # noqa: E402
 )
 
 N_HAVUZ, TOHUM = 96, 20260906
+#: `DART_UZAYI_S4.names` sirasi -- elle yazilmaz, oradan okunur.
+EKSEN_ADLARI = tuple(DART_UZAYI_S4.names)
 #: Kapi esikleri -- KOSUDAN ONCE konuldu (docstring).
 ORTANCA_ACI_ESIGI = 30.0
 N_YON1_ORAN_ESIGI = 0.50
@@ -112,7 +114,15 @@ def main() -> int:
         u = np.clip(U[k], 0.02, 0.98)
         J = yerel_jakobyen(ileri, u)
         f = fisher_yonleri(J, kov)
-        oz = np.sort(np.asarray(f["ozdegerler"], dtype=float))[::-1]
+        lam = np.asarray(f["ozdegerler"], dtype=float)
+        V = np.asarray(f["yonler"], dtype=float)      # satir basina bir yon
+        sira = np.argsort(lam)[::-1]
+        oz, V = lam[sira], V[sira]
+        # ISARET SABITLENIR: oz vektorunun isareti serbesttir, sabitlemeden
+        # 96 noktayi ortalamak anlamsiz olur. En buyuk bilesen POZITIF.
+        v1 = V[0] / max(np.linalg.norm(V[0]), 1e-300)
+        if v1[int(np.argmax(np.abs(v1)))] < 0:
+            v1 = -v1
         satir.append({
             "kuresel": k,
             "aci_beta_M_derece": _aci_derece(J[0], J[1]),
@@ -121,6 +131,9 @@ def main() -> int:
             "n_yon": int(f["ogrenilen_yon_sayisi"]),
             "oz1": float(oz[0]) if oz.size > 0 else float("nan"),
             "oz2": float(oz[1]) if oz.size > 1 else float("nan"),
+            # BIRIM KUP koordinatlarinda; yani "onsel aralik basina
+            # duyarlilik" -- "ne ogreniyoruz" sorusunun dogru olcegi.
+            "v1": [float(q) for q in v1],
         })
 
     aci = np.array([s["aci_beta_M_derece"] for s in satir], dtype=float)
@@ -131,6 +144,32 @@ def main() -> int:
 
     gecti_aci = bool(np.median(aci_s) < ORTANCA_ACI_ESIGI)
     gecti_nyon = bool(oran1 > N_YON1_ORAN_ESIGI)
+
+    # --- OGRENILEN YON hangi eksende? -------------------------------
+    # "Bir yon ogreniliyor" yetmez; o yonun NE oldugu soylenmeli.
+    # Birim kup koordinatlari: bilesen^2 = o eksenin ogrenilen yondeki
+    # payi (toplam 1).
+    V1 = np.array([s["v1"] for s in satir], dtype=float)
+    pay = V1 ** 2
+    orta_yon = V1.mean(0)
+    orta_yon = orta_yon / max(np.linalg.norm(orta_yon), 1e-300)
+    sapma = np.array([_aci_derece(v, orta_yon) for v in V1], dtype=float)
+    yon_ozeti = {
+        "eksenler": list(EKSEN_ADLARI),
+        "pay_ortanca": [float(q) for q in np.median(pay, axis=0)],
+        "pay_q10": [float(q) for q in np.percentile(pay, 10, axis=0)],
+        "pay_q90": [float(q) for q in np.percentile(pay, 90, axis=0)],
+        "ortalama_yon": [float(q) for q in orta_yon],
+        "ortalama_yondan_sapma_derece": {
+            "ortanca": float(np.median(sapma)),
+            "q90": float(np.percentile(sapma, 90)),
+            "maks": float(sapma.max()),
+        },
+        "baskin_eksen_sayimi": {
+            EKSEN_ADLARI[j]: int((np.argmax(pay, axis=1) == j).sum())
+            for j in range(len(EKSEN_ADLARI))
+        },
+    }
     ozet = {
         "n": len(satir),
         "KAPSAM": "DART/Dimorphos sahnesi; hedef ve mermi SABIT",
@@ -151,6 +190,7 @@ def main() -> int:
         "esikler": {"ortanca_aci": ORTANCA_ACI_ESIGI,
                     "n_yon1_orani": N_YON1_ORAN_ESIGI,
                     "fisher": FISHER_ESIGI},
+        "ogrenilen_yon": yon_ozeti,
         "KAPI_aci_gecti": gecti_aci,
         "KAPI_nyon_gecti": gecti_nyon,
         "YARGI": ("ESDOGRUSALLIK TASARIM BOYUNCA AYAKTA"
@@ -182,6 +222,16 @@ def main() -> int:
     print(f"ikinci oz deger: ortanca {io['ortanca']:.3f}  "
           f"aralik {io['min']:.3f} .. {io['maks']:.3f}  "
           f"(esik {FISHER_ESIGI}, gecen {io['esigi_gecen']}/{ozet['n']})")
+    print()
+    yz = ozet["ogrenilen_yon"]
+    print("ogrenilen YON (birim kup; bilesen^2 = o eksenin payi):")
+    for j, ad in enumerate(yz["eksenler"]):
+        print(f"  {ad:>16}  pay ortanca {yz['pay_ortanca'][j]:.3f}   "
+              f"q10 {yz['pay_q10'][j]:.3f}  q90 {yz['pay_q90'][j]:.3f}")
+    print(f"  baskin eksen sayimi: {yz['baskin_eksen_sayimi']}")
+    sp = yz["ortalama_yondan_sapma_derece"]
+    print(f"  ortalama yonden sapma: ortanca {sp['ortanca']:.2f} der, "
+          f"q90 {sp['q90']:.2f}, maks {sp['maks']:.2f}")
     print()
     print(f"YARGI: {ozet['YARGI']}")
     print(f"NOT  : {ozet['NOT']}")

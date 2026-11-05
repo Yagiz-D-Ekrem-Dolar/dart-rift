@@ -68,6 +68,42 @@ ayrıştığı noktalarda bile `λ₂` en fazla `33,09`'a çıkıyor ve eşik `3
 altında: `λ₁ = 20,84 / 17,62 / 7,71`. Orada **hiçbir şey**
 öğrenilmiyor.
 
+## 4.1 Öğrenilen yön **hangi eksende?** (aynı koşu, 2026-11-05)
+
+"Bir yön öğreniliyor" yetmez; o yönün **ne olduğu** söylenmeli. Öz
+vektör ilk turda kaydedilmemişti; aynı betik, aynı koşu, eklendi.
+
+Birim küp koordinatlarında (yani *önsel aralık başına* duyarlılık —
+"ne öğreniyoruz" sorusunun doğru ölçeği). Bileşenin **karesi** o
+eksenin öğrenilen yöndeki payıdır, toplam `1`:
+
+| eksen | pay ortanca | `q10` | `q90` |
+|---|---:|---:|---:|
+| `α_b` (blok gözenekliliği) | `0,001` | `0,000` | `0,328` |
+| **`Y₀` (matris dayanımı)** | **`0,999`** | `0,609` | `1,000` |
+| `f` (blok hacim kesri) | `0,000` | `0,000` | **`0,045`** |
+
+Baskın eksen sayımı: **`Y₀` → 90/96**, `α_b` → 5, `f` → 1.
+
+Yönün kararlılığı: ortalama yönden sapma ortanca `6,85°`,
+`q90 = 35,37°`, maks `75,66°`. Yani yön **çoğunlukla** sabit ama
+tasarımın kenarlarında dönüyor.
+
+> **Ölçülen sıralama: `Y₀` ≫ `α_b` ≫ `f`.** Çarpma momentumunun
+> taşıdığı bilgi matris dayanımına yığılmış; blok kesri `f`'in payı
+> `q90`'da bile `0,045` — **neredeyse hiç görünmüyor**. Gözeneklilik
+> `α_b` çoğu yerde görünmüyor ama bazı bölgelerde payı `0,33`'e
+> çıkıyor.
+
+**Abartmamak için:** bu `%94` ("90/96") bir ifadedir, "her yerde"
+değil. `5` noktada `α_b`, `1` noktada `f` baskın çıkıyor; yön
+tasarımın kenarlarında `75°`'ye kadar dönüyor.
+
+Bu, literatürün davranışıyla tutarlı ve onu **açıklıyor**: Raducan ve
+diğ. 2024 üç gözlenebilir kullandığı hâlde gözeneklilik ve blok kesri
+için aralık bildirdi, tek değer değil. Ölçüm sebebini söylüyor —
+momentumun duyarlılığı `Y₀` ekseninde yığılı.
+
 ## 5. KAYIT-079 ile çelişmiyor — farklı kurulum
 
 KAYIT-079 §5'in kafesinde `λ₂` `1,67 – 140,53` arasında geziyor ve bazı
