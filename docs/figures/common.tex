@@ -1,0 +1,46 @@
+% Shared preamble for the README figures.
+%
+% Palette: arXiv's HTML dark theme, sampled from a live arXiv HTML paper
+% (document.documentElement[data-theme="dark"]) rather than guessed:
+%
+%   page background  rgb(40, 38, 35)    #282623
+%   body text        rgb(249,247,247)   #F9F7F7
+%   link / accent    rgb(33, 152, 212)  #2198D4
+%   muted text       rgb(173,164,164)   #ADA4A4
+%   sunken panel     ~                  #1C1A17
+%
+% Type is Inter, not a LaTeX book face: these figures are read on a web
+% page at small size, where Inter's open apertures hold up and Computer
+% Modern does not.
+%
+% Rules of the house:
+%   - The figure carries its own background. It is one designed surface.
+%   - If a figure needs a paragraph to be understood, it has failed.
+%   - Geometry over charting. The results here are geometric statements;
+%     draw the geometry, not a plot of it.
+\usepackage[T1]{fontenc}
+\usepackage[sfdefault]{inter}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usetikzlibrary{arrows.meta,calc,positioning,fit,backgrounds,decorations.pathreplacing}
+
+% Math should not fall back to Computer Modern next to Inter.
+\usepackage[italic,eulergreek]{mathastext}
+
+% --- arXiv dark -----------------------------------------------------
+\definecolor{canvas}{HTML}{282623}
+\definecolor{sunken}{HTML}{1C1A17}
+\definecolor{ink}{HTML}{F9F7F7}
+\definecolor{muted}{HTML}{ADA4A4}
+\definecolor{accent}{HTML}{2198D4}
+\definecolor{hush}{HTML}{3A3733}
+
+\tikzset{
+  canvasbg/.style={
+    show background rectangle,
+    background rectangle/.style={fill=canvas, draw=none},
+    inner frame sep=0pt,
+  },
+  lbl/.style={inner sep=0pt, text=ink},
+  dim/.style={inner sep=0pt, text=muted},
+}

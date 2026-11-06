@@ -1,0 +1,68 @@
+% An independent code, checked against the literature it must agree with.
+%
+% Three matrix strengths, two codes. Ours is a GPU SPH solver written
+% from scratch; the reference is Raducan et al. 2022 (A&A 665, L10),
+% Table 2, computed with Bern SPH. The bar between the dots is the
+% disagreement; the number on the right is the ratio taken on beta-1,
+% the momentum actually added, not on beta.
+%
+% Numbers: KAYIT-067 (locked verdict W2), emitted by
+% scripts/figure_data.py -> data/validation_rows.tex.
+\documentclass[tikz,border=0pt]{standalone}
+\input{common}
+
+% beta -> x, with the axis fixed so the three rows share one scale
+\newcommand{\BLO}{3.1}
+\newcommand{\BHI}{4.8}
+\newcommand{\XW}{118}
+\newcommand{\RSTEP}{17}
+
+\begin{document}
+\begin{tikzpicture}[canvasbg, x=1mm, y=1mm]
+
+\useasboundingbox (-50,-40) rectangle (154,38);
+
+% Expands to a braced expression, not a full coordinate: it is used as
+% one component inside (x,y), so outer parentheses would nest.
+\def\XB#1{{(#1-\BLO)/(\BHI-\BLO)*\XW}}
+
+% --- one row: ours, theirs, the gap between -----------------------------
+\newcommand{\vrow}[5]{%
+  \pgfmathsetmacro{\yy}{13 - #1*\RSTEP}
+  % the gap
+  \draw[draw=muted, line width=2.2pt, opacity=0.30]
+    (\XB{#2},\yy) -- (\XB{#3},\yy);
+  % reference
+  \draw[draw=muted, line width=1.1pt, fill=canvas]
+    (\XB{#3},\yy) circle (2.1);
+  % ours
+  \fill[accent] (\XB{#2},\yy) circle (2.3);
+  % left label
+  \node[lbl, anchor=east, font=\small] at (-7,\yy) {$Y_0 = #4$\,Pa};
+  % right label
+  \node[lbl, anchor=west, font=\small] at ({\XW+9},\yy) {$#5$};
+}
+
+\input{data/validation_rows.tex}
+
+% --- scale --------------------------------------------------------------
+\draw[draw=hush, line width=0.6pt] (0,-31) -- (\XW,-31);
+\foreach \b in {3.5,4.0,4.5}{
+  \pgfmathsetmacro{\xx}{(\b-\BLO)/(\BHI-\BLO)*\XW}
+  \draw[draw=hush, line width=0.6pt] (\xx,-31) -- (\xx,-33);
+  \node[dim, anchor=north, font=\scriptsize] at (\xx,-34) {\b};
+}
+\node[dim, anchor=west, font=\scriptsize] at ({\XW+4},-31) {$\beta$};
+
+% --- key ----------------------------------------------------------------
+\fill[accent] (-44,31) circle (2.3);
+\node[lbl, anchor=west, font=\scriptsize] at (-40,31) {this work};
+\draw[draw=muted, line width=1.1pt, fill=canvas] (-4,31) circle (2.1);
+\node[dim, anchor=west, font=\scriptsize] at (0,31)
+  {Raducan et al.\ 2022, Table 2};
+
+\node[dim, anchor=west, font=\scriptsize] at ({\XW+9},31)
+  {ratio on $\beta-1$};
+
+\end{tikzpicture}
+\end{document}

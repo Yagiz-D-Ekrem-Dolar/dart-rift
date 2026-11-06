@@ -1,0 +1,110 @@
+% What one scalar observation does to a three-dimensional unknown.
+%
+% The Fisher information of the production pool has rank 2 in a
+% 3-parameter space (two observables, three unknowns), so one direction
+% is untouched by construction. Relative to the prior, the posterior
+% width along the three principal directions is
+%
+%     0.142      0.930      1.000
+%
+% (median over the 96 locked design points; the third is exactly 1 by
+% rank). A sphere flattened along exactly one axis is therefore not a
+% metaphor for the result -- it is the result, drawn to scale.
+%
+% Derived from KAYIT-097 via `fisher_yonleri`. Only the viewing angle is
+% a choice; every length is the measurement.
+\documentclass[tikz,border=0pt]{standalone}
+\input{common}
+
+% --- geometry, to scale ------------------------------------------------
+% The viewing angle is the only free choice in this drawing.
+\newcommand{\FORE}{0.21}
+
+% Everything else is the measurement: \THIN, \WIDE and \FREE are the
+% posterior widths relative to the prior, written by
+% scripts/figure_data.py straight from the pool. The drawn ellipsoid is
+% therefore the result itself, not an illustration of it.
+\input{data/shrink.tex}
+
+\begin{document}
+\begin{tikzpicture}[canvasbg, x=1mm, y=1mm]
+
+\useasboundingbox (-86,-44) rectangle (86,50);
+
+\pgfmathsetmacro{\R}{33}
+\pgfmathsetmacro{\k}{\FORE*\R}
+\pgfmathsetmacro{\t}{\THIN*\R}
+\pgfmathsetmacro{\w}{\WIDE*\R}
+\pgfmathsetmacro{\kw}{\FORE*\w}
+
+% ======================================================================
+% PRIOR -- what was known before the observation
+% ======================================================================
+\draw[draw=hush, line width=0.6pt] (0,0) circle ({\R});
+\draw[draw=hush, line width=0.5pt, dash pattern=on 1pt off 2.4pt]
+  (0,0) ellipse ({\R} and {\k});
+
+% the axis that the measurement actually pins
+\draw[draw=hush, line width=0.6pt] (0,{-\R-5}) -- (0,{\R+5});
+
+% ======================================================================
+% POSTERIOR -- the same volume after one scalar is measured
+% ======================================================================
+% Silhouette of a flat cylinder: band between the faces, closed by the
+% lower half of the bottom face and the upper half of the top.
+\begin{scope}
+  \clip ({-\w-1},{-\t-\kw-1}) rectangle ({\w+1},{\t+\kw+1});
+  \fill[accent, opacity=0.14] (0,{-\t}) ellipse ({\w} and {\kw});
+  \fill[accent, opacity=0.14] ({-\w},{-\t}) rectangle ({\w},{\t});
+  \fill[accent, opacity=0.14] (0,{\t}) ellipse ({\w} and {\kw});
+\end{scope}
+
+\fill[accent, opacity=0.26] (0,{\t}) ellipse ({\w} and {\kw});
+\draw[draw=accent, line width=1.0pt] (0,{\t}) ellipse ({\w} and {\kw});
+\draw[draw=accent, line width=1.0pt, opacity=0.7]
+  ({-\w},{\t}) -- ({-\w},{-\t});
+\draw[draw=accent, line width=1.0pt, opacity=0.7]
+  ({\w},{\t}) -- ({\w},{-\t});
+\draw[draw=accent, line width=1.0pt, opacity=0.45]
+  (0,{-\t}) ellipse ({\w} and {\kw});
+
+% ======================================================================
+% THE ONE NUMBER -- thickness against the prior
+% ======================================================================
+\pgfmathsetmacro{\bx}{\w+13}
+\draw[draw=muted, line width=0.5pt, opacity=0.8]
+  ({\w+2},{-\t}) -- ({\bx+2.5},{-\t});
+\draw[draw=muted, line width=0.5pt, opacity=0.8]
+  ({\w+2},{\t}) -- ({\bx+2.5},{\t});
+\draw[draw=muted, line width=0.6pt,
+      {Stealth[length=3.2pt]}-{Stealth[length=3.2pt]}]
+  ({\bx},{-\t}) -- ({\bx},{\t});
+\node[lbl, anchor=west, font=\Large] at ({\bx+4.5},{1.6}) {$\THIN$};
+\node[dim, anchor=west, font=\scriptsize] at ({\bx+4.5},{-3.4})
+  {of the prior width};
+
+% ======================================================================
+% LABELS -- four in total
+% ======================================================================
+% Name and descriptor on one line: a second line here would push the
+% whole composition down for no gain.
+\node[lbl, anchor=south, font=\normalsize] at (0,{\R+7})
+  {$Y_0$\ \ \textcolor{muted}{\scriptsize matrix strength}};
+
+\node[dim, anchor=north east, font=\scriptsize]
+  at ({-\R-2},{-\R*0.70}) {prior};
+\draw[draw=hush, line width=0.5pt]
+  ({-\R-2},{-\R*0.74}) -- ({-\R*0.80},{-\R*0.60});
+
+\node[lbl, anchor=north west, text=accent, font=\scriptsize]
+  at ({-\R-20},{\R*0.60}) {posterior};
+\draw[draw=accent, line width=0.5pt, opacity=0.6]
+  ({-\R-6.5},{\R*0.54}) -- ({-\w*0.86},{\t+\kw*0.52});
+
+\node[dim, anchor=west, font=\scriptsize]
+  at ({\w*0.30},{-\t-\kw-7.5}) {$\alpha_b,\ f$ \ unconstrained};
+\draw[draw=hush, line width=0.5pt]
+  ({\w*0.28},{-\t-\kw-6.6}) -- ({\w*0.10},{-\t-\kw*0.92});
+
+\end{tikzpicture}
+\end{document}
