@@ -156,6 +156,70 @@ the second as missing where it is missing rather than quietly passing.
 
 <br>
 
+## A sealed prediction for Hera
+
+The identifiability result says that `β` alone buys one direction. The way out
+is a second observable whose gradient points somewhere else — and this project
+measured which one: **the spin the impact added to Dimorphos.**
+
+ESA's Hera mission arrives at the Didymos system to survey what DART left
+behind. So the prediction was written down and sealed first.
+
+<div align="center">
+<img src="docs/figures/prediction.svg" width="860" alt="Top: the sealed 90 percent interval for the spin added by the impact. Bottom: the boulder fraction implied by each spin value, rising from 0.13 to 0.31 across the range.">
+</div>
+
+| quantile | added spin `ω` [rad s⁻¹] |
+|---|---:|
+| `q05` | 2.31 × 10⁻⁶ |
+| `q16` | 3.20 × 10⁻⁶ |
+| **median** | **5.18 × 10⁻⁶** |
+| `q84` | 8.77 × 10⁻⁶ |
+| `q95` | 1.51 × 10⁻⁵ |
+
+**The falsification rule was fixed in advance:** a measured value outside
+`q05 – q95` makes this work *inconsistent* with Hera, inside makes it
+*consistent*, and the quantile reached is to be written down either way.
+
+The lower panel is the part that matters scientifically. It is the map from a
+spin measurement to the interior axis that `β` cannot see:
+
+| if Hera measures `ω` | implied boulder fraction `f`, median (`q16 – q84`) |
+|---|---:|
+| below 3.2 × 10⁻⁶ | 0.13 (0.07 – 0.44) |
+| 3.2 – 4.2 × 10⁻⁶ | 0.20 (0.10 – 0.45) |
+| 4.2 – 5.2 × 10⁻⁶ | 0.26 (0.12 – 0.44) |
+| 5.2 – 6.4 × 10⁻⁶ | 0.30 (0.16 – 0.43) |
+| 6.4 – 8.6 × 10⁻⁶ | 0.31 (0.19 – 0.41) |
+| above 8.6 × 10⁻⁶ | 0.31 (0.19 – 0.40) |
+
+This is the shape a result should take when one observable cannot resolve three
+unknowns. Not a point estimate that hides the degeneracy — a stated map from a
+future measurement to a parameter, sealed where it cannot be adjusted afterwards.
+
+A second record seals the transient crater, and it is reported exactly as the
+surrogate produced it:
+
+| | `q05` | median | `q95` |
+|---|---:|---:|---:|
+| crater volume [m³] | −46.3 | 34.1 | 504.0 |
+
+A negative volume is physically impossible. It was **not clipped**, because
+clipping would have narrowed the interval for cosmetic reasons; the fraction of
+samples outside the surrogate's training support, `0.285`, is recorded instead
+as the direct measure of how far it is extrapolating.
+
+The sealed records also carry their own warnings forward, written before the
+numbers: the model's crater is the transient one at 600 s while Hera will see
+the final crater; the model's spin is what the impact added, while Hera will see
+a state evolved for four years; and — the one worth reading twice —
+
+> With a single scalar observable, most of the width of this prediction is the
+> width of the prior. **A narrow interval here would be a sign of error, not of
+> success.**
+
+<br>
+
 ## What this work does not claim
 
 This section matters as much as the results.

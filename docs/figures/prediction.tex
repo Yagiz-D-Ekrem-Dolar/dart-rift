@@ -1,0 +1,93 @@
+% A prediction that can be wrong, written down before the answer exists.
+%
+% Top    : the sealed interval for the spin the impact added to
+%          Dimorphos. Hera will measure one number. Outside the 90%
+%          interval this work is inconsistent with it -- and that rule
+%          was written before the measurement exists, not after.
+% Bottom : what the same measurement would say about the boulder
+%          fraction. That is the axis the DART scalar cannot see, which
+%          is the whole reason a second observable is worth having.
+%
+% Both panels share one log omega axis. Every number is read from the
+% sealed record (SHA-256) by scripts/figure_data.py, which also converts
+% omega to millimetres: pgfmath bottoms out near 1e-6 and cannot take
+% the logarithm of the sealed values. The seal itself is never written
+% to; `python scripts/muhur_dogrula.py` checks it.
+\documentclass[tikz,border=0pt]{standalone}
+\input{common}
+
+% \Wqa..\Wqe sealed values, \Wxa..\Wxe their positions in mm,
+% \Wtickmicro \Wtickten axis ticks, \Wspan axis width.
+\input{data/prediction.tex}
+
+\begin{document}
+\begin{tikzpicture}[canvasbg, x=1mm, y=1mm]
+
+\useasboundingbox (-40,-56) rectangle (158,32);
+
+% ======================================================================
+% TOP -- the sealed interval
+% ======================================================================
+\def\TY{18}
+
+\fill[accent, opacity=0.15] (\Wxa,{\TY-6}) rectangle (\Wxe,{\TY+6});
+\fill[accent, opacity=0.32] (\Wxb,{\TY-6}) rectangle (\Wxd,{\TY+6});
+\draw[draw=accent, line width=1.4pt] (\Wxc,{\TY-7.6}) -- (\Wxc,{\TY+7.6});
+
+\node[dim, anchor=east, font=\scriptsize, align=right, text width=30mm]
+  at (-5,\TY) {spin added\\by the impact};
+\node[lbl, anchor=south, font=\scriptsize, text=accent]
+  at (\Wxc,{\TY+8.6}) {$\Wqc$};
+\node[dim, anchor=north east, font=\scriptsize] at (\Wxa,{\TY-7.6})
+  {$\Wqa$};
+\node[dim, anchor=north west, font=\scriptsize] at (\Wxe,{\TY-7.6})
+  {$\Wqe$};
+\node[dim, anchor=west, font=\scriptsize, align=left, text width=26mm]
+  at ({\Wspan+5},\TY) {outside this,\\this work is wrong};
+
+% ======================================================================
+% BOTTOM -- what Hera's number would say about the boulder fraction
+% ======================================================================
+\def\BY{-38}
+\def\BH{28}
+\def\FY#1{{\BY + #1/0.55*\BH}}
+
+% #1,#2 band edges in mm; #3..#7 f quantiles
+\newcommand{\fband}[7]{%
+  \fill[accent, opacity=0.11] (#1,\FY{#3}) rectangle (#2,\FY{#7});
+  \fill[accent, opacity=0.24] (#1,\FY{#4}) rectangle (#2,\FY{#6});
+  \draw[draw=accent, line width=1.2pt] (#1,\FY{#5}) -- (#2,\FY{#5});
+  \draw[draw=canvas, line width=0.6pt] (#2,\FY{#3}) -- (#2,\FY{#7});
+}
+\input{data/omega_f_rows.tex}
+
+\draw[draw=hush, line width=0.6pt] (0,\FY{0}) -- (0,\FY{0.55});
+\foreach \v in {0,0.25,0.5}{
+  \draw[draw=hush, line width=0.6pt] (0,\FY{\v}) -- (-2,\FY{\v});
+  \node[dim, anchor=east, font=\scriptsize] at (-3,\FY{\v}) {\v};
+}
+\node[dim, anchor=east, font=\scriptsize, align=right, text width=30mm]
+  at (-12,\FY{0.28}) {implied boulder\\fraction $f$};
+
+% ======================================================================
+% SHARED omega AXIS
+% ======================================================================
+\def\AY{-46}
+\draw[draw=hush, line width=0.6pt] (0,\AY) -- (\Wspan,\AY);
+\draw[draw=hush, line width=0.6pt] (\Wtickmicro,\AY) -- (\Wtickmicro,{\AY-2});
+\node[dim, anchor=north, font=\scriptsize] at (\Wtickmicro,{\AY-2.8})
+  {$10^{-6}$};
+\draw[draw=hush, line width=0.6pt] (\Wtickten,\AY) -- (\Wtickten,{\AY-2});
+\node[dim, anchor=north, font=\scriptsize] at (\Wtickten,{\AY-2.8})
+  {$10^{-5}$};
+\node[dim, anchor=west, font=\scriptsize] at ({\Wspan+5},\AY)
+  {$\omega$ \ [rad\,s$^{-1}$]};
+
+% carry the sealed interval down, so the two panels read as one picture
+\draw[draw=accent, line width=0.5pt, opacity=0.30,
+      dash pattern=on 1pt off 2pt] (\Wxa,{\TY-6}) -- (\Wxa,\AY);
+\draw[draw=accent, line width=0.5pt, opacity=0.30,
+      dash pattern=on 1pt off 2pt] (\Wxe,{\TY-6}) -- (\Wxe,\AY);
+
+\end{tikzpicture}
+\end{document}
