@@ -13,6 +13,18 @@
 \usepackage{tubitak}
 
 % -----------------------------------------------------------------------
+% ŞEKİL ÇEVRESİ BOŞLUĞU. Şablonun biçim kuralı yazı boyunu (12 punto),
+% kenarları (2,5 cm) ve satır aralığını (tek) bağlar; kayan şekillerin
+% çevresindeki boşluğu BAĞLAMAZ. Belgede 11 kayan şekil var ve LaTeX'in
+% varsayılan 20 pt'si toplamda ~4 satır yer yiyip 20 sayfa sınırını bir
+% sayfa aşırıyordu. 14 pt'ye çekildi. DİKKAT: yazı boyu, kenarlar ve
+% satır aralığı DEĞİŞMEDİ -- sınırı küçük yazıyla değil boşlukla
+% karşıladık, çünkü 12 punto kuralı şablonda açıkça yazılıdır.
+% -----------------------------------------------------------------------
+\setlength{\textfloatsep}{14pt plus 2pt minus 4pt}
+\setlength{\intextsep}{14pt plus 2pt minus 4pt}
+
+% -----------------------------------------------------------------------
 % ÜRETİM HAVUZUNUN O ANKİ BOYU — TEK KAYNAK.
 % Havuz büyüdüğünde YALNIZ \havuzBiten değişir; gövdedeki her geçiş
 % buradan okur (altı yerde elle yazılıydı, biri atlanırsa rapor kendi
@@ -829,6 +841,22 @@ bin kat küçültüldüğünde ikinci öz değer yalnız $2{,}35$'ten $4{,}17$'y
 çıkar; eşik 36'dır. Belirsizliği küçültmek bir satırın \emph{ağırlığını}
 artırır, \emph{yönünü} döndürmez.
 
+\subsubsection*{Tasarımın tamamı: ikinci yön hiçbir yerde açılmıyor}
+
+Yukarıdaki açı ölçümü beş köşe noktasındadır; aynı hesap tasarımın
+\havuzToplam\ noktasının hepsinde koşuldu. İkinci öz değer
+\textbf{hiçbir} noktada eşiğe ulaşmıyor (en büyüğü $33{,}09$, eşik 36).
+Öğrenilen yönün \emph{ne} olduğu da ölçüldü: birim küpte payların
+ortancası $\alpha_b$, $Y_0$ ve $f$ için sırasıyla $0{,}001$,
+$\mathbf{0{,}999}$ ve $0{,}000$'dır; baskın eksen \havuzToplam\
+noktanın \textbf{90}'ında $Y_0$'dır. Yani DART'ın tek ölçümü üç
+bilinmeyenden \textbf{matris dayanımını} ölçmektedir. $f$ için doğru
+ifade ise ``önemsiz'' değil \textbf{``bu tasarımda ölçülemiyor''}dur:
+sahnede yalnız yedi kadar büyük blok vardır ve her $\theta$ noktasında
+tek tohum kullanılmıştır, dolayısıyla $f$'in etkisi yerleşim
+gürültüsünden ayrılamaz --- oysa \citet{raducan2022bloklar} blok kütle
+kesrinin $\beta$'yı \%60'a kadar düşürdüğünü ölçmektedir.
+
 \subsection{Dejenerasyonun fiziksel sebebi}
 
 Bulgu, Fisher öz değerlerinden daha anlaşılır biçimde şöyle de
@@ -1259,7 +1287,9 @@ Benzer çalışmalar yapacak olanlara ve bu projenin devamına yol göstermek
 % =======================================================================
 \begin{thebibliography}{99}
 \raggedright
-\setlength{\itemsep}{2pt}
+% 19 kaynak; Ekler'in 21. sayfaya tasmamasi icin sifirlandi.
+\setlength{\itemsep}{0pt}
+\setlength{\parsep}{0pt}
 
 \bibitem[Bachoc(2013)]{bachoc2013}
 Bachoc, F. (2013). Cross validation and maximum likelihood estimations of
@@ -1319,6 +1349,11 @@ Lundborg, N. (1968). Strength of rock-like materials.
 Monaghan, J. J. (1992). Smoothed particle hydrodynamics. \emph{Annual
 Review of Astronomy and Astrophysics}, 30, 543--574.
 
+\bibitem[Raducan ve ark.(2022)]{raducan2022bloklar}
+Raducan, S. D., Jutzi, M., Zhang, Y., Ormö, J. ve Michel, P. (2022).
+Reshaping and ejecta properties after the DART impact: the role of
+boulders. \emph{Astronomy \& Astrophysics}, 665, L10.
+
 \bibitem[Raducan ve ark.(2024)]{raducan2024}
 Raducan, S. D., Jutzi, M., Cheng, A. F. ve ark. (2024). Physical
 properties of asteroid Dimorphos as derived from the DART impact.
@@ -1359,13 +1394,12 @@ kilitli protokol belgeleri, karar kayıtları ve bu raporda geçen her
 sayısal değerin üretildiği ölçüm dosyaları açık depoda yer almaktadır:
 \url{https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift}
 
-\noindent\textbf{Ek 2. Şekillerin üretimi.} Raporun bütün şekilleri vektör
-olarak, veriden doğrudan üretilmiştir; hiçbir şekil elle çizilmemiştir.
-Malzeme modeli eğrileri (Şekil~\ref{sek:cekirdek} ve
-Şekil~\ref{sek:malzeme}) benzetim kodunun kendi formüllerinden
-hesaplanmıştır.
+\noindent\textbf{Ek 2. Şekillerin üretimi.} Bütün şekiller veriden
+doğrudan, vektör olarak üretilmiştir; malzeme eğrileri
+(Şekil~\ref{sek:cekirdek}, \ref{sek:malzeme}) kodun kendi
+formüllerinden hesaplanmıştır.
 
 \noindent\textbf{Ek 3. Hesaplama altyapısı.} Koşular TÜBİTAK ULAKBİM
-TRUBA kaynaklarındaki NVIDIA H100 GPU'larda yürütülmüştür.
+TRUBA'daki NVIDIA H100 GPU'larda yürütülmüştür.
 
 \end{document}
