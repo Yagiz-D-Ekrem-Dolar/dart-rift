@@ -1,0 +1,109 @@
+{
+  "NE": "Ince kosu (spacing 3,5 m) tamamlanan noktalarin ORTAK kunyesi.",
+  "KAYNAK": "TRUBA kolyoz-cuda, HAVUZ_INCE_g1p0.dilim*_96.ozet.json",
+  "ORTAK_MI": "EVET -- 8 noktanin kunyesi `dilim` ve `duvar_s` disinda BIREBIR ayni; sha256(sorted json)[:12] = e816dbc0e002 ile dogrulandi.",
+  "kunye_sha256_12": "e816dbc0e002",
+  "n_nokta": 8,
+  "duvar_s": {
+    "11": 160482.09490996227,
+    "33": 161277.18400478736,
+    "44": 216564.74996932596,
+    "45": 160894.75888094795,
+    "57": 164858.270446714,
+    "58": 159928.75795189198,
+    "62": 159318.664429351,
+    "74": 162425.89711387828
+  },
+  "toplam_gpu_saat": 373.8,
+  "ortak_kunye": {
+    "adim_bildir": 20000,
+    "akma_kipi": "ara",
+    "av_tanisi_her": 0,
+    "azami_adim": 40000000,
+    "beta_km": true,
+    "blok_uretici": "v1",
+    "cfl": 0.25,
+    "dayanim_kesme": true,
+    "dondurma": {
+      "her_adim": 200,
+      "k_uzak": 3.0
+    },
+    "gec_evre": {
+      "A": 100000.0,
+      "gerilme_olcekle": true,
+      "t_gecis": 1.0
+    },
+    "gerinim_yumusama": null,
+    "gozlenebilirler": [
+      "beta",
+      "krater_derinlik",
+      "ejekta_kutle_kesri"
+    ],
+    "h_orani": null,
+    "ilk_dt_duzelt": true,
+    "impuls_zaman": "log",
+    "komsu_arama": "bvh",
+    "malzeme_ek": {
+      "mu_f": 0.6,
+      "yercekimi": true
+    },
+    "malzeme_kaynagi": "geometri",
+    "matris_cekme_siniri": null,
+    "merdiven": [
+      "48:2.8",
+      "24:1.4",
+      "12:0.7",
+      "6:0.35",
+      "3:0.175"
+    ],
+    "mermi_aralik_orani": null,
+    "mermi_eos": "aluminyum",
+    "mermi_h_kipi": "kendi",
+    "n_atlanan": 0,
+    "n_bozuk_satir": 0,
+    "n_dusen": 0,
+    "n_nokta": 1,
+    "n_tamam": 1,
+    "n_tasarim_tam": 96,
+    "onsel_disi": false,
+    "root_seed": 20260906,
+    "sahne_ek": {
+      "angle_deg": 17.0,
+      "bulk_density": 2306.1,
+      "impactor_density": 1000.0,
+      "impactor_mass": 579.4,
+      "impactor_speed": 6144.9,
+      "mermi_kureleri": [
+        [
+          0.88,
+          0.0
+        ],
+        [
+          0.06,
+          -2.215
+        ],
+        [
+          0.06,
+          2.215
+        ]
+      ],
+      "mermi_yuvarlanma_deg": 0.0,
+      "model_class": "M1",
+      "r_max": 56.0,
+      "r_min": 14.0,
+      "radius": null,
+      "semi_axes": [
+        88.5,
+        87.0,
+        58.0
+      ],
+      "shape": "ellipsoid"
+    },
+    "sahne_tohum": 20260906,
+    "sok_kapisi": true,
+    "spacing": 3.5,
+    "surum": "d96c4ee6f29cd76eb327d360bba34334d0a20837",
+    "t_end": 600.0,
+    "yogunluk_tabani": true
+  }
+}
