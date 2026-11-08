@@ -34,6 +34,23 @@ ESA's Hera gets there to check it.
 
 <br>
 
+### Findings
+
+Each line is a measurement with a record behind it, not a summary of intent.
+
+| | measured |
+|---|---|
+| One scalar constrains **one** direction of three | posterior width `0.142` / `0.930` / `1.000` of the prior |
+| And that direction is **matrix strength** | dominant at `90` of `96` points, median share `0.999` |
+| Better precision does **not** open a second one | shrinking error `1000×` moves `λ₂` from `2.35` to `4.17` |
+| The **spin** sees the axis `β` cannot | `r(ω, f) = +0.474` against `r(β, f) = +0.026` |
+| The fast runs are **biased**, not noisy | `9` of `9` points shift the same way, median ratio `1.139` |
+| Resolution choice **moves the answer** | `Y₀` mode `18.7 Pa` → `159.7 Pa`, a `1.88σ` shift |
+| Crater depth is **structurally** unmeasurable here | scored `1 of 4` against a criterion locked beforehand |
+| An independent code **reproduces** the literature | within `13–18%` of a published benchmark on `β − 1` |
+
+<br>
+
 ## The question
 
 In September 2022, NASA's DART spacecraft struck the asteroid Dimorphos and left
@@ -49,6 +66,17 @@ But the interior has three unknowns:
 | **Boulder porosity** | `α_b` | how much void sits inside the large boulders |
 | **Matrix strength** | `Y₀` | cohesive strength of the fine material between them |
 | **Boulder fraction** | `f` | how much of the body's volume the boulders occupy |
+
+<div align="center">
+<img src="docs/figures/sahne.png" width="860" alt="The production scene: 7,641 SPH particles forming a triaxial body, with boulder particles picked out in amber, and the DART impact arriving at 17 degrees from the surface normal.">
+</div>
+
+Every one of the 96 production runs starts from this body. The amber patches
+are the boulders — `α_b` is how much void is inside them, `f` is how much of
+the body they take up, and `Y₀` is the strength of the grey material holding
+them together. Nothing in the picture is drawn by hand: each dot is a particle
+from [the committed scene file](docs/preprint/veri/tumgovde.dat), and the
+render script is [`scripts/sahne_render.py`](scripts/sahne_render.py).
 
 One scalar cannot determine three numbers. That is not a difficulty to be
 engineered away; it is arithmetic. So this project does not ask *"what is the
