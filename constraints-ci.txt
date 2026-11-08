@@ -27,7 +27,7 @@ ruff==0.16.3
 pytest==8.3.5
 pytest-cov==6.0.0
 coverage==7.6.10
-matplotlib==3.10.0
+matplotlib==3.10.9
 numpy==1.26.4
 pydantic==2.9.2
 PyYAML==6.0.2
