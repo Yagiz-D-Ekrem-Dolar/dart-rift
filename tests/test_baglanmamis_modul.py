@@ -43,21 +43,38 @@ Bir modül bağlanırsa listeden çıkarılır (sınav bunu da söyler).
 from __future__ import annotations
 
 import ast
-import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 SRC = REPO / "dartrift" if (REPO / "dartrift").is_dir() else REPO / "src" / "dartrift"
 
-#: 2026-11-04'te OLCULEN bagli-olmayan moduller. Borc kaydi, onay degil.
+#: OLCULEN bagli-olmayan moduller. Borc kaydi, onay degil.
 #:
+#: 2026-11-04 (metin taramasiyla):
 #:   dartrift.failure                      -> A120 (sartname DR-RIFT-P0 §6.2)
 #:   dartrift.validation.adaptive_h_cost   -> measure_multilevel_waste, measure_neighbour_waste
 #:   dartrift.validation.deposit_calibration -> build_piston_ic, run_calibration
+#:
+#: 2026-11-08 (A121: tarama AST'ye cevrildi, DORT modul ORTAYA CIKTI):
+#:   dartrift.validation.coupling_conservation
+#:   dartrift.validation.domain_coupling
+#:   dartrift.validation.ensemble_cost
+#:   dartrift.validation.variable_h
+#:
+#: Bu dordu YENI BORC DEGIL -- hep bagsizdilar, eski tarama goremiyordu.
+#: Ornek: `variable_h`'nin src/ + scripts/ altindaki tek gecisi
+#: `validation/kernel_margin.py`'nin 10. satirindaki BELGE CUMLESIDIR
+#: ("Bu formul dort ayri modulde yaziliydi (`mass_ratio`, `variable_h`,
+#: ...")  -- cagri degil. Dordu de yalniz `tests/` tarafindan
+#: kullaniliyor; uretim yolundan cagrilmiyorlar.
 BAGLANMAMIS = frozenset({
     "dartrift.failure",
     "dartrift.validation.adaptive_h_cost",
     "dartrift.validation.deposit_calibration",
+    "dartrift.validation.coupling_conservation",
+    "dartrift.validation.domain_coupling",
+    "dartrift.validation.ensemble_cost",
+    "dartrift.validation.variable_h",
 })
 
 
@@ -88,14 +105,52 @@ def _moduller() -> dict[Path, set[str]]:
     return out
 
 
-def _uretim_metinleri() -> dict[Path, str]:
-    m: dict[Path, str] = {}
+def _uretim_kullanimlari() -> dict[Path, tuple[set[str], set[str]]]:
+    """Her üretim dosyasının **gerçekten kullandığı** adlar ve import yolları.
+
+    ## Niçin metin değil AST (A121, 2026-11-08)
+
+    Eski hâli dosyaları **düz metin** olarak tarıyor ve modül adını
+    `re.search` ile arıyordu. Sonuç: bir **belge cümlesi** bağlantı
+    sayılıyordu. `inference/ic_ice_tasarim.py`'nin 3. satırındaki
+
+        Çok doğruluklu vekil (`cok_dogruluk`, Kennedy–O'Hagan AR(1)) ince
+
+    cümlesi yüzünden `cok_dogruluk` "bağlı" göründü ve A116'nın **baş
+    örneği** kendi sınavından kaçtı; modül bir ay boyunca hiçbir üretim
+    yolundan çağrılmadan kaldı.
+
+    AST'de yorumlar hiç yoktur, belge dizgileri ise `Constant`'tır —
+    `Name`/`Attribute`/`Import` düğümlerine bakmak ikisini de
+    kendiliğinden eler. Aranan şey artık ad geçişi değil **kullanım**.
+    """
+    out: dict[Path, tuple[set[str], set[str]]] = {}
     for kok in (REPO / "src", REPO / "scripts"):
         if not kok.is_dir():
             continue
         for p in sorted(kok.rglob("*.py")):
-            m[p] = p.read_text(encoding="utf-8")
-    return m
+            try:
+                agac = ast.parse(p.read_text(encoding="utf-8"))
+            except SyntaxError:
+                continue
+            adlar: set[str] = set()
+            yollar: set[str] = set()
+            for n in ast.walk(agac):
+                if isinstance(n, ast.Import):
+                    for a in n.names:
+                        yollar.update(a.name.split("."))
+                elif isinstance(n, ast.ImportFrom):
+                    if n.module:
+                        yollar.update(n.module.split("."))
+                    for a in n.names:
+                        adlar.add(a.name)
+                        yollar.add(a.name)
+                elif isinstance(n, ast.Name):
+                    adlar.add(n.id)
+                elif isinstance(n, ast.Attribute):
+                    adlar.add(n.attr)
+            out[p] = (adlar, yollar)
+    return out
 
 
 def _modul_adi(p: Path) -> str:
@@ -103,22 +158,28 @@ def _modul_adi(p: Path) -> str:
 
 
 def _baglanmamislari_bul() -> set[str]:
+    """Hiçbir üretim dosyasının **gerçekten kullanmadığı** modüller.
+
+    Ölçüt ad **geçişi** değil **kullanım**: ya modülün genel adlarından
+    biri başka bir dosyada `Name`/`Attribute`/`import` olarak geçer, ya
+    da modülün kendi adı bir `import` yolunda bulunur. Belge dizgileri
+    ve yorumlar AST'de bu düğümler olarak görünmediği için sayılmaz
+    (A121'in kapattığı delik).
+    """
     moduller = _moduller()
-    metinler = _uretim_metinleri()
+    kullanim = _uretim_kullanimlari()
     bulunan: set[str] = set()
     for p, adlar in moduller.items():
         gecti = False
-        # (a) genel adlardan biri baska bir uretim dosyasinda geciyor mu
-        for ad in adlar:
-            d = re.compile(rf"\b{re.escape(ad)}\b")
-            if any(d.search(m) for q, m in metinler.items() if q != p):
+        for q, (q_adlar, q_yollar) in kullanim.items():
+            if q == p:
+                continue
+            if adlar & (q_adlar | q_yollar):      # (a) genel ad kullanildi
                 gecti = True
                 break
-        # (b) modulun KENDI adi (import yolu) geciyor mu
-        if not gecti:
-            d = re.compile(rf"\b{re.escape(p.stem)}\b")
-            if any(d.search(m) for q, m in metinler.items() if q != p):
+            if p.stem in q_yollar:                 # (b) modul import edildi
                 gecti = True
+                break
         if not gecti:
             bulunan.add(_modul_adi(p))
     return bulunan
@@ -128,7 +189,7 @@ def test_BOSLUK_moduller_ve_metinler_bulunuyor() -> None:
     """BOŞLUK KONTROLÜ (ADR-0040): dosya yoksa sınav boş doğru sınar."""
     assert SRC.is_dir(), f"kaynak agaci yok: {SRC}"
     assert len(_moduller()) >= 50, f"beklenenden az modul: {len(_moduller())}"
-    assert len(_uretim_metinleri()) >= 150
+    assert len(_uretim_kullanimlari()) >= 150
 
 
 def test_BOSLUK_defterdeki_moduller_GERCEKTEN_var() -> None:

@@ -5261,6 +5261,34 @@ KAYIT-100). Yani A116'nın bu örneği **kapandı** — ama onu kapatan şey
 sınav değil, elle fark edilmesiydi. Sınavın deliği **duruyor** ve bu
 kayıt onun içindir.
 
+
+> ### ÇARE UYGULANDI — 2026-11-08 (aynı gün), ve DÖRT modül daha çıktı
+>
+> Tarama `re.search` yerine **AST**'ye çevrildi: artık yalnız
+> `Import` / `ImportFrom` düğümleri ve kod içindeki `Name` /
+> `Attribute` kullanımları sayılıyor. Yorumlar AST'de hiç yoktur,
+> belge dizgileri ise `Constant`'tır — ikisi de kendiliğinden elenir.
+>
+> Sıkılaşan sınav, eski taramanın **göremediği dört modülü** ortaya
+> çıkardı:
+>
+> | modül | tek geçişi |
+> |---|---|
+> | `validation.coupling_conservation` | belge/yorum |
+> | `validation.domain_coupling` | belge/yorum |
+> | `validation.ensemble_cost` | belge/yorum |
+> | `validation.variable_h` | `validation/kernel_margin.py:10`, **belge cümlesi** |
+>
+> Doğrulandı: dördü de yalnız `tests/` tarafından kullanılıyor,
+> üretim yolundan çağrılmıyor. **Bunlar yeni borç değil** — hep
+> bağsızdılar, sınav göremiyordu. Deftere gerekçeleriyle eklendiler.
+>
+> Yeni sınav: `test_IKILI_kip_...` değil, defterin kendisi — liste
+> **büyüyemez**; yeni bir bağlanmamış modül eklenirse sınav düşer.
+>
+> **A121 bu NOT ile kapanmıyor:** çare uygulandı ama ortaya çıkan dört
+> modül **bağlanmadı**, borç kaydına alındı. A116'nın deseni sürüyor.
+
 ---
 ### A120 — **`failure.py` hiç çağrılmıyor: şartnamenin "config dondur" maddesi üretimde karşılanmıyor** (2026-11-01) — *açık*
 
