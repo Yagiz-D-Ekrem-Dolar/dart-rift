@@ -7,13 +7,32 @@ gösteriyor, hedef problemin çözüldüğünü **değil**.
 
 Bu test iki tablonun ayrı kalmasını kilitliyor. Birleştirilirse
 yanıltıcılık geri gelir.
+
+## 2026-11-08 — HANGİ belgeye baktığı değişti
+
+Depo ön sayfası İngilizceye geçti ve iki tabloyu taşıyan Türkçe metin
+`docs/README-TR.md`'ye taşındı. Bu test `README.md`'yi okuduğu için
+**altı maddesi birden düştü** — tablolar kaybolmamıştı, test yanlış
+dosyaya bakıyordu.
+
+İki tablo denetimi, tabloları **taşıyan** belgeye yönlendirildi.
+Testin amacı dosya adı değil, *düşen ölçütün görünür kalması*dır.
+
+Ama ön sayfayı denetimsiz bırakmak da olmaz: biri İngilizce README'yi
+yalnız başarılarla doldurabilirdi ve hiçbir sınav düşmezdi. Bu yüzden
+`test_ON_SAYFA_de_dusenleri_gizlemiyor` eklendi — aşağıda.
 """
 from __future__ import annotations
 
 from pathlib import Path
 
-README = (Path(__file__).resolve().parents[1] / "README.md").read_text(
-    encoding="utf-8")
+KOK = Path(__file__).resolve().parents[1]
+
+#: Iki dogrulama tablosunu TASIYAN belge.
+README = (KOK / "docs" / "README-TR.md").read_text(encoding="utf-8")
+
+#: Deponun ON SAYFASI (ingilizce). Ayri ve daha dar bir denetimi var.
+ON_SAYFA = (KOK / "README.md").read_text(encoding="utf-8")
 
 
 def test_IKI_ayri_baslik_var() -> None:
@@ -88,3 +107,35 @@ def test_savunulabilir_cumle_yazili() -> None:
     assert "söyleyemiyoruz" in blok or "değil" in blok, (
         "yalniz olumlu cumleler var -- neyi soyleyemedigimiz yazilmali"
     )
+
+
+def test_ON_SAYFA_de_dusenleri_gizlemiyor() -> None:
+    """İngilizce ön sayfa da *"her şey yolunda"* diyemez.
+
+    İki tablo `docs/README-TR.md`'de. Ön sayfa onları tekrarlamak
+    zorunda değil ama **sınırları taşımak** zorunda: biri burayı yalnız
+    başarılarla doldurursa yukarıdaki testlerin hiçbiri düşmez, çünkü
+    onlar başka dosyaya bakıyor. Bu test o boşluğu kapatır.
+
+    Aranan şey biçim değil **amaç**: ön sayfa (a) neyi iddia
+    ETMEDİĞİNİ ayrı bir başlıkta söylemeli, (b) yakınsamanın
+    sağlanmadığını yazmalı, (c) çalışmayan yolu gizlememeli.
+    """
+    assert "does not claim" in ON_SAYFA.lower(), (
+        "on sayfada 'neyi iddia etmiyoruz' bolumu yok")
+    assert "NOT CONVERGED" in ON_SAYFA, (
+        "yakinsama saglanmadigi on sayfada yazmiyor")
+    assert "unmeasurable" in ON_SAYFA.lower(), (
+        "olculemeyen gozlenebilir (krater) on sayfada gizlenmis")
+
+
+def test_ON_SAYFA_arsivi_isaretliyor() -> None:
+    """Eski Türkçe ön sayfa **arşiv** olduğunu söylemeli.
+
+    İkisi yan yana durduğunda okuyan hangisinin güncel olduğunu
+    bilmeli; `90/96` diyen bir belge işaretsiz dururken ön sayfa
+    `96/96` diyorsa bu bir celiskidir, ikinci bir belge degil.
+    """
+    bas = README[:1200]
+    assert "ARŞİV" in bas, "docs/README-TR.md arsiv oldugunu soylemiyor"
+    assert "README.md" in bas, "guncel on sayfaya yonlendirme yok"

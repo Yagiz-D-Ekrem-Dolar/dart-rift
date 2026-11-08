@@ -210,14 +210,40 @@ on those nine points (`ρ = 0.820`). Leave-one-out across them:
 A **2.51×** improvement, and not merely on average: the corrected surrogate wins
 at all nine points individually.
 
-**What this is not.** The fine run is not the truth either — differences
-*grow* with refinement rather than settling, so the locked convergence verdict
-remains `NOT CONVERGED`. The correction yields what one further step of
-refinement would have said, not a converged value. And the preregistered gate
-for promoting the corrected posterior to the headline has four conditions; three
-pass and the fourth is not yet measured, so the headline result stays
-uncorrected and the correction is published as exploration.
+### Where the shortcut went
+
+The preregistered plan did not stop at correcting the surrogate. It required
+computing the posterior **both ways** and asking whether the answer moves — a
+condition written down in 2026-10-09, before any of this data existed.
+
+It moves.
+
+| interior axis | from the fast runs | corrected | shift |
+|---|---:|---:|---:|
+| boulder porosity `α_b` | `1.269` | `1.036` | `2.74σ` |
+| **matrix strength `Y₀`** | **`18.7 Pa`** | **`159.7 Pa`** | **`1.88σ`** |
+| boulder fraction `f` | `0.05` | `0.05` | `0.00` |
+
+**Choosing the resolution moves the inferred matrix strength by a factor of
+about 8.6.** Both posteriors were computed in a single run sharing the design,
+the observable transform, the residual correlation, the error model, the grid
+and the likelihood — the surrogate mean is the only thing that differs, so the
+shift cannot be attributed to anything else.
+
+This is the predicted failure, caught in the act. The preregistration warned
+that a systematic shift folded into the error bars would be absorbed by the
+interior parameters instead; here it is, and it lands on `Y₀` — which is
+precisely the one direction the measurement can constrain at all. A shift along
+an unlearnable axis would not matter. This one does.
+
+Per the preregistered rule, **both numbers are the result**; picking the more
+convenient one is exactly what the rule forbids. And neither is the truth: the
+fine run has not converged either, so `159.7 Pa` is what one further step of
+refinement says, not where the sequence lands. `α_b` and `f` sit against their
+prior edges and should not be read as estimates at all.
+
 [KAYIT-099](docs/defter/KAYIT-099_2026-11-08_cok-dogruluklu-duzeltme-baglandi.md)
+· [KAYIT-100](docs/defter/KAYIT-100_2026-11-08_kapi4-kipler-AYRILIYOR.md)
 
 <br>
 

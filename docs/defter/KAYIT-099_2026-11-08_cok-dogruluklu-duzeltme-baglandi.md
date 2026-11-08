@@ -91,6 +91,13 @@ noktanın dokuzunda da `E_CD < E_SIGMA`.
 | ince noktalarda `E_CD < E_SIGMA` | **GEÇTİ** |
 | iki yolun kipleri | **ÖLÇÜLMEDİ** — tam posterior gerekir |
 
+> **NOT — 2026-11-08 akşamı, aynı gün.** Dördüncü kapı o sırada
+> ölçülmemişti; [KAYIT-100](KAYIT-100_2026-11-08_kapi4-kipler-AYRILIYOR.md)
+> onu ölçtü ve **kipler AYRILDI** (`Y₀`: `18,67` → `159,73` Pa,
+> `1,881σ`). ADR-0059 §3.4 gereği artık **iki yol da manşettedir**.
+> Aşağıdaki §6 **değiştirilmedi** (kural 5): o, dördüncü kapı
+> ölçülmeden önceki doğru yargıdır ve öyle kalır.
+
 ## 6. YARGI — ve niçin manşet hâlâ `SIGMA`
 
 > **İlk üç kapı geçti. Dördüncüsü ölçülmedi ve GEÇMİŞ SAYILMADI.**
