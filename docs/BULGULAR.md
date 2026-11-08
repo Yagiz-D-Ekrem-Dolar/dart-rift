@@ -8,6 +8,49 @@ dökümü `FAZ4-SIKINTI-RAPORU.md`'de (**61 açık kayıt**).
 
 ---
 
+## 0b. `2026-09-11`'den SONRA ne değişti — `2026-11-08` itibarıyla
+
+> Aşağıdaki §0 ve sonrası **`2026-09-11` tarihli** ve
+> **değiştirilmedi** (kural 4). O tarihten sonra ölçülenler burada,
+> kaynaklarıyla. Çelişki görürseniz **bu bölüm geçerlidir**.
+>
+> Açık kusur sayısı o gün `61`'di; bugün **`90`**
+> ([`FAZ4-SIKINTI-RAPORU.md`](FAZ4-SIKINTI-RAPORU.md)). Sayının
+> büyümesi kötüye gitmek değil: aranan yer arttıkça bulunan da artıyor.
+
+| ne | sonuç | kaynak |
+|---|---|---|
+| Üretim havuzu | **96/96 kapandı**, kayıp koşu yok | [`sonuclar/`](sonuclar/) |
+| Kaç yön öğreniliyor | **kilitli yargı `1`** | [KAYIT-079](defter/KAYIT-079_2026-10-16_UP-gozlemli-secimi-ve-n-yon.md) |
+| O yön **hangisi** | **`Y₀`**, payı ortanca `0,999`, baskın `90/96`; ikinci yön `0/96` eşikte | [KAYIT-097](defter/KAYIT-097_2026-11-05_esdogrusallik-96-noktada-olculdu.md) |
+| Posterior kalibre mi | **SBC GEÇTİ**, üç eksen (`p = 0,868 / 0,074 / 0,299`) | [KAYIT-082](defter/KAYIT-082_2026-10-16_kos-hatasi-ve-duzeltilmis-sonuclar.md) |
+| Model gözleme ulaşıyor mu | evet, `I_min = 0,325`, bağdaşır hacim `%34,04` | KAYIT-080 + KAYIT-082 |
+| Çözünürlük farkı | **saçılma değil YANLILIK** (`7/7`, `Y₀`'da `×3,22`) | [KAYIT-085](defter/KAYIT-085_2026-10-22_cozunurluk-farki-YANLILIK-cikti.md) |
+| İnce koşu, `9` nokta | `9/9` aynı yönde (`p = 0,002`), oran ortanca **`1,139`** | [KAYIT-099](defter/KAYIT-099_2026-11-08_cok-dogruluklu-duzeltme-baglandi.md) |
+| Çok doğruluklu düzeltme | bağlandı; dışarıda-bırak-bir **`2,51` kat** iyileşme | KAYIT-099 |
+| **Çözünürlük seçimi `θ`'yı kaydırıyor mu** | **EVET: `Y₀` kipi `18,7 → 159,7 Pa`, `1,88σ`** — iki yol da manşette | [KAYIT-100](defter/KAYIT-100_2026-11-08_kapi4-kipler-AYRILIYOR.md) |
+| Krater gözlenebiliri | zayıf matriste **yapısal olarak ölçülemez**; kilitli yargı `1/4` | [KAYIT-096](defter/KAYIT-096_2026-11-04_gec-dokum-yargisi-1-of-4-yol-yetersiz.md), [ADR-0062](adr/ADR-0062-ortulu-krater-olculemez-sayi-yerine-red.md) |
+| Ejekta üsteli `μ` | üretimde **`0,4347`** (`95/96`), H&H `0,40–0,55` içinde | [KAYIT-098](defter/KAYIT-098_2026-11-05_uretim-havuzunda-mu-olculdu.md) |
+| `f` sahneye ulaşıyor mu | **ULAŞIYOR** (`D = 1,598`) — §11.5'in "yerleşim gürültüsü" açıklaması **çürüdü** | [KAYIT-101](defter/KAYIT-101_2026-11-08_f-sahneye-ULASIYOR-hipotezim-curudu.md) |
+| Sahnede ölçülen iki kusur | bloklar kabukta beklenenin `%6,4`'ü; çarpma noktası `0/128` blokla kaplı | KAYIT-101 |
+| Hera öngörüsü | **iki kayıt mühürlü** (SHA-256), açık doğrulayıcı | [`onkayit/`](onkayit/) |
+
+### Bugün savunulabilir tek cümle
+
+> Tek bir skaler gözlem, üç boyutlu bir iç yapı uzayında **bir** yön
+> kısıtlıyor ve o yön **matris dayanımı**. İkinci yön hiçbir tasarım
+> noktasında öğrenilemiyor ve **ölçüm hassasiyeti bunu değiştirmiyor**;
+> gereken şey gradyanı farklı **ikinci bir gözlenebilir**, ki o da
+> ölçüldü (çarpmanın kattığı spin) ve öngörüsü mühürlendi.
+
+### Ve hâlâ söyleyemediğimiz
+
+`Y₀`'ın mutlak değeri. Çözünürlük yakınsamamış durumda ve seçim
+kipi `8,6` kat kaydırıyor; posterior bir **yöntem gösterimi**dir,
+fiziksel bir öngörü değil.
+
+---
+
 ## 0. Uzman yanıtından sonra (2026-09-11) — ne değişti
 
 Uzman üç kod kusuru buldu; üçü de bizim kodumuzda **ölçüldü**:

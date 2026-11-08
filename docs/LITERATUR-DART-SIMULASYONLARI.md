@@ -370,6 +370,35 @@ doğrulayabiliyor. Literatürde karşılığı yok. Sayılar doğru çıkmasa bi
 
 ### 11.5 Literatürle görünür çelişki — ve dürüst çözümü
 
+> ## ⚠ DÜZELTME — 2026-11-08: aşağıdaki açıklama ÖLÇÜLDÜ ve DESTEKLENMEDİ
+>
+> Bu bölüm `f` körlüğünü *"yerleşim gürültüsü + tek tohum"* ile
+> açıklıyor. O bir **hipotezdi** ve
+> [KAYIT-101](defter/KAYIT-101_2026-11-08_f-sahneye-ULASIYOR-hipotezim-curudu.md)
+> üretim yapılandırmasında `128` sahne üzerinde ölçtü:
+>
+> **`f` kazı bölgesine ULAŞIYOR ve tek tohumda AYIRT EDİLEBİLİYOR**
+> (`R = 28 m`'de `ρ = +1,000`, ayırt oranı `D = 1,598`; eşik `1,0`,
+> koşudan önce yazılı). Yani körlüğün sebebi sahne **değil**.
+>
+> Aynı ölçüm sahnede iki **gerçek** kusur buldu, ama ikisi de bu
+> bölümün açıklaması değil:
+>
+> - bloklar kabukta beklenenin **%6,4**'ü kadar (çekirdeğe sürülmüş);
+> - çarpma noktası `128` sahnenin **hiçbirinde** blokla kaplı değil —
+>   v1'in *"blok tamamen içeride"* şartı gereği bu analitik olarak
+>   imkânsız, yani Protokol L'nin "bloğa çarpma" dalı üretimde hiç
+>   gerçekleşmiyor;
+> - `f` düğmesi doyuyor: istenen `0,05 – 0,50`, gerçekleşen
+>   `0,151 – 0,369`, ve `f ≥ 0,436`'da sahneler bit-aynı.
+>
+> **Açık soru:** `f` sahneye ulaşıyorsa ve `β` onu görmüyorsa kayıp
+> çözücüde mi, gözlenebilirde mi? Ölçülmedi.
+>
+> Aşağıdaki metin **değiştirilmedi** (kural 4): o, ölçümden önceki
+> en iyi açıklamaydı ve yanıldığı yer görünür kalmalı.
+
+
 **Çelişki.** L8 (tam metin) blok **kütle kesrinin** `β`'yı homojen
 duruma göre `%60`'a kadar düşürdüğünü ölçüyor. Bizim ölçümümüz ise blok
 hacim kesri `f`'in öğrenilen yöndeki payını `q90`'da bile `0,045`

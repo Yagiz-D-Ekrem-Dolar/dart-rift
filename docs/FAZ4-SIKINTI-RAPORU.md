@@ -6,7 +6,7 @@
 > Kural: **hiçbir satır silinmez.** Düzeltilen bir sıkıntı `KAPANDI`
 > işaretlenir; nedeni yerinde kalır. Yanlış çıkan bir yargı da öyle.
 
-**Son güncelleme:** 2026-10-10 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 89 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113, A114, A115, A116, A118, A120 · A70, A84, A91, A92, A94, A96, A106, A110, A111, A112 ve A117 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
+**Son güncelleme:** 2026-10-10 · **Kapanan:** 37 (bölüm 2: 23 tablo satırı + 14 `###` başlığı) + 15 (bölüm 1) · **Açık:** 90 — A11, A12, A17, A18, A19, A20, A21, A22, A23, A24, A25, A26, A27, A28, A29, A30, A31, A32, A33, A34, A35, A36, A37, A38, A39, A40, A41, A42, A43, A44, A45, A46, A47, A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62, A63, A64, A65, A66, A67, A68, A69, A71, A72, A73, A74, A75, A76, A77, A78, A79, A80, A81, A82, A83, A85, A86, A89, A93, A95, A97, A98, A100, A101, A103, A104, A105, A107, A108, A109, A113, A114, A115, A116, A118, A120, A121 · A70, A84, A91, A92, A94, A96, A106, A110, A111, A112 ve A117 **kapandı** **kapandı** (zirve kapısı G2'de doğrulandı, `47/48`) · A22'nin **bulgusu** ayakta (üretim ayarında şok yok); **maliyet çıkarımı** A23'te düzeltildi
 
 > ### ⚠ Bu sayaç bir kez **yanlış düzeltildi**
 >
@@ -5219,6 +5219,49 @@ da eşdeğer tek malzemeli çarpanın seçilen çıktıyı yeterli doğrulukta
 verdiğinin bağımsız gösterimi. **Yapılmadı.**
 
 ---
+### A121 — **A116'nın çaresi olan sınav, A116'nın kendi örneğini KAÇIRDI: bir belge cümlesi "bağlantı" sayılıyor** (2026-11-08) — *açık*
+
+`tests/test_baglanmamis_modul.py` tam olarak A116 için yazıldı:
+*"yazılmış ama bağlanmamış modül"* sınıfını makineyle yakalamak için.
+Ölçtüğü liste üç modül içeriyor — ve A116'nın **kendi baş örneği**
+`cok_dogruluk` listede **yok**.
+
+Sebebi, sınavın ölçütü:
+
+> bir modülün hiçbir genel adı **ve modül adının kendisi** `src/` +
+> `scripts/` altında (kendi dosyası hariç) geçmiyorsa, o modül
+> bağlanmamıştır.
+
+`inference/ic_ice_tasarim.py`'nin **3. satırı** şöyle:
+
+```
+Çok doğruluklu vekil (`cok_dogruluk`, Kennedy–O'Hagan AR(1)) ince
+```
+
+Bu bir **belge cümlesi**dir, çağrı değil. Ama "modül adı geçiyor mu"
+ölçütünü sağlıyor ve `cok_dogruluk` sınavdan kaçıyor. Doğrulandı
+(2026-11-08): `grep -rn "cok_dogruluk" src scripts` yalnız bu satırı,
+modülün kendisini ve kendi sınavını buluyor — **hiçbir üretim
+çağrısı yok**, ve sınav bunu söylemiyor.
+
+**Niçin ciddi:** A116 bir kusur *sınıfı* adlandırdı ve çaresi bu
+sınavdı. Çare, sınıfın adlandırılmasına sebep olan örneği
+göremiyorsa, çare değildir. Nitekim `cok_dogruluk` bu yüzden bir ay
+boyunca bağlanmadan kaldı ve `441` GPU saatlik ince koşu verisinin
+tüketicisi olmadı (KAYIT-099).
+
+**Çare (yapılmadı):** ölçüt ad geçişi değil **gerçek kullanım**
+olmalı — `ast` ile `import` ve çağrı düğümleri aranmalı, yorum ve
+belge dizgileri sayılmamalı. Dar biçim yeterli: `import` görmek bile
+belge cümlesinden kat kat güçlü bir ölçüttür.
+
+**NOT:** `cok_dogruluk` 2026-11-08'de üretime bağlandı
+(`scripts/cd_duzeltme.py`, `scripts/cd_posterior.py`; KAYIT-099,
+KAYIT-100). Yani A116'nın bu örneği **kapandı** — ama onu kapatan şey
+sınav değil, elle fark edilmesiydi. Sınavın deliği **duruyor** ve bu
+kayıt onun içindir.
+
+---
 ### A120 — **`failure.py` hiç çağrılmıyor: şartnamenin "config dondur" maddesi üretimde karşılanmıyor** (2026-11-01) — *açık*
 
 A116'nın çaresini ölçerken bulundu (modül düzeyi tarama: `src/` altında
@@ -5386,6 +5429,17 @@ olsaydı ilk iki satırdan adım/saniye çıkar ve hiçbiri yaşanmazdı.
 
 ---
 ### A116 — **"Yazılmış ama bağlanmamış modül": üç örnekle bir DESEN** (2026-10-09) — *açık, biri düzeltiliyor*
+
+> **NOT — 2026-11-08.** Baş örnek `cok_dogruluk` **üretime bağlandı**
+> (`scripts/cd_duzeltme.py`, `scripts/cd_posterior.py`; KAYIT-099,
+> KAYIT-100) ve `441` GPU saatlik ince koşu verisi ilk kez bir sonuca
+> döndü. A116 **kapanmadı**: `failure` (A120),
+> `validation.adaptive_h_cost` ve `validation.deposit_calibration`
+> duruyor.
+>
+> Ve bu örneği kapatan şey **sınav değildi**, elle fark edilmesiydi —
+> A116'nın çaresi olarak yazılan sınav onu göremiyor. Sebebi
+> **A121**'de.
 
 Tek bir hata değil, **tekrarlayan bir kusur sınıfı**. Bu depoda altyapı
 yazılıyor, belgeleniyor, sınavlanıyor — ve **çağrı yerine bağlanmadan**

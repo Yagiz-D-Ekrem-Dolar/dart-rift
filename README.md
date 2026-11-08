@@ -4,6 +4,7 @@
 
 ### Reading the interior of an asteroid from the one number DART left behind — and sealing the prediction before Hera arrives to check it.
 
+[![CI](https://img.shields.io/github/actions/workflow/status/Yagiz-D-Ekrem-Dolar/dart-rift/ci.yml?branch=main&style=flat-square&labelColor=282623&label=CI)](https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift/actions/workflows/ci.yml)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.23284193-2198D4?style=flat-square&labelColor=282623)](https://doi.org/10.5281/zenodo.23284193)
 [![License](https://img.shields.io/badge/license-MIT-ADA4A4?style=flat-square&labelColor=282623)](LICENSE)
 [![Production pool](https://img.shields.io/badge/production%20pool-96%20%2F%2096-2198D4?style=flat-square&labelColor=282623)](docs/sonuclar/havuz_posterior_girdi.csv)
@@ -398,17 +399,24 @@ This section matters as much as the results.
 - **Resolution convergence is not achieved.** The locked verdict is
   `NOT CONVERGED`: differences grow as resolution increases. Absolute values are
   therefore not reported as findings; separately-tested contrasts are.
-- **Resolution error is a bias, not scatter.** All 7 probe points moved the same
-  way, by a factor of `3.22` in `Y₀` (`p = 0.0156`). Folding that into the noise
-  term as variance would be wrong, and this is the measurement that says so.
+- **Resolution error is a bias, not scatter.** Seven probe points first moved
+  the same way, by a factor of `3.22` in `Y₀` (`p = 0.0156`); the nine fine runs
+  then repeated it directly on `β`, `9` of `9` in the same direction. Folding
+  that into the noise term as variance would be wrong, and these are the
+  measurements that say so.
 - **Crater depth is structurally unmeasurable here.** In the weak-matrix regime
   the unescaped ejecta covers the crater: the obstruction and the thing being
   measured are the same material. The route was scored against a locked criterion,
   reached `1 of 4`, and was reported as insufficient.
-- **The boulder-fraction axis is the weakest.** The production scene generator
-  saturates this knob: a requested `0.05 – 0.50` is realised as `0.151 – 0.369`,
-  and above `0.436` the scenes are identical. Statements about `f` are bounded by
-  that, and the defect is on the record.
+- **The boulder-fraction axis is the weakest, and we no longer know why.** The
+  production scene generator saturates the knob — a requested `0.05 – 0.50` is
+  realised as `0.151 – 0.369`, and above `0.436` the scenes are byte-identical —
+  and boulders end up at `6.4%` of their unbiased share near the surface, so the
+  impact point is never on one. But the tempting explanation, that `f` is simply
+  lost in placement noise, was **tested across 128 scenes and did not hold**: `f`
+  does reach the excavation zone and is distinguishable there with a single seed.
+  Where the signal is lost between the scene and `β` is an open question, stated
+  as one rather than papered over.
 - **The target is a fitted ellipsoid, not the PDS shape model.** The official
   shape package was retrieved and verified against its published MD5 checksums,
   but production runs use a triaxial ellipsoid of 88.5 × 87.0 × 58.0 m and
@@ -494,7 +502,8 @@ alongside its result.
 | [`src/dartrift/inference/`](src/dartrift/inference/) | design, forward model, surrogate, posterior, history matching |
 | [`docs/truba/`](docs/truba/) | 42 locked protocols — decision rules, written before the runs |
 | [`docs/adr/`](docs/adr/) | 65 architecture decision records |
-| [`docs/defter/`](docs/defter/) | 98 dated records: what was measured, and what failed |
+| [`docs/BULGULAR.md`](docs/BULGULAR.md) | the findings ledger — what is proven, what is not, dated |
+| [`docs/defter/`](docs/defter/) | 101 dated records: what was measured, and what failed |
 | [`docs/onkayit/`](docs/onkayit/) | sealed Hera predictions, SHA-256 |
 | [`docs/sonuclar/`](docs/sonuclar/) | the production pool and the measurements drawn from it |
 | [`docs/figures/`](docs/figures/) | the figures on this page and the data behind them |
@@ -521,7 +530,7 @@ only its successes cannot be checked.
 | Production design points, all completed | 96 / 96 |
 | Locked protocols | 42 |
 | Architecture decision records | 65 |
-| Dated measurement records | 98 |
+| Dated measurement records | 101 |
 | Tests, CPU only | 2,735 |
 | Lint violations | 0 |
 
