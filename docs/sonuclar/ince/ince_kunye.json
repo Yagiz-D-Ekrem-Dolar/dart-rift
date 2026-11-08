@@ -3,9 +3,10 @@
   "KAYNAK": "TRUBA kolyoz-cuda, HAVUZ_INCE_g1p0.dilim*_96.ozet.json",
   "ORTAK_MI": "EVET -- 8 noktanin kunyesi `dilim` ve `duvar_s` disinda BIREBIR ayni; sha256(sorted json)[:12] = e816dbc0e002 ile dogrulandi.",
   "kunye_sha256_12": "e816dbc0e002",
-  "n_nokta": 8,
+  "n_nokta": 9,
   "duvar_s": {
     "11": 160482.09490996227,
+    "20": 242143.44319990184,
     "33": 161277.18400478736,
     "44": 216564.74996932596,
     "45": 160894.75888094795,
@@ -14,7 +15,7 @@
     "62": 159318.664429351,
     "74": 162425.89711387828
   },
-  "toplam_gpu_saat": 373.8,
+  "toplam_gpu_saat": 441.1,
   "ortak_kunye": {
     "adim_bildir": 20000,
     "akma_kipi": "ara",

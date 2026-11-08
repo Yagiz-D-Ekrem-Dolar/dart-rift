@@ -178,6 +178,49 @@ the excavation physics.
 
 <br>
 
+## The shortcut, measured
+
+Every simulation here is a compromise: the body is represented by finitely many
+particles, and smaller particles mean a better answer and a much slower run. The
+production campaign used the fast setting. The honest question is what that cost.
+
+Nine points of the campaign were re-run at **half the particle spacing** — 441
+GPU-hours for those nine alone — and compared against their fast counterparts at
+the identical interior parameters.
+
+| | |
+|---|---|
+| points where the answer moved **the same way** | **9 of 9** (`p = 0.002`) |
+| ratio fine / fast | `1.032` – `1.326`, median **`1.139`** |
+
+The fast setting **underestimates `β` by about 14%**, and it does so
+systematically rather than randomly. That distinction decides what to do about
+it: random scatter could be absorbed into the error bars, but a consistent shift
+absorbed into the error bars would instead be absorbed by the *interior
+parameters* — the inference would explain our shortcut by inventing an asteroid.
+
+So it is corrected instead, with a Kennedy–O'Hagan autoregressive model fitted
+on those nine points (`ρ = 0.820`). Leave-one-out across them:
+
+| | RMS error against the fine answer |
+|---|---:|
+| uncorrected | `0.656` |
+| corrected | **`0.262`** |
+
+A **2.51×** improvement, and not merely on average: the corrected surrogate wins
+at all nine points individually.
+
+**What this is not.** The fine run is not the truth either — differences
+*grow* with refinement rather than settling, so the locked convergence verdict
+remains `NOT CONVERGED`. The correction yields what one further step of
+refinement would have said, not a converged value. And the preregistered gate
+for promoting the corrected posterior to the headline has four conditions; three
+pass and the fourth is not yet measured, so the headline result stays
+uncorrected and the correction is published as exploration.
+[KAYIT-099](docs/defter/KAYIT-099_2026-11-08_cok-dogruluklu-duzeltme-baglandi.md)
+
+<br>
+
 ## How it is locked
 
 A result is only worth something if the rules were not chosen after seeing the
