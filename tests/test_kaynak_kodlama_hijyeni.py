@@ -58,10 +58,26 @@ def _cagri_adi(c: ast.Call) -> str | None:
 
 
 def _ikili_kip(c: ast.Call) -> bool:
-    """`mode` icinde `b` varsa ikili akis -- `encoding` YASAK."""
+    """`mode` icinde `b` varsa ikili akis -- `encoding` YASAK.
+
+    Kip KACINCI konumda oldugu cagri bicimine gore DEGISIR:
+
+        open(yol, "rb+")   -> gomulu islev,  kip args[1]
+        yol.open("rb+")    -> Path metodu,   kip args[0]
+
+    Eskiden yalniz `args[1]` bakiliyordu ve `Path.open("rb+")` ikili
+    SAYILMIYORDU. Sonuc (2026-11-08): `ensemble.py`'nin yarim kalmis
+    JSONL satirini `rb+` ile yoklayan -- ve DOGRU olan -- kodu
+    "kodlama vermiyor" diye raporlandi. Oysa ikili akisa `encoding`
+    verilmesi `ValueError` atar; sinav imkansiz bir sey istiyordu.
+
+    Ayrim `c.func`'tan yapilir: `ast.Attribute` ise metot cagrisidir.
+    """
+    metot = isinstance(c.func, ast.Attribute)
+    kip_indis = 0 if metot else 1
     kip = None
-    if len(c.args) >= 2 and isinstance(c.args[1], ast.Constant):
-        kip = c.args[1].value
+    if len(c.args) > kip_indis and isinstance(c.args[kip_indis], ast.Constant):
+        kip = c.args[kip_indis].value
     for k in c.keywords:
         if k.arg == "mode" and isinstance(k.value, ast.Constant):
             kip = k.value.value
@@ -144,3 +160,28 @@ def test_hicbir_cagri_kodlamayi_IKI_KEZ_vermiyor() -> None:
     assert not cift, (
         f"{len(cift)} cagri kodlamayi IKI KEZ veriyor (TypeError):\n  "
         + "\n  ".join(cift))
+
+
+def test_IKILI_kip_her_iki_cagri_biciminde_taninir() -> None:
+    """`_ikili_kip`'in 2026-11-08'de kapatılan deliği geri gelmesin.
+
+    Kip, gömülü `open`'da ikinci konumda ama `Path.open`'da
+    **birincide**. Eski kontrol yalnız ikinciye bakıyordu ve
+    `yol.open("rb+")` ikili sayılmıyordu; doğru yazılmış bir kod
+    "kodlama vermiyor" diye raporlanıyordu. İkili akışa `encoding`
+    vermek `ValueError` attığı için bu, imkânsız bir talepti.
+    """
+    ikili = [
+        'open(yol, "rb+")', 'open(yol, "wb")', 'open(yol, mode="rb")',
+        'yol.open("rb+")', 'yol.open("wb")', 'yol.open(mode="rb")',
+    ]
+    metin = [
+        'open(yol, "r", encoding="utf-8")', 'yol.open(encoding="utf-8")',
+        'yol.open("w", encoding="utf-8")',
+    ]
+    for kaynak in ikili:
+        c = ast.parse(kaynak, mode="eval").body
+        assert _ikili_kip(c), f"ikili sayilmadi: {kaynak}"
+    for kaynak in metin:
+        c = ast.parse(kaynak, mode="eval").body
+        assert not _ikili_kip(c), f"yanlislikla ikili sayildi: {kaynak}"

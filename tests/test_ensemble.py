@@ -10,7 +10,7 @@ import json
 import numpy as np
 import pytest
 
-from dartrift.inference.ensemble import ensemble_kos, oku_tamamlananlar
+from dartrift.inference.ensemble import ayar_karmasi, ensemble_kos, oku_tamamlananlar
 
 TASARIM = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0],
                     [4.0, 40.0], [5.0, 50.0]])
@@ -71,6 +71,11 @@ def test_BOZUK_son_satir_atlaniyor_ve_nokta_YENIDEN_kosuluyor(tmp_path) -> None:
     assert d.bozuk_satir == 1
     assert d.atlanan == 2
     assert d.tamamlanan == 5
+    # Sürücünün bellek içi sayacı yetmez: yeni satır yarım satıra
+    # yapışmışsa sonraki süreç onu okuyamaz.
+    tamam, bozuk = oku_tamamlananlar(y, root_seed=7, tasarim=TASARIM)
+    assert bozuk == 1 and set(tamam) == set(range(5))
+    assert y.read_text(encoding="utf-8").splitlines()[2].startswith('{"i": 2, "y": [6.0, 3')
 
 
 def test_TOHUM_degisirse_eski_satirlar_GECERSIZ(tmp_path) -> None:
@@ -117,8 +122,46 @@ def test_DUSEN_nokta_ISTENIRSE_yeniden_deneniyor(tmp_path) -> None:
     d = ensemble_kos(TASARIM, _ileri, y, root_seed=7,
                      yeniden_dene_dusenleri=True)
     assert d.tamamlanan == 5
+    assert d.dusen == 0
+    assert d.tamamlanan + d.dusen == d.toplam
     tamam, _ = oku_tamamlananlar(y, root_seed=7)
     assert tamam[2] is not None
+
+
+def test_AYNI_tohumda_degisik_theta_eski_sonucu_KULLANMIYOR(tmp_path) -> None:
+    y = tmp_path / "e.jsonl"
+    ensemble_kos(TASARIM[:1], _ileri, y, root_seed=7, surum="aynı")
+    degisen = TASARIM[:1].copy()
+    degisen[0, 0] = 9.0
+    d = ensemble_kos(degisen, _ileri, y, root_seed=7, surum="aynı")
+    assert d.atlanan == 0
+    tamam, _ = oku_tamamlananlar(y, root_seed=7, surum="aynı",
+                                 tasarim=degisen)
+    assert tamam[0].tolist() == _ileri(degisen[0]).tolist()
+
+
+def test_AYNI_theta_farkli_kosu_ayari_yeniden_KOSULUYOR(tmp_path) -> None:
+    y = tmp_path / "e.jsonl"
+    ilk = ayar_karmasi({"sahne_tohum": 1, "cfl": 0.25})
+    ikinci = ayar_karmasi({"cfl": 0.25, "sahne_tohum": 2})
+    assert ilk != ikinci
+    assert ilk == ayar_karmasi({"cfl": 0.25, "sahne_tohum": 1})
+    ensemble_kos(TASARIM[:1], _ileri, y, root_seed=7,
+                 surum="aynı", kosu_kimligi=ilk)
+    d = ensemble_kos(TASARIM[:1], _ileri, y, root_seed=7,
+                     surum="aynı", kosu_kimligi=ikinci)
+    assert d.atlanan == 0
+    tamam, _ = oku_tamamlananlar(y, root_seed=7, surum="aynı",
+                                 tasarim=TASARIM[:1], kosu_kimligi=ikinci)
+    assert set(tamam) == {0}
+
+
+def test_ayarsiz_okuyucu_ESKI_satirlari_okuyabilir(tmp_path) -> None:
+    y = tmp_path / "e.jsonl"
+    y.write_text(json.dumps({"i": 0, "y": [2.0], "root_seed": 7,
+                             "surum": "eski"}) + "\n", encoding="utf-8")
+    assert set(oku_tamamlananlar(y, root_seed=7)[0]) == {0}
+    assert oku_tamamlananlar(y, root_seed=7, tasarim=TASARIM[:1])[0] == {}
 
 
 def test_SONLU_OLMAYAN_cikti_DUSME_sayiliyor(tmp_path) -> None:
@@ -166,6 +209,8 @@ def test_faz46_ENSEMBLE_SURUCUSUNU_kullaniyor() -> None:
               "faz46_sentetik_kurtarma.py").read_text(encoding="utf-8")
     assert "from dartrift.inference.ensemble import" in kaynak
     assert "ensemble_kos(" in kaynak
+    assert "kosu_kimligi = ayar_karmasi(" in kaynak
+    assert "kosu_kimligi=kosu_kimligi" in kaynak
     assert "devam dosyasi" in kaynak
     # Eski TEK SEFERLIK cagri geri GELMEMELI.
     assert "Y = ileri_kosu(x, a.device" not in kaynak, \

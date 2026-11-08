@@ -23,7 +23,9 @@ olur.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -229,7 +231,7 @@ def main() -> int:
         # KALDIGI YERDEN DEVAM: her nokta hemen JSONL'e yaziliyor. Bir SLURM
         # isi 12 saatte kesiliyor ve 300 kosuluk ensemble ~10 GPU-gunu
         # (KAYIT-040) -- yani kesinti KACINILMAZ, olasi degil.
-        from dartrift.inference.ensemble import ensemble_kos, oku_tamamlananlar
+        from dartrift.inference.ensemble import ayar_karmasi, ensemble_kos, oku_tamamlananlar
         from dartrift.inference.forward import ileri_kosu as _tek_nokta
 
         sys.path.insert(0, str(REPO / "scripts"))
@@ -237,6 +239,18 @@ def main() -> int:
 
         jsonl = Path(a.out).with_suffix(".jsonl")
         _mat = _malzeme()
+        surum = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=REPO, capture_output=True,
+            text=True, check=False).stdout.strip() or None
+        kosu_kimligi = ayar_karmasi({
+            "args": vars(a),
+            "sahne": SAHNE,
+            "malzeme": dataclasses.asdict(_mat),
+            "uzay": {"names": UZAY.names, "lo": UZAY.lo,
+                     "hi": UZAY.hi, "log": UZAY.log},
+            "gozlenebilirler": GOZLENEBILIRLER,
+            "surum": surum,
+        })
 
         def _bir(th):
             # GEREKCEYI YUTMA. `ileri_kosu` dusen noktayi `nan` birakip
@@ -263,12 +277,15 @@ def main() -> int:
             print(f"    [{i + 1}/{n}] {mesaj}", flush=True)
 
         durum = ensemble_kos(x, _bir, jsonl, root_seed=a.root_seed,
-                             ilerleme=_ilerleme)
+                             ilerleme=_ilerleme, surum=surum,
+                             kosu_kimligi=kosu_kimligi)
         print(f"    ensemble: tamamlanan={durum.tamamlanan} "
               f"dusen={durum.dusen} atlanan={durum.atlanan} "
               f"bozuk_satir={durum.bozuk_satir}", flush=True)
         print(f"    devam dosyasi: {jsonl}", flush=True)
-        tamam, _ = oku_tamamlananlar(jsonl, root_seed=a.root_seed)
+        tamam, _ = oku_tamamlananlar(
+            jsonl, root_seed=a.root_seed, surum=surum,
+            tasarim=x, kosu_kimligi=kosu_kimligi)
         Y = np.full((len(x), len(GOZLENEBILIRLER)), np.nan)
         for _i, _v in tamam.items():
             if _v is not None and _i < len(Y):

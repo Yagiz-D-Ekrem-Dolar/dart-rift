@@ -47,8 +47,12 @@ def sayisal_gecerlilik(*, st: dict, t: float, t_end: float, enerji: dict,
     """Sayısal geçerlilik kaydı — kontroller, değerler, eşikler."""
     from .momentum_defteri import ARTIK_ESIGI
 
+    gerekli = ("x", "v", "u", "rho", "P", "S")
+    eksik = [ad for ad in gerekli if ad not in st]
+    if eksik:
+        raise ValueError(f"sayısal geçerlilik için durum alanları eksik: {eksik}")
     sonlu = all(bool(np.all(np.isfinite(np.asarray(st[k]))))
-                for k in ("x", "v", "u", "rho", "P", "S") if k in st)
+                for k in gerekli)
     rho_min = float(np.min(np.asarray(st["rho"])))
     de = float(enerji.get("e_tot_bagil_sapma", float("nan")))
     oran = float(akma_tani.get("oran_max", float("nan"))) if akma_tani else float("nan")
