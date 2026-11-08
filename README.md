@@ -17,6 +17,23 @@
 
 <br>
 
+**In one paragraph.** DART hit an asteroid and left one number behind. Three
+properties of the interior could each explain that number, and one number cannot
+separate three things. So this project measured exactly how much *can* be
+separated — it turns out to be one direction, matrix strength — then measured
+which second observation would open the rest, and sealed that prediction before
+ESA's Hera gets there to check it.
+
+| if you are… | start here |
+|---|---|
+| new to the project | [The question](#the-question) → [The answer](#the-answer) |
+| looking for evidence | [Validation](#does-the-code-hold-up) · [How it is locked](#how-it-is-locked) |
+| looking for the prediction | [Sealed prediction for Hera](#a-sealed-prediction-for-hera) |
+| going to run it | [Reproduce](#reproduce) |
+| checking the limits | [What this work does not claim](#what-this-work-does-not-claim) |
+
+<br>
+
 ## The question
 
 In September 2022, NASA's DART spacecraft struck the asteroid Dimorphos and left
@@ -81,6 +98,32 @@ more tightly. This work measures the reason.
 
 <br>
 
+## The way out, measured
+
+If the remedy is a second observable with a different gradient, the obvious next
+question is *which one*. That was measured too, on the same 96 completed runs:
+the **spin the impact added to the body**, recovered from the angular momentum
+of the bound material in the very same state files, needing no extra simulation.
+
+<div align="center">
+<img src="docs/figures/sensitivity.svg" width="860" alt="Rank correlation of two observables against the three interior axes. The momentum enhancement responds almost only to matrix strength; the spin responds to boulder porosity and boulder fraction.">
+</div>
+
+| observable | `α_b` | `log Y₀` | `f` |
+|---|---:|---:|---:|
+| `β` — momentum enhancement | −0.019 | **−0.986** | +0.026 |
+| `ω` — spin gained | −0.342 | −0.068 | **+0.474** |
+
+The two rows are almost disjoint, and the two observables are nearly orthogonal:
+`r(β, ω) = +0.085`. `β` is an almost pure readout of matrix strength. `ω` is
+blind to strength and is the one quantity here that responds to the **boulder
+fraction** — the axis `β` cannot see at all.
+
+That is the whole argument for the next measurement, and it is why the sealed
+prediction below is about spin rather than about a better `β`.
+
+<br>
+
 ## Does the code hold up?
 
 The solver is an independent GPU SPH implementation written for this project:
@@ -126,6 +169,13 @@ total energy drifts by `−0.91%` across the run. A fourth independent
 implementation landing **13–18% below** a published benchmark is a useful data
 point in a field that publishes dedicated code-comparison papers.
 
+One more check comes from the ejecta rather than from the momentum. Fitting the
+cumulative mass–velocity distribution `M(>v) ∝ v^(−3μ)` across the production
+pool gives an ejecta scaling exponent of **`μ = 0.4347`**, fitted successfully at
+`95` of `96` points — inside the Housen–Holsapple range of `0.40 – 0.55`. The
+solver was never tuned to land there; it is an independent consistency check on
+the excavation physics.
+
 <br>
 
 ## How it is locked
@@ -153,6 +203,25 @@ python scripts/muhur_dogrula.py
 The verifier is deliberately strict about its own limits. It separates *"the seal
 is intact"* from *"the seal is traceable to specific input files"*, and reports
 the second as missing where it is missing rather than quietly passing.
+
+Two checks stand behind the posterior itself, both run before anything was
+sealed:
+
+- **Simulation-based calibration.** Rank statistics over repeated
+  prior-predictive draws are uniform on all three axes
+  (`p = 0.868 / 0.074 / 0.299`). The posterior is calibrated under its own
+  assumptions — which is a statement about the inference, not about the physics.
+- **The model reaches the observation.** History matching gives an implausibility
+  minimum of `I_min = 0.325`, with `34.04%` of the prior volume compatible with
+  the DART measurement. Had no interior reproduced the observed `β`, this number
+  would have come out above 3 and nothing downstream would mean anything.
+
+The locking is not decorative. Partway through, an input column turned out to
+hold the wrong quantity, inflating a modelled value by a factor of `1.437`. Three
+published judgements were **withdrawn**, the analysis re-run, and the corrected
+values published beside the originals. No line was deleted; the retraction and
+its full diff are part of the permanent record, and the headline identifiability
+result survived it unchanged.
 
 <br>
 
@@ -256,27 +325,64 @@ This section matters as much as the results.
 
 ## Reproduce
 
-Everything on this page regenerates from the repository, with no GPU.
+Every number and every figure on this page regenerates from the repository.
+**None of it needs a GPU** — the simulations are already run and their measured
+outputs are committed.
+
+**Setup** (Python 3.10–3.12):
 
 ```bash
 pip install -e ".[dev]"
 ```
 
-```bash
-python scripts/tani_esdogrusallik_96.py docs/sonuclar/havuz_posterior_girdi.csv --json docs/figures/data/identifiability.json
-```
-
-```bash
-python scripts/figure_data.py && make -C docs/figures
-```
+**One minute — check the sealed predictions.** Recomputes the SHA-256 of each
+sealed Hera record and reports whether it still matches. Expect
+`muhur bozuk 0` and two traceability notes that the verifier raises against
+itself.
 
 ```bash
 python scripts/muhur_dogrula.py
 ```
 
+**Two minutes — rederive the headline result.** Reads the production pool and
+recomputes the Fisher directions. Expect `lambda1 93/96`, `lambda2 0/96`, and
+posterior widths `0.142 / 0.930 / 1.000`.
+
+```bash
+python scripts/tani_esdogrusallik_96.py docs/sonuclar/havuz_posterior_girdi.csv --json docs/figures/data/identifiability.json
+```
+
+**Then the figures.** Needs a LaTeX installation with `lualatex` and
+`pdftocairo`; writes the same SVG files this page embeds.
+
+```bash
+python scripts/figure_data.py && make -C docs/figures
+```
+
+**Half an hour — the full test suite**, 2,735 tests, CPU only:
+
 ```bash
 python -m pytest -m "not gpu" -q
 ```
+
+<details>
+<summary><b>Running a simulation yourself</b> — this is the part that needs a GPU</summary>
+
+The forward model needs an NVIDIA GPU with FP64 (developed on H100). A single
+point of the production campaign at the fine resolution took **44 to 60 hours**
+on one H100 — the eight completed fine points cost **373.8 GPU-hours** between
+them, and their measured wall times are recorded in
+[`docs/sonuclar/ince/ince_kunye.json`](docs/sonuclar/ince/ince_kunye.json).
+
+This is why the measured outputs are committed rather than left to be
+regenerated: reproducing the campaign from scratch is a cluster-scale job, but
+checking every claim made from it is not.
+
+The campaign driver is [`scripts/faz5_ensemble_merdiven.py`](scripts/faz5_ensemble_merdiven.py);
+the exact flags used in production are in the Slurm scripts under
+[`truba/`](truba/), and the full configuration of a completed run is recorded
+alongside its result.
+</details>
 
 <br>
 
@@ -295,7 +401,10 @@ python -m pytest -m "not gpu" -q
 | [`docs/onkayit/`](docs/onkayit/) | sealed Hera predictions, SHA-256 |
 | [`docs/sonuclar/`](docs/sonuclar/) | the production pool and the measurements drawn from it |
 | [`docs/figures/`](docs/figures/) | the figures on this page and the data behind them |
+| [`docs/yazismalar/`](docs/yazismalar/) | external expert review, verbatim — several defects here were found by it |
+| [`docs/arsiv/`](docs/arsiv/) | superseded working documents, kept and marked as historical |
 | [`data_manifest/`](data_manifest/) | retrieved NASA PDS products with verified checksums |
+| [`RULES.txt`](RULES.txt) | the four rules nothing in this repository may violate |
 
 Requirement-to-code-to-test-to-evidence mapping:
 [`docs/IZLENEBILIRLIK.md`](docs/IZLENEBILIRLIK.md).
@@ -323,16 +432,52 @@ only its successes cannot be checked.
 
 ## Citation
 
+Two things can be cited and they are not interchangeable. Cite the **paper** for
+the text, the methods and any number reported here; cite the **software** when
+you run, modify or build on the code.
+
+<details>
+<summary><b>Paper</b> — for results, methods and reported numbers</summary>
+
 ```bibtex
-@software{dartrift,
-  title = {DART-RIFT: identifiability of asteroid interior parameters
-           from the DART momentum transfer},
-  year  = {2026},
-  doi   = {10.5281/zenodo.23284193},
-  url   = {https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift}
+@article{dartrift2026,
+  title   = {DART-RIFT. I. Cohesion, Matrix Tension, and Impact-Site
+             Sensitivities in Simulations of Dimorphos},
+  author  = {Dalar, Ya{\u{g}}{\i}z Ekrem and Saliho{\u{g}}lu, Feyzi Arda
+             and Sezer, Nedim Mutlu},
+  year    = {2026},
+  month   = {10},
+  publisher = {Zenodo},
+  doi     = {10.5281/zenodo.23284193},
+  url     = {https://doi.org/10.5281/zenodo.23284193}
 }
 ```
+</details>
 
-Released under the [MIT License](LICENSE). This page, the figures and the
-preprint are in English; the locked protocols and dated measurement notes are
-written in Turkish.
+<details>
+<summary><b>Software</b> — for the code itself</summary>
+
+```bibtex
+@software{dartrift_software,
+  title   = {DART-RIFT: GPU-accelerated SPH shock-physics engine for
+             Dimorphos and Bayesian interior inference},
+  author  = {Dalar, Ya{\u{g}}{\i}z Ekrem and Saliho{\u{g}}lu, Feyzi Arda
+             and Sezer, Nedim Mutlu},
+  year    = {2026},
+  license = {MIT},
+  url     = {https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift}
+}
+```
+</details>
+
+**Which DOI.** `10.5281/zenodo.23284193` is the *version* DOI and points at that
+exact text — use it when you cite a specific number. The *concept* DOI
+`10.5281/zenodo.23284192` always resolves to the newest version instead.
+
+[`CITATION.cff`](CITATION.cff) is the machine-readable source for all of the
+above, including ORCIDs; GitHub's "Cite this repository" button reads it.
+
+Released under the [MIT License](LICENSE). This page, the figures and the paper
+are in English; the locked protocols and dated measurement notes are written in
+Turkish, and the full engineering record stays in that language on purpose —
+translating a frozen record would mean rewriting it.

@@ -67,10 +67,36 @@ def test_goruntu_COMMIT_SHA_tasiyor() -> None:
 
 
 def test_ozet_hesabi_dogru() -> None:
-    """Testin kendisi doğru hash'i mi hesaplıyor — elden doğrulama."""
+    """Testin kendisi doğru hash'i mi hesaplıyor — elden doğrulama.
+
+    Normalleştirme `anlik_al.ozet` ile **aynı** olmalı; aksi hâlde bu
+    test manifesti değil kendini doğrular.
+    """
     for ad, h in manifest_oku().items():
-        elle = hashlib.sha256((ANLIK / ad).read_bytes()).hexdigest()
+        ham = (ANLIK / ad).read_bytes().replace(b"\r\n", b"\n")
+        elle = hashlib.sha256(ham.replace(b"\r", b"\n")).hexdigest()
         assert elle == h, ad
+
+
+def test_ozet_SATIR_SONUNDAN_bagimsiz(tmp_path: Path) -> None:
+    """Aynı içerik, üç satır sonu biçimi, **tek** özet.
+
+    Bu testin varlık sebebi gerçek bir olay: MANIFEST Windows'ta
+    (`CRLF`) üretilmişti ve Linux CI dosyayı `LF` ile çıkarıp her
+    görüntüyü *"değiştirilmiş"* ilan ediyordu. Hiçbiri değişmemişti;
+    özet tanımı yanlıştı. Bu sınav o hatanın geri gelmesini engeller.
+    """
+    from anlik_al import ozet
+
+    govde = "# Baslik\n\nbir satir\nbaska satir\n"
+    yollar = []
+    for ad, son in (("lf.md", "\n"), ("crlf.md", "\r\n"), ("cr.md", "\r")):
+        p = tmp_path / ad
+        p.write_bytes(govde.replace("\n", son).encode("utf-8"))
+        yollar.append(p)
+
+    ozetler = {ozet(p) for p in yollar}
+    assert len(ozetler) == 1, f"satir sonu ozeti degistiriyor: {ozetler}"
 
 
 def test_KIRLI_agactan_goruntu_alinmiyor() -> None:

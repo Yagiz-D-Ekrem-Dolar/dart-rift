@@ -57,7 +57,31 @@ def depo_durumu() -> dict:
 
 
 def ozet(yol: Path) -> str:
-    return hashlib.sha256(yol.read_bytes()).hexdigest()
+    """Görüntünün özeti — **satır sonu biçiminden bağımsız**.
+
+    ## Niçin ham baytlar değil (2026-11-08 düzeltmesi)
+
+    Eski hâli `yol.read_bytes()` idi ve bu, değişmezliği değil
+    **işletim sistemini** sınıyordu. MANIFEST Windows'ta (`CRLF`)
+    üretilmişti; Linux CI aynı dosyayı `LF` ile çıkarıp farklı özet
+    hesaplıyor ve *"değiştirilmiş anlık görüntü"* diye bağırıyordu.
+
+    Ölçüldü (`ANLIK-2026-09-01_momentum-defteri.md`):
+
+        diskte CRLF  -> 1a84a8dd572d...   (MANIFEST'in beklediği)
+        LF'e normal  -> 699c33e9764f...   (CI'nın bulduğu)
+
+    Üç görüntünün de ilk commit'lerinden beri **hiç değişmediği**
+    `git diff <ilk-commit> HEAD -- <dosya>` ile ayrıca doğrulandı;
+    yani alarm baştan sona yanlıştı ve CI günlerce bu yüzden kırmızı
+    kaldı.
+
+    Değişmez olan şey **içeriktir**, satırların nasıl sonlandığı değil.
+    Bu yüzden özet `CRLF` ve tek `CR` normalleştirildikten sonra
+    alınır. Kural 5 gereği eski davranış silinmedi, burada yazılı.
+    """
+    ham = yol.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(ham).hexdigest()
 
 
 def manifest_oku() -> dict:

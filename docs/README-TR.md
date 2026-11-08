@@ -1,10 +1,33 @@
+> ## ⚠ ARŞİV — TARİHSEL ANLIK GÖRÜNTÜ
+>
+> **Bu belge güncel değildir ve güncellenmeyecektir.** Deponun
+> `2026-10-14` tarihli Türkçe ön sayfasıdır; o gün ne biliniyorsa onu
+> söyler. Güncel ön sayfa: [`README.md`](../README.md).
+>
+> Bilerek bozulmadan saklanıyor (kural 5: hiçbir satır silinmez).
+> Değeri, projenin o tarihte neyi bildiğini ve neyi bilmediğini
+> göstermesindedir. Bugünkü durumu buradan okumayın.
+>
+> **Aradaki başlıca farklar:**
+>
+> | konu | bu belge | bugün |
+> |---|---|---|
+> | üretim havuzu | `90/96` | **`96/96` kapandı** |
+> | Hera öngörüsü | *"henüz mühürlü değil"* | **iki kayıt mühürlü** (SHA-256) |
+> | öğrenilen yön | kısmi havuzdan sıra korelasyonları | **ölçüldü:** `Y₀`, payı `0,999` |
+>
+> Aşağıdaki sıra korelasyonları `88` noktalıktır; tam havuzun değerleri
+> [`README.md`](../README.md)'dedir.
+
+---
+
 # DART-RIFT
 
 **DART'ın bıraktığı tek sayıdan Dimorphos'un içini geri okumak — ve bu
 tahmini Hera oraya varmadan mühürlemek.**
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23284193.svg)](https://doi.org/10.5281/zenodo.23284193)
-[![Lisans: MIT](https://img.shields.io/badge/lisans-MIT-blue.svg)](LICENSE)
+[![Lisans: MIT](https://img.shields.io/badge/lisans-MIT-blue.svg)](../LICENSE)
 
 > **In English.** DART-RIFT infers the interior of asteroid Dimorphos —
 > boulder porosity, matrix strength, boulder volume fraction — from
@@ -63,7 +86,7 @@ noktadayken ölçüldü:
 İkinci bulgu projenin özgün katkısıdır: dejenerasyonun yalnız *var
 olduğunu* değil, **hangi yönde** olduğunu ve hangi gözlenebilirin onu
 kesebileceğini veriyor. `ω` bu projede ölçülen bir gözlenebilirdir
-([PROTOKOL-SI](docs/truba/PROTOKOL-SI-SON-ISLEME.md) §5: bağlı
+([PROTOKOL-SI](truba/PROTOKOL-SI-SON-ISLEME.md) §5: bağlı
 malzemenin açısal momentumu / eylemsizlik tensörü), ek bir koşu
 gerektirmez — aynı durum dosyalarından çıkar.
 
@@ -71,8 +94,8 @@ gerektirmez — aynı durum dosyalarından çıkar.
 > yenilenecektir. Asıl yargı — kaç yön öğrenildiğinin **mühürlü**
 > ölçümü — Fisher öz değerleriyle verilir ve tam havuzu, kalibre
 > edilmiş vekili ve ölçülmüş artık korelasyonunu gerektirir
-> ([PROTOKOL-UP](docs/truba/PROTOKOL-UP-POSTERIOR.md),
-> [ADR-0058](docs/adr/ADR-0058-uretim-posteriorunun-tarifi.md)). O ölçüm
+> ([PROTOKOL-UP](truba/PROTOKOL-UP-POSTERIOR.md),
+> [ADR-0058](adr/ADR-0058-uretim-posteriorunun-tarifi.md)). O ölçüm
 > havuzdan **önce** yazıldı ve sonucuna göre değiştirilmeyecek.
 
 ## Neyi iddia etmiyoruz
@@ -82,14 +105,14 @@ Bu bölüm README'nin en önemli kısmıdır.
 - **`(α_b, Y₀, f)` için nokta tahmini ya da güven aralığı vermiyoruz.**
   Dejenerasyon ölçülmüş; bir nokta tahmini onu gizlemek olurdu.
 - **Hera için sayısal bir öngörü henüz mühürlü değil.** Protokol yazılı
-  ([PROTOKOL-HT](docs/truba/PROTOKOL-HT-HERA-TAHMIN.md)), sayı yok.
+  ([PROTOKOL-HT](truba/PROTOKOL-HT-HERA-TAHMIN.md)), sayı yok.
 - **Çözünürlük yakınsaması sağlanmadı.** Protokol M yargısı
   **YAKINSAMIYOR**: farklar inceldikçe büyüyor. Bu yüzden mutlak
   değerler değil, çözünürlüğe dayanıklı olduğu ayrıca ölçülmüş
   **kontrastlar** kullanılıyor.
 - **Hedef gerçek PDS şekil modeli değil.** PDS paketi
   (`urn:nasa:pds:dart_shapemodel::1.0`) çekildi ve 10/10 ürün resmî
-  MD5'iyle doğrulandı ([`data_manifest/`](data_manifest/README.md)), ama
+  MD5'iyle doğrulandı ([`data_manifest/`](../data_manifest/README.md)), ama
   üretim sahnesi Dimorphos'un ölçülerine oturtulmuş üç eksenli bir
   **elipsoittir** (88,5 × 87,0 × 58,0 m, kütle 4,2980e9 kg).
 - **Kapıların geçmesi fiziğin doğrulandığını göstermez.** Mühendislik
@@ -97,7 +120,7 @@ Bu bölüm README'nin en önemli kısmıdır.
   doğrulama (bu model DART çarpışmasını doğru modelliyor mu) ayrı
   tutulur; ikincisi açık.
 
-Tam döküm: [`docs/BULGULAR.md`](docs/BULGULAR.md) — ne kanıtlandı, ne
+Tam döküm: [`docs/BULGULAR.md`](BULGULAR.md) — ne kanıtlandı, ne
 kanıtlanmadı, hangi iddia hangi ölçümle daraltıldı.
 
 ## Boru hattı
@@ -130,7 +153,7 @@ Her GPU çekirdeğinin **Warp'tan bağımsız bir NumPy FP64 referansı**
 vardır ve ikisi çapraz kontrol edilir (tipik sapma `< 1e-8`). Bu
 kontrol, tek başına yeşil görünen bir çekirdeğin yanlış ayrıklaştırma
 yapmasını engeller — nitekim
-[ADR-0015](docs/adr/ADR-0015-sureklilik-yogunlugu.md) bu yolla yakalanmış
+[ADR-0015](adr/ADR-0015-sureklilik-yogunlugu.md) bu yolla yakalanmış
 gerçek bir çekirdek hatasını kaydeder.
 
 ## Motor doğrulaması
@@ -148,18 +171,18 @@ kanıtlarından, koşu künyeleriyle:
 | elastik dalga hızı | 4593 m/s teorik | 4458 m/s → %2,96 | %3 |
 | Taylor bar (bakır) | deney bandı 0,60–0,80 | `L/L₀ = 0,731`; enerji %0,083 | %1,5 |
 
-Kanıtlar: [G0](docs/evidence/G0_report_truba_1425656.md) ·
-[G1](docs/evidence/G1_report_truba_1426162.md) ·
-[G2](docs/evidence/G2_report_truba_1426596.md) ·
-[G3](docs/evidence/G3_GATE_0b88ae9.md) ·
-[G4 kapanışı](docs/FAZ4-KAPANIS.md)
+Kanıtlar: [G0](evidence/G0_report_truba_1425656.md) ·
+[G1](evidence/G1_report_truba_1426162.md) ·
+[G2](evidence/G2_report_truba_1426596.md) ·
+[G3](evidence/G3_GATE_0b88ae9.md) ·
+[G4 kapanışı](FAZ4-KAPANIS.md)
 
 > **Marj dürüstlüğü.** Bir ölçütün geçmesi sağlam geçtiği anlamına
 > gelmez: elastik dalga `%2,96`'da ve eşiği `%3`. Kılpayı geçen ölçütler
 > saklanmıyor; davranışları ayrıca incelenmiş (elastik dalga hatası
 > çözünürlükle sıfıra yakınsıyor, Sedov hatası ise `~%3,9`'luk bir
 > **tabana** iniyor ve bu ayrıklaştırma değil model-form hatasıdır —
-> [ADR-0011](docs/adr/ADR-0011-sedov-yakinsama-kurulumu.md)).
+> [ADR-0011](adr/ADR-0011-sedov-yakinsama-kurulumu.md)).
 
 ## İki ayrı doğrulama — karıştırılmamalı
 
@@ -181,7 +204,7 @@ gösterir, hedef problemin çözüldüğünü değil.
 | **G1** | Şok motoru çalışıyor (Sod, Sedov) | **GEÇTİ** | FAZ 2 başlayabilir |
 | **G2** | Gerçek malzeme fiziği (Tillotson, Hugoniot) | **GEÇTİ** | FAZ 3 başlayabilir |
 | **G3** | Sahne kurulumu | **GEÇTİ** 7/7 | FAZ 5 değil — önce G4 |
-| **G4** | Çözünürlük + çıkarım **altyapısı** | **GEÇTİ** 10/10 | ([kapanış](docs/FAZ4-KAPANIS.md)) |
+| **G4** | Çözünürlük + çıkarım **altyapısı** | **GEÇTİ** 10/10 | ([kapanış](FAZ4-KAPANIS.md)) |
 
 ### 2. BİLİMSEL DOĞRULAMA
 
@@ -228,14 +251,14 @@ Tablo güncellenmedi; değişenler burada, kaynaklarıyla.
 
 | ne | durum | kaynak |
 |---|---|---|
-| Üretim havuzu | **96/96 kapandı**, kayıp yok | [`docs/sonuclar/`](docs/sonuclar/) |
-| `n_yön` (kaç yön çözülüyor) | **KİLİTLİ YARGI: `1`** — `α_b` ve `f` önselden ayırt edilemiyor | [KAYIT-079](docs/defter/KAYIT-079_2026-10-16_UP-gozlemli-secimi-ve-n-yon.md) |
-| Tarih eşlemesi (history matching) | havuzun **%34,04**'ü bağdaşır, `I_min = 0,325` → model gözleme **ulaşıyor** | [KAYIT-080](docs/defter/KAYIT-080_2026-10-16_UP-onsel-duyarliligi-ve-tarih-eslemesi.md) |
-| SBC kapısı | **KALİBRE** (`200` tekrar) → posterior yayımlanabilir | [KAYIT-081](docs/defter/KAYIT-081_2026-10-16_SBC-kapisi-gecti.md) |
-| **S11**'in kaderi | kötüleşti: çözünürlük farkı **saçılma değil YANLILIK** (7/7, `p = 0,0156`), `Y₀`'da **×3,22** | [KAYIT-085](docs/defter/KAYIT-085_2026-10-22_cozunurluk-farki-YANLILIK-cikti.md) |
-| Krater gözlemlisi (**S4**'ün devamı) | `t = 600 s`'te zayıf matris rejiminde **gözlenemez**: kaçmamış ejekta krateri örtüyor | [KAYIT-089](docs/defter/KAYIT-089_2026-10-27_ADR-0061-tek-basina-30-nani-30-yanlis-sayiya-cevirecekti.md), [ADR-0062](docs/adr/ADR-0062-ortulu-krater-olculemez-sayi-yerine-red.md) |
-| **S6**'nın sayısı | `μ = 0,463` **mekanizma kolundan**; üretim havuzunda ölçülen **`0,4347`** (`95/96` nokta, ortanca) — H&H içinde, L1'in `0,36–0,39`'unun hâlâ üstünde | [KAYIT-098](docs/defter/KAYIT-098_2026-11-05_uretim-havuzunda-mu-olculdu.md) |
-| Geri çekilen bulgu | `kos` hatası: dört bulgu **geri çekildi**, düzeltilmiş hâlleri yayımlandı | [KAYIT-082](docs/defter/KAYIT-082_2026-10-16_kos-hatasi-ve-duzeltilmis-sonuclar.md) |
+| Üretim havuzu | **96/96 kapandı**, kayıp yok | [`docs/sonuclar/`](sonuclar/) |
+| `n_yön` (kaç yön çözülüyor) | **KİLİTLİ YARGI: `1`** — `α_b` ve `f` önselden ayırt edilemiyor | [KAYIT-079](defter/KAYIT-079_2026-10-16_UP-gozlemli-secimi-ve-n-yon.md) |
+| Tarih eşlemesi (history matching) | havuzun **%34,04**'ü bağdaşır, `I_min = 0,325` → model gözleme **ulaşıyor** | [KAYIT-080](defter/KAYIT-080_2026-10-16_UP-onsel-duyarliligi-ve-tarih-eslemesi.md) |
+| SBC kapısı | **KALİBRE** (`200` tekrar) → posterior yayımlanabilir | [KAYIT-081](defter/KAYIT-081_2026-10-16_SBC-kapisi-gecti.md) |
+| **S11**'in kaderi | kötüleşti: çözünürlük farkı **saçılma değil YANLILIK** (7/7, `p = 0,0156`), `Y₀`'da **×3,22** | [KAYIT-085](defter/KAYIT-085_2026-10-22_cozunurluk-farki-YANLILIK-cikti.md) |
+| Krater gözlemlisi (**S4**'ün devamı) | `t = 600 s`'te zayıf matris rejiminde **gözlenemez**: kaçmamış ejekta krateri örtüyor | [KAYIT-089](defter/KAYIT-089_2026-10-27_ADR-0061-tek-basina-30-nani-30-yanlis-sayiya-cevirecekti.md), [ADR-0062](adr/ADR-0062-ortulu-krater-olculemez-sayi-yerine-red.md) |
+| **S6**'nın sayısı | `μ = 0,463` **mekanizma kolundan**; üretim havuzunda ölçülen **`0,4347`** (`95/96` nokta, ortanca) — H&H içinde, L1'in `0,36–0,39`'unun hâlâ üstünde | [KAYIT-098](defter/KAYIT-098_2026-11-05_uretim-havuzunda-mu-olculdu.md) |
+| Geri çekilen bulgu | `kos` hatası: dört bulgu **geri çekildi**, düzeltilmiş hâlleri yayımlandı | [KAYIT-082](defter/KAYIT-082_2026-10-16_kos-hatasi-ve-duzeltilmis-sonuclar.md) |
 
 **S9/S10/S12 hâlâ düşük.** `S11` yukarıdaki ölçümle daha da sağlamlaştı
 — olumsuz yönde. Yani *"posterior bir yöntem gösterimidir, fiziksel
@@ -253,7 +276,7 @@ belirlenmiyor.
 >   taşımıyor"* bu yüzden **henüz sınanmadı** sayılmalı — **Protokol L**
 >   (üç eksenli duyarlılık pilotu) sınıyor.
 
-Açık kusurlar: [`FAZ4-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md) — **89**.
+Açık kusurlar: [`FAZ4-SIKINTI-RAPORU.md`](FAZ4-SIKINTI-RAPORU.md) — **89**.
 
 ## Depo düzeni
 
@@ -283,7 +306,7 @@ data_manifest/      dış veri ürünlerinin kimlik + sağlama kaydı
 ```
 
 Gereksinim → kod → sınav → kanıt eşlemesinin tamamı:
-[`docs/IZLENEBILIRLIK.md`](docs/IZLENEBILIRLIK.md).
+[`docs/IZLENEBILIRLIK.md`](IZLENEBILIRLIK.md).
 
 ## Kurulum ve sınav
 
@@ -314,7 +337,7 @@ döner.
 ### Mühürleri doğrulama — GPU, veri, kurulum gerekmez
 
 Bu projenin en güçlü iddiası iki **mühürlü** Hera ön kaydıdır
-([`docs/onkayit/`](docs/onkayit/)): Hera varmadan önce yazılmış,
+([`docs/onkayit/`](onkayit/)): Hera varmadan önce yazılmış,
 SHA-256 ile çivilenmiş öngörüler. O iddianın değeri **başkasının
 doğrulayabilmesine** bağlı. Tek komut:
 
@@ -348,7 +371,7 @@ doğrulayıcı onu da denetler (değişmişse `GIRDI DEGISMIS` → ölümcül).
 Bu sınır doğrulayıcının **kendi çıktısında** `IZ EKSIK` olarak
 görünür; düzyazıda saklı değil.
 
-Sınav hâli: [`tests/test_muhur_dogrula.py`](tests/test_muhur_dogrula.py)
+Sınav hâli: [`tests/test_muhur_dogrula.py`](../tests/test_muhur_dogrula.py)
 — gerçek mühürleri her koşuda doğrular, ve tek baytı değiştirilmiş bir
 kaydın **yakalandığını** ayrıca sınar (boş iddia sınamaz).
 
@@ -358,7 +381,7 @@ python scripts/run_g1_gate.py
 
 > **Kütüphane tabanı.** Hedef ortam NumPy **1.26.4** kullanır; NumPy 2.0+
 > API'leri (`np.trapezoid`, `np.concat`, …) kullanılamaz
-> ([ADR-0005](docs/adr/ADR-0005-python-surumu-truba.md)).
+> ([ADR-0005](adr/ADR-0005-python-surumu-truba.md)).
 
 ## TRUBA (ARF-ACC) üzerinde kanıt üretimi
 
@@ -390,16 +413,16 @@ olmasıyla** kurulmuştur.
 | mimari karar kaydı | **60** — her büyük karar gerekçesi, alternatifleri ve sınavıyla; sessiz değişiklik yasak |
 | mühendislik defteri | **78** — başarısız denemeler ve negatif sonuçlar silinmez, işlenir |
 | kilitli protokol | **39** — karar kuralları koşudan **önce** yazılır, sonuç gelince değişmez |
-| kusur kütüğü | [`FAZ4-SIKINTI-RAPORU.md`](docs/FAZ4-SIKINTI-RAPORU.md), A117'ye kadar — kapanan kayıtlar da duruyor |
+| kusur kütüğü | [`FAZ4-SIKINTI-RAPORU.md`](FAZ4-SIKINTI-RAPORU.md), A117'ye kadar — kapanan kayıtlar da duruyor |
 | sınav | **2705** toplanıyor; kapı koşumları ayrıca kırmızı takım sınavlarını koşar |
 
 Dört kural, kendimize dayattığımız biçimde:
 
 1. **Sınav geçilmediyse iddia edilmez.** İddia daraltılır, bilim
    bükülmez — nitekim çıkarım uzayı bir kez üç parametreden bire
-   indirildi ([ADR-0046](docs/adr/ADR-0046-cikarim-uzayi-olculebilir-olana-indirilir.md));
+   indirildi ([ADR-0046](adr/ADR-0046-cikarim-uzayi-olculebilir-olana-indirilir.md));
    ölçüm iyileşince üretim uzayı yeniden üç eksene açıldı
-   (`DART_UZAYI_S4`, [ADR-0053](docs/adr/ADR-0053-y0-onseli-ve-tanimlayici-gozlemli.md)
+   (`DART_UZAYI_S4`, [ADR-0053](adr/ADR-0053-y0-onseli-ve-tanimlayici-gozlemli.md)
    kabulüyle).
 2. **Görsel olarak makul bir sonuç kanıt değildir;** kanıt sınav ve
    sayıdır.
@@ -414,27 +437,27 @@ arasındaki açıyı vermiyordu; sonradan ölçüldüğünde terimin yörünge
 geometrisine değil koşunun kendi fırlatı alanına bağlı olduğu ve
 ortanca farkın **1,166** olduğu görüldü — ilan edilen bütün model hata
 bütçesinden büyük. Ön baskı metni değiştirilmedi (yayımlanmış kayıttır);
-düzeltme [ADR-0060](docs/adr/ADR-0060-beta-hangi-dogrultuya-izdusurulur.md)
+düzeltme [ADR-0060](adr/ADR-0060-beta-hangi-dogrultuya-izdusurulur.md)
 olarak eklendi ve rapor düzeltilmiş hâli taşıyor.
 
 ## Belgeler
 
 | belge | ne |
 |---|---|
-| [`docs/BULGULAR.md`](docs/BULGULAR.md) | ne kanıtlandı, ne kanıtlanmadı |
-| [`docs/DEVAM-BITIS3.md`](docs/DEVAM-BITIS3.md) | devir notu: durum, plan, bütçe, riskler, dersler |
-| [`docs/preprint/`](docs/preprint/) | bilimsel ön baskı (İngilizce) |
-| [`docs/rapor2204/`](docs/rapor2204/) | TÜBİTAK 2204-A proje raporu (Türkçe) |
-| [`docs/FIZIBILITE.md`](docs/FIZIBILITE.md) | motor hedefe yetiyor mu — ölçülmüş maliyet |
-| [`docs/EKSIKLER.md`](docs/EKSIKLER.md) | eksiklerin tek kaydı: kapandı / açık / kapsam dışı |
+| [`docs/BULGULAR.md`](BULGULAR.md) | ne kanıtlandı, ne kanıtlanmadı |
+| [`docs/DEVAM-BITIS3.md`](DEVAM-BITIS3.md) | devir notu: durum, plan, bütçe, riskler, dersler |
+| [`docs/preprint/`](preprint/) | bilimsel ön baskı (İngilizce) |
+| [`docs/rapor2204/`](rapor2204/) | TÜBİTAK 2204-A proje raporu (Türkçe) |
+| [`docs/FIZIBILITE.md`](FIZIBILITE.md) | motor hedefe yetiyor mu — ölçülmüş maliyet |
+| [`docs/EKSIKLER.md`](EKSIKLER.md) | eksiklerin tek kaydı: kapandı / açık / kapsam dışı |
 
 ## Lisans ve atıf
 
-Yazılım **MIT** — [LICENSE](LICENSE). Ön baskı metni ve özgün figürleri
+Yazılım **MIT** — [LICENSE](../LICENSE). Ön baskı metni ve özgün figürleri
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); üçüncü taraf
 logoları (Ethosoft, ORCID, GitHub) bu lisansın dışındadır.
 
-Atıf için [CITATION.cff](CITATION.cff) —
+Atıf için [CITATION.cff](../CITATION.cff) —
 [10.5281/zenodo.23284193](https://doi.org/10.5281/zenodo.23284193)
 (sürüm), [10.5281/zenodo.23284192](https://doi.org/10.5281/zenodo.23284192)
 (kavram, en yeni sürüme çözülür).

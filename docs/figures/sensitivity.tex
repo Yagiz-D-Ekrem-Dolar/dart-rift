@@ -1,0 +1,72 @@
+% Which observable sees which axis.
+%
+% Two observables, three interior axes, one bar each. The point is the
+% shape, not the numbers: the two rows are almost disjoint. The momentum
+% enhancement is an almost pure readout of matrix strength; the spin the
+% impact adds is the only quantity here that responds to the boulder
+% fraction -- the axis the momentum cannot see at all.
+%
+% Spearman rank correlation over the full 96-point production pool.
+% Source: docs/rapor2204/veri/eksen_duyarliligi.dat, emitted by
+% scripts/figure_data.py. No number is written here by hand.
+\documentclass[tikz,border=0pt]{standalone}
+\input{common}
+
+% data/sensitivity_rows.tex is read ONCE, inside the picture, after
+% \sens exists. Reading it here too would call \sens before it is
+% defined.
+
+\newcommand{\HALF}{46}     % mm for |r| = 1
+\newcommand{\ROW}{13}      % mm between axes
+\newcommand{\BARH}{4.2}    % bar half-height
+
+\begin{document}
+\begin{tikzpicture}[canvasbg, x=1mm, y=1mm]
+
+\useasboundingbox (-68,-52) rectangle (162,24);
+
+\def\BX{0}      % beta panel centre
+\def\WX{108}     % omega panel centre
+
+% #1 row, #2 label, #3 r(beta), #4 r(omega)
+\newcommand{\sens}[4]{%
+  \pgfmathsetmacro{\yy}{-#1*\ROW}
+  \node[dim, anchor=east, font=\small] at ({\BX-\HALF-5},\yy) {#2};
+  % beta
+  \fill[accent, opacity={abs(#3) > 0.5 ? 0.95 : 0.30}]
+    (\BX,{\yy-\BARH}) rectangle ({\BX+#3*\HALF},{\yy+\BARH});
+  % omega
+  \fill[accent, opacity={abs(#4) > 0.3 ? 0.95 : 0.30}]
+    (\WX,{\yy-\BARH}) rectangle ({\WX+#4*\HALF},{\yy+\BARH});
+}
+\input{data/sensitivity_rows.tex}
+
+% zero lines
+\draw[draw=muted, line width=0.7pt] (\BX,8) -- (\BX,{-2*\ROW-8});
+\draw[draw=muted, line width=0.7pt] (\WX,8) -- (\WX,{-2*\ROW-8});
+
+% panel titles
+\node[lbl, anchor=south, font=\small] at (\BX,12)
+  {$\beta$\ \ \textcolor{muted}{\scriptsize momentum enhancement}};
+\node[lbl, anchor=south, font=\small] at (\WX,12)
+  {$\omega$\ \ \textcolor{muted}{\scriptsize spin gained}};
+
+% scale ticks
+\foreach \v/\lab in {-1/{$-1$}, 0/{$0$}, 1/{$+1$}}{
+  \node[dim, anchor=north, font=\scriptsize]
+    at ({\BX+\v*\HALF},{-2*\ROW-9}) {\lab};
+  \node[dim, anchor=north, font=\scriptsize]
+    at ({\WX+\v*\HALF},{-2*\ROW-9}) {\lab};
+}
+\draw[draw=hush, line width=0.5pt]
+  ({\BX-\HALF},{-2*\ROW-8}) -- ({\BX+\HALF},{-2*\ROW-8});
+\draw[draw=hush, line width=0.5pt]
+  ({\WX-\HALF},{-2*\ROW-8}) -- ({\WX+\HALF},{-2*\ROW-8});
+
+\node[dim, anchor=north, font=\scriptsize]
+  at ({(\BX+\WX)/2},{-2*\ROW-17})
+  {rank correlation, 96 points \quad$\cdot$\quad
+   $r(\beta,\omega)=\Rbetaomega$ \ --- the two are nearly orthogonal};
+
+\end{tikzpicture}
+\end{document}

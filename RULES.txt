@@ -1,0 +1,40 @@
+DART-RIFT — DEGISTIRILEMEYEN KURALLAR
+=====================================
+
+1. Tarih, saat, sonuc uydurulmaz. Kayit yoksa "kayit bulunamadi"
+   yazilir.
+
+2. Testini gecemeyen modul icin basari iddia edilmez.
+
+3. Kilitli bir karara sessiz degisiklik yapilmaz -- ADR gerekir.
+
+4. Yanlis cikan bir iddia silinmez, notla duzeltilir. Deponun degeri,
+   nerede yanildiginin izlenebilir olmasindadir.
+
+
+BU DOSYA HAKKINDA
+-----------------
+
+Bu dort kural deponun basindan beri yurulukteydi ve CONTRIBUTING.md
+icinde yazili, ayrica ADR'lerin ve kayit defterinin pek cok yerinden
+`RULES.txt` adiyla kaynak gosteriliyordu.
+
+Dosyanin kendisi ise yoktu. 2026-11-08'de dis bir depo incelemesi bu
+kirik atfi tespit etti ve dosya o gun olusturuldu.
+
+Kurallarin metni CONTRIBUTING.md'den BIREBIR alinmistir; tek kelimesi
+degistirilmemis, hicbir kural eklenmemis ve cikarilmamistir. Yani yeni
+olan sey kural degil, kuralin dosyasidir.
+
+Kural 4 geregi bu not siliniyor degil, buraya yaziliyor: bir seyin
+aylarca kaynak gosterilip var olmamasi da bir kusurdur ve izi kalmalidir.
+
+
+KAPSAM
+------
+
+Bu kurallar depodaki her seye uygular: koda, belgelere, olcumlere ve
+kayitlara. Bir kurali degistirmek icin ADR gerekir (kural 3 kendisine de
+uygular).
+
+Ayrintilar, gerekceler ve calisma yontemi: CONTRIBUTING.md

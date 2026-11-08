@@ -20,7 +20,7 @@
 #     python scripts/figure_data.py
 
 TEX  ?= lualatex -interaction=nonstopmode -halt-on-error
-FIGS  = identifiability validation pipeline prediction
+FIGS  = identifiability validation pipeline prediction sensitivity
 SVG   = $(addsuffix .svg,$(FIGS))
 PNG   = $(addsuffix .png,$(FIGS))
 

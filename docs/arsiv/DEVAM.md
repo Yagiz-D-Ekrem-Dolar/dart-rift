@@ -426,14 +426,14 @@ turunun **altı düzeltmesi uygulandıktan sonra**. **639 test geçiyor / 0
 kaldı**, kapsam **%96,5**, kırmızı takım **14/14 temiz**, 28 kriterin tamamı.
 İş COMPLETED, çıkış kodu 0:0, süre 01:30:55.
 
-Kanıt: [G0–G3 hata ayıklama sonrası](docs/evidence/G0-G3_HATA-AYIKLAMA-SONRASI_c1ba7e0.md)
+Kanıt: [G0–G3 hata ayıklama sonrası](../evidence/G0-G3_HATA-AYIKLAMA-SONRASI_c1ba7e0.md)
 
 Sahne karması iki bağımsız ortamda birebir aynı: `6d6f1d10eaff64e2…`
 (Linux/numpy 1.26.4 ve Windows/numpy 2.5.1). Bu eşitlik önce tutmuyordu —
-bkz. [ADR-0025](docs/adr/ADR-0025-sahne-makineler-arasi-determinizm.md).
+bkz. [ADR-0025](../adr/ADR-0025-sahne-makineler-arasi-determinizm.md).
 
-Ayrıntı: [G3 kanıtı](docs/evidence/G3_GATE_0b88ae9.md) ·
-**eksikler kaydı:** [docs/EKSIKLER.md](docs/EKSIKLER.md).
+Ayrıntı: [G3 kanıtı](../evidence/G3_GATE_0b88ae9.md) ·
+**eksikler kaydı:** [docs/EKSIKLER.md](../EKSIKLER.md).
 
 ### FAZ 3 sonrası kapatılan eksikler
 
