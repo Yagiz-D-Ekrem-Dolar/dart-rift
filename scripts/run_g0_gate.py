@@ -94,6 +94,22 @@ def main() -> int:
     rc_all, out_all = sh(pytest_cmd, run_dir / "pytest_full.log")
     criteria["C1"].record(rc_all == 0, f"pytest cikis kodu={rc_all} (pytest_full.log)")
 
+    # DUSERSE SEBEBI GORUNUR OLMALI (2026-11-08).
+    #
+    # `sh` cikti dosyaya yaziyor ve CI gunlugune HICBIR sey dusmuyordu.
+    # Sonuc: `gates` isi gunlerce "C1 KALDI, pytest cikis kodu=1" diyerek
+    # dustu ve hangi testin dustugu CI'dan OKUNAMADI -- gunluge bakip
+    # tanı koymak imkansizdi, cunku run-dir eserlere de yuklenmiyor.
+    # Bir kapinin dusmesi bilgi tasimiyorsa kapi degil, gurultudur.
+    if rc_all != 0:
+        satir = [s for s in out_all.splitlines()
+                 if s.startswith(("FAILED ", "ERROR ")) or " failed" in s]
+        print("\n--- C1 DUSTU: pytest ozeti ---", file=sys.stderr)
+        for s in satir[-25:]:
+            print(s, file=sys.stderr)
+        print(f"--- tam gunluk: {run_dir / 'pytest_full.log'} ---\n",
+              file=sys.stderr)
+
     def suite_passed(pattern: str) -> bool:
         # tam kosu loglarindan ilgili dosyanin FAILED icermedigini ve kostugunu dogrula
         ran = pattern in out_all

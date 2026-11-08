@@ -134,6 +134,15 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # `gates` isi TAM test paketini kosuyor ve o pakette
+          # `test_muhur_dogrula.py` var: muhurlu on kayitlarin
+          # `git_commit` alanini depoda ARIYOR. Sig klon (depth 1) o
+          # eski commit'i bulamayinca dogrulayici fazladan iz bulgusu
+          # yaziyor, sinav dusuyor, pytest 1 donuyor ve kapi "C1 KALDI"
+          # diyor. `tests` isine eklenmisti, buraya EKLENMEMISTI --
+          # ikisi ayni paketi kostugu icin ikisinde de gerekli.
+          fetch-depth: 0
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: "3.12"
@@ -153,6 +162,19 @@ jobs:
           if grep -q "G0 GECTI" /tmp/g0_precheck/G0_report.md; then
             echo "HATA: GPU'suz rapor 'G0 GECTI' iddia ediyor"; exit 1
           fi
+      # Kapi dusunce SEBEBI alinabilsin. `run_g0_gate` pytest ciktisini
+      # run-dir'deki bir dosyaya yaziyor; o dosya yuklenmezse CI gunlugunde
+      # yalnizca "C1 KALDI" kaliyor ve hangi testin dustugu ogrenilemiyor.
+      - name: Kapi gunlukleri (yalniz dusunce)
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: g0-gate-logs
+          path: |
+            /tmp/g0_no_flag
+            /tmp/g0_precheck
+          retention-days: 7
+          if-no-files-found: warn
       - name: G1/G2 de GPU'suz ortamda GECTI iddia etmemeli
         run: |
           set +e
