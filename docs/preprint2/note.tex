@@ -1,0 +1,162 @@
+% DART-RIFT research note II -- resolution choice as an inference bias.
+% Standalone: does not depend on the Paper I sources.
+\documentclass[10pt,twocolumn]{article}
+\usepackage[letterpaper,top=0.80in,bottom=0.85in,left=0.72in,right=0.72in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage[font=small,labelfont=bf,labelsep=period]{caption}
+\usepackage[colorlinks=true,allcolors=blue!55!black]{hyperref}
+
+\title{\vspace{-7mm}\textbf{Choosing the resolution moves the answer:\\
+a measured inference bias in SPH impact modelling}\vspace{-2mm}}
+\author{\normalsize Ya\u{g}{\i}z Ekrem Dalar \and
+        \normalsize Feyzi Arda Saliho\u{g}lu \and
+        \normalsize Nedim Mutlu Sezer\vspace{-1mm}}
+\date{\small Ethosoft Research \ $\cdot$ \ \today \ $\cdot$ \
+      DART-RIFT research note II\vspace{-3mm}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Smoothed-particle impact simulations are routinely run at the coarsest
+resolution that fits the budget, and the resulting discretisation error
+is folded into the likelihood as extra variance. We show, on a
+96-point production campaign for the DART impact on Dimorphos, that
+this is the wrong operation. Re-running nine of the design points at
+half the particle spacing moves the momentum enhancement in the
+\emph{same direction at all nine points} (median ratio $1.139$, sign
+test $p = 0.002$): the discretisation error is a bias, not scatter.
+Carrying it as variance leaves the posterior centred on the coarse
+prediction, so the interior parameters absorb the shift. Correcting it
+instead with a Kennedy--O'Hagan autoregressive surrogate moves the
+inferred matrix strength from $18.7$~Pa to $159.7$~Pa, a $1.88\sigma$
+shift, and the shift lands on the one direction the single observable
+can constrain at all. Neither value is converged; the point is that the
+choice of resolution, not the data, selects between them.
+\end{abstract}
+
+\section{The problem}
+
+A kinetic impact leaves one well-measured scalar, the momentum
+enhancement $\beta$. Inferring interior properties from it requires a
+forward model, and that model is discretised. The usual treatment adds
+a resolution term $\sigma_{\text{res}}$ to the error budget.
+
+That treatment assumes the discretisation error behaves like noise. If
+it is instead a systematic offset, widening the likelihood does not
+move the posterior's centre: the parameters must absorb the offset.
+One then believes a wrong interior precisely because it reproduces the
+right $\beta$.
+
+\section{Measurement}
+
+The production campaign is 96 Latin-hypercube points over boulder
+porosity $\alpha_b$, matrix strength $Y_0$ and boulder volume fraction
+$f$, run with a GPU SPH solver (FP64, Wendland C2, Tillotson,
+P--$\alpha$ porosity, Grady--Kipp damage, self-gravity) on a triaxial
+$88.5 \times 87.0 \times 58.0$~m body at $7.0$~m base spacing. Nine
+points of a maximin subset, fixed before any data existed, were
+re-run at $3.5$~m: $441$ GPU-hours.
+
+\begin{table}[t]
+\centering\small
+\caption{Fine against coarse at identical $\theta$. Every point moves
+the same way.}
+\label{tab:bias}
+\begin{tabular}{rrrr}
+\toprule
+point & coarse & fine & ratio \\
+\midrule
+11 & 1.583 & 1.743 & 1.101 \\
+20 & 5.040 & 5.743 & 1.139 \\
+33 & 3.879 & 4.841 & 1.248 \\
+44 & 1.728 & 1.783 & 1.032 \\
+45 & 2.644 & 2.976 & 1.126 \\
+57 & 3.524 & 4.671 & 1.326 \\
+58 & 2.758 & 3.241 & 1.175 \\
+62 & 2.558 & 2.731 & 1.068 \\
+74 & 5.016 & 5.775 & 1.151 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:bias} gives the result: $9$ of $9$ in the same
+direction, median ratio $1.139$. A one-sided sign test gives
+$p = 2^{-9} = 0.002$. The coarse campaign underestimates $\beta$ by
+about $14\%$, systematically.
+
+\section{Correction}
+
+Because the error is systematic it can be modelled. We fit a
+Kennedy--O'Hagan autoregressive surrogate,
+$y_{\text{fine}}(x) = \rho\, f_{\text{coarse}}(x) + \delta(x)$,
+on the nine nested points, obtaining $\rho = 0.820$ for $\beta$ and
+$\rho = 1.180$ for log ejecta mass, both interior to the search grid.
+
+Leave-one-out across the nine points, against the fine value: RMS
+error falls from $0.656$ uncorrected to $0.262$ corrected, a factor
+$2.51$, and the corrected surrogate wins at all nine points
+individually.
+
+\section{Consequence for the inference}
+
+Both posteriors were then computed in a single run sharing the design,
+the observable transform, the residual correlation, the error model,
+the grid and the likelihood. Only the surrogate mean differs, so any
+difference cannot be attributed elsewhere.
+
+\begin{table}[t]
+\centering\small
+\caption{Posterior mode, uncorrected against corrected. Shift in units
+of the uncorrected posterior's own standard deviation.}
+\label{tab:mode}
+\begin{tabular}{lrrr}
+\toprule
+axis & uncorrected & corrected & shift \\
+\midrule
+$\alpha_b$          & 1.269 & 1.036 & $2.74\sigma$ \\
+$Y_0$ [Pa]          & 18.7  & 159.7 & $1.88\sigma$ \\
+$f$                 & 0.05  & 0.05  & $0.00\sigma$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The inferred matrix strength moves by a factor of $8.6$
+(Table~\ref{tab:mode}). The shift falls on $Y_0$, which is the only
+direction this observable constrains: a Fisher decomposition over the
+same 96 points gives posterior widths of $0.142$, $0.930$ and $1.000$
+of the prior along the three principal directions, with the learnable
+one aligned with $Y_0$ at $90$ of $96$ points. A shift along an
+unconstrained axis would not matter. This one does.
+
+\section{What this does not show}
+
+The fine runs are not converged either: differences grow with
+refinement rather than settling, so $159.7$~Pa is what one further
+step of refinement says, not where the sequence lands. We therefore
+report both numbers and treat neither as the interior of Dimorphos.
+The modes for $\alpha_b$ and $f$ sit against their prior bounds and
+are not estimates. The nested design was planned at twelve points and
+nine were run, so $\delta(x)$ is extrapolated near the design edges.
+
+The claim is narrower than a value and, we think, more useful: in this
+class of problem the resolution decision is not a nuisance absorbed by
+the error bars. It selects the answer, and it should be reported as
+part of the result.
+
+\section{Availability}
+
+Code, the locked decision rules, the measured outputs and the scripts
+that regenerate every number above are public at
+\href{https://github.com/Yagiz-D-Ekrem-Dolar/dart-rift}{github.com/Yagiz-D-Ekrem-Dolar/dart-rift}.
+The gate used to decide whether the corrected posterior may be
+promoted was written in a committed decision record before the fine
+data existed; the records behind this note are \texttt{KAYIT-099} and
+\texttt{KAYIT-100}.
+
+\end{document}
